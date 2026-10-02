@@ -6,16 +6,12 @@ package otlp // import "go.opentelemetry.io/collector/pdata/internal/otlp"
 import (
 	"errors"
 	"fmt"
-	"math"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
 )
 
-var (
-	errProfilesStringIndexNotInitialized = errors.New("profiles dictionary string index is not initialized")
-	errProfilesStringTableTooLarge       = errors.New("profiles dictionary string table has too many entries")
-)
+var errProfilesStringIndexNotInitialized = errors.New("profiles dictionary string index is not initialized")
 
 // ConvertProfilesToReferences interns resource and scope attribute strings in
 // the profiles dictionary. The request must be mutable.
@@ -26,9 +22,6 @@ func ConvertProfilesToReferences(request *internal.ExportProfilesServiceRequest)
 		*stringTable = append(*stringTable, "")
 	} else if (*stringTable)[0] != "" {
 		return errors.New("profiles dictionary string_table[0] must be empty")
-	}
-	if len(*stringTable) > math.MaxInt32 {
-		return errProfilesStringTableTooLarge
 	}
 
 	stringIndex := make(map[string]int32, len(*stringTable))
@@ -46,9 +39,6 @@ func ConvertProfilesToReferences(request *internal.ExportProfilesServiceRequest)
 		}
 		if index, ok := stringIndex[s]; ok {
 			return index, nil
-		}
-		if len(*stringTable) >= math.MaxInt32 {
-			return 0, errProfilesStringTableTooLarge
 		}
 		index := int32(len(*stringTable))
 		*stringTable = append(*stringTable, s)
@@ -71,14 +61,19 @@ func ConvertProfilesToReferences(request *internal.ExportProfilesServiceRequest)
 
 // ResolveProfilesReferences resolves resource and scope attribute string-table
 // references so pdata consumers can access the attributes transparently.
-func ResolveProfilesReferences(request *internal.ExportProfilesServiceRequest) {
+func ResolveProfilesReferences(request *internal.ExportProfilesServiceRequest) error {
 	stringTable := request.Dictionary.StringTable
-	for _, resourceProfiles := range request.ResourceProfiles {
-		ResolveProfilesKeyValueReferences(stringTable, resourceProfiles.Resource.Attributes)
-		for _, scopeProfiles := range resourceProfiles.ScopeProfiles {
-			ResolveProfilesKeyValueReferences(stringTable, scopeProfiles.Scope.Attributes)
+	for resourceIndex, resourceProfiles := range request.ResourceProfiles {
+		if err := ResolveProfilesKeyValueReferences(stringTable, resourceProfiles.Resource.Attributes); err != nil {
+			return fmt.Errorf("resource profiles %d resource attributes: %w", resourceIndex, err)
+		}
+		for scopeIndex, scopeProfiles := range resourceProfiles.ScopeProfiles {
+			if err := ResolveProfilesKeyValueReferences(stringTable, scopeProfiles.Scope.Attributes); err != nil {
+				return fmt.Errorf("resource profiles %d scope profiles %d attributes: %w", resourceIndex, scopeIndex, err)
+			}
 		}
 	}
+	return nil
 }
 
 // ConvertProfilesKeyValuesToReferences converts attribute strings to dictionary references.
@@ -105,11 +100,9 @@ func ConvertProfilesKeyValuesToReferences(getStringIndex func(string) (int32, er
 
 // ConvertProfilesAnyValueToReference converts strings recursively in an attribute value.
 func ConvertProfilesAnyValueToReference(getStringIndex func(string) (int32, error), value *internal.AnyValue) error {
-	if _, ok := value.Value.(*internal.AnyValue_StringValueStrindex); ok {
-		return nil
-	}
-
 	switch original := value.Value.(type) {
+	case *internal.AnyValue_StringValueStrindex:
+		return nil
 	case *internal.AnyValue_StringValue:
 		index, err := getStringIndex(original.StringValue)
 		if err != nil {
@@ -140,23 +133,32 @@ func ConvertProfilesAnyValueToReference(getStringIndex func(string) (int32, erro
 }
 
 // ResolveProfilesKeyValueReferences resolves attribute dictionary references.
-func ResolveProfilesKeyValueReferences(stringTable []string, keyValues []internal.KeyValue) {
+func ResolveProfilesKeyValueReferences(stringTable []string, keyValues []internal.KeyValue) error {
 	for i := range keyValues {
 		keyValue := &keyValues[i]
-		if keyValue.KeyStrindex > 0 && keyValue.Key == "" && int(keyValue.KeyStrindex) < len(stringTable) {
+		if keyValue.Key != "" && keyValue.KeyStrindex != 0 {
+			return fmt.Errorf("attribute %d has both key and key_strindex set", i)
+		}
+		if keyValue.KeyStrindex < 0 || (keyValue.KeyStrindex > 0 && int(keyValue.KeyStrindex) >= len(stringTable)) {
+			return fmt.Errorf("attribute %d has invalid key_strindex %d", i, keyValue.KeyStrindex)
+		}
+		if keyValue.KeyStrindex > 0 {
 			keyValue.Key = stringTable[keyValue.KeyStrindex]
 			keyValue.KeyStrindex = 0
 		}
-		ResolveProfilesAnyValueReference(stringTable, &keyValue.Value)
+		if err := ResolveProfilesAnyValueReference(stringTable, &keyValue.Value); err != nil {
+			return fmt.Errorf("attribute %d value: %w", i, err)
+		}
 	}
+	return nil
 }
 
 // ResolveProfilesAnyValueReference resolves string references recursively in an attribute value.
-func ResolveProfilesAnyValueReference(stringTable []string, value *internal.AnyValue) {
+func ResolveProfilesAnyValueReference(stringTable []string, value *internal.AnyValue) error {
 	switch original := value.Value.(type) {
 	case *internal.AnyValue_StringValueStrindex:
 		if original.StringValueStrindex < 0 || int(original.StringValueStrindex) >= len(stringTable) {
-			return
+			return fmt.Errorf("invalid string_value_strindex %d", original.StringValueStrindex)
 		}
 		var resolved *internal.AnyValue_StringValue
 		if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
@@ -168,13 +170,16 @@ func ResolveProfilesAnyValueReference(stringTable []string, value *internal.AnyV
 		value.Value = resolved
 	case *internal.AnyValue_KvlistValue:
 		if original.KvlistValue != nil {
-			ResolveProfilesKeyValueReferences(stringTable, original.KvlistValue.Values)
+			return ResolveProfilesKeyValueReferences(stringTable, original.KvlistValue.Values)
 		}
 	case *internal.AnyValue_ArrayValue:
 		if original.ArrayValue != nil {
 			for i := range original.ArrayValue.Values {
-				ResolveProfilesAnyValueReference(stringTable, &original.ArrayValue.Values[i])
+				if err := ResolveProfilesAnyValueReference(stringTable, &original.ArrayValue.Values[i]); err != nil {
+					return fmt.Errorf("array value %d: %w", i, err)
+				}
 			}
 		}
 	}
+	return nil
 }

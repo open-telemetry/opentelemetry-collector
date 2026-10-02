@@ -4,6 +4,7 @@
 package otlp
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -145,7 +146,7 @@ func TestProfilesDictionaryRoundTrip(t *testing.T) {
 	assert.Equal(t, 1, checkoutCount)
 	assert.Equal(t, 1, recommendationCount)
 
-	ResolveProfilesReferences(request)
+	require.NoError(t, ResolveProfilesReferences(request))
 
 	assert.Equal(t, expected.ResourceProfiles, request.ResourceProfiles)
 }
@@ -172,7 +173,7 @@ func TestConvertProfilesToReferencesInitializesStringTable(t *testing.T) {
 
 	assert.Equal(t, []string{"", "key", "value"}, request.Dictionary.StringTable)
 
-	ResolveProfilesReferences(request)
+	require.NoError(t, ResolveProfilesReferences(request))
 	assert.Equal(t, "key", request.ResourceProfiles[0].Resource.Attributes[0].Key)
 	value, ok := request.ResourceProfiles[0].Resource.Attributes[0].Value.Value.(*internal.AnyValue_StringValue)
 	require.True(t, ok)
@@ -239,16 +240,9 @@ func TestProfilesDictionaryReferenceEdges(t *testing.T) {
 	stringTable := []string{"", "resolved-key", "resolved-value"}
 	references := []internal.KeyValue{
 		{
-			Key:         "inline-key",
-			KeyStrindex: 1,
+			Key: "inline-key",
 			Value: internal.AnyValue{
 				Value: &internal.AnyValue_StringValueStrindex{StringValueStrindex: 2},
-			},
-		},
-		{
-			KeyStrindex: 99,
-			Value: internal.AnyValue{
-				Value: &internal.AnyValue_StringValueStrindex{StringValueStrindex: 99},
 			},
 		},
 		{
@@ -258,27 +252,111 @@ func TestProfilesDictionaryReferenceEdges(t *testing.T) {
 			},
 		},
 	}
-	ResolveProfilesKeyValueReferences(stringTable, references)
+	require.NoError(t, ResolveProfilesKeyValueReferences(stringTable, references))
 
 	assert.Equal(t, "inline-key", references[0].Key)
-	assert.Equal(t, int32(1), references[0].KeyStrindex)
+	assert.Zero(t, references[0].KeyStrindex)
 	resolved, ok := references[0].Value.Value.(*internal.AnyValue_StringValue)
 	require.True(t, ok)
 	assert.Equal(t, "resolved-value", resolved.StringValue)
 
-	assert.Empty(t, references[1].Key)
-	assert.Equal(t, int32(99), references[1].KeyStrindex)
-	_, ok = references[1].Value.Value.(*internal.AnyValue_StringValueStrindex)
-	assert.True(t, ok)
+	assert.Equal(t, "resolved-key", references[1].Key)
+	assert.Zero(t, references[1].KeyStrindex)
+	resolved, ok = references[1].Value.Value.(*internal.AnyValue_StringValue)
+	require.True(t, ok)
+	assert.Empty(t, resolved.StringValue)
 
-	assert.Equal(t, "resolved-key", references[2].Key)
-	assert.Zero(t, references[2].KeyStrindex)
-	_, ok = references[2].Value.Value.(*internal.AnyValue_StringValueStrindex)
-	assert.True(t, ok)
+	require.NoError(t, ResolveProfilesAnyValueReference(stringTable, &nilKVList))
+	require.NoError(t, ResolveProfilesAnyValueReference(stringTable, &nilArray))
+	require.NoError(t, ResolveProfilesAnyValueReference(stringTable, &boolValue))
+}
 
-	ResolveProfilesAnyValueReference(stringTable, &nilKVList)
-	ResolveProfilesAnyValueReference(stringTable, &nilArray)
-	ResolveProfilesAnyValueReference(stringTable, &boolValue)
+func TestResolveProfilesReferencesRejectsInvalidAttributes(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		attribute internal.KeyValue
+		scope     bool
+		wantError string
+	}{
+		{
+			name:      "conflicting key representations",
+			attribute: internal.KeyValue{Key: "inline", KeyStrindex: 1},
+			wantError: "attribute 0 has both key and key_strindex set",
+		},
+		{
+			name:      "negative key index",
+			attribute: internal.KeyValue{KeyStrindex: -1},
+			wantError: "attribute 0 has invalid key_strindex -1",
+		},
+		{
+			name:      "key index at table length",
+			attribute: internal.KeyValue{KeyStrindex: 2},
+			wantError: "attribute 0 has invalid key_strindex 2",
+		},
+		{
+			name:  "scope value index at table length",
+			scope: true,
+			attribute: internal.KeyValue{Key: "inline", Value: internal.AnyValue{
+				Value: &internal.AnyValue_StringValueStrindex{StringValueStrindex: 2},
+			}},
+			wantError: "attribute 0 value: invalid string_value_strindex 2",
+		},
+		{
+			name: "nested array",
+			attribute: internal.KeyValue{Key: "inline", Value: internal.AnyValue{
+				Value: &internal.AnyValue_ArrayValue{ArrayValue: &internal.ArrayValue{
+					Values: []internal.AnyValue{{Value: &internal.AnyValue_StringValueStrindex{StringValueStrindex: 2}}},
+				}},
+			}},
+			wantError: "attribute 0 value: array value 0: invalid string_value_strindex 2",
+		},
+		{
+			name: "nested key-value list",
+			attribute: internal.KeyValue{Key: "inline", Value: internal.AnyValue{
+				Value: &internal.AnyValue_KvlistValue{KvlistValue: &internal.KeyValueList{
+					Values: []internal.KeyValue{{Key: "child", KeyStrindex: 1}},
+				}},
+			}},
+			wantError: "attribute 0 value: attribute 0 has both key and key_strindex set",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			rp := &internal.ResourceProfiles{}
+			prefix := "resource profiles 0 resource attributes: "
+			if tc.scope {
+				rp.ScopeProfiles = []*internal.ScopeProfiles{{Scope: internal.InstrumentationScope{Attributes: []internal.KeyValue{tc.attribute}}}}
+				prefix = "resource profiles 0 scope profiles 0 attributes: "
+			} else {
+				rp.Resource.Attributes = []internal.KeyValue{tc.attribute}
+			}
+			request := &internal.ExportProfilesServiceRequest{
+				Dictionary:       internal.ProfilesDictionary{StringTable: []string{"", "key"}},
+				ResourceProfiles: []*internal.ResourceProfiles{rp},
+			}
+			require.EqualError(t, ResolveProfilesReferences(request), prefix+tc.wantError)
+		})
+	}
+}
+
+func TestResolveProfilesAnyValueReferenceRejectsInvalidIndices(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		table []string
+		index int32
+	}{
+		{name: "negative", table: []string{"", "value"}, index: -1},
+		{name: "at table length", table: []string{"", "value"}, index: 2},
+		{name: "beyond table length", table: []string{"", "value"}, index: 99},
+		{name: "empty table", index: 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ref := &internal.AnyValue_StringValueStrindex{StringValueStrindex: tc.index}
+			value := internal.AnyValue{Value: ref}
+			require.EqualError(t, ResolveProfilesAnyValueReference(tc.table, &value),
+				fmt.Sprintf("invalid string_value_strindex %d", tc.index))
+			assert.Same(t, ref, value.Value)
+		})
+	}
 }
 
 func TestConvertProfilesKeyValuesToReferencesRejectsConflictingKeyRepresentations(t *testing.T) {
@@ -320,7 +398,7 @@ func TestProfilesDictionaryReferencesWithPooling(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, int32(1), ref.StringValueStrindex)
 
-	ResolveProfilesAnyValueReference([]string{"", "pooled-value"}, &value)
+	require.NoError(t, ResolveProfilesAnyValueReference([]string{"", "pooled-value"}, &value))
 	resolved, ok := value.Value.(*internal.AnyValue_StringValue)
 	require.True(t, ok)
 	assert.Equal(t, "pooled-value", resolved.StringValue)

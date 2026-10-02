@@ -41,6 +41,8 @@ type grpcClient struct {
 
 // Export implements the Client interface.
 func (c *grpcClient) Export(ctx context.Context, request ExportRequest, opts ...grpc.CallOption) (ExportResponse, error) {
+	// Dictionary conversion mutates the request. Always copy it because even
+	// mutable pdata may be shared with other non-mutating consumers.
 	profilesCopy := pprofile.NewProfiles()
 	request.Profiles().CopyTo(profilesCopy)
 	request = NewExportRequestFromProfiles(profilesCopy)
@@ -92,7 +94,9 @@ type rawProfilesServer struct {
 
 func (s rawProfilesServer) Export(ctx context.Context, request *internal.ExportProfilesServiceRequest) (*internal.ExportProfilesServiceResponse, error) {
 	otlp.MigrateProfiles(request.ResourceProfiles)
-	otlp.ResolveProfilesReferences(request)
+	if err := otlp.ResolveProfilesReferences(request); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 	rsp, err := s.srv.Export(ctx, ExportRequest{orig: request, state: internal.NewState()})
 	return rsp.orig, err
 }

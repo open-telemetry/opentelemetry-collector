@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 
 	"go.opentelemetry.io/collector/pdata/internal"
+	"go.opentelemetry.io/collector/pdata/internal/otelgrpc"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
@@ -103,7 +104,7 @@ func TestGRPCExportDoesNotMutateInput(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			lis := bufconn.Listen(1024 * 1024)
 			s := grpc.NewServer()
-			RegisterGRPCServer(s, &capturingProfilesServer{err: tc.serverErr})
+			RegisterGRPCServer(s, &fakeProfilesServer{err: tc.serverErr})
 			wg := sync.WaitGroup{}
 			wg.Go(func() {
 				assert.NoError(t, s.Serve(lis))
@@ -161,7 +162,7 @@ func TestGRPCExportUsesProfilesDictionary(t *testing.T) {
 		return handler(ctx, req)
 	}))
 	received := make(chan ExportRequest, 1)
-	RegisterGRPCServer(s, &capturingProfilesServer{received: received})
+	RegisterGRPCServer(s, &fakeProfilesServer{received: received})
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
 		assert.NoError(t, s.Serve(lis))
@@ -220,6 +221,72 @@ func TestGRPCExportUsesProfilesDictionary(t *testing.T) {
 	assert.Equal(t, "scope-value", value.Str())
 }
 
+func TestGRPCExportRejectsInvalidDictionaryReferences(t *testing.T) {
+	lis := bufconn.Listen(1024 * 1024)
+	received := make(chan ExportRequest, 1)
+	s := grpc.NewServer()
+	RegisterGRPCServer(s, &fakeProfilesServer{received: received})
+	wg := sync.WaitGroup{}
+	wg.Go(func() {
+		assert.NoError(t, s.Serve(lis))
+	})
+	t.Cleanup(func() {
+		s.Stop()
+		wg.Wait()
+	})
+	cc, err := grpc.NewClient("passthrough:///bufnet",
+		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+			return lis.Dial()
+		}),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+	t.Cleanup(func() { assert.NoError(t, cc.Close()) })
+
+	// Use the raw client so invalid wire attributes reach the server unchanged.
+	client := otelgrpc.NewProfilesServiceClient(cc)
+	for _, tc := range []struct {
+		name      string
+		attribute internal.KeyValue
+		wantError string
+	}{
+		{
+			name:      "conflicting key representations",
+			attribute: internal.KeyValue{Key: "inline", KeyStrindex: 1},
+			wantError: "attribute 0 has both key and key_strindex set",
+		},
+		{
+			name:      "invalid key reference",
+			attribute: internal.KeyValue{KeyStrindex: 2},
+			wantError: "attribute 0 has invalid key_strindex 2",
+		},
+		{
+			name: "invalid value reference",
+			attribute: internal.KeyValue{Key: "inline", Value: internal.AnyValue{
+				Value: &internal.AnyValue_StringValueStrindex{StringValueStrindex: 2},
+			}},
+			wantError: "attribute 0 value: invalid string_value_strindex 2",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			response, err := client.Export(t.Context(), &internal.ExportProfilesServiceRequest{
+				Dictionary: internal.ProfilesDictionary{StringTable: []string{"", "key"}},
+				ResourceProfiles: []*internal.ResourceProfiles{{Resource: internal.Resource{
+					Attributes: []internal.KeyValue{tc.attribute},
+				}}},
+			})
+			require.Error(t, err)
+			assert.Equal(t, codes.InvalidArgument, status.Code(err))
+			assert.Equal(t, "resource profiles 0 resource attributes: "+tc.wantError, status.Convert(err).Message())
+			assert.Nil(t, response)
+			select {
+			case <-received:
+				t.Fatal("invalid profiles were forwarded to the consumer")
+			default:
+			}
+		})
+	}
+}
+
 func assertReferencedAttribute(t *testing.T, attribute internal.KeyValue, keyIndex, valueIndex int32) {
 	t.Helper()
 	assert.Empty(t, attribute.Key)
@@ -231,30 +298,24 @@ func assertReferencedAttribute(t *testing.T, attribute internal.KeyValue, keyInd
 
 type fakeProfilesServer struct {
 	UnimplementedGRPCServer
-	t   *testing.T
-	err error
-}
-
-type capturingProfilesServer struct {
-	UnimplementedGRPCServer
+	t        *testing.T
 	received chan<- ExportRequest
 	err      error
 }
 
-func (s capturingProfilesServer) Export(_ context.Context, request ExportRequest) (ExportResponse, error) {
-	if s.received != nil {
-		s.received <- request
-	}
-	return NewExportResponse(), s.err
-}
-
 func (f fakeProfilesServer) Export(_ context.Context, request ExportRequest) (ExportResponse, error) {
-	assert.Equal(f.t, generateProfilesRequest(), request)
+	if f.t != nil {
+		assert.Equal(f.t, generateProfilesRequest(), request)
+	}
+	if f.received != nil {
+		f.received <- request
+	}
 	return NewExportResponse(), f.err
 }
 
 func generateProfilesRequest() ExportRequest {
 	td := pprofile.NewProfiles()
+	td.Dictionary().StringTable().Append("")
 	td.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
 	return NewExportRequestFromProfiles(td)
 }

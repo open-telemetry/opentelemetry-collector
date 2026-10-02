@@ -17,13 +17,13 @@ func mapKeyValues(m pcommon.Map) []internal.KeyValue {
 // resolveProfilesReferences walks through all profiles data after unmarshaling
 // and resolves any string_value_ref and key_ref to their actual string values.
 // This ensures the pdata API works transparently with referenced strings.
-func resolveProfilesReferences(profiles Profiles) {
-	otlp.ResolveProfilesReferences(profiles.getOrig())
+func resolveProfilesReferences(profiles Profiles) error {
+	return otlp.ResolveProfilesReferences(profiles.getOrig())
 }
 
 // resolveAnyValueReference resolves string_value_ref in an AnyValue
-func resolveAnyValueReference(dict ProfilesDictionary, anyValue *internal.AnyValue) {
-	otlp.ResolveProfilesAnyValueReference(dict.StringTable().AsRaw(), anyValue)
+func resolveAnyValueReference(dict ProfilesDictionary, anyValue *internal.AnyValue) error {
+	return otlp.ResolveProfilesAnyValueReference(dict.StringTable().AsRaw(), anyValue)
 }
 
 // convertProfilesToReferences walks through all profiles data before marshaling
