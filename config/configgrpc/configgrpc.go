@@ -158,6 +158,15 @@ func (cc *ClientConfig) ToClientConn(
 	if err != nil {
 		return nil, err
 	}
+	if cc.Dialer.HasValue() {
+		fn, rerr := cc.Dialer.Get().GetDialer(ctx, extensions)
+		if rerr != nil {
+			return nil, rerr
+		}
+		grpcOpts = append(grpcOpts, grpc.WithContextDialer(func(ctx context.Context, address string) (net.Conn, error) {
+			return fn(ctx, "tcp", address)
+		}))
+	}
 	conn, err := grpc.NewClient(cc.grpcDialTarget(), grpcOpts...)
 	if err != nil {
 		return nil, err
