@@ -250,21 +250,20 @@ directory for any underscore-delimited type string).
 
 ### Step 4: Verify candidates against the module proxy
 
-Candidates are verified using `go list -m -e -mod=mod -json <mod>@latest ...`.
+Candidates are verified using `go list -m -e -mod=mod -versions -json <mod> ...`.
 The `-e` flag causes per-module failures to be reported in an `Error` field
 rather than terminating the process.
-The `@latest` query is used rather than the pinned version constant because the
-`prepare-release-prs` commit bumps `DefaultBetaOtelColVersion` before the
-corresponding tag is pushed, making a pinned-version query fail during the
-release window.
+Without a version query, `go list` reports the module's `Versions` (every
+tagged version known to the proxy) instead of selecting one, so the same call
+both verifies that the module exists and gives Step 5 what it needs to pick the
+right version.
+No `@latest` query is used: `@latest` is not tied to the release `ocb` is
+pinned to, and would silently mix versions across a manifest.
 Output is a stream of concatenated JSON objects (no enclosing array), decoded
 with `json.Decoder.Decode` in a loop.
 
-A resolved module must satisfy all of:
-- `Error == ""`
-- `semver.IsValid(Version)`, which rejects pseudo-versions (a pre-release contrib module with no tag
-  would otherwise be emitted as a commit SHA, surprising users)
-- `!module.IsPseudoVersion(Version)`
+A candidate is verified when `Error == ""` and Step 5 can select a version from
+its `Versions`.
 
 **Batching.** Each `go list` execution covers all still-unresolved components
 at one priority level (one (pattern, prefix) pair).
@@ -279,7 +278,7 @@ at level 1).
 Longer queries are chunked to stay within the Windows command-line limit.
 
 **Detecting unavailable module lookups.** The first batch includes one sentinel
-module (`go.opentelemetry.io/collector/receiver/otlpreceiver@latest`).
+module (`go.opentelemetry.io/collector/receiver/otlpreceiver`).
 If the sentinel fails, module lookups are unavailable (rather than the
 components being absent), and `ocb` exits with an actionable error without
 writing any files:
@@ -303,19 +302,54 @@ The zero-collision property makes "first verified candidate wins" safe: no
 higher-priority candidate in the 291-component test set is itself a real
 component module other than the correct one.
 
-Versions emitted:
+Versions emitted: the Collector publishes two version series per release, a
+beta series (`v0.x`) and a stable series (`v1.x`), and each module belongs to
+exactly one of them.
+Both versions are read from a single source, the `go.mod` of the
+`go.opentelemetry.io/collector/otelcol` module at `DefaultBetaOtelColVersion`
+(e.g. `v0.161.0`), which `ocb` fetches through the same module proxy
+(`go mod download -json go.opentelemetry.io/collector/otelcol@<version>`,
+parsed with `golang.org/x/mod/modfile`, already a dependency of `cmd/builder`):
 
-- Core hits: the existing `DefaultBetaOtelColVersion` constant (e.g. `v0.161.0`).
-- Contrib hits: the version of
-  `github.com/open-telemetry/opentelemetry-collector-contrib` resolved at
-  `DefaultBetaOtelColVersion`; this root module is real and tagged in lockstep.
-  During the brief skew window when the contrib tag lags the core tag, the
-  fallback is the `@latest`-resolved version returned by Step 4; that resolved
-  version (not `DefaultBetaOtelColVersion`) is what is written to the manifest
-  for those contrib entries.
+- **Beta version:** the version required for
+  `go.opentelemetry.io/collector/component/componentstatus` (e.g. `v0.161.0`).
+- **Stable version:** the version required for
+  `go.opentelemetry.io/collector/component` (e.g. `v1.67.0`).
 
-This ensures all contrib entries in the manifest are at the same version as
-each other and, in the common case, at the version matching the core entries.
+Nothing else is hardcoded, so this stays correct as either series advances.
+`DefaultBetaOtelColVersion` only selects which release to read.
+
+For each verified module, the beta version is used if present in `Versions`,
+otherwise the stable version if present.
+If neither is present, the component is treated as unresolved and reported with
+a warning saying which release version was not published (this is what happens
+if `DefaultBetaOtelColVersion` was bumped but its tags are not pushed yet, during
+the `prepare-release-prs` window).
+No component is ever written at a version from a different release.
+
+This ensures all entries in the manifest come from the same release as
+`ocb`, and that a module that graduates from beta to stable is emitted at its
+stable version without any change to `ocb`.
+
+**Why the release `ocb` is pinned to, and not the newest one.**
+`ocb` could instead ask the proxy for the newest `otelcol` release (for example
+with `go list -m -versions`, which respects `GOPROXY` and related settings,
+unlike a direct HTTP call to the proxy) and read the `go.mod` of that release.
+This proposal does not do that:
+
+- The manifest would be newer than the `ocb` that wrote it, so `otelcol_version`
+  would have to be set to the resolved release, or `ocb build` would see a
+  mismatch.
+- The output would depend on when the command is run: the same configuration
+  could produce different manifests a week apart.
+- A tag that was just pushed, with its dependent modules not yet published,
+  could be selected and fail at `go mod tidy`.
+
+Pinning to the release `ocb` belongs to keeps the manifest consistent with the
+tool that produced it, and matches what `ocb init` already writes as
+`otelcol_version`.
+If maintainers prefer newest-release semantics, only the release selector
+changes; the rest of this step is unaffected.
 
 ### cmd/builder module constraints
 
@@ -404,14 +438,14 @@ The reject filter (rules 1–4 above) catches all 7 without rejecting any of the
 ### Live verification sample
 
 ```
-$ go list -m -e -mod=mod -json \
-    go.opentelemetry.io/collector/receiver/otlpreceiver@latest \
-    github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver@latest \
-    github.com/open-telemetry/opentelemetry-collector-contrib/receiver/totallybogusreceiver@latest
+$ go list -m -e -mod=mod -versions -json \
+    go.opentelemetry.io/collector/receiver/otlpreceiver \
+    github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver \
+    github.com/open-telemetry/opentelemetry-collector-contrib/receiver/totallybogusreceiver
 
-{"Path":"go.opentelemetry.io/collector/receiver/otlpreceiver","Version":"v0.161.0"}
-{"Path":"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver","Version":"v0.161.0"}
-{"Path":"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/totallybogusreceiver","Error":{"Err":"...receiver/totallybogusreceiver@latest: no matching versions for query \"latest\""}}
+{"Path":"go.opentelemetry.io/collector/receiver/otlpreceiver","Versions":["v0.100.0", "...", "v0.161.0"]}
+{"Path":"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver","Versions":["v0.100.0", "...", "v0.161.0"]}
+{"Path":"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/totallybogusreceiver","Error":{"Err":"module ...totallybogusreceiver: reading .../@v/list: 404 Not Found"}}
 ```
 
 The exit code is 0 in all cases; failures are per-object.
@@ -490,13 +524,11 @@ This is not in scope at the moment, but may be handled later.
   consequential commitment in this proposal. If it is not, the feature's scope
   may need to be limited to core components only.
 
-- **Contrib version pinning strategy.** The proposal pins contrib modules to the
-  version of the `github.com/open-telemetry/opentelemetry-collector-contrib`
-  root module resolved at `DefaultBetaOtelColVersion`, falling back to the
-  `@latest`-resolved version during the brief release skew window (see Step 5).
-  Does the community agree with this approach, or prefer always using `@latest`
-  for contrib (simpler to implement, but not guaranteed to match core module
-  versions in the same manifest)?
+- **Version selection.** The proposal emits every module at the release `ocb`
+  is pinned to, reading both the beta and stable versions from the `go.mod` of
+  `otelcol` at that release (see Step 5).
+  Does the community agree with this approach, or prefer another source for the
+  versions?
 
 - **Unresolved component handling.** Should an unresolved component be a hard
   error (guaranteeing the manifest builds the whole config) or a warn-and-skip
