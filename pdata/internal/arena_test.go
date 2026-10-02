@@ -4,6 +4,7 @@
 package internal
 
 import (
+	"runtime/debug"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -64,6 +65,11 @@ func TestDropArenaPoolsSlabs(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prev))
 	})
+
+	// A 2MB buffer can trigger GC between Put and Get, and sync.Pool drops
+	// items on GC. Keep the collector off so the same buffer comes back.
+	prevGC := debug.SetGCPercent(-1)
+	t.Cleanup(func() { debug.SetGCPercent(prevGC) })
 
 	type poolSlot struct{ n int }
 	st := NewState()
