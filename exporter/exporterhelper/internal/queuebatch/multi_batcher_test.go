@@ -21,7 +21,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
@@ -36,6 +35,7 @@ func TestMultiBatcher_NoTimeout(t *testing.T) {
 		FlushTimeout: 0,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      10,
+		Partition:    NewDefaultPartitionConfig(),
 	}
 	sink := requesttest.NewSink()
 
@@ -93,6 +93,7 @@ func TestMultiBatcher_Timeout(t *testing.T) {
 		FlushTimeout: 100 * time.Millisecond,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      100,
+		Partition:    NewDefaultPartitionConfig(),
 	}
 	sink := requesttest.NewSink()
 
@@ -142,7 +143,7 @@ func TestMultiBatcher_PartitionRemovedAfterIdleTimeout(t *testing.T) {
 		FlushTimeout: 10 * time.Millisecond,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      100, // High min size to prevent immediate flush
-		Partition:    PartitionConfig{IdleTimeout: configoptional.Some(100 * time.Millisecond)},
+		Partition:    PartitionConfig{CacheSize: 10, IdleTimeout: 100 * time.Millisecond},
 	}
 	sink := requesttest.NewSink()
 
@@ -187,7 +188,7 @@ func TestMultiBatcher_CacheSizeEviction(t *testing.T) {
 		FlushTimeout: 0,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      100,
-		Partition:    PartitionConfig{CacheSize: configoptional.Some(2)},
+		Partition:    PartitionConfig{CacheSize: 2, IdleTimeout: time.Minute},
 	}
 	sink := requesttest.NewSink()
 
@@ -232,7 +233,7 @@ func TestMultiBatcher_PartitionCacheMetrics(t *testing.T) {
 		FlushTimeout: 0,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      100,
-		Partition:    PartitionConfig{CacheSize: configoptional.Some(5)},
+		Partition:    PartitionConfig{CacheSize: 5, IdleTimeout: time.Minute},
 	}
 	sink := requesttest.NewSink()
 
@@ -277,17 +278,17 @@ func TestMultiBatcher_PartitionCacheMetrics(t *testing.T) {
 func TestMultiBatcher_NewError(t *testing.T) {
 	tests := []struct {
 		name      string
-		cacheSize configoptional.Optional[int]
+		cacheSize int
 		telemetry func() component.TelemetrySettings
 	}{
 		{
 			name:      "non_positive_cache_size",
-			cacheSize: configoptional.Some(0),
+			cacheSize: 0,
 			telemetry: componenttest.NewNopTelemetrySettings,
 		},
 		{
 			name:      "instrument_creation_failure",
-			cacheSize: configoptional.Some(5),
+			cacheSize: 5,
 			telemetry: func() component.TelemetrySettings {
 				set := componenttest.NewNopTelemetrySettings()
 				set.MeterProvider = errMeterProvider{meter: errInstrumentMeter{}}
@@ -296,7 +297,7 @@ func TestMultiBatcher_NewError(t *testing.T) {
 		},
 		{
 			name:      "callback_registration_failure",
-			cacheSize: configoptional.Some(5),
+			cacheSize: 5,
 			telemetry: func() component.TelemetrySettings {
 				set := componenttest.NewNopTelemetrySettings()
 				set.MeterProvider = errMeterProvider{meter: errRegisterCallbackMeter{}}
@@ -311,7 +312,7 @@ func TestMultiBatcher_NewError(t *testing.T) {
 					FlushTimeout: 0,
 					Sizer:        request.SizerTypeItems,
 					MinSize:      10,
-					Partition:    PartitionConfig{CacheSize: tt.cacheSize},
+					Partition:    PartitionConfig{CacheSize: tt.cacheSize, IdleTimeout: time.Minute},
 				},
 				request.NewItemsSizer(),
 				newWorkerPool(1),

@@ -55,10 +55,7 @@ func newMultiBatcher(
 		logger:      set.logger,
 	}
 
-	cacheSize := defaultPartitionCacheSize
-	if size := bCfg.Partition.CacheSize.Get(); size != nil {
-		cacheSize = *size
-	}
+	cacheSize := bCfg.Partition.CacheSize
 
 	// Create LRU cache with eviction callback
 	cache, err := lru.NewLRU[string, *partitionBatcher](cacheSize, func(_ string, pb *partitionBatcher) {

@@ -9,6 +9,24 @@ status:
     beta: [extension]
   distributions: []
 
+telemetry:
+  metrics:
+    memorylimiter_refused_requests:
+      enabled: true
+      description: "Number of requests refused by the memory limiter extension."
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+        aggregated: cumulative
+      attributes: [transport]
+      stability: alpha
+
+attributes:
+  transport:
+    description: "The transport protocol used for the request (e.g., grpc, http)."
+    type: string
+
 tests:
   config:
     check_interval: 5s

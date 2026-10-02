@@ -122,6 +122,18 @@ default:
 	}
 }
 
+func TestConfigMetadata_UnmarshalYAMLPointerAndOptional(t *testing.T) {
+	var md ConfigMetadata
+	require.NoError(t, yaml.Unmarshal([]byte(`
+type: object
+pointer: true
+optional: true
+`), &md))
+
+	require.True(t, md.IsPointer)
+	require.True(t, md.IsOptional)
+}
+
 func TestConfigMetadata_ToJSONDefaultValue(t *testing.T) {
 	absent := &ConfigMetadata{Type: "string"}
 
@@ -272,6 +284,8 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 			input: map[string]any{
 				"anonymous":      true,
 				"ignore_default": true,
+				"optional_mode":  "default",
+				"private_fields": true,
 				"custom_validator": map[string]any{
 					"name": "validateConfig",
 				},
@@ -279,6 +293,8 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 			want: GoStructConfig{
 				Anonymous:       true,
 				IgnoreDefault:   true,
+				OptionalMode:    OptionalModeDefault,
+				PrivateFields:   true,
 				CustomValidator: &CustomValidatorConfig{Name: "validateConfig"},
 			},
 		},
@@ -356,6 +372,96 @@ func TestConfigMetadata_Validate_EnumOnComplexType(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestConfigMetadata_ValidateOptionalMode(t *testing.T) {
+	tests := []struct {
+		name    string
+		md      *ConfigMetadata
+		wantErr string
+	}{
+		{
+			name: "empty mode",
+			md:   &ConfigMetadata{Type: ObjectType, Properties: map[string]*ConfigMetadata{"field": {Type: StringType}}},
+		},
+		{
+			name: "some mode",
+			md: &ConfigMetadata{
+				Type:       ObjectType,
+				IsOptional: true,
+				Properties: map[string]*ConfigMetadata{"field": {Type: StringType}},
+				GoStruct:   GoStructConfig{OptionalMode: OptionalModeSome},
+			},
+		},
+		{
+			name: "default mode on object",
+			md: &ConfigMetadata{
+				Type:       ObjectType,
+				IsOptional: true,
+				Properties: map[string]*ConfigMetadata{"field": {Type: StringType}},
+				GoStruct:   GoStructConfig{OptionalMode: OptionalModeDefault},
+			},
+		},
+		{
+			name: "default mode on unresolved reference",
+			md: &ConfigMetadata{
+				Ref:        "example.config",
+				IsOptional: true,
+				GoStruct:   GoStructConfig{OptionalMode: OptionalModeDefault},
+			},
+		},
+		{
+			name: "unknown mode",
+			md: &ConfigMetadata{
+				Type:       ObjectType,
+				IsOptional: true,
+				Properties: map[string]*ConfigMetadata{"field": {Type: StringType}},
+				GoStruct:   GoStructConfig{OptionalMode: "invalid"},
+			},
+			wantErr: "go_struct.optional_mode must be",
+		},
+		{
+			name: "mode without optional",
+			md: &ConfigMetadata{
+				Type:       ObjectType,
+				Properties: map[string]*ConfigMetadata{"field": {Type: StringType}},
+				GoStruct:   GoStructConfig{OptionalMode: OptionalModeDefault},
+			},
+			wantErr: "requires optional: true",
+		},
+		{
+			name: "default mode with pointer",
+			md: &ConfigMetadata{
+				Type:       ObjectType,
+				IsOptional: true,
+				IsPointer:  true,
+				Properties: map[string]*ConfigMetadata{"field": {Type: StringType}},
+				GoStruct:   GoStructConfig{OptionalMode: OptionalModeDefault},
+			},
+			wantErr: "cannot be used with pointer: true",
+		},
+		{
+			name: "default mode with scalar",
+			md: &ConfigMetadata{
+				Type:       StringType,
+				IsOptional: true,
+				GoStruct:   GoStructConfig{OptionalMode: OptionalModeDefault},
+			},
+			wantErr: "requires an object type",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.md.Validate()
+			if tt.wantErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.wantErr)
 		})
 	}
 }
@@ -629,6 +735,8 @@ func TestConfigMetadata_MergeFrom(t *testing.T) {
 				Anonymous:     true,
 				IgnoreDefault: true,
 				FieldName:     "Field",
+				OptionalMode:  OptionalModeDefault,
+				PrivateFields: true,
 			},
 		}
 
@@ -643,5 +751,20 @@ func TestConfigMetadata_MergeFrom(t *testing.T) {
 		assert.True(t, md.GoStruct.Anonymous)
 		assert.True(t, md.GoStruct.IgnoreDefault)
 		assert.Equal(t, "Field", md.GoStruct.FieldName)
+		assert.Equal(t, OptionalModeDefault, md.GoStruct.OptionalMode)
+		assert.True(t, md.GoStruct.PrivateFields)
+	})
+
+	t.Run("explicit optional mode is preserved", func(t *testing.T) {
+		md := &ConfigMetadata{
+			GoStruct: GoStructConfig{OptionalMode: OptionalModeSome},
+		}
+		other := &ConfigMetadata{
+			GoStruct: GoStructConfig{OptionalMode: OptionalModeDefault},
+		}
+
+		md.MergeFrom(other)
+
+		assert.Equal(t, OptionalModeSome, md.GoStruct.OptionalMode)
 	})
 }
