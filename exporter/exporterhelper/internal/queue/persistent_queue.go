@@ -15,6 +15,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configstorage"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
@@ -35,10 +36,8 @@ const (
 )
 
 var (
-	errValueNotSet        = errors.New("value not set")
-	errInvalidValue       = errors.New("invalid value")
-	errNoStorageClient    = errors.New("no storage client extension found")
-	errWrongExtensionType = errors.New("requested extension is not a storage extension")
+	errValueNotSet  = errors.New("value not set")
+	errInvalidValue = errors.New("invalid value")
 )
 
 var indexDonePool = sync.Pool{
@@ -78,7 +77,7 @@ type persistentQueue[T request.Request] struct {
 	activeSizer request.Sizer
 	itemsSizer  request.Sizer
 	bytesSizer  request.Sizer
-	storageID   component.ID
+	storageID   configstorage.ID
 	id          component.ID
 	signal      pipeline.Signal
 
@@ -103,7 +102,7 @@ func newPersistentQueue[T request.Request](set Settings[T]) readableQueue[T] {
 		activeSizer:     request.NewSizer(set.SizerType),
 		itemsSizer:      request.NewItemsSizer(),
 		bytesSizer:      request.NewBytesSizer(),
-		storageID:       *set.StorageID,
+		storageID:       *set.StorageID.Get(),
 		id:              set.ID,
 		signal:          set.Signal,
 		blockOnOverflow: set.BlockOnOverflow,
@@ -546,18 +545,8 @@ func (pq *persistentQueue[T]) itemDispatchingFinish(ctx context.Context, index u
 	return nil
 }
 
-func toStorageClient(ctx context.Context, storageID component.ID, host component.Host, ownerID component.ID, signal pipeline.Signal) (storage.Client, error) {
-	ext, found := host.GetExtensions()[storageID]
-	if !found {
-		return nil, errNoStorageClient
-	}
-
-	storageExt, ok := ext.(storage.Extension)
-	if !ok {
-		return nil, errWrongExtensionType
-	}
-
-	return storageExt.GetClient(ctx, component.KindExporter, ownerID, signal.String())
+func toStorageClient(ctx context.Context, storageID configstorage.ID, host component.Host, ownerID component.ID, signal pipeline.Signal) (storage.Client, error) {
+	return storageID.GetStorageClient(ctx, component.KindExporter, host, ownerID, signal.String())
 }
 
 func getItemKey(index uint64) string {

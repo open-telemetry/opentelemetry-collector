@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configstorage"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
@@ -150,7 +151,8 @@ func TestQueueBatchDifferentSizers(t *testing.T) {
 func TestQueueBatchPersistenceEnabled(t *testing.T) {
 	cfg := newTestConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
-	cfg.StorageID = &storageID
+	storeID := configstorage.ID(storageID)
+	cfg.StorageID = configoptional.Some(storeID)
 	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sendertest.NewNopSenderFunc[request.Request]())
 	require.NoError(t, err)
 
@@ -167,7 +169,8 @@ func TestQueueBatchPersistenceEnabledStorageError(t *testing.T) {
 	storageError := errors.New("could not get storage client")
 	cfg := newTestConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
-	cfg.StorageID = &storageID
+	storeID := configstorage.ID(storageID)
+	cfg.StorageID = configoptional.Some(storeID)
 	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sendertest.NewNopSenderFunc[request.Request]())
 	require.NoError(t, err)
 
@@ -183,7 +186,8 @@ func TestQueueBatchPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 	cfg := newTestConfig()
 	cfg.NumConsumers = 1
 	storageID := component.MustNewIDWithName("file_storage", "storage")
-	cfg.StorageID = &storageID
+	storeID := configstorage.ID(storageID)
+	cfg.StorageID = configoptional.Some(storeID)
 
 	mockReq := &requesttest.FakeRequest{Items: 2}
 	qSet := newFakeRequestSettings()
