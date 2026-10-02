@@ -193,6 +193,9 @@ func (md *Metadata) validateResourceAttributes() error {
 		if attr.EnabledPtr == nil {
 			errs = errors.Join(errs, fmt.Errorf("enabled field is required for resource attribute: %v", name))
 		}
+		if attr.SetterType != "" && attr.SetterType != "direct" && attr.SetterType != "callback" {
+			errs = errors.Join(errs, fmt.Errorf("invalid setter_type for resource attribute %v: %q", name, attr.SetterType))
+		}
 	}
 	return errs
 }
@@ -663,6 +666,10 @@ type Attribute struct {
 	SemanticConvention *SemanticConvention `mapstructure:"semantic_convention"`
 	// Stability is the stability level of the resource attribute.
 	Stability component.StabilityLevel `mapstructure:"stability"`
+	// SetterType controls how resource attribute setters are generated.
+	// When set to "callback", mdatagen emits Set*FromCallback methods that invoke
+	// the provided function only when the attribute is enabled.
+	SetterType string `mapstructure:"setter_type"`
 }
 
 // IsConditional returns true if the attribute is conditionally required.
@@ -710,6 +717,11 @@ func (a Attribute) Enabled() bool {
 		panic("Enabled() must not be called on regular attributes, only on resource attributes")
 	}
 	return *a.EnabledPtr
+}
+
+// UseCallbackSetter reports whether mdatagen should generate callback-based setters.
+func (a Attribute) UseCallbackSetter() bool {
+	return a.SetterType == "callback"
 }
 
 // Name returns actual name of the attribute that is set on the metric after applying NameOverride.
