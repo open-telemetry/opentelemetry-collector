@@ -19,6 +19,9 @@ type AddrConfig struct {
 	// The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.
 	Endpoint string `mapstructure:"endpoint,omitempty"`
 
+	// NpipeConfig contains options specific to the "npipe" transport (Windows named pipes). Settings in this section are ignored for all other transport types.
+	NpipeConfig NpipeConfig `mapstructure:"npipe,omitempty"`
+
 	// Transport defines the type of transport protocol used. Allowed protocols are "tcp", "tcp4" (IPv4-only),
 	// "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only), "udp6" (IPv6-only), "ip", "ip4" (IPv4-only),
 	// "ip6" (IPv6-only), "unix", "unixgram", "unixpacket" and "npipe" (Windows named pipes, Windows-only).
@@ -32,6 +35,7 @@ type AddrConfig struct {
 func NewDefaultAddrConfig() AddrConfig {
 	return AddrConfig{
 		DialerConfig: NewDefaultDialerConfig(),
+		NpipeConfig:  NewDefaultNpipeConfig(),
 	}
 }
 
@@ -47,6 +51,25 @@ type DialerConfig struct {
 // NewDefaultDialerConfig returns a new DialerConfig with default values consistent with the annotations in the schema.
 func NewDefaultDialerConfig() DialerConfig {
 	return DialerConfig{}
+}
+
+// NpipeConfig contains options specific to Windows named pipe transport. Settings in this section are ignored for all other transport types.
+type NpipeConfig struct {
+	// SecurityDescriptor is a Security Descriptor Definition Language (SDDL) string applied to the named pipe when a listener is created.
+	// When empty, Windows applies its default named pipe DACL, which is roughly equivalent to
+	// "D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;0x12019b;;;WD)(A;;0x12019b;;;AN)" — full control for LocalSystem (SY)
+	// and Administrators (BA), and read plus limited write for Everyone (WD) and Anonymous Logon (AN).
+	// See https://learn.microsoft.com/en-us/windows/win32/ipc/named-pipe-security-and-access-rights
+	// and https://learn.microsoft.com/en-us/windows/win32/secauthz/security-descriptor-definition-language.
+	SecurityDescriptor string `mapstructure:"security_descriptor,omitempty"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// NewDefaultNpipeConfig returns a new NpipeConfig with default values consistent with the annotations in the schema.
+func NewDefaultNpipeConfig() NpipeConfig {
+	return NpipeConfig{}
 }
 
 // TCPAddrConfig represents a TCP endpoint address.
