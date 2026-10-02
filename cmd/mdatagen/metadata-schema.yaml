@@ -92,8 +92,6 @@ sem_conv_url: https://github.com/open-telemetry/semantic-conventions/releases/ta
 config:
   # Optional: Description of the configuration schema.
   description: string
-  # Optional: Additional comments for developers (not included in JSON output).
-  $comment: string
   # Required: The type of the configuration object. Typically "object" for component configs.
   # Primitive types: string, bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, byte, rune, float32, float64, any
   # Container types: object (requires properties:), slice (requires values:), map (requires values:)

@@ -266,6 +266,10 @@ config:
       type: opaque_string
 ```
 
+#### Additional resources
+
+To learn more about using config generator please refer to [GUIDE.md](./docs/GUIDE.md) docs.
+
 ### Metrics Builder Configuration
 
 For receivers, scrapers, and other components that emit metrics, `mdatagen` can generate metrics builder
