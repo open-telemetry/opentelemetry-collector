@@ -200,7 +200,7 @@ func TestConfigMetadata_Validate_Valid(t *testing.T) {
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
 					"endpoint": {Type: "string"},
-					"timeout":  {Type: "string", GoType: "time.Duration"},
+					"timeout":  {Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 					"port":     {Type: "integer"},
 				},
 			},
@@ -607,7 +607,6 @@ func TestConfigMetadata_Clone(t *testing.T) {
 		IsOptional:    true,
 		Embed:         true,
 		InternalOnly:  true,
-		GoType:        "time.Duration",
 		Pattern:       "^a$",
 		Format:        "duration",
 		Properties: map[string]*ConfigMetadata{
@@ -619,6 +618,7 @@ func TestConfigMetadata_Clone(t *testing.T) {
 			IgnoreDefault:   true,
 			FieldName:       "Endpoint",
 			CustomValidator: &CustomValidatorConfig{Name: "validate"},
+			Type:            "time.Duration",
 		},
 	}
 
