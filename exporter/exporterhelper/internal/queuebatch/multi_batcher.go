@@ -57,11 +57,9 @@ func newMultiBatcher(
 
 	cacheSize := bCfg.Partition.CacheSize
 
-	// Create LRU cache with eviction callback
-	cache, err := lru.NewLRU[string, *partitionBatcher](cacheSize, func(_ string, pb *partitionBatcher) {
-		// Flush the partition when evicted
-		mb.wp.execute(pb.shutdownInternal)
-	})
+	// Create LRU cache. Evictions are handled in getPartition so the shutdown of
+	// the evicted partition can be scheduled after mb.lock is released.
+	cache, err := lru.NewLRU[string, *partitionBatcher](cacheSize, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -99,21 +97,49 @@ func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *
 	key := mb.partitioner.GetKey(ctx, req)
 
 	mb.lock.Lock()
-	defer mb.lock.Unlock()
 
 	// Fast path: partition already exists
 	if pb, ok := mb.partitions.Get(key); ok {
+		mb.lock.Unlock()
 		return pb
 	}
 
-	// Create new partition with onEmpty callback to remove from LRU after idle timeout
-	newPB := newPartitionBatcher(mb.cfg, mb.sizer, mb.mergeCtx, mb.wp, mb.consumeFunc, mb.logger, func() {
+	// Create the new partition. onEmpty is assigned right after construction so
+	// the closure can reference the partition itself.
+	newPB := newPartitionBatcher(mb.cfg, mb.sizer, mb.mergeCtx, mb.wp, mb.consumeFunc, mb.logger, nil)
+	// onEmpty removes the partition from the LRU after the idle timeout. The
+	// partition must then be shut down so its timer goroutine exits and a
+	// pending batch is not stranded; schedule that after mb.lock is released.
+	// The final flush runs on the worker executing the shutdown, so a busy
+	// pool cannot wedge.
+	newPB.onEmpty = func() {
 		mb.lock.Lock()
-		defer mb.lock.Unlock()
-		mb.partitions.Remove(key)
-	})
+		removed := mb.partitions.Remove(key)
+		mb.lock.Unlock()
+		if removed {
+			mb.wp.execute(func() { newPB.shutdownInternal(true) })
+		}
+	}
+
+	// Adding a new key to a full cache evicts the oldest partition. Remove it
+	// explicitly so its shutdown can be scheduled after mb.lock is released:
+	// workerPool.execute blocks until a worker is free, and waiting on that
+	// while holding mb.lock would stall every other partition.
+	var evicted *partitionBatcher
+	if mb.partitions.Len() >= mb.cfg.Partition.CacheSize {
+		_, evicted, _ = mb.partitions.RemoveOldest()
+	}
 	_ = mb.partitions.Add(key, newPB)
+	// Start the partition before releasing the lock so its timer is initialized
+	// before any other caller can pick it up from the cache.
 	_ = newPB.Start(ctx, nil)
+	mb.lock.Unlock()
+
+	if evicted != nil {
+		// Flush the evicted partition. The final flush runs on the worker that
+		// executes the shutdown, so this never needs two workers at once.
+		mb.wp.execute(func() { evicted.shutdownInternal(true) })
+	}
 	return newPB
 }
 
