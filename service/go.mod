@@ -8,6 +8,7 @@ require (
 	github.com/prometheus/common v0.72.0
 	github.com/shirou/gopsutil/v4 v4.26.8
 	github.com/stretchr/testify v1.12.1
+	go.opentelemetry.io/collector v0.162.0
 	go.opentelemetry.io/collector/component v1.68.0
 	go.opentelemetry.io/collector/component/componentstatus v0.162.0
 	go.opentelemetry.io/collector/component/componenttest v0.162.0
@@ -175,6 +176,8 @@ replace go.opentelemetry.io/collector/connector => ../connector
 replace go.opentelemetry.io/collector/connector/connectortest => ../connector/connectortest
 
 replace go.opentelemetry.io/collector/component => ../component
+
+replace go.opentelemetry.io/collector => ..
 
 replace go.opentelemetry.io/collector/component/componenttest => ../component/componenttest
 
