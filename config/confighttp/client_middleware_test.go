@@ -262,7 +262,7 @@ func TestClientCustomDialer(t *testing.T) {
 		extensionmiddleware.GetDialerFunc
 	}{
 		Extension: extensionmiddlewaretest.NewNop(),
-		GetDialerFunc: func(context.Context) (func(ctx context.Context, network, address string) (net.Conn, error), error) {
+		GetDialerFunc: func(context.Context) (extensionmiddleware.DialContextFunc, error) {
 			return func(ctx context.Context, network, address string) (net.Conn, error) {
 				dialed = true
 				return (&net.Dialer{}).DialContext(ctx, network, address)
@@ -315,7 +315,7 @@ func TestClientCustomDialerErrors(t *testing.T) {
 					extensionmiddleware.GetDialerFunc
 				}{
 					Extension: extensionmiddlewaretest.NewNop(),
-					GetDialerFunc: func(context.Context) (func(ctx context.Context, network, address string) (net.Conn, error), error) {
+					GetDialerFunc: func(context.Context) (extensionmiddleware.DialContextFunc, error) {
 						return nil, errors.New("dialer error")
 					},
 				},
