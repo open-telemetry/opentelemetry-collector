@@ -249,6 +249,36 @@ This works because components generally know which specific extension
 interface they want. When there is more than one viable extension
 interface, callers can choose the one they prefer depending on the use.
 
+### Adding Fields to Public Structs
+
+Adding a field to an exported struct is usually compatible, but it can
+break callers that use unkeyed composite literals. For example,
+`Config{"endpoint", 10}` must provide a value for every field, so adding
+a field makes that fail to compile. Callers should use keyed
+composite literals, such as `Config{Endpoint: "endpoint"}`, for public
+structs. APIs intended to evolve should favor constructors or option
+structs and document how values are constructed. If callers rely on
+unkeyed literals, adding a field is a breaking change.
+
+For that reason, Config structs are typically using an anonymous unexported
+field to enforce keyed struct initialization.
+This is enforced by the [checkapi tool](https://github.com/open-telemetry/opentelemetry-go-build-tools/blob/main/checkapi/README.md?plain=1#L31)
+ as [part of the CI](https://github.com/open-telemetry/opentelemetry-collector/blob/main/.checkapi.yaml).
+
+When adding a field to a public struct:
+
+- Its zero value MUST be meaningful and preserve the behavior of code
+  that does not set the new field.
+- If the struct is comparable, the new field MUST also be comparable so
+  the struct remains usable with `==` and as a map key.
+- Existing fields and their behavior MUST remain unchanged. Initialize
+  the new field in constructors and default configuration functions when
+  needed to preserve existing behavior.
+
+See [Maintaining struct
+compatibility](https://go.dev/blog/module-compatibility#maintaining-struct-compatibility)
+for more details.
+
 ### Test Helpers with NewNop and NewErr
 
 Every public and extension interface package SHOULD provide test
@@ -302,6 +332,7 @@ interfaces for capability detection:
 ## References
 
 - [Go Blog: Working with Interfaces](https://go.dev/blog/module-compatibility#working-with-interfaces)
+- [Go Blog: Maintaining Struct Compatibility](https://go.dev/blog/module-compatibility#maintaining-struct-compatibility)
 - [http.HandlerFunc](https://pkg.go.dev/net/http#HandlerFunc)—prior art
 - [Functional Options Pattern](https://commandcenter.blogspot.com/2014/01/self-referential-functions-and-design.html)
 - [Function Types in Go](https://kinbiko.com/posts/2021-01-10-function-types-in-go/)

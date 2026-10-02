@@ -1825,7 +1825,7 @@ func TestGenerateConfigGoStruct_TestFileContainsValidateTestWhenValidatorsPresen
 	require.NoError(t, err)
 	require.Contains(t, string(content), "func TestCreateDefaultConfig(")
 	require.Contains(t, string(content), "func TestConfigValidate_DefaultValid(")
-	require.Contains(t, string(content), "func TestPortValidate_Minimum(")
+	require.Contains(t, string(content), "func TestPortValidate_MinimumPort(")
 }
 
 func TestGenerateConfigGoStruct_TestFileNoValidateTestWhenNoValidators(t *testing.T) {
