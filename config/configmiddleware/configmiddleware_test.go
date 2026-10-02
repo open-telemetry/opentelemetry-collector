@@ -276,7 +276,7 @@ func TestConfig_GetDialer(t *testing.T) {
 					extensionmiddleware.GetDialerFunc
 				}{
 					Extension: extensionmiddlewaretest.NewNop(),
-					GetDialerFunc: func(_ context.Context) (func(ctx context.Context, network, address string) (net.Conn, error), error) {
+					GetDialerFunc: func(_ context.Context) (extensionmiddleware.DialContextFunc, error) {
 						return func(_ context.Context, _, _ string) (net.Conn, error) {
 							return nil, nil
 						}, nil

@@ -113,7 +113,7 @@ func TestDialContext(t *testing.T) {
 			return nil, errors.New("no dialing")
 		}
 
-		optionsFunc := GetDialerFunc(func(ctx context.Context) (func(ctx context.Context, network, address string) (net.Conn, error), error) {
+		optionsFunc := GetDialerFunc(func(ctx context.Context) (DialContextFunc, error) {
 			require.Equal(t, ctx.Value(key), value)
 			return dialer, nil
 		})
@@ -126,7 +126,7 @@ func TestDialContext(t *testing.T) {
 
 	t.Run("error function", func(t *testing.T) {
 		expectedErr := errors.New("dial error")
-		errorFunc := GetDialerFunc(func(ctx context.Context) (func(ctx context.Context, network, address string) (net.Conn, error), error) {
+		errorFunc := GetDialerFunc(func(ctx context.Context) (DialContextFunc, error) {
 			require.Equal(t, ctx.Value(key), value)
 			return nil, expectedErr
 		})
