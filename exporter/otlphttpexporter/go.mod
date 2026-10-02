@@ -4,7 +4,6 @@ go 1.26.0
 
 require (
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector v0.162.0
 	go.opentelemetry.io/collector/component v1.68.0
 	go.opentelemetry.io/collector/component/componenttest v0.162.0
 	go.opentelemetry.io/collector/config/configcompression v1.68.0
@@ -21,13 +20,14 @@ require (
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.162.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.162.0
 	go.opentelemetry.io/collector/exporter/xexporter v0.162.0
+	go.opentelemetry.io/collector/internal/statusutil v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/internal/testutil v0.162.0
 	go.opentelemetry.io/collector/pdata v1.68.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.162.0
 	go.opentelemetry.io/otel v1.46.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260819154853-08b0e4226688
 	google.golang.org/grpc v1.83.2
 	google.golang.org/protobuf v1.36.12
 )
@@ -90,8 +90,6 @@ require (
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 )
-
-replace go.opentelemetry.io/collector => ../../
 
 replace go.opentelemetry.io/collector/component => ../../component
 
@@ -181,3 +179,5 @@ replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testut
 replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
 
 replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
+
+replace go.opentelemetry.io/collector/internal/statusutil => ../../internal/statusutil
