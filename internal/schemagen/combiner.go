@@ -32,7 +32,6 @@ type CollectorSchemaParts struct {
 	Exporters  []CollectorComponentSchema
 	Connectors []CollectorComponentSchema
 	Extensions []CollectorComponentSchema
-	Service    *JSONSchema
 }
 
 func CombineCollectorSchema(parts CollectorSchemaParts) (*JSONSchema, error) {
@@ -42,7 +41,7 @@ func CombineCollectorSchema(parts CollectorSchemaParts) (*JSONSchema, error) {
 		string(CollectorSectionExporters):  newCollectorComponentSection(),
 		string(CollectorSectionConnectors): newCollectorComponentSection(),
 		string(CollectorSectionExtensions): newCollectorComponentSection(),
-		string(CollectorSectionService):    cloneOrEmptySchema(parts.Service),
+		string(CollectorSectionService):    newCollectorServiceSection(parts),
 	}
 
 	sections := []struct {
@@ -122,6 +121,68 @@ func newCollectorComponentSection() *JSONSchema {
 		Type:                 "object",
 		PatternProperties:    map[string]*JSONSchema{},
 		AdditionalProperties: &JSONSchema{Not: &JSONSchema{}},
+	}
+}
+
+func newCollectorServiceSection(parts CollectorSchemaParts) *JSONSchema {
+	return &JSONSchema{
+		Type: "object",
+		Properties: map[string]*JSONSchema{
+			"telemetry": {Type: "object"},
+			"extensions": {
+				Type:  "array",
+				Items: componentReferenceSchema(parts.Extensions),
+			},
+			"pipelines": {
+				Type: "object",
+				PatternProperties: map[string]*JSONSchema{
+					"^(?:traces|metrics|logs)(?:/.+)?$": {
+						Type: "object",
+						Properties: map[string]*JSONSchema{
+							"receivers": {
+								Type:     "array",
+								MinItems: func() *int { i := 1; return &i }(),
+								Items:    componentReferenceSchema(parts.Receivers),
+							},
+							"processors": {
+								Type:  "array",
+								Items: componentReferenceSchema(parts.Processors),
+							},
+							"exporters": {
+								Type:     "array",
+								MinItems: func() *int { i := 1; return &i }(),
+								Items:    componentReferenceSchema(parts.Exporters),
+							},
+						},
+						Required:             []string{"receivers", "exporters"},
+						AdditionalProperties: &JSONSchema{Not: &JSONSchema{}},
+					},
+				},
+				AdditionalProperties: &JSONSchema{Not: &JSONSchema{}},
+			},
+		},
+		AdditionalProperties: &JSONSchema{Not: &JSONSchema{}},
+	}
+}
+
+func componentReferenceSchema(components []CollectorComponentSchema) *JSONSchema {
+	anyOf := make([]*JSONSchema, 0, len(components)*2)
+
+	for _, component := range components {
+		if component.Type != "" {
+			anyOf = append(anyOf, &JSONSchema{
+				Pattern: collectorComponentPattern(component.Type),
+			})
+		}
+		if component.DeprecatedType != "" {
+			anyOf = append(anyOf, &JSONSchema{
+				Pattern: collectorComponentPattern(component.DeprecatedType),
+			})
+		}
+	}
+
+	return &JSONSchema{
+		AnyOf: anyOf,
 	}
 }
 
