@@ -183,6 +183,16 @@ func (orig *LogsData) MarshalProto(buf []byte) int {
 }
 
 func (orig *LogsData) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *LogsData) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *LogsData) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -207,8 +217,9 @@ func (orig *LogsData) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.ResourceLogs = proto.GrowRepeated(orig.ResourceLogs, buf, pos, fieldNum)
 			orig.ResourceLogs = append(orig.ResourceLogs, NewResourceLogs())
-			err = orig.ResourceLogs[len(orig.ResourceLogs)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.ResourceLogs[len(orig.ResourceLogs)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -224,7 +235,7 @@ func (orig *LogsData) UnmarshalProto(buf []byte) error {
 
 func GenTestLogsData() *LogsData {
 	orig := NewLogsData()
-	orig.ResourceLogs = []*ResourceLogs{{}, GenTestResourceLogs()}
+	orig.ResourceLogs = []*ResourceLogs{&ResourceLogs{}, GenTestResourceLogs()}
 	return orig
 }
 

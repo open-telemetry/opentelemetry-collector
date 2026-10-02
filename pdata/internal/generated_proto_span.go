@@ -488,6 +488,16 @@ func (orig *Span) MarshalProto(buf []byte) int {
 }
 
 func (orig *Span) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *Span) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *Span) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -513,7 +523,7 @@ func (orig *Span) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.TraceId.UnmarshalProto(buf[startPos:pos])
+			err = orig.TraceId.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -529,7 +539,7 @@ func (orig *Span) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.SpanId.UnmarshalProto(buf[startPos:pos])
+			err = orig.SpanId.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -544,7 +554,7 @@ func (orig *Span) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.TraceState = string(buf[startPos:pos])
+			orig.TraceState = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 
 		case 4:
 			if wireType != proto.WireTypeLen {
@@ -557,7 +567,7 @@ func (orig *Span) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.ParentSpanId.UnmarshalProto(buf[startPos:pos])
+			err = orig.ParentSpanId.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -584,7 +594,7 @@ func (orig *Span) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Name = string(buf[startPos:pos])
+			orig.Name = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 
 		case 6:
 			if wireType != proto.WireTypeVarint {
@@ -631,8 +641,9 @@ func (orig *Span) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.Attributes = proto.GrowRepeated(orig.Attributes, buf, pos, fieldNum)
 			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Attributes[len(orig.Attributes)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -658,8 +669,9 @@ func (orig *Span) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.Events = proto.GrowRepeated(orig.Events, buf, pos, fieldNum)
 			orig.Events = append(orig.Events, NewSpanEvent())
-			err = orig.Events[len(orig.Events)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Events[len(orig.Events)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -685,8 +697,9 @@ func (orig *Span) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.Links = proto.GrowRepeated(orig.Links, buf, pos, fieldNum)
 			orig.Links = append(orig.Links, NewSpanLink())
-			err = orig.Links[len(orig.Links)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Links[len(orig.Links)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -713,7 +726,7 @@ func (orig *Span) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Status.UnmarshalProto(buf[startPos:pos])
+			err = orig.Status.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -738,11 +751,11 @@ func GenTestSpan() *Span {
 	orig.Kind = SpanKind(13)
 	orig.StartTimeUnixNano = uint64(13)
 	orig.EndTimeUnixNano = uint64(13)
-	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	orig.DroppedAttributesCount = uint32(13)
-	orig.Events = []*SpanEvent{{}, GenTestSpanEvent()}
+	orig.Events = []*SpanEvent{&SpanEvent{}, GenTestSpanEvent()}
 	orig.DroppedEventsCount = uint32(13)
-	orig.Links = []*SpanLink{{}, GenTestSpanLink()}
+	orig.Links = []*SpanLink{&SpanLink{}, GenTestSpanLink()}
 	orig.DroppedLinksCount = uint32(13)
 	orig.Status = *GenTestStatus()
 	return orig

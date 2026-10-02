@@ -404,6 +404,16 @@ func (orig *NumberDataPoint) MarshalProto(buf []byte) int {
 }
 
 func (orig *NumberDataPoint) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *NumberDataPoint) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *NumberDataPoint) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -428,8 +438,9 @@ func (orig *NumberDataPoint) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.Attributes = proto.GrowRepeated(orig.Attributes, buf, pos, fieldNum)
 			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Attributes[len(orig.Attributes)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -504,8 +515,9 @@ func (orig *NumberDataPoint) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.Exemplars = proto.GrowRepeated(orig.Exemplars, buf, pos, fieldNum)
 			orig.Exemplars = append(orig.Exemplars, Exemplar{})
-			err = orig.Exemplars[len(orig.Exemplars)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Exemplars[len(orig.Exemplars)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -532,11 +544,11 @@ func (orig *NumberDataPoint) UnmarshalProto(buf []byte) error {
 
 func GenTestNumberDataPoint() *NumberDataPoint {
 	orig := NewNumberDataPoint()
-	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	orig.StartTimeUnixNano = uint64(13)
 	orig.TimeUnixNano = uint64(13)
 	orig.Value = &NumberDataPoint_AsDouble{AsDouble: float64(3.1415926)}
-	orig.Exemplars = []Exemplar{{}, *GenTestExemplar()}
+	orig.Exemplars = []Exemplar{Exemplar{}, *GenTestExemplar()}
 	orig.Flags = uint32(13)
 	return orig
 }

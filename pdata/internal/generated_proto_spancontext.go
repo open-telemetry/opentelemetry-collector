@@ -247,6 +247,16 @@ func (orig *SpanContext) MarshalProto(buf []byte) int {
 }
 
 func (orig *SpanContext) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *SpanContext) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *SpanContext) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -272,7 +282,7 @@ func (orig *SpanContext) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.TraceID.UnmarshalProto(buf[startPos:pos])
+			err = orig.TraceID.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -288,7 +298,7 @@ func (orig *SpanContext) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.SpanID.UnmarshalProto(buf[startPos:pos])
+			err = orig.SpanID.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -315,7 +325,7 @@ func (orig *SpanContext) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.TraceState = string(buf[startPos:pos])
+			orig.TraceState = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 
 		case 5:
 			if wireType != proto.WireTypeVarint {

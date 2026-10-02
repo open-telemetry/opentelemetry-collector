@@ -423,6 +423,16 @@ func (orig *HistogramDataPoint) MarshalProto(buf []byte) int {
 }
 
 func (orig *HistogramDataPoint) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *HistogramDataPoint) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *HistogramDataPoint) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -447,8 +457,9 @@ func (orig *HistogramDataPoint) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.Attributes = proto.GrowRepeated(orig.Attributes, buf, pos, fieldNum)
 			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Attributes[len(orig.Attributes)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -527,6 +538,7 @@ func (orig *HistogramDataPoint) UnmarshalProto(buf []byte) error {
 				if err != nil {
 					return err
 				}
+				orig.BucketCounts = proto.GrowRepeated(orig.BucketCounts, buf, pos, fieldNum)
 				orig.BucketCounts = append(orig.BucketCounts, uint64(num))
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field BucketCounts", wireType)
@@ -559,6 +571,7 @@ func (orig *HistogramDataPoint) UnmarshalProto(buf []byte) error {
 				if err != nil {
 					return err
 				}
+				orig.ExplicitBounds = proto.GrowRepeated(orig.ExplicitBounds, buf, pos, fieldNum)
 				orig.ExplicitBounds = append(orig.ExplicitBounds, math.Float64frombits(num))
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field ExplicitBounds", wireType)
@@ -574,8 +587,9 @@ func (orig *HistogramDataPoint) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.Exemplars = proto.GrowRepeated(orig.Exemplars, buf, pos, fieldNum)
 			orig.Exemplars = append(orig.Exemplars, Exemplar{})
-			err = orig.Exemplars[len(orig.Exemplars)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Exemplars[len(orig.Exemplars)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -675,14 +689,14 @@ func (m *HistogramDataPoint) HasMax() bool {
 
 func GenTestHistogramDataPoint() *HistogramDataPoint {
 	orig := NewHistogramDataPoint()
-	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	orig.StartTimeUnixNano = uint64(13)
 	orig.TimeUnixNano = uint64(13)
 	orig.Count = uint64(13)
 	orig.SetSum(float64(3.1415926))
 	orig.BucketCounts = []uint64{uint64(0), uint64(13)}
 	orig.ExplicitBounds = []float64{float64(0), float64(3.1415926)}
-	orig.Exemplars = []Exemplar{{}, *GenTestExemplar()}
+	orig.Exemplars = []Exemplar{Exemplar{}, *GenTestExemplar()}
 	orig.Flags = uint32(13)
 	orig.SetMin(float64(3.1415926))
 	orig.SetMax(float64(3.1415926))

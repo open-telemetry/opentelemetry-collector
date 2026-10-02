@@ -368,6 +368,16 @@ func (orig *LogRecord) MarshalProto(buf []byte) int {
 }
 
 func (orig *LogRecord) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *LogRecord) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *LogRecord) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -427,7 +437,7 @@ func (orig *LogRecord) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.SeverityText = string(buf[startPos:pos])
+			orig.SeverityText = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 
 		case 5:
 			if wireType != proto.WireTypeLen {
@@ -440,7 +450,7 @@ func (orig *LogRecord) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Body.UnmarshalProto(buf[startPos:pos])
+			err = orig.Body.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -455,8 +465,9 @@ func (orig *LogRecord) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.Attributes = proto.GrowRepeated(orig.Attributes, buf, pos, fieldNum)
 			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Attributes[len(orig.Attributes)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -495,7 +506,7 @@ func (orig *LogRecord) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.TraceId.UnmarshalProto(buf[startPos:pos])
+			err = orig.TraceId.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -511,7 +522,7 @@ func (orig *LogRecord) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.SpanId.UnmarshalProto(buf[startPos:pos])
+			err = orig.SpanId.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -526,7 +537,7 @@ func (orig *LogRecord) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.EventName = string(buf[startPos:pos])
+			orig.EventName = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -544,7 +555,7 @@ func GenTestLogRecord() *LogRecord {
 	orig.SeverityNumber = SeverityNumber(13)
 	orig.SeverityText = "test_severitytext"
 	orig.Body = *GenTestAnyValue()
-	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	orig.DroppedAttributesCount = uint32(13)
 	orig.Flags = uint32(13)
 	orig.TraceId = *GenTestTraceID()

@@ -384,6 +384,16 @@ func (orig *Profile) MarshalProto(buf []byte) int {
 }
 
 func (orig *Profile) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *Profile) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *Profile) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -409,7 +419,7 @@ func (orig *Profile) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.SampleType.UnmarshalProto(buf[startPos:pos])
+			err = orig.SampleType.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -424,8 +434,9 @@ func (orig *Profile) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.Samples = proto.GrowRepeated(orig.Samples, buf, pos, fieldNum)
 			orig.Samples = append(orig.Samples, NewSample())
-			err = orig.Samples[len(orig.Samples)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Samples[len(orig.Samples)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -464,7 +475,7 @@ func (orig *Profile) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.PeriodType.UnmarshalProto(buf[startPos:pos])
+			err = orig.PeriodType.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -491,7 +502,7 @@ func (orig *Profile) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.ProfileId.UnmarshalProto(buf[startPos:pos])
+			err = orig.ProfileId.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -517,7 +528,7 @@ func (orig *Profile) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.OriginalPayloadFormat = string(buf[startPos:pos])
+			orig.OriginalPayloadFormat = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 
 		case 10:
 			if wireType != proto.WireTypeLen {
@@ -529,10 +540,7 @@ func (orig *Profile) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			if length != 0 {
-				orig.OriginalPayload = make([]byte, length)
-				copy(orig.OriginalPayload, buf[startPos:pos])
-			}
+			orig.OriginalPayload = proto.BytesToBytes(buf[startPos:pos], unsafeUnmarshal)
 		case 11:
 			switch wireType {
 			case proto.WireTypeLen:
@@ -543,6 +551,7 @@ func (orig *Profile) UnmarshalProto(buf []byte) error {
 				}
 				startPos := pos - length
 				var num uint64
+				orig.AttributeIndices = proto.GrowCap(orig.AttributeIndices, length)
 				for startPos < pos {
 					num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
 					if err != nil {
@@ -559,6 +568,7 @@ func (orig *Profile) UnmarshalProto(buf []byte) error {
 				if err != nil {
 					return err
 				}
+				orig.AttributeIndices = proto.GrowRepeated(orig.AttributeIndices, buf, pos, fieldNum)
 				orig.AttributeIndices = append(orig.AttributeIndices, int32(num))
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)
@@ -576,7 +586,7 @@ func (orig *Profile) UnmarshalProto(buf []byte) error {
 func GenTestProfile() *Profile {
 	orig := NewProfile()
 	orig.SampleType = *GenTestValueType()
-	orig.Samples = []*Sample{{}, GenTestSample()}
+	orig.Samples = []*Sample{&Sample{}, GenTestSample()}
 	orig.TimeUnixNano = uint64(13)
 	orig.DurationNano = uint64(13)
 	orig.PeriodType = *GenTestValueType()
