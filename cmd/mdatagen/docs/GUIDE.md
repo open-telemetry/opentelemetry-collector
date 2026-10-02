@@ -552,10 +552,9 @@ property; at the object level there is no property name to derive from, so the g
 name collapses to the unhelpful, literal `validate` — and two unnamed object-level validators in
 the same package (say, one on `config:` and one on an `exported_configs` entry) would collide.
 
-
 #### Custom go type
 
-Use `go_struct.type` in a config property when the generated Go field should  use a specific Go type. 
+Use `go_struct.type` in a config property when the generated Go field should  use a specific Go type.
 The schema `type` still describes the configuration value; `go_struct.type` overrides the Go type used
 in the generated struct.
 

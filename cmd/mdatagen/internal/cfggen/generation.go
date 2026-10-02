@@ -367,7 +367,7 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		imports["regexp"] = true
 	}
 
-	if len(md.Enum) > 0 && (md.GoType == "" || md.GoType == string(md.Type)) {
+	if len(md.Enum) > 0 && (md.GoStruct.Type == "" || md.GoStruct.Type == string(md.Type)) {
 		imports["slices"] = true
 	}
 
@@ -574,7 +574,7 @@ func createValidator(validators *[]Validator, fieldName string, md *ConfigMetada
 	if md.Pattern == "" || md.Type == DurationType || md.Type == TimeType || strings.HasPrefix(md.GoStruct.Type, "time.") {
 		rules.Pattern = nil
 	}
-	if md.GoType != "" && md.GoType != string(md.Type) {
+	if md.GoStruct.Type != "" && md.GoStruct.Type != string(md.Type) {
 		rules.Enum = nil
 	}
 	if rules.Enabled() {

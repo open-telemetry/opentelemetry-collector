@@ -3154,9 +3154,9 @@ func TestExtractValidators_EnumWithDifferentCustomTypeIsOmitted(t *testing.T) {
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"protocol": {
-				Type:   "string",
-				GoType: "int",
-				Enum:   []any{"http", "tcp"},
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "int"},
+				Enum:     []any{"http", "tcp"},
 			},
 		},
 	}
@@ -3179,9 +3179,9 @@ func TestExtractImports_EnumAddsSlices(t *testing.T) {
 
 func TestExtractImports_EnumWithMatchingCustomTypeAddsSlices(t *testing.T) {
 	md := &ConfigMetadata{
-		Type:   "string",
-		GoType: "string",
-		Enum:   []any{"a", "b"},
+		Type:     "string",
+		GoStruct: GoStructConfig{Type: "string"},
+		Enum:     []any{"a", "b"},
 	}
 	imports, err := ExtractImportsFromConfig(md, "example.com/root", "example.com/component")
 	require.NoError(t, err)
@@ -3190,9 +3190,9 @@ func TestExtractImports_EnumWithMatchingCustomTypeAddsSlices(t *testing.T) {
 
 func TestExtractImports_EnumWithDifferentCustomTypeOmitsSlices(t *testing.T) {
 	md := &ConfigMetadata{
-		Type:   "string",
-		GoType: "int",
-		Enum:   []any{"a", "b"},
+		Type:     "string",
+		GoStruct: GoStructConfig{Type: "int"},
+		Enum:     []any{"a", "b"},
 	}
 	imports, err := ExtractImportsFromConfig(md, "example.com/root", "example.com/component")
 	require.NoError(t, err)
