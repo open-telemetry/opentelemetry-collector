@@ -201,6 +201,8 @@ require (
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
+replace go.opentelemetry.io/collector => ../../
+
 replace go.opentelemetry.io/collector/client => ../../client
 
 replace go.opentelemetry.io/collector/component => ../../component
@@ -315,6 +317,8 @@ replace go.opentelemetry.io/collector/internal/sharedcomponent => ../../internal
 
 replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
 
+replace go.opentelemetry.io/collector/internal/statusutil => ../../internal/statusutil
+
 replace go.opentelemetry.io/collector/otelcol => ../../otelcol
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
@@ -362,5 +366,3 @@ replace go.opentelemetry.io/collector/service => ../../service
 replace go.opentelemetry.io/collector/service/hostcapabilities => ../../service/hostcapabilities
 
 replace go.opentelemetry.io/collector/service/telemetry/telemetrytest => ../../service/telemetry/telemetrytest
-
-replace go.opentelemetry.io/collector/internal/statusutil => ../../internal/statusutil
