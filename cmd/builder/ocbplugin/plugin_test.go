@@ -179,6 +179,8 @@ func buildDummyPlugin(t *testing.T) string {
 
 func runDummyPluginSubprocess(binPath string, args ...string) (string, string, error) {
 	var stdout, stderr bytes.Buffer
+	// This is testing code so the nosec is fine here.
+	//nolint:gosec // #nosec G204
 	cmd := exec.Command(binPath, args...)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
