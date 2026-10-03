@@ -160,7 +160,17 @@ func (md *Metadata) validateSendingQueue() error {
 		return nil
 	}
 	if md.SendingQueue == nil {
-		md.SendingQueue = &SendingQueue{}
+		if sendingQueueOptOut() {
+			// Phase 2 audit mode: materialize the standard default for every
+			// exporter that hasn't declared sending_queue yet, instead of
+			// skipping generation. See sendingQueueOptOutEnvVar.
+			md.SendingQueue = &SendingQueue{Support: SendingQueueSupportDefault}
+		} else {
+			// Opt-in (default): an undeclared sending_queue means this
+			// exporter has not yet been audited as part of the batching
+			// migration (docs/rfcs/batching-migration.md); skip generation.
+			md.SendingQueue = &SendingQueue{Support: SendingQueueSupportOmitted, implicit: true}
+		}
 	}
 	return md.SendingQueue.Validate()
 }

@@ -6,6 +6,7 @@ package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 import (
 	"errors"
 	"fmt"
+	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -30,6 +31,37 @@ type SendingQueue struct {
 	Support   SendingQueueSupport   `mapstructure:"support"`
 	Rationale string                `mapstructure:"rationale"`
 	Overrides SendingQueueOverrides `mapstructure:"overrides"`
+
+	// implicit is true when metadata.yaml declared no sending_queue block at
+	// all and the exporter has not opted in to Phase 2 of the batching
+	// migration RFC. See sendingQueueOptOutEnvVar.
+	implicit bool
+}
+
+// sendingQueueOptOutEnvVar flips the implicit (undeclared) sending_queue
+// default from "omitted" (opt-in, the default) to "default" (opt-out). Set
+// it while auditing a repository's exporters one by one, so that generated
+// code and documentation materialize for every exporter without hand-editing
+// every metadata.yaml first. This will become the permanent, hardcoded
+// behavior at the end of Phase 2 of the batching migration RFC
+// (docs/rfcs/batching-migration.md), at which point this flag will be
+// removed.
+const sendingQueueOptOutEnvVar = "MDATAGEN_SENDING_QUEUE_OPT_OUT"
+
+func sendingQueueOptOut() bool {
+	v, ok := os.LookupEnv(sendingQueueOptOutEnvVar)
+	if !ok {
+		return false
+	}
+	optOut, err := strconv.ParseBool(v)
+	return err == nil && optOut
+}
+
+// IsImplicit reports whether this SendingQueue was synthesized because
+// metadata.yaml declared no sending_queue block, as opposed to an explicit
+// `support: omitted` declaration.
+func (sq *SendingQueue) IsImplicit() bool {
+	return sq.implicit
 }
 
 type SendingQueueOverrides map[string]any
@@ -129,6 +161,10 @@ func (sq *SendingQueue) validateDeclaration() error {
 			return errors.New("sending_queue.overrides is required when support is has_overrides")
 		}
 	case SendingQueueSupportOmitted:
+		if sq.implicit {
+			// Not an explicit declaration; no rationale or overrides to check.
+			return nil
+		}
 		var errs error
 		if strings.TrimSpace(sq.Rationale) == "" {
 			errs = errors.Join(errs, errors.New("sending_queue.rationale is required when support is omitted"))

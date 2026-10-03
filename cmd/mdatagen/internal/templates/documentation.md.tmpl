@@ -145,7 +145,7 @@ When the disable-old gate is enabled, emission of this metric is suppressed. Whe
 **Parent Component:** {{ .Parent }}
 {{- end }}
 
-{{- if .SendingQueue }}
+{{- if and .SendingQueue (not .SendingQueue.IsImplicit) }}
 
 ## Sending Queue
 

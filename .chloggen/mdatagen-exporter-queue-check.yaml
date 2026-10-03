@@ -1,6 +1,6 @@
 change_type: enhancement
 component: cmd/mdatagen
-note: "Generate and enforce exporter queue/batch sender defaults declared in metadata.yaml. See the [batching migration RFC](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/batching-migration.md)."
+note: "Generate exporter queue/batch sender defaults from an opt-in `sending_queue` field in metadata.yaml. See the [batching migration RFC](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/batching-migration.md)."
 issues: [15963]
-subtext: "This will require a reconciliation in Collector-Contrib for ~23 exporters after running mdatagen"
+subtext: "Declaring `sending_queue` is opt-in; an exporter that omits it is unaffected until it explicitly opts in one at a time during Phase 2 of the migration. Set MDATAGEN_SENDING_QUEUE_OPT_OUT=true to generate the standard default for every undeclared exporter while auditing a whole repository."
 change_logs: [user]

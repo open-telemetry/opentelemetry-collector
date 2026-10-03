@@ -60,8 +60,12 @@ You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` to
 
 ### Exporter queue/batch sender defaults
 
-Exporters use the standard queue/batch sender defaults unless
-declared in `metadata.yaml` using the `sending_queue` field.
+Declaring a `sending_queue` field in `metadata.yaml` is **opt-in**: an
+exporter that omits it entirely is treated as not yet audited as part of
+the [batching migration RFC](../../docs/rfcs/batching-migration.md), and
+mdatagen generates no `sending_queue`-related code or documentation for
+it. Exporters opt in to Phase 2 of that migration one at a time by adding
+an explicit `sending_queue` block, even just `support: default`.
 
 The exporter config must declare exactly one named, top-level field with
 type `configoptional.Optional[exporterhelper.QueueBatchConfig]` and the
@@ -122,6 +126,24 @@ sending_queue:
   support: omitted
   rationale: "The protocol requires special support ..."
 ```
+
+Unlike an undeclared `sending_queue` field, an explicit `support: omitted`
+requires a `rationale` and generates documentation recording that
+decision.
+
+#### Auditing a repository's exporters (opt-out mode)
+
+Set the `MDATAGEN_SENDING_QUEUE_OPT_OUT` environment variable to a truthy
+value (e.g. `MDATAGEN_SENDING_QUEUE_OPT_OUT=true make generate`) to flip the
+undeclared-`sending_queue` default from `omitted` (opt-in, skip
+generation) to `default` (opt-out, generate the standard default for every
+exporter). This is intended for developers doing the Phase 2 audit across
+a whole repository: it materializes generated code and documentation for
+every exporter without first hand-editing every `metadata.yaml`, so
+overrides can be added only where the standard default is wrong. This
+environment variable is temporary; it is expected to be removed once the
+Phase 2 audit completes, at which point the opt-out behavior becomes the
+permanent, hardcoded default.
 
 ### Central configuration file
 

@@ -1173,7 +1173,18 @@ func TestValidateSendingQueueDefaultsForExporters(t *testing.T) {
 	md := Metadata{Status: &Status{Class: "exporter"}}
 
 	require.NoError(t, md.validateSendingQueue())
+	require.True(t, md.SendingQueue.IsOmitted())
+	require.True(t, md.SendingQueue.IsImplicit())
+}
+
+func TestValidateSendingQueueOptOutForExporters(t *testing.T) {
+	t.Setenv(sendingQueueOptOutEnvVar, "true")
+
+	md := Metadata{Status: &Status{Class: "exporter"}}
+
+	require.NoError(t, md.validateSendingQueue())
 	require.Equal(t, &SendingQueue{Support: SendingQueueSupportDefault}, md.SendingQueue)
+	require.False(t, md.SendingQueue.IsImplicit())
 }
 
 func TestValidateSendingQueueRejectsNonExporter(t *testing.T) {
