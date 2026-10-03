@@ -1801,3 +1801,178 @@ func TestCollectorLoggingOptions(t *testing.T) {
 	entries := observedLogs.All()
 	require.NotEmpty(t, entries, "Logger should have logged messages")
 }
+
+type reloadHarness struct {
+	col     *Collector
+	invalid atomic.Bool
+	armed   atomic.Bool
+	watcher atomic.Value
+}
+
+// newReloadHarness builds a collector whose config can be made invalid on demand, and whose
+// "reporting" extension calls report from Shutdown once armed. That lets a test inject fatal
+// errors while the control loop is inside reloadConfiguration.
+func newReloadHarness(t *testing.T, report func(col *Collector)) *reloadHarness {
+	h := &reloadHarness{}
+
+	confMap := func() map[string]any {
+		endpoint := "receiver"
+		if h.invalid.Load() {
+			endpoint = "invalid"
+		}
+		return map[string]any{
+			"receivers":  map[string]any{"validating": map[string]any{"endpoint": endpoint}},
+			"exporters":  map[string]any{"validating": map[string]any{"endpoint": "exporter"}},
+			"extensions": map[string]any{"reporting": map[string]any{}},
+			"service": map[string]any{
+				"extensions": []any{"reporting"},
+				"pipelines": map[string]any{
+					"traces": map[string]any{
+						"receivers": []any{"validating"},
+						"exporters": []any{"validating"},
+					},
+				},
+			},
+		}
+	}
+	provider := newFakeProvider("file", func(_ context.Context, _ string, w confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		h.watcher.Store(w)
+		return confmap.NewRetrieved(confMap())
+	})
+
+	reportingFactory := extension.NewFactory(
+		component.MustNewType("reporting"),
+		func() component.Config { return &struct{}{} },
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
+			return &reportingExtension{report: func() {
+				if h.armed.Swap(false) {
+					report(h.col)
+				}
+			}}, nil
+		},
+		component.StabilityLevelStable,
+	)
+
+	factories := validatingFactories(t)
+	factories.Extensions[reportingFactory.Type()] = reportingFactory
+	factories.Telemetry = telemetry.NewFactory(func() component.Config { return fakeTelemetryConfig{} })
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:              []string{"file:cfg"},
+				ProviderFactories: []confmap.ProviderFactory{provider},
+			},
+		},
+	})
+	require.NoError(t, err)
+	h.col = col
+	return h
+}
+
+func (h *reloadHarness) reloadFromConfig() {
+	h.watcher.Load().(confmap.WatcherFunc)(&confmap.ChangeEvent{})
+}
+
+type reportingExtension struct {
+	component.StartFunc
+	report func()
+}
+
+func (e *reportingExtension) Shutdown(context.Context) error {
+	e.report()
+	return nil
+}
+
+// TestCollectorReloadDrainsStaleFatalError verifies that a fatal error reported by retiring
+// components during a successful reload does not terminate the replacement components, and
+// that a second error reported while the first is still pending is dropped rather than blocking.
+func TestCollectorReloadDrainsStaleFatalError(t *testing.T) {
+	h := newReloadHarness(t, func(col *Collector) {
+		col.asyncErrorChannel <- errors.New("stale-1")
+		col.asyncErrorChannel <- errors.New("stale-2")
+	})
+
+	errCh := make(chan error, 1)
+	go func() { errCh <- h.col.Run(context.Background()) }()
+	assert.Eventually(t, func() bool {
+		return StateRunning == h.col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+
+	h.armed.Store(true)
+	h.reloadFromConfig()
+
+	select {
+	case err := <-errCh:
+		t.Fatalf("collector exited after successful reload: %v", err)
+	case <-time.After(300 * time.Millisecond):
+	}
+	assert.Equal(t, StateRunning, h.col.GetState())
+
+	h.col.Shutdown()
+	require.NoError(t, <-errCh)
+}
+
+// TestCollectorReloadFailureSurfacesConcurrentFatalError verifies that a fatal error reported
+// while a reload is failing is returned together with the reload error, for both reload triggers.
+func TestCollectorReloadFailureSurfacesConcurrentFatalError(t *testing.T) {
+	triggers := map[string]func(h *reloadHarness){
+		"config watch": (*reloadHarness).reloadFromConfig,
+		"sighup": func(h *reloadHarness) {
+			h.col.signalsChannel <- SIGHUP
+		},
+	}
+	for name, trigger := range triggers {
+		t.Run(name, func(t *testing.T) {
+			h := newReloadHarness(t, func(col *Collector) {
+				col.asyncErrorChannel <- errors.New("component failed")
+			})
+
+			errCh := make(chan error, 1)
+			go func() { errCh <- h.col.Run(context.Background()) }()
+			assert.Eventually(t, func() bool {
+				return StateRunning == h.col.GetState()
+			}, 2*time.Second, 200*time.Millisecond)
+
+			h.invalid.Store(true)
+			h.armed.Store(true)
+			trigger(h)
+
+			select {
+			case runErr := <-errCh:
+				require.ErrorContains(t, runErr, "invalid endpoint value")
+				require.ErrorContains(t, runErr, "component failed")
+			case <-time.After(2 * time.Second):
+				t.Fatal("collector did not exit after failed reload")
+			}
+		})
+	}
+}
+
+// TestCollectorIgnoresStaleFatalErrorAtStartup verifies that a fatal error left in the channel
+// before startup does not terminate the collector once it starts.
+func TestCollectorIgnoresStaleFatalErrorAtStartup(t *testing.T) {
+	factories, err := nopFactories()
+	require.NoError(t, err)
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+	})
+	require.NoError(t, err)
+	col.fatalErrChan <- errors.New("stale")
+
+	wg := startCollector(context.Background(), t, col)
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 200*time.Millisecond)
+	assert.Never(t, func() bool {
+		return StateClosed == col.GetState()
+	}, 300*time.Millisecond, 50*time.Millisecond)
+
+	col.Shutdown()
+	wg.Wait()
+}

@@ -469,6 +469,7 @@
       "scrapertest",
       "scriptplugin",
       "semconv",
+      "slowshutdown",
       "servicetelemetry",
       "servicetest",
       "servicez",
