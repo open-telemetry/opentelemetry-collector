@@ -445,7 +445,7 @@ func TestGrpcServerValidate(t *testing.T) {
 					Endpoint: "0.0.0.0:1234",
 				},
 			},
-			err: "invalid read_buffer_size value",
+			err: "read_buffer_size value must be greater than or equal to 0",
 		},
 		{
 			gss: &ServerConfig{
@@ -454,7 +454,7 @@ func TestGrpcServerValidate(t *testing.T) {
 					Endpoint: "0.0.0.0:1234",
 				},
 			},
-			err: "invalid write_buffer_size value",
+			err: "write_buffer_size value must be greater than or equal to 0",
 		},
 	}
 
