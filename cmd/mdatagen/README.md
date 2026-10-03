@@ -64,6 +64,21 @@ You can run `cd cmd/mdatagen && $(GOCMD) install .` to install the `mdatagen` to
 
 This is used for skipping validation and configuring project-level hooks.
 
+### Stability
+
+`mdatagen check-stability --profile <coverage profile> metadata.yaml` checks a component against the stability criteria.
+
+#### Code coverage targets
+
+The `stability` section sets a minimum coverage target per stability level:
+
+```yaml
+stability:
+  coverage:
+    beta: 60
+    stable: 80
+```
+
 ### Component Config Documentation
 
 The metadata generator supports automatic generation of configuration schemas for components.
@@ -185,6 +200,10 @@ config:
     api_token:
       type: opaque_string
 ```
+
+#### Additional resources
+
+To learn more about using config generator please refer to [GUIDE.md](./docs/GUIDE.md) docs.
 
 ### Metrics Builder Configuration
 

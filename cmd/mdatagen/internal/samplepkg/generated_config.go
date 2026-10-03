@@ -9,11 +9,29 @@ import (
 // PortNumber a port number to connect to.
 type PortNumber int
 
+// Validate validates the PortNumber fields according to schema annotations.
+func (c PortNumber) Validate() error {
+	var err error
+
+	if c < 1 {
+		err = errors.Join(err, errors.New("port_number value must be greater than or equal to 1"))
+	}
+	if c > 65535 {
+		err = errors.Join(err, errors.New("port_number value must be less than or equal to 65535"))
+	}
+
+	return err
+}
+
+type Protocol int
+
 type SampleConfig struct {
-	// The host name to connect to.
+	// HostName the host name to connect to.
 	HostName string `mapstructure:"host_name"`
-	// The port to connect to.
+
+	// Port the port to connect to.
 	Port PortNumber `mapstructure:"port"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -28,13 +46,6 @@ func (c *SampleConfig) Validate() error {
 
 	if len(c.HostName) < 1 {
 		err = errors.Join(err, errors.New("host_name must have minimum length of 1"))
-	}
-
-	if c.Port < 1 {
-		err = errors.Join(err, errors.New("port value must be greater than or equal to 1"))
-	}
-	if c.Port > 10000 {
-		err = errors.Join(err, errors.New("port value must be less than or equal to 10000"))
 	}
 
 	return err

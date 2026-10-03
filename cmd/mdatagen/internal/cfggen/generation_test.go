@@ -813,6 +813,33 @@ func TestFormatTypeName_InternalReferences(t *testing.T) {
 	}
 }
 
+func TestFormatTypeName_PrimitiveTypes(t *testing.T) {
+	tests := []struct {
+		name     string
+		ref      string
+		expected string
+	}{
+		{
+			name:     "string",
+			ref:      "string",
+			expected: "string",
+		},
+		{
+			name:     "int",
+			ref:      "int",
+			expected: "int",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := FormatTypeName(tt.ref, "", "")
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func TestFormatTypeName_ExternalReferences(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -1218,6 +1245,17 @@ func TestNewCfgFns_ExtractDefs(t *testing.T) {
 	require.Contains(t, result, "my_type")
 }
 
+func TestNewCfgFns_Entry(t *testing.T) {
+	fns := NewCfgFns("", "")
+	entry := fns["entry"].(func(string, *ConfigMetadata) map[string]any)
+	metadata := &ConfigMetadata{Type: ObjectType}
+
+	require.Equal(t, map[string]any{
+		"name": "Config",
+		"data": metadata,
+	}, entry("Config", metadata))
+}
+
 func TestNewCfgFns_MapGoType(t *testing.T) {
 	fns := NewCfgFns("", "")
 
@@ -1275,6 +1313,31 @@ func TestWithCfgFns(t *testing.T) {
 	require.Contains(t, result, "camelVar")
 	require.Contains(t, result, "isRequired")
 	require.Contains(t, result, "shouldOmitEmpty")
+}
+
+func TestExtractValidators_DurationPattern(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:    StringType,
+		GoType:  "time.Duration",
+		Pattern: `^duration$`,
+	}
+
+	require.Empty(t, ExtractValidators("config", md))
+}
+
+func TestExtractValidators_RefDoesNotStopSiblingValidation(t *testing.T) {
+	minLength := 1
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"base": {Ref: "base_config"},
+			"name": {Type: StringType, MinLength: &minLength},
+		},
+	}
+
+	validators := ExtractValidators("config", md)
+	require.Len(t, validators, 1)
+	require.Equal(t, "name", validators[0].FieldName)
 }
 
 func TestResolveGoType_CustomTypeFormatError(t *testing.T) {
@@ -1605,6 +1668,13 @@ func TestExtractImports_ErrorsImportForValidators(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "enum triggers errors import",
+			metadata: &ConfigMetadata{
+				Type: "string",
+				Enum: []any{"a", "b"},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1786,7 +1856,7 @@ func TestExtractValidators(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := ExtractValidators(test.metadata)
+			result := ExtractValidators("config", test.metadata)
 			require.Equal(t, test.expected, result)
 		})
 	}
@@ -1896,7 +1966,7 @@ func TestExtractValidators_StringValidators(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ExtractValidators(tt.metadata)
+			result := ExtractValidators("config", tt.metadata)
 			require.Equal(t, tt.expected, result)
 		})
 	}
@@ -2040,7 +2110,7 @@ func TestExtractValidators_NumericValidators(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ExtractValidators(tt.metadata)
+			result := ExtractValidators("config", tt.metadata)
 			require.Equal(t, tt.expected, result)
 		})
 	}
@@ -2051,7 +2121,7 @@ func TestExtractValidators_InternalRefFromDefs_NoValidators(t *testing.T) {
 		Ref: "plain_config",
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Empty(t, result)
 }
 
@@ -2060,7 +2130,7 @@ func TestExtractValidators_InternalRefFromDefs_RefNotFound(t *testing.T) {
 		Ref: "missing_def",
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Empty(t, result)
 }
 
@@ -2077,7 +2147,7 @@ func TestExtractValidators_AllOf_NoRef(t *testing.T) {
 		},
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Empty(t, result)
 }
 
@@ -2089,7 +2159,7 @@ func TestExtractValidators_AllOf_RefWithNoValidators(t *testing.T) {
 		},
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Empty(t, result)
 }
 
@@ -2106,7 +2176,7 @@ func TestExtractValidators_CustomValidator(t *testing.T) {
 		},
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Len(t, result, 1)
 	require.Equal(t, "http_client", result[0].FieldName)
 	require.Equal(t, "validateHTTPClient", result[0].CustomValidator)
@@ -2128,7 +2198,7 @@ func TestExtractValidators_RequiredAndCustomValidator(t *testing.T) {
 		},
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Len(t, result, 2)
 
 	// First validator is the required check
@@ -2156,12 +2226,12 @@ func TestExtractValidators_RootCustomValidatorLast(t *testing.T) {
 		},
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Len(t, result, 2)
 	require.NotNil(t, result[1].Rules.Required)
 	require.True(t, result[1].Rules.Required)
 	require.Empty(t, result[1].CustomValidator)
-	require.Equal(t, ".", result[0].FieldName)
+	require.Equal(t, "config", result[0].FieldName)
 	require.Equal(t, "validateConfig", result[0].CustomValidator)
 }
 
@@ -2176,7 +2246,7 @@ func TestExtractValidators_NoCustomValidator(t *testing.T) {
 		},
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Empty(t, result)
 }
 
@@ -2260,54 +2330,11 @@ func TestValidationRules_HasValueRule(t *testing.T) {
 	}
 }
 
-func TestResolveType(t *testing.T) {
-	tests := []struct {
-		name     string
-		metadata *ConfigMetadata
-		expected string
-	}{
-		{
-			name:     "reference",
-			metadata: &ConfigMetadata{Ref: "go.opentelemetry.io/collector/config/confighttp.ClientConfig"},
-			expected: "ref",
-		},
-		{
-			name:     "date time",
-			metadata: &ConfigMetadata{Type: "string", GoType: "time.Time"},
-			expected: "datetime",
-		},
-		{
-			name:     "duration",
-			metadata: &ConfigMetadata{Type: "string", GoType: "time.Duration"},
-			expected: "duration",
-		},
-		{
-			name: "map",
-			metadata: &ConfigMetadata{
-				Type:   "map",
-				Values: &ConfigMetadata{Type: "string"},
-			},
-			expected: "map",
-		},
-		{
-			name:     "plain type",
-			metadata: &ConfigMetadata{Type: "boolean"},
-			expected: "boolean",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.expected, resolveType(tt.metadata))
-		})
-	}
-}
-
 func TestNewCfgFns_ExtractValidators(t *testing.T) {
 	fns := NewCfgFns("", "")
-	extractValidators := fns["extractValidators"].(func(*ConfigMetadata) []Validator)
+	extractValidators := fns["extractValidators"].(func(string, *ConfigMetadata) []Validator)
 
-	require.Nil(t, extractValidators(nil))
+	require.Nil(t, extractValidators("", nil))
 
 	md := &ConfigMetadata{
 		Type:     "object",
@@ -2316,7 +2343,7 @@ func TestNewCfgFns_ExtractValidators(t *testing.T) {
 			"name": {Type: "string"},
 		},
 	}
-	result := extractValidators(md)
+	result := extractValidators("config", md)
 	require.Len(t, result, 1)
 	require.Equal(t, "name", result[0].FieldName)
 	require.NotNil(t, result[0].Rules.Required)
@@ -2467,7 +2494,31 @@ func TestFormatDefaultValue_OptionalObjectDefault(t *testing.T) {
 		},
 	}
 
+	require.Equal(t, "configoptional.Some(NewDefaultClient())", FormatDefaultValue(md, "client", defaultValue(map[string]any{"endpoint": "localhost"}), "", ""))
+}
+
+func TestFormatDefaultValue_OptionalObjectDefaultMode(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:       "object",
+		IsOptional: true,
+		Properties: map[string]*ConfigMetadata{
+			"endpoint": {Type: "string", Default: defaultValue("localhost")},
+		},
+		GoStruct: GoStructConfig{OptionalMode: OptionalModeDefault},
+	}
+
 	require.Equal(t, "configoptional.Default(NewDefaultClient())", FormatDefaultValue(md, "client", defaultValue(map[string]any{"endpoint": "localhost"}), "", ""))
+}
+
+func TestFormatDefaultValue_OptionalObjectDefaultModeWithoutSchemaDefault(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:       "object",
+		IsOptional: true,
+		Properties: map[string]*ConfigMetadata{"endpoint": {Type: "string"}},
+		GoStruct:   GoStructConfig{OptionalMode: OptionalModeDefault},
+	}
+
+	require.Equal(t, "configoptional.Default(Client{})", FormatDefaultValue(md, "client", nil, "", ""))
 }
 
 func TestFormatDefaultValue_PointerSliceOfObjects(t *testing.T) {
@@ -2633,6 +2684,16 @@ func TestWrapDefaultValue(t *testing.T) {
 					"name": {Type: "string"},
 				},
 			},
+			expected: "configoptional.Some(defaultValue)",
+		},
+		{
+			name: "optional object default mode",
+			metadata: &ConfigMetadata{
+				Type:       "object",
+				IsOptional: true,
+				Properties: map[string]*ConfigMetadata{"name": {Type: "string"}},
+				GoStruct:   GoStructConfig{OptionalMode: OptionalModeDefault},
+			},
 			expected: "configoptional.Default(defaultValue)",
 		},
 	}
@@ -2701,6 +2762,25 @@ func TestHasDefaultValue(t *testing.T) {
 		Default:  defaultValue("value"),
 		GoStruct: GoStructConfig{IgnoreDefault: true},
 	}))
+	require.False(t, hasDefaultValue(&ConfigMetadata{
+		Type:     "object",
+		GoStruct: GoStructConfig{IgnoreDefault: true},
+		Properties: map[string]*ConfigMetadata{
+			"timeout": {Type: "string", Default: defaultValue("30s")},
+		},
+	}))
+	require.False(t, hasDefaultValue(&ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"ignored": {
+				Type:     "object",
+				GoStruct: GoStructConfig{IgnoreDefault: true},
+				Properties: map[string]*ConfigMetadata{
+					"timeout": {Type: "string", Default: defaultValue("30s")},
+				},
+			},
+		},
+	}))
 	// External ref without any property defaults must not be treated as having defaults.
 	require.False(t, hasDefaultValue(&ConfigMetadata{
 		Type: "object",
@@ -2728,6 +2808,20 @@ func TestHasNonZeroDefault(t *testing.T) {
 	}))
 	require.False(t, hasNonZeroDefault(&ConfigMetadata{
 		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"base": {Type: "object", Default: defaultValue(map[string]any{})},
+		},
+	}))
+	require.False(t, hasNonZeroDefault(&ConfigMetadata{
+		Type:       "object",
+		IsOptional: true,
+		Properties: map[string]*ConfigMetadata{
+			"base": {Type: "object", Default: defaultValue(map[string]any{})},
+		},
+	}))
+	require.False(t, hasNonZeroDefault(&ConfigMetadata{
+		Type:      "object",
+		IsPointer: true,
 		Properties: map[string]*ConfigMetadata{
 			"base": {Type: "object", Default: defaultValue(map[string]any{})},
 		},
@@ -3016,9 +3110,9 @@ func TestExtractValidators_DefsValidatorNotOverwrittenByRefSite(t *testing.T) {
 	defs := ExtractDefsFromConfig(md)
 	require.Contains(t, defs, "batch_config")
 
-	validators := ExtractValidators(defs["batch_config"])
+	validators := ExtractValidators("batch_config", defs["batch_config"])
 	require.Len(t, validators, 1)
-	require.Equal(t, ".", validators[0].FieldName)
+	require.Equal(t, "batch_config", validators[0].FieldName)
 	require.Equal(t, "validateBatchConfig", validators[0].CustomValidator,
 		"struct-level validator must come from the type definition, not the ref-site property")
 }
@@ -3034,51 +3128,41 @@ func TestExtractValidators_EnumValidators(t *testing.T) {
 			metadata: &ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
-					"level": {Type: "string", Enum: []any{"debug", "info", "warn"}},
+					"name": {Type: "string", Enum: []any{"foo", "bar", "baz"}},
 				},
 			},
 			expected: []Validator{
 				{
-					FieldName: "level",
+					FieldName: "name",
 					FieldType: "string",
-					Rules:     ValidationRules{Enum: []any{"debug", "info", "warn"}},
+					Rules:     ValidationRules{Enum: []any{"foo", "bar", "baz"}},
 				},
 			},
-		},
-		{
-			name: "enum on integer field",
-			metadata: &ConfigMetadata{
-				Type: "object",
-				Properties: map[string]*ConfigMetadata{
-					"port": {Type: "integer", Enum: []any{80, 443, 8080}},
-				},
-			},
-			expected: []Validator{
-				{
-					FieldName: "port",
-					FieldType: "integer",
-					Rules:     ValidationRules{Enum: []any{80, 443, 8080}},
-				},
-			},
-		},
-		{
-			name: "no enum produces no validator",
-			metadata: &ConfigMetadata{
-				Type: "object",
-				Properties: map[string]*ConfigMetadata{
-					"name": {Type: "string"},
-				},
-			},
-			expected: []Validator{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ExtractValidators(tt.metadata)
+			result := ExtractValidators("config", tt.metadata)
 			require.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestExtractValidators_EnumWithDifferentCustomTypeIsOmitted(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"protocol": {
+				Type:   "string",
+				GoType: "int",
+				Enum:   []any{"http", "tcp"},
+			},
+		},
+	}
+
+	validators := ExtractValidators("config", md)
+	require.Empty(t, validators)
 }
 
 func TestExtractImports_EnumAddsSlices(t *testing.T) {
@@ -3093,42 +3177,58 @@ func TestExtractImports_EnumAddsSlices(t *testing.T) {
 	require.Contains(t, imports, "slices")
 }
 
+func TestExtractImports_EnumWithMatchingCustomTypeAddsSlices(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:   "string",
+		GoType: "string",
+		Enum:   []any{"a", "b"},
+	}
+	imports, err := ExtractImportsFromConfig(md, "example.com/root", "example.com/component")
+	require.NoError(t, err)
+	require.Contains(t, imports, "slices")
+}
+
+func TestExtractImports_EnumWithDifferentCustomTypeOmitsSlices(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:   "string",
+		GoType: "int",
+		Enum:   []any{"a", "b"},
+	}
+	imports, err := ExtractImportsFromConfig(md, "example.com/root", "example.com/component")
+	require.NoError(t, err)
+	require.NotContains(t, imports, "slices")
+}
+
 func TestFormatEnumSlice(t *testing.T) {
 	tests := []struct {
 		name      string
 		values    []any
-		fieldType string
+		fieldType SchemaType
 		expected  string
 	}{
 		{
 			name:      "string values",
 			values:    []any{"a", "b", "c"},
-			fieldType: "string",
+			fieldType: StringType,
 			expected:  `[]string{"a", "b", "c"}`,
 		},
 		{
 			name:      "integer values",
 			values:    []any{1, 2, 3},
-			fieldType: "integer",
+			fieldType: IntType,
 			expected:  "[]int{1, 2, 3}",
 		},
 		{
 			name:      "number values",
 			values:    []any{1.5, 2.5},
-			fieldType: "number",
+			fieldType: Float64Type,
 			expected:  "[]float64{1.5, 2.5}",
 		},
 		{
 			name:      "boolean values",
 			values:    []any{true, false},
-			fieldType: "boolean",
+			fieldType: BoolType,
 			expected:  "[]bool{true, false}",
-		},
-		{
-			name:      "unknown type falls back to any",
-			values:    []any{"x"},
-			fieldType: "unknown",
-			expected:  `[]any{"x"}`,
 		},
 	}
 
@@ -3145,8 +3245,8 @@ func TestFormatEnumValues(t *testing.T) {
 }
 
 func TestInvalidTestValue(t *testing.T) {
-	require.Equal(t, `"__invalid__"`, invalidTestValue("string"))
-	require.Equal(t, "-1", invalidTestValue("integer"))
-	require.Equal(t, "-1.0", invalidTestValue("number"))
-	require.Equal(t, `"__invalid__"`, invalidTestValue("object"))
+	require.Equal(t, `"__invalid__"`, invalidTestValue(StringType))
+	require.Equal(t, "-1", invalidTestValue(IntType))
+	require.Equal(t, "-1.0", invalidTestValue(Float64Type))
+	require.Equal(t, `"__invalid__"`, invalidTestValue(ObjectType))
 }

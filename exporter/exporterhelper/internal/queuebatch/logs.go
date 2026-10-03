@@ -38,14 +38,14 @@ var (
 )
 
 type logsRequest struct {
-	ld         plog.Logs
-	cachedSize int
+	ld    plog.Logs
+	sizes request.SizeCache
 }
 
 func newLogsRequest(ld plog.Logs) request.Request {
 	return &logsRequest{
-		ld:         ld,
-		cachedSize: -1,
+		ld:    ld,
+		sizes: request.NewSizeCache(),
 	}
 }
 
@@ -87,22 +87,15 @@ func (req *logsRequest) OnError(err error) request.Request {
 }
 
 func (req *logsRequest) ItemsCount() int {
-	return req.ld.LogRecordCount()
+	return req.sizes.SizeOf(request.SizerTypeItems, func() int { return req.ld.LogRecordCount() })
 }
 
-func (req *logsRequest) size(sizer sizer.LogsSizer) int {
-	if req.cachedSize == -1 {
-		req.cachedSize = sizer.LogsSize(req.ld)
-	}
-	return req.cachedSize
-}
-
-func (req *logsRequest) setCachedSize(size int) {
-	req.cachedSize = size
+func (req *logsRequest) size(sz sizer.LogsSizer, szt request.SizerType) int {
+	return req.sizes.SizeOf(szt, func() int { return sz.LogsSize(req.ld) })
 }
 
 func (req *logsRequest) BytesSize() int {
-	return logsMarshaler.LogsSize(req.ld)
+	return req.sizes.SizeOf(request.SizerTypeBytes, func() int { return logsMarshaler.LogsSize(req.ld) })
 }
 
 // RequestConsumeFromLogs returns a RequestConsumeFunc that consumes plog.Logs.

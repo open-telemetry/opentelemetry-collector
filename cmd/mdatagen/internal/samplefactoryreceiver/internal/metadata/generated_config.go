@@ -183,11 +183,6 @@ func NewDefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	}
 }
 
-// Deprecated: Use NewDefaultMetricsBuilderConfig.
-func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
-	return NewDefaultMetricsBuilderConfig()
-}
-
 // LogsBuilderConfig is a configuration for sample logs builder.
 type LogsBuilderConfig struct {
 	Events             EventsConfig             `mapstructure:"events"`
@@ -200,9 +195,4 @@ func NewDefaultLogsBuilderConfig() LogsBuilderConfig {
 		Events:             DefaultEventsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
-}
-
-// Deprecated: Use NewDefaultLogsBuilderConfig.
-func DefaultLogsBuilderConfig() LogsBuilderConfig {
-	return NewDefaultLogsBuilderConfig()
 }

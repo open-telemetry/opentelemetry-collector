@@ -13,7 +13,6 @@ import (
 	gootlpcollectorprofiles "go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development"
 	goproto "google.golang.org/protobuf/proto"
 
-	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
@@ -66,13 +65,24 @@ func TestRequestJSON(t *testing.T) {
 	assert.Equal(t, strings.Join(strings.Fields(string(profilesRequestJSON)), ""), string(got))
 }
 
+func TestRequestUnmarshalProtoInvalid(t *testing.T) {
+	tr := NewExportRequest()
+	err := tr.UnmarshalProto([]byte{0xFF, 0xFF, 0xFF})
+	require.Error(t, err)
+}
+
+func TestRequestUnmarshalJSONInvalid(t *testing.T) {
+	tr := NewExportRequest()
+	err := tr.UnmarshalJSON([]byte(`{"resourceProfiles":`))
+	require.Error(t, err)
+}
+
 func TestProfilesProtoWireCompatibility(t *testing.T) {
 	// This test verifies that OTLP ProtoBufs generated using goproto lib in
 	// opentelemetry-proto repository OTLP ProtoBufs generated using gogoproto lib in
 	// this repository are wire compatible.
-
-	// Generate Profiles as pdata struct.
-	pd := NewExportRequestFromProfiles(pprofile.Profiles(internal.GenTestProfilesWrapper()))
+	pd := NewExportRequestFromProfiles(generateProfiles())
+	pd.Profiles().MarkReadOnly()
 
 	// Marshal its underlying ProtoBuf to wire.
 	wire1, err := pd.MarshalProto()
@@ -98,5 +108,44 @@ func TestProfilesProtoWireCompatibility(t *testing.T) {
 	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
 	// Migration logic will run, so run it on the original message as well.
 	otlp.MigrateProfiles(pd.orig.ResourceProfiles)
-	assert.Equal(t, pd, pd2)
+	requireProfilesEqualIgnoringAppendedStrings(t, pd.Profiles(), pd2.Profiles())
+}
+
+func generateProfiles() pprofile.Profiles {
+	profiles := pprofile.NewProfiles()
+
+	// Every dictionary table must hold the zero value at index 0, so that an
+	// unset index resolves to nothing.
+	dic := profiles.Dictionary()
+	dic.StringTable().Append("")
+	dic.AttributeTable().AppendEmpty()
+	dic.MappingTable().AppendEmpty()
+	dic.LocationTable().AppendEmpty()
+	dic.FunctionTable().AppendEmpty()
+	dic.LinkTable().AppendEmpty()
+	dic.StackTable().AppendEmpty()
+
+	dic.LocationTable().AppendEmpty().SetAddress(1)
+	dic.StackTable().AppendEmpty().LocationIndices().Append(1)
+
+	rp := profiles.ResourceProfiles().AppendEmpty()
+	rp.Resource().Attributes().PutStr("service.name", "checkout")
+	sp := rp.ScopeProfiles().AppendEmpty()
+	sp.Scope().SetName("test-scope")
+	sp.Scope().Attributes().PutStr("scope.attr", "scope-value")
+	sp.Profiles().AppendEmpty().Samples().AppendEmpty().SetStackIndex(1)
+	return profiles
+}
+
+// Marshaling appends attribute strings to the dictionary and unmarshaling inlines
+// them again without pruning, so got's string table is want's plus an unused tail.
+func requireProfilesEqualIgnoringAppendedStrings(t *testing.T, want, got pprofile.Profiles) {
+	t.Helper()
+	w, g := pprofile.NewProfiles(), pprofile.NewProfiles()
+	want.CopyTo(w)
+	got.CopyTo(g)
+	wantStrings, gotStrings := w.Dictionary().StringTable(), g.Dictionary().StringTable()
+	require.GreaterOrEqual(t, gotStrings.Len(), wantStrings.Len())
+	gotStrings.FromRaw(gotStrings.AsRaw()[:wantStrings.Len()])
+	require.Equal(t, w, g)
 }

@@ -9,8 +9,10 @@ formatters:
       simplify: true
 
     gofumpt:
-      # Choose whether to use the extra rules
-      extra-rules: true
+      extra:
+        group-params: true
+        clothe-returns: true
+        balance-calls: true
 
     goimports:
       # put imports beginning with prefix after 3rd-party packages;
@@ -62,9 +64,6 @@ linters:
         linters:
           - gosec
         text: "^G104:"
-
-    # Log a warning if an exclusion rule is unused.
-    warn-unused: true
 
   # all available settings of specific linters
   settings:

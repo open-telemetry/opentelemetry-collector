@@ -197,6 +197,27 @@ func TestResolverExpandStringValues(t *testing.T) {
 			input:  "test_${env:BOOL}_test_${env:BOOL}",
 			output: "test_true_test_true",
 		},
+		{
+			name:   "EscapedBeforeValidURI",
+			input:  "$${env:ESCAPED}:${env:PORT}",
+			output: "${env:ESCAPED}:3044",
+		},
+		{
+			name:            "EscapedBeforeValidURIDefaultScheme",
+			input:           "$${ESCAPED}:${PORT}",
+			output:          "${ESCAPED}:3044",
+			defaultProvider: true,
+		},
+		{
+			name:   "MultipleEscapedBeforeValidURI",
+			input:  "$${env:FIRST}_$${env:SECOND}_${env:PORT}",
+			output: "${env:FIRST}_${env:SECOND}_3044",
+		},
+		{
+			name:   "ValidBeforeEscapedURI",
+			input:  "${env:PORT}:$${env:ESCAPED}",
+			output: "3044:${env:ESCAPED}",
+		},
 
 		// Nested.
 		{

@@ -18,6 +18,10 @@ if [[ "$GOBIN" == "" ]]; then
     exit 1
 fi
 
+# Match the CGO_ENABLED=0 setting used when building distributions elsewhere
+# (see cmd/builder/Makefile and the top-level Makefile).
+export CGO_ENABLED=0
+
 echo "Using ${GOBIN} to compile the distributions."
 
 test_build_config() {

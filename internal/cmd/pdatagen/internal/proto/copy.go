@@ -16,7 +16,11 @@ const copyOther = `{{ if .repeated -}}
 	} else {
 		ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
 	}
+	{{ if .isBytes -}}
+	ov.{{ .fieldName }} = append(ov.{{ .fieldName }}[:0], t.{{ .fieldName }}...)
+	{{ else -}}
 	ov.{{ .fieldName }} = t.{{ .fieldName }}
+	{{ end -}}
 	dest.{{ .oneOfGroup }} = ov
 {{ else if .nullable -}}
 	if src.Has{{ .fieldName }}() {

@@ -56,7 +56,7 @@ func createLogger(
 		// if set.BuildZapLogger is not provided.
 		buildZapLogger = zap.Config.Build
 	}
-	logger, err := buildZapLogger(zapCfg, set.ZapOptions...)
+	logger, err := buildZapLogger(zapCfg)
 	if err != nil {
 		return nil, nil, err
 	}
