@@ -180,17 +180,22 @@ func TestConvertProfilesToReferencesInitializesStringTable(t *testing.T) {
 	assert.Equal(t, "value", value.StringValue)
 }
 
-func TestConvertProfilesToReferencesRejectsInvalidStringTableSentinel(t *testing.T) {
+func TestConvertProfilesToReferencesPreservesExistingStringTable(t *testing.T) {
 	request := &internal.ExportProfilesServiceRequest{
-		Dictionary: internal.ProfilesDictionary{
-			StringTable: []string{"not-empty"},
-		},
+		Dictionary: internal.ProfilesDictionary{StringTable: []string{"key", "existing"}},
+		ResourceProfiles: []*internal.ResourceProfiles{{
+			Resource: internal.Resource{Attributes: []internal.KeyValue{{
+				Key: "key", Value: internal.AnyValue{Value: &internal.AnyValue_StringValue{StringValue: "existing"}},
+			}}},
+		}},
 	}
 
-	err := ConvertProfilesToReferences(request)
-
-	require.EqualError(t, err, "profiles dictionary string_table[0] must be empty")
-	assert.Equal(t, []string{"not-empty"}, request.Dictionary.StringTable)
+	require.NoError(t, ConvertProfilesToReferences(request))
+	assert.Equal(t, []string{"key", "existing", "key"}, request.Dictionary.StringTable)
+	assert.Equal(t, int32(2), request.ResourceProfiles[0].Resource.Attributes[0].KeyStrindex)
+	require.NoError(t, ResolveProfilesReferences(request))
+	assert.Equal(t, "key", request.ResourceProfiles[0].Resource.Attributes[0].Key)
+	assert.Equal(t, "existing", request.ResourceProfiles[0].Resource.Attributes[0].Value.Value.(*internal.AnyValue_StringValue).StringValue)
 }
 
 func TestProfilesDictionaryReferenceEdges(t *testing.T) {

@@ -20,12 +20,15 @@ func ConvertProfilesToReferences(request *internal.ExportProfilesServiceRequest)
 	if len(*stringTable) == 0 {
 		// string_table[0] is the required empty-string sentinel.
 		*stringTable = append(*stringTable, "")
-	} else if (*stringTable)[0] != "" {
-		return errors.New("profiles dictionary string_table[0] must be empty")
 	}
 
 	stringIndex := make(map[string]int32, len(*stringTable))
 	for i, value := range *stringTable {
+		if i == 0 && value != "" {
+			// Preserve existing dictionary indices without using the reserved
+			// zero index for a new attribute key.
+			continue
+		}
 		// Keep the first occurrence so the required empty string resolves to
 		// the canonical index 0 even if the table already contains duplicates.
 		if _, ok := stringIndex[value]; !ok {
