@@ -59,7 +59,7 @@ func TestToClientConnCustomDialer(t *testing.T) {
 		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
-		Dialer: configoptional.Some(configmiddleware.Config{ID: dialerID}),
+		DialerMiddleware: configoptional.Some(configmiddleware.Config{ID: dialerID}),
 	}, extensions)
 	require.NoError(t, err)
 	assert.NotNil(t, resp)
@@ -104,7 +104,7 @@ func TestToClientConnCustomDialerErrors(t *testing.T) {
 				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
-				Dialer: configoptional.Some(tc.dialer),
+				DialerMiddleware: configoptional.Some(tc.dialer),
 			}
 			_, err := cfg.ToClientConn(context.Background(), tc.extensions, componenttest.NewNopTelemetrySettings())
 			require.Error(t, err)

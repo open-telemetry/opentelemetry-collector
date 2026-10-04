@@ -39,7 +39,7 @@
             ""
           ]
         },
-        "dialer": {
+        "dialer_middleware": {
           "type": "object",
           "properties": {
             "id": {
@@ -47,7 +47,7 @@
               "description": "Specifies the name of the extension to use."
             }
           },
-          "description": "Dialer is a middleware handler customizing how the client will dial connections over TCP."
+          "description": "Dialer middleware is a handler customizing how the client will dial connections over TCP."
         },
         "endpoint": {
           "type": "string",
