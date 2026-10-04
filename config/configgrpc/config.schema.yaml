@@ -26,6 +26,13 @@ $defs:
         description: The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams. (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
         x-optional: true
         $ref: keepalive_client_config
+      dialer_middleware:
+        description: Dialer middleware is a handler customizing how the client will dial connections over TCP.
+        type: object
+        properties:
+          id:
+            type: string
+            description: Specifies the name of the extension to use.
       middlewares:
         description: Middlewares for the gRPC client.
         type: array
