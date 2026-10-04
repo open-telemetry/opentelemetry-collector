@@ -521,7 +521,7 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 	}
 
 	errorLog := log.New(&httpErrorLogWriter{
-		logger: settings.Logger,
+		logger: settings.Logger.WithOptions(zap.AddCallerSkip(3)),
 	}, "", 0)
 
 	keepAlivesEnabled := true
