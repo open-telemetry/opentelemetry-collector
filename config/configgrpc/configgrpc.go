@@ -158,8 +158,8 @@ func (cc *ClientConfig) ToClientConn(
 	if err != nil {
 		return nil, err
 	}
-	if cc.Dialer.HasValue() {
-		fn, rerr := cc.Dialer.Get().GetDialer(ctx, extensions)
+	if cc.DialerMiddleware.HasValue() {
+		fn, rerr := cc.DialerMiddleware.Get().GetDialer(ctx, extensions)
 		if rerr != nil {
 			return nil, rerr
 		}

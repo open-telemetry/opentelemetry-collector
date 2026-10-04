@@ -274,8 +274,8 @@ func TestClientCustomDialer(t *testing.T) {
 	}
 
 	clientConfig := ClientConfig{
-		Endpoint: server.URL,
-		Dialer:   configoptional.Some(newTestClientConfig("dialer")),
+		Endpoint:         server.URL,
+		DialerMiddleware: configoptional.Some(newTestClientConfig("dialer")),
 	}
 
 	client, err := clientConfig.ToClient(context.Background(), extensions, componenttest.NewNopTelemetrySettings())
@@ -328,8 +328,8 @@ func TestClientCustomDialerErrors(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			clientConfig := ClientConfig{
-				Endpoint: "http://localhost:1234",
-				Dialer:   configoptional.Some(tc.dialer),
+				Endpoint:         "http://localhost:1234",
+				DialerMiddleware: configoptional.Some(tc.dialer),
 			}
 			_, err := clientConfig.ToClient(context.Background(), tc.extensions, componenttest.NewNopTelemetrySettings())
 			require.Error(t, err)
