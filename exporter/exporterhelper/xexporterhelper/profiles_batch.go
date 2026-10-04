@@ -21,7 +21,7 @@ func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt expor
 	var sz sizer.ProfilesSizer
 	switch szt {
 	case exporterhelper.RequestSizerTypeItems:
-		sz = &sizer.ProfilesSamplesCountSizer{}
+		sz = &sizer.ProfilesCountSizer{}
 	case exporterhelper.RequestSizerTypeBytes:
 		sz = &sizer.ProfilesBytesSizer{}
 	default:

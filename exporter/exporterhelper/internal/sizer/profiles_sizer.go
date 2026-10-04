@@ -23,22 +23,25 @@ type ProfilesBytesSizer struct {
 
 var _ ProfilesSizer = (*ProfilesBytesSizer)(nil)
 
-// ProfilesSamplesCountSizer returns the number of samples in the profiles.
+// ProfilesCountSizer returns the number of profiles in the profiles.
 //
-// Note that the per-element methods below count profiles, not samples. The two
-// do not measure the same thing: a sample is a set of indices into the
-// ProfilesDictionary, so a profile can hold many samples that reference shared
-// dictionary entries without adding much to the serialized size. Batching on
-// either count does not reliably bound the payload of a profiles signal.
-type ProfilesSamplesCountSizer struct{}
+// Note that the per-element methods below do not report the same unit as
+// ProfilesSize. ProfilesSize returns the number of samples, while
+// ResourceProfilesSize, ScopeProfilesSize, and ProfileSize count profiles.
+// Neither unit reliably bounds the size of a profiles signal: a sample is a set
+// of indices into the ProfilesDictionary, so a profile can hold many samples
+// that reference shared dictionary entries without adding much to the
+// serialized size. There is no way to tell from the counts alone whether an
+// index is reused or unique.
+type ProfilesCountSizer struct{}
 
-var _ ProfilesSizer = (*ProfilesSamplesCountSizer)(nil)
+var _ ProfilesSizer = (*ProfilesCountSizer)(nil)
 
-func (s *ProfilesSamplesCountSizer) ProfilesSize(pd pprofile.Profiles) int {
+func (s *ProfilesCountSizer) ProfilesSize(pd pprofile.Profiles) int {
 	return pd.SampleCount()
 }
 
-func (s *ProfilesSamplesCountSizer) ResourceProfilesSize(rp pprofile.ResourceProfiles) int {
+func (s *ProfilesCountSizer) ResourceProfilesSize(rp pprofile.ResourceProfiles) int {
 	count := 0
 	for k := 0; k < rp.ScopeProfiles().Len(); k++ {
 		count += rp.ScopeProfiles().At(k).Profiles().Len()
@@ -46,14 +49,14 @@ func (s *ProfilesSamplesCountSizer) ResourceProfilesSize(rp pprofile.ResourcePro
 	return count
 }
 
-func (s *ProfilesSamplesCountSizer) ScopeProfilesSize(sp pprofile.ScopeProfiles) int {
+func (s *ProfilesCountSizer) ScopeProfilesSize(sp pprofile.ScopeProfiles) int {
 	return sp.Profiles().Len()
 }
 
-func (s *ProfilesSamplesCountSizer) ProfileSize(_ pprofile.Profile) int {
+func (s *ProfilesCountSizer) ProfileSize(_ pprofile.Profile) int {
 	return 1
 }
 
-func (s *ProfilesSamplesCountSizer) DeltaSize(newItemSize int) int {
+func (s *ProfilesCountSizer) DeltaSize(newItemSize int) int {
 	return newItemSize
 }
