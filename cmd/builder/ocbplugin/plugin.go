@@ -32,19 +32,41 @@ type inputData struct {
 
 // RunPlugin runs an OCBPlugin implementation. This should be called from main.
 func RunPlugin(impl OCBPlugin) {
+	// Currently plugins take no flags, but we want to do a flag parse and usage
+	// to remain forward compatible in case we want flags in the future.
+	flag.Usage = func() {
+		_, _ = fmt.Fprintf(os.Stderr, "usage: %s <input-file>\n", filepath.Base(os.Args[0]))
+
+		// If any flags ever get added, they will be part of the help message.
+		flag.PrintDefaults()
+	}
 	flag.Parse()
-	inputPath := flag.Arg(0)
-	if err := runPlugin(impl, inputPath); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "%s\n", err)
+
+	// If the plugin was run with no non-flag arguments, print usage and exit with code 2.
+	// The intended calling path for a plugin is OCB itself, so if OCB calls the plugin
+	// in a mistaken way then it needs to recognize that separately from a normal failure.
+	if flag.NArg() < 1 {
+		flag.Usage()
+		os.Exit(2)
+	}
+
+	// The first argument should be a path to a plugin config file.
+	if err := runPlugin(impl, flag.Arg(0)); err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	os.Exit(0)
 }
 
 func runPlugin(impl OCBPlugin, inputPath string) error {
-	inputBytes, err := os.ReadFile(filepath.Clean(inputPath))
+	// We clean the filepath since it came from user input.
+	// See gosec G304: https://securego.io/docs/rules/g304.html
+	cleanInputPath := filepath.Clean(inputPath)
+	inputBytes, err := os.ReadFile(cleanInputPath)
 	if err != nil {
 		return fmt.Errorf("error reading plugin input: %w", err)
+	}
+	if len(inputBytes) == 0 {
+		return fmt.Errorf("the plugin input file at %s was empty", cleanInputPath)
 	}
 	var input inputData
 	err = yaml.Unmarshal(inputBytes, &input)

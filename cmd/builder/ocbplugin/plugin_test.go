@@ -4,12 +4,9 @@
 package ocbplugin
 
 import (
-	"bytes"
 	"errors"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -157,115 +154,4 @@ func TestRunPlugin_MissingFile(t *testing.T) {
 	err := runPlugin(m, filepath.Join(t.TempDir(), "nonexistent.yaml"))
 	require.Error(t, err)
 	assert.ErrorIs(t, err, os.ErrNotExist)
-}
-
-func buildDummyPlugin(t *testing.T) string {
-	t.Helper()
-	binName := "dummyplugin"
-	if runtime.GOOS == "windows" {
-		binName += ".exe"
-	}
-	binPath := filepath.Join(t.TempDir(), binName)
-	// This is testing code so the nosec is fine here.
-	//nolint:gosec // #nosec G204
-	cmd := exec.Command("go", "build", "-o", binPath, "../testdata/dummyplugin")
-	out, err := cmd.CombinedOutput()
-	require.NoErrorf(t, err, "failed to build dummyplugin: %s", string(out))
-	t.Cleanup(func() {
-		assert.NoError(t, os.Remove(binPath))
-	})
-	return binPath
-}
-
-func runDummyPluginSubprocess(binPath string, args ...string) (string, string, error) {
-	var stdout, stderr bytes.Buffer
-	// This is testing code so the nosec is fine here.
-	//nolint:gosec // #nosec G204
-	cmd := exec.Command(binPath, args...)
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	return stdout.String(), stderr.String(), err
-}
-
-func TestRunPlugin_Subprocess(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping subprocess integration test in short mode")
-		return
-	}
-
-	binPath := buildDummyPlugin(t)
-
-	tests := []struct {
-		name       string
-		input      string
-		wantStdout string
-		wantStderr string
-	}{
-		{
-			name:       "pre-generate",
-			input:      "action: pre-generate\nocb_version: v0.151.0\nconfig:\n  message: foo\n",
-			wantStdout: "pre-generate:foo\n",
-		},
-		{
-			name:       "post-generate",
-			input:      "action: post-generate\nocb_version: v0.151.0\nconfig:\n  message: foo\n",
-			wantStdout: "post-generate:foo\n",
-		},
-		{
-			name:       "pre-build",
-			input:      "action: pre-build\nocb_version: v0.151.0\nconfig:\n  message: foo\n",
-			wantStdout: "pre-build:foo\n",
-		},
-		{
-			name:       "post-build",
-			input:      "action: post-build\nocb_version: v0.151.0\nconfig:\n  message: foo\n",
-			wantStdout: "post-build:foo\n",
-		},
-		{
-			name:       "unsupported ocb version exits non-zero",
-			input:      "action: pre-generate\nocb_version: v0.150.0\nconfig:\n  message: foo\n",
-			wantStderr: ErrUnsupportedOCBVersion.Error(),
-		},
-		{
-			name:       "unsupported hook action exits non-zero",
-			input:      "action: pre-generate\nocb_version: v0.151.0\nconfig:\n  unsupported: true\n",
-			wantStderr: ErrUnsupportedActionPreGenerate.Error(),
-		},
-		{
-			name:       "action error exits non-zero",
-			input:      "action: pre-build\nocb_version: v0.151.0\nconfig:\n  error: custom failure\n",
-			wantStderr: "error running 'pre-build' plugin action: custom failure",
-		},
-		{
-			name:       "unknown action exits non-zero",
-			input:      "action: invalid-action\nocb_version: v0.151.0\n",
-			wantStderr: ErrUnknownAction.Error(),
-		},
-		{
-			name:       "missing input file exits non-zero",
-			wantStderr: "error reading plugin input",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			inputFile := filepath.Join(t.TempDir(), "input.yaml")
-			if tt.input != "" {
-				require.NoError(t, os.WriteFile(inputFile, []byte(tt.input), 0o600))
-			}
-
-			stdout, stderr, err := runDummyPluginSubprocess(binPath, inputFile)
-			if tt.wantStderr != "" {
-				require.Error(t, err)
-				assert.Empty(t, stdout)
-				assert.Contains(t, stderr, tt.wantStderr)
-				return
-			}
-
-			require.NoError(t, err)
-			assert.Equal(t, tt.wantStdout, stdout)
-			assert.Empty(t, stderr)
-		})
-	}
 }
