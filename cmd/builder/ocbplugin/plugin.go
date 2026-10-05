@@ -65,7 +65,7 @@ func runPlugin(impl OCBPlugin, inputPath string) error {
 	case "post-build":
 		err = impl.PostBuild(input.Config)
 	default:
-		err = fmt.Errorf("%w: '%q'", ErrUnknownAction, input.Action)
+		err = fmt.Errorf("%w: %q", ErrUnknownAction, input.Action)
 	}
 	if err != nil {
 		return fmt.Errorf("error running '%s' plugin action: %w", input.Action, err)
@@ -107,14 +107,14 @@ var (
 	ErrUnknownAction = errors.New("unrecognized action")
 
 	// ErrUnsupportedActionPreGenerate is returned when a plugin does not support the PreGenerate lifecycle hook action.
-	ErrUnsupportedActionPreGenerate = errors.New("pre_generate action not supported")
+	ErrUnsupportedActionPreGenerate = errors.New("pre-generate action not supported")
 
 	// ErrUnsupportedActionPostGenerate is returned when a plugin does not support the PostGenerate lifecycle hook action.
-	ErrUnsupportedActionPostGenerate = errors.New("post_generate action not supported")
+	ErrUnsupportedActionPostGenerate = errors.New("post-generate action not supported")
 
 	// ErrUnsupportedActionPreBuild is returned when a plugin does not support the PreBuild lifecycle hook action.
-	ErrUnsupportedActionPreBuild = errors.New("pre_build action not supported")
+	ErrUnsupportedActionPreBuild = errors.New("pre-build action not supported")
 
 	// ErrUnsupportedActionPostBuild is returned when a plugin does not support the PostBuild lifecycle hook action.
-	ErrUnsupportedActionPostBuild = errors.New("post_build action not supported")
+	ErrUnsupportedActionPostBuild = errors.New("post-build action not supported")
 )
