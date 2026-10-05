@@ -32,6 +32,9 @@ type SampleConfig struct {
 	// Port the port to connect to.
 	Port PortNumber `mapstructure:"port"`
 
+	// Proto the protocol to connect with.
+	Proto Protocol `mapstructure:"proto"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -56,5 +59,6 @@ func NewDefaultSampleConfig() SampleConfig {
 	return SampleConfig{
 		HostName: "localhost",
 		Port:     8080,
+		Proto:    NewDefaultProtocol(),
 	}
 }

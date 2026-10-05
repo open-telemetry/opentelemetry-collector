@@ -151,6 +151,16 @@ config:
         # Optional: Custom validator configuration for the generated Go field.
         custom_validator:
           name: string
+        # Optional: Custom default-value provider for the generated Go field. Use when the
+        # "default" value cannot be rendered as a Go literal (e.g. a GoType-overridden enum).
+        # If "name" is omitted: on an object schema, or a definition referenced via $ref, the
+        # generator calls "NewDefault<TypeName>" (so every property referencing the same shared
+        # definition calls the same function); on an inline scalar property with no $ref, it
+        # calls "getDefault<PropName>". Either way, an external $ref gets the target package
+        # prepended automatically (e.g. "samplepkg.NewDefaultProtocol()") - including when "name"
+        # is set explicitly, so write the name unqualified.
+        custom_default:
+          name: string
         # Optional: Constructor used for an optional field with an object type.
         # Omitted and "some" use configoptional.Some; "default" uses configoptional.Default.
         optional_mode: <some|default>

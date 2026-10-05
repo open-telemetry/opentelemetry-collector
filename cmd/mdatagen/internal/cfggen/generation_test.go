@@ -2452,6 +2452,113 @@ func TestFormatDefaultValue_ScalarDefaults(t *testing.T) {
 	}
 }
 
+func TestFormatDefaultValue_CustomDefault(t *testing.T) {
+	tests := []struct {
+		name     string
+		schema   *ConfigMetadata
+		expected string
+	}{
+		{
+			name:     "bare custom_default on an inline scalar property derives getDefault<PropName>",
+			schema:   &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "int", CustomDefault: &CustomDefaultConfig{}}},
+			expected: "getDefaultProtocol()",
+		},
+		{
+			name:     "bare custom_default on an object schema derives NewDefault<TypeName>",
+			schema:   &ConfigMetadata{Type: "object", GoStruct: GoStructConfig{CustomDefault: &CustomDefaultConfig{}}},
+			expected: "NewDefaultProtocol()",
+		},
+		{
+			name:     "custom_default with explicit name ignores the derivation rules",
+			schema:   &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "int", CustomDefault: &CustomDefaultConfig{Name: "newProtocol"}}},
+			expected: "newProtocol()",
+		},
+		{
+			name: "custom_default takes precedence over a pointer wrapper",
+			schema: &ConfigMetadata{
+				Type:      "string",
+				IsPointer: true,
+				GoStruct:  GoStructConfig{CustomDefault: &CustomDefaultConfig{Name: "defaultProtocol"}},
+			},
+			expected: "&defaultProtocol()",
+		},
+		{
+			name: "custom_default takes precedence over an optional wrapper",
+			schema: &ConfigMetadata{
+				Type:       "string",
+				IsOptional: true,
+				GoStruct:   GoStructConfig{CustomDefault: &CustomDefaultConfig{Name: "defaultProtocol"}},
+			},
+			expected: "configoptional.Some(defaultProtocol())",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, FormatDefaultValue(tt.schema, "protocol", nil, "", ""))
+		})
+	}
+}
+
+func TestFormatDefaultValue_CustomDefaultResolvesRefTypeName(t *testing.T) {
+	// Simulates two properties that each $ref the same shared definition, which carries
+	// go_struct.custom_default (merged in by schema resolution). The derived function name must
+	// come from the referenced type, not the local field name, so both call sites resolve to the
+	// same hand-written function instead of needing one per field name.
+	customDefault := &CustomDefaultConfig{}
+	proto := &ConfigMetadata{Type: "string", Ref: "protocol", GoStruct: GoStructConfig{Type: "int", CustomDefault: customDefault}}
+	sourceProtocol := &ConfigMetadata{Type: "string", Ref: "protocol", GoStruct: GoStructConfig{Type: "int", CustomDefault: customDefault}}
+
+	require.Equal(t, "NewDefaultProtocol()", FormatDefaultValue(proto, "proto", nil, "", ""))
+	require.Equal(t, "NewDefaultProtocol()", FormatDefaultValue(sourceProtocol, "source_protocol", nil, "", ""))
+}
+
+func TestFormatDefaultValue_CustomDefaultExternalRefIsQualified(t *testing.T) {
+	// An unnamed custom_default on a property that $refs an external package's definition must
+	// call the exported, package-qualified constructor, the same way the ordinary (non-custom)
+	// default path already qualifies NewDefault<TypeName>() for external refs.
+	md := &ConfigMetadata{
+		Type:     "object",
+		Ref:      "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
+		GoStruct: GoStructConfig{CustomDefault: &CustomDefaultConfig{}},
+	}
+
+	require.Equal(t,
+		"confighttp.NewDefaultClientConfig()",
+		FormatDefaultValue(md, "client", nil, "go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"),
+	)
+}
+
+func TestFormatDefaultValue_CustomDefaultExplicitNameIsQualifiedForExternalRef(t *testing.T) {
+	// An explicit go_struct.custom_default.name must still get the target package prepended for
+	// an external $ref - the explicit name is written unqualified, exactly like the derived one.
+	md := &ConfigMetadata{
+		Type:     "object",
+		Ref:      "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
+		GoStruct: GoStructConfig{CustomDefault: &CustomDefaultConfig{Name: "NewCustomClientConfig"}},
+	}
+
+	require.Equal(t,
+		"confighttp.NewCustomClientConfig()",
+		FormatDefaultValue(md, "client", nil, "go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"),
+	)
+}
+
+func TestFormatDefaultValue_CustomDefaultExplicitlyQualifiedNameIsNotDoubleQualified(t *testing.T) {
+	// If the author already wrote a fully qualified name themselves, don't prepend the resolved
+	// $ref qualifier on top of it.
+	md := &ConfigMetadata{
+		Type:     "object",
+		Ref:      "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
+		GoStruct: GoStructConfig{CustomDefault: &CustomDefaultConfig{Name: "otherpkg.NewCustomClientConfig"}},
+	}
+
+	require.Equal(t,
+		"otherpkg.NewCustomClientConfig()",
+		FormatDefaultValue(md, "client", nil, "go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"),
+	)
+}
+
 func TestRenderDurationExpr_InvalidInputs(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -2786,6 +2893,15 @@ func TestHasDefaultValue(t *testing.T) {
 		Type: "object",
 		Ref:  "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
 	}))
+	// go_struct.custom_default alone (no literal "default") still counts as having a default.
+	require.True(t, hasDefaultValue(&ConfigMetadata{
+		Type:     "string",
+		GoStruct: GoStructConfig{CustomDefault: &CustomDefaultConfig{}},
+	}))
+	require.False(t, hasDefaultValue(&ConfigMetadata{
+		Type:     "string",
+		GoStruct: GoStructConfig{CustomDefault: &CustomDefaultConfig{}, IgnoreDefault: true},
+	}))
 }
 
 func TestHasNonZeroDefault(t *testing.T) {
@@ -2825,6 +2941,16 @@ func TestHasNonZeroDefault(t *testing.T) {
 		Properties: map[string]*ConfigMetadata{
 			"base": {Type: "object", Default: defaultValue(map[string]any{})},
 		},
+	}))
+	// go_struct.custom_default is always treated as a non-zero default, since the actual
+	// runtime value cannot be inspected statically.
+	require.True(t, hasNonZeroDefault(&ConfigMetadata{
+		Type:     "string",
+		GoStruct: GoStructConfig{CustomDefault: &CustomDefaultConfig{}},
+	}))
+	require.False(t, hasNonZeroDefault(&ConfigMetadata{
+		Type:     "string",
+		GoStruct: GoStructConfig{CustomDefault: &CustomDefaultConfig{}, IgnoreDefault: true},
 	}))
 }
 

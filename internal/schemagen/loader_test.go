@@ -62,6 +62,50 @@ func TestLoader_LoadFromFile_ExportedConfigsOnly(t *testing.T) {
 	require.Contains(t, result.ExportedConfigs["sample_config"].Properties, "endpoint")
 }
 
+func TestLoader_LoadFromFile_BareGoStructKeysResolve(t *testing.T) {
+	tempDir := t.TempDir()
+	schemaFile := filepath.Join(tempDir, schemaFileName)
+	schemaContent := `exported_configs:
+  protocol:
+    type: string
+    x-customType: int
+    default: http
+    go_struct:
+      custom_default:
+  sample_config:
+    type: object
+    properties:
+      endpoint:
+        type: string
+        go_struct:
+          custom_validator:
+`
+	require.NoError(t, os.WriteFile(schemaFile, []byte(schemaContent), 0o600))
+
+	loader := NewLoader(tempDir).(*schemaLoader)
+
+	result, err := loader.loadFromFile(schemaFile)
+	require.NoError(t, err)
+	require.NotNil(t, result.ExportedConfigs["protocol"].GoStruct.CustomDefault)
+	require.NotNil(t, result.ExportedConfigs["sample_config"].Properties["endpoint"].GoStruct.CustomValidator)
+}
+
+func TestLoader_LoadFromFile_UnknownKeysAreTolerated(t *testing.T) {
+	tempDir := t.TempDir()
+	schemaFile := filepath.Join(tempDir, schemaFileName)
+	schemaContent := `config:
+  title: "A test schema"
+  type: object
+`
+	require.NoError(t, os.WriteFile(schemaFile, []byte(schemaContent), 0o600))
+
+	loader := NewLoader(tempDir).(*schemaLoader)
+
+	result, err := loader.loadFromFile(schemaFile)
+	require.NoError(t, err)
+	require.Equal(t, SchemaType("object"), result.Config.Type)
+}
+
 func TestLoader_LoadFromFile_NotFound(t *testing.T) {
 	tempDir := t.TempDir()
 	loader := NewLoader(tempDir).(*schemaLoader)
