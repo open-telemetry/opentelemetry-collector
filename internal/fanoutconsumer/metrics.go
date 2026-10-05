@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/xpdata/pref"
 )
 
 // NewMetrics wraps multiple metrics consumers in a single one.
@@ -45,6 +46,13 @@ func (msc *metricsConsumer) Capabilities() consumer.Capabilities {
 
 // ConsumeMetrics exports the pmetric.Metrics to all consumers wrapped by the current one.
 func (msc *metricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	// Own the data until all consumers received it, unless it is already owned upstream.
+	// Otherwise, the first consumer that takes ownership releases the data when it returns,
+	// before the other consumers receive it.
+	if pref.MarkPipelineOwnedMetrics(md) {
+		defer pref.UnrefMetrics(md)
+	}
+
 	var errs error
 
 	if len(msc.mutable) > 0 {

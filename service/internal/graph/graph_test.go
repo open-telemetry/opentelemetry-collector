@@ -1407,6 +1407,149 @@ func testConnectorRouter(t *testing.T) {
 	assert.Len(t, profilesLeft.Profiles, 2)
 }
 
+// TestSharedDataRefCount verifies that data sent to more than one consumer is not released
+// back to the pool before every consumer has received it.
+func TestSharedDataRefCount(t *testing.T) {
+	for _, pooling := range []bool{false, true} {
+		t.Run(map[bool]string{false: "pooling_off", true: "pooling_on"}[pooling], func(t *testing.T) {
+			setProtoPoolingGateForTest(t, pooling)
+			for _, sig := range []pipeline.Signal{pipeline.SignalTraces, pipeline.SignalMetrics, pipeline.SignalLogs, xpipeline.SignalProfiles} {
+				t.Run(sig.String(), func(t *testing.T) {
+					testSharedDataRefCount(t, sig)
+				})
+			}
+		})
+	}
+}
+
+func testSharedDataRefCount(t *testing.T, sig pipeline.Signal) {
+	rcvrID := component.MustNewID("examplereceiver")
+	copyID := component.MustNewID("copy")
+	expAID := component.MustNewIDWithName("recorder", "a")
+	expBID := component.MustNewIDWithName("recorder", "b")
+
+	tests := []struct {
+		name            string
+		pipelineConfigs pipelines.Config
+	}{
+		{
+			name: "receiver_shared_by_pipelines",
+			pipelineConfigs: pipelines.Config{
+				pipeline.NewIDWithName(sig, "a"): {
+					Receivers: []component.ID{rcvrID},
+					Exporters: []component.ID{expAID},
+				},
+				pipeline.NewIDWithName(sig, "b"): {
+					Receivers: []component.ID{rcvrID},
+					Exporters: []component.ID{expBID},
+				},
+			},
+		},
+		{
+			name: "receiver_output_to_multiple_exporters",
+			pipelineConfigs: pipelines.Config{
+				pipeline.NewID(sig): {
+					Receivers: []component.ID{rcvrID},
+					Exporters: []component.ID{expAID, expBID},
+				},
+			},
+		},
+		{
+			name: "processor_output_to_multiple_exporters",
+			pipelineConfigs: pipelines.Config{
+				pipeline.NewID(sig): {
+					Receivers:  []component.ID{rcvrID},
+					Processors: []component.ID{copyID},
+					Exporters:  []component.ID{expAID, expBID},
+				},
+			},
+		},
+		{
+			name: "connector_output_to_multiple_pipelines",
+			pipelineConfigs: pipelines.Config{
+				pipeline.NewIDWithName(sig, "in"): {
+					Receivers: []component.ID{rcvrID},
+					Exporters: []component.ID{copyID},
+				},
+				pipeline.NewIDWithName(sig, "a"): {
+					Receivers: []component.ID{copyID},
+					Exporters: []component.ID{expAID},
+				},
+				pipeline.NewIDWithName(sig, "b"): {
+					Receivers: []component.ID{copyID},
+					Exporters: []component.ID{expBID},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			set := Settings{
+				Telemetry: componenttest.NewNopTelemetrySettings(),
+				BuildInfo: component.NewDefaultBuildInfo(),
+				ReceiverBuilder: builders.NewReceiver(
+					map[component.ID]component.Config{
+						rcvrID: testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+					},
+					map[component.Type]receiver.Factory{
+						testcomponents.ExampleReceiverFactory.Type(): testcomponents.ExampleReceiverFactory,
+					},
+				),
+				ProcessorBuilder: builders.NewProcessor(
+					map[component.ID]component.Config{
+						copyID: &struct{}{},
+					},
+					map[component.Type]processor.Factory{
+						copyID.Type(): newCopyProcessorFactory(),
+					},
+				),
+				ExporterBuilder: builders.NewExporter(
+					map[component.ID]component.Config{
+						expAID: &struct{}{},
+						expBID: &struct{}{},
+					},
+					map[component.Type]exporter.Factory{
+						expAID.Type(): newRecordingExporterFactory(),
+					},
+				),
+				ConnectorBuilder: builders.NewConnector(
+					map[component.ID]component.Config{
+						copyID: &struct{}{},
+					},
+					map[component.Type]connector.Factory{
+						copyID.Type(): newCopyConnectorFactory(),
+					},
+				),
+				PipelineConfigs: tt.pipelineConfigs,
+			}
+
+			pg, err := Build(context.Background(), set)
+			require.NoError(t, err)
+			require.NoError(t, pg.StartAll(context.Background(), &Host{Reporter: status.NewNopStatusReporter()}))
+
+			const items = 5
+			rcvr := pg.getReceivers()[sig][rcvrID].(*testcomponents.ExampleReceiver)
+			switch sig {
+			case pipeline.SignalTraces:
+				require.NoError(t, rcvr.ConsumeTraces(context.Background(), testdata.GenerateTraces(items)))
+			case pipeline.SignalMetrics:
+				require.NoError(t, rcvr.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(items)))
+			case pipeline.SignalLogs:
+				require.NoError(t, rcvr.ConsumeLogs(context.Background(), testdata.GenerateLogs(items)))
+			case xpipeline.SignalProfiles:
+				require.NoError(t, rcvr.ConsumeProfiles(context.Background(), testdata.GenerateProfiles(items)))
+			}
+
+			require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+
+			exps := pg.GetExporters()[sig]
+			assert.Equal(t, []int{items}, exps[expAID].(*recordingExporter).counts, "exporter %s", expAID)
+			assert.Equal(t, []int{items}, exps[expBID].(*recordingExporter).counts, "exporter %s", expBID)
+		})
+	}
+}
+
 func TestGraphBuildErrors(t *testing.T) {
 	t.Run("with_internal_telemetry", func(t *testing.T) {
 		setObsConsumerGateForTest(t, true)
