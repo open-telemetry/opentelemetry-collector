@@ -35,11 +35,11 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return ExtractDefs(md)
 		},
-		"extractValidators": func(cfg *ConfigMetadata) []Validator {
+		"extractValidators": func(name string, cfg *ConfigMetadata) []Validator {
 			if cfg == nil {
 				return nil
 			}
-			return ExtractValidators(cfg)
+			return ExtractValidators(name, cfg)
 		},
 		"mapGoType": func(cfg *ConfigMetadata, propName string) string {
 			if cfg == nil {
@@ -192,10 +192,10 @@ func PrimitiveGoType(md *ConfigMetadata, rootPackage, componentPackage string) (
 	if !ok {
 		return "", fmt.Errorf("unsupported primitive type: %q", md.Type)
 	}
-	if md.GoType != "" {
-		typeName, err := FormatTypeName(md.GoType, rootPackage, componentPackage)
+	if md.GoStruct.Type != "" {
+		typeName, err := FormatTypeName(md.GoStruct.Type, rootPackage, componentPackage)
 		if err != nil {
-			return "", fmt.Errorf("failed to format custom type %q: %w", md.GoType, err)
+			return "", fmt.Errorf("failed to format custom type %q: %w", md.GoStruct.Type, err)
 		}
 		return typeName, nil
 	}
@@ -228,18 +228,18 @@ func resolveGoType(md *ConfigMetadata, propName, rootPackage, componentPackage s
 		}
 		return typeName, nil
 	}
-	if md.GoType != "" {
-		typeName, err := FormatTypeName(md.GoType, rootPackage, componentPackage)
+	if md.GoStruct.Type != "" {
+		typeName, err := FormatTypeName(md.GoStruct.Type, rootPackage, componentPackage)
 		if err != nil {
-			return "", fmt.Errorf("failed to format custom type %q: %w", md.GoType, err)
+			return "", fmt.Errorf("failed to format custom type %q: %w", md.GoStruct.Type, err)
 		}
 		return typeName, nil
 	}
 
 	switch md.Type {
 	case StringType:
-		if strings.HasPrefix(md.GoType, "time.") {
-			return md.GoType, nil
+		if strings.HasPrefix(md.GoStruct.Type, "time.") {
+			return md.GoStruct.Type, nil
 		}
 		return "string", nil
 	case SliceType:
@@ -324,17 +324,17 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		return nil
 	}
 
-	if md.GoType != "" {
-		ref, err := ResolveGoTypeRef(md.GoType, rootPackage, componentPackage)
+	if md.GoStruct.Type != "" {
+		ref, err := ResolveGoTypeRef(md.GoStruct.Type, rootPackage, componentPackage)
 		if err != nil {
-			return fmt.Errorf("failed to resolve import for custom type %q: %w", md.GoType, err)
+			return fmt.Errorf("failed to resolve import for custom type %q: %w", md.GoStruct.Type, err)
 		}
 		if ref.ImportPath != "" {
 			imports[ref.ImportPath] = true
 		}
 	}
 
-	if md.Type == StringType && strings.HasPrefix(md.GoType, "time.") {
+	if md.Type == StringType && strings.HasPrefix(md.GoStruct.Type, "time.") {
 		imports["time"] = true
 	}
 
@@ -363,11 +363,11 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		imports["errors"] = true
 	}
 
-	if md.Pattern != "" && !strings.HasPrefix(md.GoType, "time.") {
+	if md.Pattern != "" && !strings.HasPrefix(md.GoStruct.Type, "time.") {
 		imports["regexp"] = true
 	}
 
-	if len(md.Enum) > 0 {
+	if len(md.Enum) > 0 && (md.GoStruct.Type == "" || md.GoStruct.Type == string(md.Type)) {
 		imports["slices"] = true
 	}
 
@@ -432,6 +432,9 @@ func hasValidators(md *ConfigMetadata) bool {
 
 // FormatTypeName resolves a reference string to a Go type expression using GoTypeRef.
 func FormatTypeName(ref, rootPackage, componentPackage string) (string, error) {
+	if p, ok := primitiveSchemaGoTypes[SchemaType(ref)]; ok {
+		return p, nil
+	}
 	tr, err := ResolveGoTypeRef(ref, rootPackage, componentPackage)
 	if err != nil {
 		return "", err
@@ -480,7 +483,7 @@ func collectDefs(md *ConfigMetadata, defs map[string]*ConfigMetadata) {
 }
 
 func collectDefsForSchema(propName string, md *ConfigMetadata, defs map[string]*ConfigMetadata) {
-	if md == nil || md.GoType != "" {
+	if md == nil || md.GoStruct.Type != "" {
 		return
 	}
 
@@ -510,13 +513,13 @@ func collectDefsForSchema(propName string, md *ConfigMetadata, defs map[string]*
 }
 
 // ExtractValidators recursively scans the ConfigMetadata and collects validators for required fields and nested schemas.
-func ExtractValidators(md *ConfigMetadata) []Validator {
+func ExtractValidators(name string, md *ConfigMetadata) []Validator {
 	validators := make([]Validator, 0)
 
 	if md == nil {
 		return validators
 	}
-	collectValidators(md, &validators)
+	collectValidators(name, md, &validators)
 	slices.SortFunc(validators, func(a, b Validator) int {
 		return cmp.Compare(a.FieldName, b.FieldName)
 	})
@@ -553,9 +556,10 @@ type Validator struct {
 	IsOptional      bool
 	Rules           ValidationRules
 	CustomValidator string
+	IsType          bool
 }
 
-func createValidator(validators *[]Validator, fieldName string, md *ConfigMetadata, required bool) {
+func createValidator(validators *[]Validator, fieldName string, md *ConfigMetadata, isType, required bool) {
 	rules := ValidationRules{
 		Required:         required,
 		Pattern:          &md.Pattern,
@@ -567,10 +571,10 @@ func createValidator(validators *[]Validator, fieldName string, md *ConfigMetada
 		ExclusiveMaximum: md.ExclusiveMaximum,
 		Enum:             md.Enum,
 	}
-	if md.Pattern == "" || md.Type == DurationType || md.Type == TimeType || strings.HasPrefix(md.GoType, "time.") {
+	if md.Pattern == "" || md.Type == DurationType || md.Type == TimeType || strings.HasPrefix(md.GoStruct.Type, "time.") {
 		rules.Pattern = nil
 	}
-	if fieldName == "." {
+	if md.GoStruct.Type != "" && md.GoStruct.Type != string(md.Type) {
 		rules.Enum = nil
 	}
 	if rules.Enabled() {
@@ -580,6 +584,7 @@ func createValidator(validators *[]Validator, fieldName string, md *ConfigMetada
 			IsPointer:  md.IsPointer,
 			IsOptional: md.IsOptional,
 			Rules:      rules,
+			IsType:     isType,
 		})
 	}
 	if md.GoStruct.CustomValidator != nil {
@@ -589,15 +594,16 @@ func createValidator(validators *[]Validator, fieldName string, md *ConfigMetada
 			IsPointer:       md.IsPointer,
 			IsOptional:      md.IsOptional,
 			CustomValidator: generateValidatorName(fieldName, md.GoStruct.CustomValidator),
+			IsType:          isType,
 		})
 	}
 }
 
-func collectValidators(md *ConfigMetadata, validators *[]Validator) {
+func collectValidators(name string, md *ConfigMetadata, validators *[]Validator) {
 	if md.Ref != "" {
 		return
 	}
-	createValidator(validators, ".", md, false)
+	createValidator(validators, name, md, true, false)
 	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
 		prop := md.Properties[propName]
 
@@ -634,7 +640,7 @@ func collectValidators(md *ConfigMetadata, validators *[]Validator) {
 			continue
 		}
 
-		createValidator(validators, fieldName, prop, required)
+		createValidator(validators, fieldName, prop, false, required)
 	}
 }
 
@@ -778,12 +784,14 @@ func WrapDefaultValue(md *ConfigMetadata, varName string) string {
 }
 
 func hasDefaultValue(md *ConfigMetadata) bool {
-	if !md.GoStruct.IgnoreDefault && md.Default != nil {
-		return true
-	}
-	for _, prop := range md.Properties {
-		if hasDefaultValue(prop) {
+	if !md.GoStruct.IgnoreDefault {
+		if md.Default != nil {
 			return true
+		}
+		for _, prop := range md.Properties {
+			if hasDefaultValue(prop) {
+				return true
+			}
 		}
 	}
 	return false
@@ -882,7 +890,7 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 		}
 		panic(fmt.Sprintf("Could not resolve type, due to %e", err))
 	case StringType:
-		switch md.GoType {
+		switch md.GoStruct.Type {
 		case "time.Duration":
 			if durationExpr, ok := renderDurationExpr(defaultValue); ok {
 				return durationExpr
@@ -964,7 +972,11 @@ func formatEnumSlice(values []any, fieldType SchemaType) string {
 func formatEnumValues(values []any) string {
 	formatted := make([]string, 0, len(values))
 	for _, v := range values {
-		formatted = append(formatted, fmt.Sprintf("%v", v))
+		strVal := fmt.Sprintf("%v", v)
+		if strVal == "" {
+			continue
+		}
+		formatted = append(formatted, strVal)
 	}
 	return "[" + strings.Join(formatted, ", ") + "]"
 }

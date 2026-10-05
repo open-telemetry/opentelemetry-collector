@@ -67,8 +67,6 @@ sem_conv_url: https://github.com/open-telemetry/semantic-conventions/releases/ta
 config:
   # Optional: Description of the configuration schema.
   description: string
-  # Optional: Additional comments for developers (not included in JSON output).
-  $comment: string
   # Required: The type of the configuration object. Typically "object" for component configs.
   # Primitive types: string, bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, byte, rune, float32, float64, any
   # Container types: object (requires properties:), slice (requires values:), map (requires values:)
@@ -138,8 +136,6 @@ config:
         - type: object
           properties: {}
       # Custom extension fields (not part of JSON Schema standard, used by mdatagen):
-      # Optional: Custom Go type name to use instead of generated type.
-      x-customType: string
       # Optional: Whether this field should be a pointer in Go code.
       pointer: bool
       # Optional: Whether this field is optional in Go code (will use pointer or optional type).
@@ -160,6 +156,8 @@ config:
         optional_mode: <some|default>
         ## Optional: Generated struct embeds a package-private `private<Type>Fields` type.
         private_fields: bool
+        # Optional: Custom Go type name to use instead of generated type.
+        type: string
   # Optional: List of required property names. Properties in this list must be present in the config.
   required: [string]
   # Optional: Map of reusable schema definitions that can be referenced via $ref.

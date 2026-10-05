@@ -97,10 +97,10 @@ func CfgDocType(cfg *ConfigMetadata) string {
 	}
 	switch cfg.Type {
 	case StringType:
-		if cfg.GoType == "time.Duration" || cfg.Format == "duration" {
+		if cfg.GoStruct.Type == "time.Duration" || cfg.Format == "duration" {
 			return "duration"
 		}
-		if cfg.GoType == "time.Time" || cfg.Format == "date-time" {
+		if cfg.GoStruct.Type == "time.Time" || cfg.Format == "date-time" {
 			return "datetime"
 		}
 		if len(cfg.Enum) > 0 {
