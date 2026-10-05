@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -744,6 +745,106 @@ func BenchmarkBatchMetricSplitMaxSize2k(b *testing.B) {
 		for batch.itemCount() >= splitSize {
 			_, req := batch.split(splitSize)
 			pref.UnrefMetrics(req)
+		}
+	}
+}
+
+// generateFanoutTraces builds traces with a high resource and scope fan-out.
+// testdata.GenerateTraces produces a single resource and scope, which makes
+// per-resource span counting nearly free and hides that cost entirely.
+func generateFanoutTraces(resourceCount, scopePerResource, spansPerScope int) ptrace.Traces {
+	td := ptrace.NewTraces()
+	for r := range resourceCount {
+		rs := td.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("service.name", "service-"+strconv.Itoa(r))
+		for s := range scopePerResource {
+			ss := rs.ScopeSpans().AppendEmpty()
+			ss.Scope().SetName("scope-" + strconv.Itoa(s))
+			ss.SetSchemaUrl("https://opentelemetry.io/schemas/1.21.0")
+			spans := ss.Spans()
+			spans.EnsureCapacity(spansPerScope)
+			for i := range spansPerScope {
+				span := spans.AppendEmpty()
+				span.SetName("operation")
+				span.SetTraceID(pcommon.TraceID([16]byte{byte(r), byte(s), byte(i)}))
+				span.SetSpanID(pcommon.SpanID([8]byte{byte(r), byte(s), byte(i)}))
+			}
+		}
+	}
+	return td
+}
+
+// generateFanoutLogs builds logs with a high resource and scope fan-out, for the
+// same reason as generateFanoutTraces.
+func generateFanoutLogs(resourceCount, scopePerResource, recordsPerScope int) plog.Logs {
+	ld := plog.NewLogs()
+	for r := range resourceCount {
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("service.name", "service-"+strconv.Itoa(r))
+		for s := range scopePerResource {
+			sl := rl.ScopeLogs().AppendEmpty()
+			sl.Scope().SetName("scope-" + strconv.Itoa(s))
+			sl.SetSchemaUrl("https://opentelemetry.io/schemas/1.21.0")
+			records := sl.LogRecords()
+			records.EnsureCapacity(recordsPerScope)
+			for i := range recordsPerScope {
+				record := records.AppendEmpty()
+				record.Body().SetStr("message")
+				record.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Unix(int64(r), int64(s+i))))
+			}
+		}
+	}
+	return ld
+}
+
+func BenchmarkBatchTraceSplitMaxSize2k(b *testing.B) {
+	const (
+		splitSize        = 2000
+		resourceCount    = 400
+		scopePerResource = 8
+		spansPerScope    = 10
+	)
+
+	template := generateFanoutTraces(resourceCount, scopePerResource, spansPerScope)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		b.StopTimer()
+		td := ptrace.NewTraces()
+		template.CopyTo(td)
+		batch := newBatchTraces(nil)
+		batch.add(td)
+		b.StartTimer()
+
+		for batch.itemCount() >= splitSize {
+			_, req := batch.split(splitSize)
+			pref.UnrefTraces(req)
+		}
+	}
+}
+
+func BenchmarkBatchLogSplitMaxSize2k(b *testing.B) {
+	const (
+		splitSize        = 2000
+		resourceCount    = 400
+		scopePerResource = 8
+		recordsPerScope  = 10
+	)
+
+	template := generateFanoutLogs(resourceCount, scopePerResource, recordsPerScope)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		b.StopTimer()
+		ld := plog.NewLogs()
+		template.CopyTo(ld)
+		batch := newBatchLogs(nil)
+		batch.add(ld)
+		b.StartTimer()
+
+		for batch.itemCount() >= splitSize {
+			_, req := batch.split(splitSize)
+			pref.UnrefLogs(req)
 		}
 	}
 }
