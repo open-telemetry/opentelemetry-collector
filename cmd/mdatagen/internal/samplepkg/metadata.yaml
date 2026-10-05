@@ -9,7 +9,8 @@ status:
 exported_configs:
   protocol:
     type: string
-    x-customType: int
+    go_struct:
+      type: int
     enum:
       - http
       - tcp
