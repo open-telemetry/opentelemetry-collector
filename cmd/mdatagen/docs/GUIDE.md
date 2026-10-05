@@ -623,6 +623,42 @@ config:
       $ref: ../samplepkg.protocol   # calls samplepkg.NewDefaultProtocol()
 ```
 
+#### Custom go type
+
+Use `go_struct.type` in a config property when the generated Go field should  use a specific Go type.
+The schema `type` still describes the configuration value; `go_struct.type` overrides the Go type used
+in the generated struct.
+
+For a type from another package, write its import path followed by the exported type name:
+
+```yaml
+config:
+  properties:
+    id:
+      type: string
+      go_struct:
+        type: github.com/example/types.ID
+```
+
+This generates the field using `types.ID` and adds the package import. For a custom type defined
+in the same package as the generated struct, use its name directly:
+
+```yaml
+    mode:
+      type: string
+      go_struct:
+        type: Mode
+```
+
+The override also works for primitive schema types when a named Go type is needed. For example,
+`type: int64` with `go_struct.type: github.com/example/types.Counter` generates a `types.Counter`
+field while retaining the integer schema. The same setting can be used on slice elements or map
+values by placing it in their `values` schema.
+
+Prefer the built-in metadata aliases when they already describe the intended type. For example,
+use `type: duration` or `type: time` for `time.Duration` and `time.Time`; reserve `go_struct.type`
+for a Go type that the schema type alone cannot express.
+
 ## Metrics and resource-attribute config are wired in automatically
 
 If your `metadata.yaml` also has `metrics`, `events`, or `resource_attributes` sections (the

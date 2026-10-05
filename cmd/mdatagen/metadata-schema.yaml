@@ -136,8 +136,6 @@ config:
         - type: object
           properties: {}
       # Custom extension fields (not part of JSON Schema standard, used by mdatagen):
-      # Optional: Custom Go type name to use instead of generated type.
-      x-customType: string
       # Optional: Whether this field should be a pointer in Go code.
       pointer: bool
       # Optional: Whether this field is optional in Go code (will use pointer or optional type).
@@ -168,6 +166,8 @@ config:
         optional_mode: <some|default>
         ## Optional: Generated struct embeds a package-private `private<Type>Fields` type.
         private_fields: bool
+        # Optional: Custom Go type name to use instead of generated type.
+        type: string
   # Optional: List of required property names. Properties in this list must be present in the config.
   required: [string]
   # Optional: Map of reusable schema definitions that can be referenced via $ref.

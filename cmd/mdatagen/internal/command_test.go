@@ -900,8 +900,7 @@ func TestGenerateConfigGoStruct_ResolvedImports(t *testing.T) {
 				Properties: map[string]*schemagen.ConfigMetadata{
 					"component_id": {
 						Type:     "string",
-						GoType:   "go.opentelemetry.io/collector/component.ID",
-						GoStruct: cfggen.GoStructConfig{FieldName: "ComponentID"},
+						GoStruct: cfggen.GoStructConfig{FieldName: "ComponentID", Type: "go.opentelemetry.io/collector/component.ID"},
 					},
 					"AllOf": {
 						Type:  "object",
@@ -909,8 +908,8 @@ func TestGenerateConfigGoStruct_ResolvedImports(t *testing.T) {
 						Ref:   "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
 						Properties: map[string]*cfggen.ConfigMetadata{
 							"timeout": {
-								Type:   "string",
-								GoType: "time.Duration",
+								Type:     "string",
+								GoStruct: cfggen.GoStructConfig{Type: "time.Duration"},
 							},
 						},
 						Default: map[string]any{"timeout": "30s"},
@@ -957,8 +956,8 @@ func TestGenerateConfigGoStruct_NamedEmbeddedStruct(t *testing.T) {
 						Default: map[string]any{"timeout": "30s"},
 						Properties: map[string]*cfggen.ConfigMetadata{
 							"timeout": {
-								Type:   "string",
-								GoType: "time.Duration",
+								Type:     "string",
+								GoStruct: cfggen.GoStructConfig{Type: "time.Duration"},
 							},
 						},
 						GoStruct: cfggen.GoStructConfig{
@@ -1036,9 +1035,8 @@ func TestGenerateConfigGoStruct_PropertyDefaultsAndImports(t *testing.T) {
 				Properties: map[string]*cfggen.ConfigMetadata{
 					"timeout": {
 						Type:     "string",
-						GoType:   "time.Duration",
 						Default:  "30s",
-						GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
+						GoStruct: cfggen.GoStructConfig{FieldName: "timeout", Type: "time.Duration"},
 					},
 				},
 			},
@@ -1079,9 +1077,8 @@ func TestGenerateConfigGoStruct_InternalResolvedRefGeneratesLocalType(t *testing
 						Properties: map[string]*cfggen.ConfigMetadata{
 							"timeout": {
 								Type:     "string",
-								GoType:   "time.Duration",
 								Default:  "30s",
-								GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
+								GoStruct: cfggen.GoStructConfig{FieldName: "timeout", Type: "time.Duration"},
 							},
 						},
 					},
@@ -1123,8 +1120,7 @@ func TestGenerateConfigGoStruct_ComponentIDFieldUsesGoName(t *testing.T) {
 				Properties: map[string]*cfggen.ConfigMetadata{
 					"storage": {
 						Type:     "string",
-						GoType:   "go.opentelemetry.io/collector/component.ID",
-						GoStruct: cfggen.GoStructConfig{FieldName: "storage_id"},
+						GoStruct: cfggen.GoStructConfig{FieldName: "storage_id", Type: "go.opentelemetry.io/collector/component.ID"},
 					},
 				},
 			},
@@ -1140,6 +1136,42 @@ func TestGenerateConfigGoStruct_ComponentIDFieldUsesGoName(t *testing.T) {
 	generated := string(content)
 	require.Contains(t, generated, `StorageID component.ID`)
 	require.Contains(t, generated, "`mapstructure:\"storage,omitempty\"`")
+}
+
+func TestGenerateConfigGoStruct_RequiredFieldWithoutDefaultOmitsOmitempty(t *testing.T) {
+	root := t.TempDir()
+	outputDir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(outputDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "receiver"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{
+				Type:     "object",
+				Required: []string{"endpoint"},
+				Properties: map[string]*cfggen.ConfigMetadata{
+					"endpoint": {
+						Type:     "string",
+						GoStruct: cfggen.GoStructConfig{FieldName: "endpoint"},
+					},
+				},
+			},
+		},
+	}
+
+	err := generateConfigGoStruct(md, outputDir)
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+
+	generated := string(content)
+	// Required fields must never get ",omitempty", even without a default value.
+	require.Contains(t, generated, "Endpoint string `mapstructure:\"endpoint\"`")
+	require.NotContains(t, generated, "omitempty")
 }
 
 func TestGenerateConfigFiles_GoStructError(t *testing.T) {
@@ -1848,8 +1880,7 @@ func TestGenerateConfigGoStruct_TestFileNoValidateTestWhenNoValidators(t *testin
 				Properties: map[string]*cfggen.ConfigMetadata{
 					"timeout": {
 						Type:     "string",
-						GoType:   "time.Duration",
-						GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
+						GoStruct: cfggen.GoStructConfig{FieldName: "timeout", Type: "time.Duration"},
 					},
 				},
 			},

@@ -61,7 +61,6 @@ type ConfigMetadata struct {
 	ExclusiveMinimum *float64                   `mapstructure:"exclusiveMinimum,omitempty" json:"exclusiveMinimum,omitempty" yaml:"exclusiveMinimum,omitempty"`
 	// Additional custom fields
 	GoStruct   GoStructConfig `mapstructure:"go_struct,omitempty" json:"-" yaml:"go_struct,omitempty"`
-	GoType     string         `mapstructure:"x-customType,omitempty" json:"-" yaml:"x-customType,omitempty"`
 	IsPointer  bool           `mapstructure:"pointer,omitempty" json:"-" yaml:"pointer,omitempty"`
 	IsOptional bool           `mapstructure:"optional,omitempty" json:"-" yaml:"optional,omitempty"`
 	Embed      bool           `mapstructure:"embed,omitempty" json:"-" yaml:"embed,omitempty"`
@@ -82,6 +81,7 @@ type GoStructConfig struct {
 	FieldName       string                 `mapstructure:"field_name" json:"-" yaml:"field_name,omitempty"`
 	OptionalMode    string                 `mapstructure:"optional_mode" json:"-" yaml:"optional_mode,omitempty"`
 	PrivateFields   bool                   `mapstructure:"private_fields" json:"-" yaml:"private_fields,omitempty"`
+	Type            string                 `mapstructure:"type" json:"-" yaml:"type,omitempty"`
 }
 
 const (
@@ -170,9 +170,6 @@ func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
 	}
 	if md.Format == "" {
 		md.Format = other.Format
-	}
-	if md.GoType == "" {
-		md.GoType = other.GoType
 	}
 
 	// any
@@ -284,6 +281,9 @@ func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
 	}
 	if !md.GoStruct.PrivateFields {
 		md.GoStruct.PrivateFields = other.GoStruct.PrivateFields
+	}
+	if md.GoStruct.Type == "" {
+		md.GoStruct.Type = other.GoStruct.Type
 	}
 }
 

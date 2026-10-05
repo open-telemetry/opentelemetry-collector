@@ -92,7 +92,7 @@ func TestPrimitiveGoType(t *testing.T) {
 		},
 		{
 			name:     "custom primitive Go type",
-			metadata: &ConfigMetadata{Type: "string", GoType: "github.com/example/pkg.CustomString"},
+			metadata: &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "github.com/example/pkg.CustomString"}},
 			expected: "pkg.CustomString",
 		},
 		{
@@ -146,8 +146,8 @@ func TestMapGoType_FormattedStrings(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			md := &ConfigMetadata{
-				Type:   "string",
-				GoType: tt.goType,
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: tt.goType},
 			}
 			result, err := MapGoType(md, "field", "", "")
 			require.NoError(t, err)
@@ -310,7 +310,7 @@ func TestMapGoType_CustomTypes(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "custom type with primitive go type — uses type field not GoType",
+			name: "custom type with primitive go type — uses type field not go_struct.type",
 			metadata: &ConfigMetadata{
 				Type: "rune",
 			},
@@ -319,16 +319,16 @@ func TestMapGoType_CustomTypes(t *testing.T) {
 		{
 			name: "custom type with external package",
 			metadata: &ConfigMetadata{
-				Type:   "object",
-				GoType: "github.com/example/pkg.CustomType",
+				Type:     "object",
+				GoStruct: GoStructConfig{Type: "github.com/example/pkg.CustomType"},
 			},
 			expected: "pkg.CustomType",
 		},
 		{
 			name: "custom type without package",
 			metadata: &ConfigMetadata{
-				Type:   "object",
-				GoType: "my_custom_type",
+				Type:     "object",
+				GoStruct: GoStructConfig{Type: "my_custom_type"},
 			},
 			expected: "MyCustomType",
 		},
@@ -434,7 +434,7 @@ func TestMapGoType_NilInput(t *testing.T) {
 
 func TestMapGoType_UnknownTypePassThrough(t *testing.T) {
 	// Unknown types are passed through as-is so metadata.yaml authors can reference
-	// custom Go types directly in the type field without a GoType override.
+	// custom Go types directly in the type field without a go_struct.type override.
 	md := &ConfigMetadata{
 		Type: "custom_vendor_type",
 	}
@@ -457,16 +457,16 @@ func TestExtractImports_BasicTypes(t *testing.T) {
 		{
 			name: "time import for date-time format",
 			metadata: &ConfigMetadata{
-				Type:   "string",
-				GoType: "time.Time",
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "time.Time"},
 			},
 			expected: []string{"time"},
 		},
 		{
 			name: "time import for duration format",
 			metadata: &ConfigMetadata{
-				Type:   "string",
-				GoType: "time.Duration",
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "time.Duration"},
 			},
 			expected: []string{"time"},
 		},
@@ -490,8 +490,8 @@ func TestExtractImports_CustomTypes(t *testing.T) {
 		{
 			name: "external custom type",
 			metadata: &ConfigMetadata{
-				Type:   "object",
-				GoType: "github.com/example/pkg.CustomType",
+				Type:     "object",
+				GoStruct: GoStructConfig{Type: "github.com/example/pkg.CustomType"},
 			},
 			expected: []string{"github.com/example/pkg"},
 		},
@@ -570,8 +570,8 @@ func TestExtractImports_ResolvedReferenceIncludesDefaultOverrideImports(t *testi
 		Ref:  "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
 		Properties: map[string]*ConfigMetadata{
 			"timeout": {
-				Type:   "string",
-				GoType: "time.Duration",
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "time.Duration"},
 			},
 		},
 		Default: defaultValue(map[string]any{"timeout": "30s"}),
@@ -599,7 +599,7 @@ func TestCollectCustomDefaultImports(t *testing.T) {
 				Type:     "object",
 				GoStruct: GoStructConfig{IgnoreDefault: true},
 				Properties: map[string]*ConfigMetadata{
-					"timeout": {Type: "string", GoType: "time.Duration"},
+					"timeout": {Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 				},
 			},
 			defaultValue: map[string]any{"timeout": "30s"},
@@ -608,7 +608,7 @@ func TestCollectCustomDefaultImports(t *testing.T) {
 			name: "map schema does not inspect entries",
 			metadata: &ConfigMetadata{
 				Type:   "map",
-				Values: &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+				Values: &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 			},
 			defaultValue: map[string]any{"timeout": "30s"},
 		},
@@ -625,7 +625,7 @@ func TestCollectCustomDefaultImports(t *testing.T) {
 			metadata: &ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
-					"timeout": {Type: "string", GoType: "time.Duration"},
+					"timeout": {Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 				},
 			},
 			defaultValue: map[string]any{"timeout": "30s"},
@@ -638,7 +638,7 @@ func TestCollectCustomDefaultImports(t *testing.T) {
 				Values: &ConfigMetadata{
 					Type: "object",
 					Properties: map[string]*ConfigMetadata{
-						"timestamp": {Type: "string", GoType: "time.Time"},
+						"timestamp": {Type: "string", GoStruct: GoStructConfig{Type: "time.Time"}},
 					},
 				},
 			},
@@ -649,7 +649,7 @@ func TestCollectCustomDefaultImports(t *testing.T) {
 			name: "slice default with non-object value type does not inspect entries",
 			metadata: &ConfigMetadata{
 				Type:   "slice",
-				Values: &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+				Values: &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 			},
 			defaultValue: []any{"30s"},
 		},
@@ -670,8 +670,8 @@ func TestExtractImports_InternalResolvedReferenceIncludesNestedImports(t *testin
 		Ref:  "plain_config",
 		Properties: map[string]*ConfigMetadata{
 			"timeout": {
-				Type:   "string",
-				GoType: "time.Duration",
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "time.Duration"},
 			},
 		},
 	}
@@ -701,15 +701,15 @@ func TestExtractImports_Nested(t *testing.T) {
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"timeout": {
-				Type:   "string",
-				GoType: "time.Duration",
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "time.Duration"},
 			},
 			"nested": {
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
 					"timestamp": {
-						Type:   "string",
-						GoType: "time.Time",
+						Type:     "string",
+						GoStruct: GoStructConfig{Type: "time.Time"},
 					},
 				},
 			},
@@ -725,8 +725,8 @@ func TestExtractImports_AllOf(t *testing.T) {
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"time": {
-				Type:   "string",
-				GoType: "time.Duration",
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "time.Duration"},
 			},
 		},
 	}
@@ -739,8 +739,8 @@ func TestExtractImports_SliceValueType(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "slice",
 		Values: &ConfigMetadata{
-			Type:   "string",
-			GoType: "time.Time",
+			Type:     "string",
+			GoStruct: GoStructConfig{Type: "time.Time"},
 		},
 	}
 	result, err := ExtractImportsFromConfig(md, "", "")
@@ -752,8 +752,8 @@ func TestExtractImports_MapValueType(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "map",
 		Values: &ConfigMetadata{
-			Type:   "string",
-			GoType: "time.Duration",
+			Type:     "string",
+			GoStruct: GoStructConfig{Type: "time.Duration"},
 		},
 	}
 	result, err := ExtractImportsFromConfig(md, "", "")
@@ -765,8 +765,8 @@ func TestExtractImports_Defs(t *testing.T) {
 	md := &ConfigsMetadata{
 		ExportedConfigs: map[string]*ConfigMetadata{
 			"CustomType": {
-				Type:   "string",
-				GoType: "time.Time",
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "time.Time"},
 			},
 		},
 	}
@@ -972,8 +972,8 @@ func TestExtractDefs_MapValueObject(t *testing.T) {
 				},
 			},
 			"custom": {
-				Type:   "object",
-				GoType: "github.com/example/pkg.Custom",
+				Type:     "object",
+				GoStruct: GoStructConfig{Type: "github.com/example/pkg.Custom"},
 				Properties: map[string]*ConfigMetadata{
 					"ignored": {Type: "string"},
 				},
@@ -1207,14 +1207,14 @@ func TestNewCfgFns_ExtractImports(t *testing.T) {
 
 	// valid input returns imports
 	md := &ConfigsMetadata{
-		Config: &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+		Config: &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 	}
 	result := extractImports(md)
 	require.Contains(t, result, "time")
 
-	// unresolvable GoType: extractImports panics
+	// unresolvable go_struct.type: extractImports panics
 	errMd := &ConfigsMetadata{
-		Config: &ConfigMetadata{GoType: "github.com/pkg."},
+		Config: &ConfigMetadata{GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 	}
 	require.Panics(t, func() { extractImports(errMd) })
 }
@@ -1267,7 +1267,7 @@ func TestNewCfgFns_MapGoType(t *testing.T) {
 	// valid input
 	require.Equal(t, "string", mapGoType(&ConfigMetadata{Type: "string"}, "field"))
 	require.Panics(t, func() {
-		mapGoType(&ConfigMetadata{GoType: "github.com/pkg."}, "field")
+		mapGoType(&ConfigMetadata{GoStruct: GoStructConfig{Type: "github.com/pkg."}}, "field")
 	})
 }
 
@@ -1317,9 +1317,9 @@ func TestWithCfgFns(t *testing.T) {
 
 func TestExtractValidators_DurationPattern(t *testing.T) {
 	md := &ConfigMetadata{
-		Type:    StringType,
-		GoType:  "time.Duration",
-		Pattern: `^duration$`,
+		Type:     StringType,
+		GoStruct: GoStructConfig{Type: "time.Duration"},
+		Pattern:  `^duration$`,
 	}
 
 	require.Empty(t, ExtractValidators("config", md))
@@ -1341,8 +1341,8 @@ func TestExtractValidators_RefDoesNotStopSiblingValidation(t *testing.T) {
 }
 
 func TestResolveGoType_CustomTypeFormatError(t *testing.T) {
-	// GoType with invalid empty type name after dot triggers FormatTypeName error
-	md := &ConfigMetadata{GoType: "github.com/pkg."}
+	// go_struct.type with invalid empty type name after dot triggers FormatTypeName error
+	md := &ConfigMetadata{GoStruct: GoStructConfig{Type: "github.com/pkg."}}
 	_, err := MapGoType(md, "field", "", "")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to format custom type")
@@ -1357,10 +1357,10 @@ func TestResolveGoType_RefFormatError(t *testing.T) {
 }
 
 func TestResolveGoType_SliceValueTypeError(t *testing.T) {
-	// Slice whose value type GoType is malformed
+	// Slice whose value type go_struct.type is malformed
 	md := &ConfigMetadata{
 		Type:   "slice",
-		Values: &ConfigMetadata{GoType: "github.com/pkg."},
+		Values: &ConfigMetadata{GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 	}
 	_, err := MapGoType(md, "field", "", "")
 	require.Error(t, err)
@@ -1368,10 +1368,10 @@ func TestResolveGoType_SliceValueTypeError(t *testing.T) {
 }
 
 func TestResolveGoType_MapValueTypeError(t *testing.T) {
-	// Map whose value type GoType is malformed
+	// Map whose value type go_struct.type is malformed
 	md := &ConfigMetadata{
 		Type:   "map",
-		Values: &ConfigMetadata{GoType: "github.com/pkg."},
+		Values: &ConfigMetadata{GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 	}
 	_, err := MapGoType(md, "field", "", "")
 	require.Error(t, err)
@@ -1395,7 +1395,7 @@ func TestExtractImports_PropError(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
-			"bad": {GoType: "github.com/pkg.", Type: "object"},
+			"bad": {GoStruct: GoStructConfig{Type: "github.com/pkg."}, Type: "object"},
 		},
 	}
 	_, err := ExtractImportsFromConfig(md, "", "")
@@ -1404,7 +1404,7 @@ func TestExtractImports_PropError(t *testing.T) {
 }
 
 func TestExtractImports_GoTypeError(t *testing.T) {
-	md := &ConfigMetadata{GoType: "github.com/pkg."}
+	md := &ConfigMetadata{GoStruct: GoStructConfig{Type: "github.com/pkg."}}
 	_, err := ExtractImportsFromConfig(md, "", "")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to resolve import for custom type")
@@ -1420,7 +1420,7 @@ func TestExtractImports_RefError(t *testing.T) {
 func TestExtractImports_SliceValueTypeError(t *testing.T) {
 	md := &ConfigMetadata{
 		Type:   "slice",
-		Values: &ConfigMetadata{GoType: "github.com/pkg."},
+		Values: &ConfigMetadata{GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 	}
 	_, err := ExtractImportsFromConfig(md, "", "")
 	require.Error(t, err)
@@ -1431,7 +1431,7 @@ func TestExtractImports_AllOfError(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
-			"bad": {GoType: "github.com/pkg."},
+			"bad": {GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 		},
 	}
 	_, err := ExtractImportsFromConfig(md, "", "")
@@ -1443,7 +1443,7 @@ func TestExtractImports_DefsError(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
-			"bad": {GoType: "github.com/pkg."},
+			"bad": {GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 		},
 	}
 	_, err := ExtractImportsFromConfig(md, "", "")
@@ -1454,7 +1454,7 @@ func TestExtractImports_DefsError(t *testing.T) {
 func TestExtractImports_MapValueTypeError(t *testing.T) {
 	md := &ConfigMetadata{
 		Type:   "map",
-		Values: &ConfigMetadata{GoType: "github.com/pkg."},
+		Values: &ConfigMetadata{GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 	}
 	_, err := ExtractImportsFromConfig(md, "", "")
 	require.Error(t, err)
@@ -1465,7 +1465,7 @@ func TestExtractImports_ContentSchemaError(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
-			"bad": {GoType: "github.com/pkg."},
+			"bad": {GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 		},
 	}
 	_, err := ExtractImportsFromConfig(md, "", "")
@@ -1478,7 +1478,7 @@ func TestExtractImports_ExternalRefDefaultsError(t *testing.T) {
 	md := &ConfigMetadata{
 		Ref: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
 		Properties: map[string]*ConfigMetadata{
-			"timeout": {GoType: "github.com/pkg."},
+			"timeout": {GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 		},
 		Default: defaultValue(map[string]any{"timeout": "30s"}),
 	}
@@ -1491,7 +1491,7 @@ func TestExtractImports_ExternalRefNestedDefaultsError(t *testing.T) {
 	// "nested" has an external Ref with no Default, so collectImports(nested) succeeds:
 	// it short-circuits after processing nested.Default=nil without descending into nested.Properties.
 	// collectCustomDefaultImports(nested, {"bad": "x"}) then walks the override value and calls
-	// collectImports on nested.Properties["bad"] which has an invalid GoType — this error propagates
+	// collectImports on nested.Properties["bad"] which has an invalid go_struct.type — this error propagates
 	// back to the caller at line 297-298 in the outer collectCustomDefaultImports.
 	md := &ConfigMetadata{
 		Ref: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
@@ -1499,7 +1499,7 @@ func TestExtractImports_ExternalRefNestedDefaultsError(t *testing.T) {
 			"nested": {
 				Ref: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
 				Properties: map[string]*ConfigMetadata{
-					"bad": {GoType: "github.com/pkg."},
+					"bad": {GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 				},
 			},
 		},
@@ -1520,7 +1520,7 @@ func TestExtractImports_ExternalRefSliceDefaultsError(t *testing.T) {
 		Values: &ConfigMetadata{
 			Type: "object",
 			Properties: map[string]*ConfigMetadata{
-				"bad": {GoType: "github.com/pkg."},
+				"bad": {GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 			},
 		},
 		Default: defaultValue([]any{map[string]any{"bad": "value"}}),
@@ -1563,8 +1563,8 @@ func TestExtractImports_ContentSchema(t *testing.T) {
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"content": {
-				Type:   "string",
-				GoType: "time.Duration",
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "time.Duration"},
 			},
 		},
 	}
@@ -2417,28 +2417,28 @@ func TestFormatDefaultValue_ScalarDefaults(t *testing.T) {
 		},
 		{
 			name:         "duration",
-			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			schema:       &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 			propName:     "timeout",
 			defaultValue: defaultValue("30s"),
 			expected:     "30*time.Second",
 		},
 		{
 			name:         "duration zero int",
-			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			schema:       &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 			propName:     "timeout",
 			defaultValue: defaultValue(0),
 			expected:     "0",
 		},
 		{
 			name:         "duration zero float",
-			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			schema:       &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 			propName:     "timeout",
 			defaultValue: defaultValue(float64(0)),
 			expected:     "0",
 		},
 		{
 			name:         "optional duration",
-			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration", IsOptional: true},
+			schema:       &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}, IsOptional: true},
 			propName:     "interval",
 			defaultValue: defaultValue("10s"),
 			expected:     "configoptional.Some(10*time.Second)",
@@ -2717,10 +2717,10 @@ func TestFormatDefaultValue_Panics(t *testing.T) {
 			defaultValue: defaultValue("localhost"),
 		},
 		{
-			name: "invalid slice value type GoType",
+			name: "invalid slice value type go_struct.type",
 			metadata: &ConfigMetadata{
 				Type:   "slice",
-				Values: &ConfigMetadata{GoType: "github.com/pkg."},
+				Values: &ConfigMetadata{GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 			},
 			defaultValue: defaultValue([]any{"localhost"}),
 		},
@@ -2733,16 +2733,16 @@ func TestFormatDefaultValue_Panics(t *testing.T) {
 			defaultValue: defaultValue("localhost"),
 		},
 		{
-			name: "invalid map value type GoType",
+			name: "invalid map value type go_struct.type",
 			metadata: &ConfigMetadata{
 				Type:   "map",
-				Values: &ConfigMetadata{GoType: "github.com/pkg."},
+				Values: &ConfigMetadata{GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 			},
 			defaultValue: defaultValue(map[string]any{"endpoint": "localhost"}),
 		},
 		{
 			name:         "invalid duration default value",
-			metadata:     &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			metadata:     &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 			defaultValue: defaultValue("invalid-duration"),
 		},
 	}
@@ -2817,7 +2817,7 @@ func TestFormatDefaultValue_ResolvedReferenceWithDefaults(t *testing.T) {
 		Type: "object",
 		Ref:  "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
 		Properties: map[string]*ConfigMetadata{
-			"timeout": {Type: "string", GoType: "time.Duration", Default: defaultValue("30s")},
+			"timeout": {Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}, Default: defaultValue("30s")},
 		},
 	}
 
@@ -2855,7 +2855,7 @@ func TestHasDefaultValue(t *testing.T) {
 	require.True(t, hasDefaultValue(&ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
-			"timeout": {Type: "string", GoType: "time.Duration", Default: defaultValue("30s")},
+			"timeout": {Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}, Default: defaultValue("30s")},
 		},
 	}))
 	require.True(t, hasDefaultValue(&ConfigMetadata{
@@ -2919,7 +2919,7 @@ func TestHasNonZeroDefault(t *testing.T) {
 	require.True(t, hasNonZeroDefault(&ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
-			"timeout": {Type: "string", GoType: "time.Duration", Default: defaultValue("30s")},
+			"timeout": {Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}, Default: defaultValue("30s")},
 		},
 	}))
 	require.False(t, hasNonZeroDefault(&ConfigMetadata{
@@ -3122,8 +3122,8 @@ func TestMapCustomDefaults_ExternalRefWithProperties(t *testing.T) {
 		Ref:  "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
 		Properties: map[string]*ConfigMetadata{
 			"timeout": {
-				Type:   "string",
-				GoType: "time.Duration",
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "time.Duration"},
 			},
 		},
 	}
@@ -3280,9 +3280,9 @@ func TestExtractValidators_EnumWithDifferentCustomTypeIsOmitted(t *testing.T) {
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"protocol": {
-				Type:   "string",
-				GoType: "int",
-				Enum:   []any{"http", "tcp"},
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "int"},
+				Enum:     []any{"http", "tcp"},
 			},
 		},
 	}
@@ -3305,9 +3305,9 @@ func TestExtractImports_EnumAddsSlices(t *testing.T) {
 
 func TestExtractImports_EnumWithMatchingCustomTypeAddsSlices(t *testing.T) {
 	md := &ConfigMetadata{
-		Type:   "string",
-		GoType: "string",
-		Enum:   []any{"a", "b"},
+		Type:     "string",
+		GoStruct: GoStructConfig{Type: "string"},
+		Enum:     []any{"a", "b"},
 	}
 	imports, err := ExtractImportsFromConfig(md, "example.com/root", "example.com/component")
 	require.NoError(t, err)
@@ -3316,9 +3316,9 @@ func TestExtractImports_EnumWithMatchingCustomTypeAddsSlices(t *testing.T) {
 
 func TestExtractImports_EnumWithDifferentCustomTypeOmitsSlices(t *testing.T) {
 	md := &ConfigMetadata{
-		Type:   "string",
-		GoType: "int",
-		Enum:   []any{"a", "b"},
+		Type:     "string",
+		GoStruct: GoStructConfig{Type: "int"},
+		Enum:     []any{"a", "b"},
 	}
 	imports, err := ExtractImportsFromConfig(md, "example.com/root", "example.com/component")
 	require.NoError(t, err)
