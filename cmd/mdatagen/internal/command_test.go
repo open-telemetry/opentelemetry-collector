@@ -900,8 +900,7 @@ func TestGenerateConfigGoStruct_ResolvedImports(t *testing.T) {
 				Properties: map[string]*schemagen.ConfigMetadata{
 					"component_id": {
 						Type:     "string",
-						GoType:   "go.opentelemetry.io/collector/component.ID",
-						GoStruct: cfggen.GoStructConfig{FieldName: "ComponentID"},
+						GoStruct: cfggen.GoStructConfig{FieldName: "ComponentID", Type: "go.opentelemetry.io/collector/component.ID"},
 					},
 					"AllOf": {
 						Type:  "object",
@@ -909,8 +908,8 @@ func TestGenerateConfigGoStruct_ResolvedImports(t *testing.T) {
 						Ref:   "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
 						Properties: map[string]*cfggen.ConfigMetadata{
 							"timeout": {
-								Type:   "string",
-								GoType: "time.Duration",
+								Type:     "string",
+								GoStruct: cfggen.GoStructConfig{Type: "time.Duration"},
 							},
 						},
 						Default: map[string]any{"timeout": "30s"},
@@ -957,8 +956,8 @@ func TestGenerateConfigGoStruct_NamedEmbeddedStruct(t *testing.T) {
 						Default: map[string]any{"timeout": "30s"},
 						Properties: map[string]*cfggen.ConfigMetadata{
 							"timeout": {
-								Type:   "string",
-								GoType: "time.Duration",
+								Type:     "string",
+								GoStruct: cfggen.GoStructConfig{Type: "time.Duration"},
 							},
 						},
 						GoStruct: cfggen.GoStructConfig{
@@ -1036,9 +1035,8 @@ func TestGenerateConfigGoStruct_PropertyDefaultsAndImports(t *testing.T) {
 				Properties: map[string]*cfggen.ConfigMetadata{
 					"timeout": {
 						Type:     "string",
-						GoType:   "time.Duration",
 						Default:  "30s",
-						GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
+						GoStruct: cfggen.GoStructConfig{FieldName: "timeout", Type: "time.Duration"},
 					},
 				},
 			},
@@ -1079,9 +1077,8 @@ func TestGenerateConfigGoStruct_InternalResolvedRefGeneratesLocalType(t *testing
 						Properties: map[string]*cfggen.ConfigMetadata{
 							"timeout": {
 								Type:     "string",
-								GoType:   "time.Duration",
 								Default:  "30s",
-								GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
+								GoStruct: cfggen.GoStructConfig{FieldName: "timeout", Type: "time.Duration"},
 							},
 						},
 					},
@@ -1123,8 +1120,7 @@ func TestGenerateConfigGoStruct_ComponentIDFieldUsesGoName(t *testing.T) {
 				Properties: map[string]*cfggen.ConfigMetadata{
 					"storage": {
 						Type:     "string",
-						GoType:   "go.opentelemetry.io/collector/component.ID",
-						GoStruct: cfggen.GoStructConfig{FieldName: "storage_id"},
+						GoStruct: cfggen.GoStructConfig{FieldName: "storage_id", Type: "go.opentelemetry.io/collector/component.ID"},
 					},
 				},
 			},
@@ -1848,8 +1844,7 @@ func TestGenerateConfigGoStruct_TestFileNoValidateTestWhenNoValidators(t *testin
 				Properties: map[string]*cfggen.ConfigMetadata{
 					"timeout": {
 						Type:     "string",
-						GoType:   "time.Duration",
-						GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
+						GoStruct: cfggen.GoStructConfig{FieldName: "timeout", Type: "time.Duration"},
 					},
 				},
 			},
