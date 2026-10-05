@@ -118,6 +118,26 @@ func TestRunPlugin_UnsupportedVersion(t *testing.T) {
 	assert.ErrorIs(t, err, ErrUnsupportedOCBVersion)
 }
 
+func TestRunPlugin_InvalidOCBVersion(t *testing.T) {
+	m := &mockPlugin{minVersion: "0.151.0"}
+	input := "action: pre-build\nocb_version: latest\nconfig:\n  key: foo\n"
+	inputFile := filepath.Join(t.TempDir(), "input.yaml")
+	require.NoError(t, os.WriteFile(inputFile, []byte(input), 0o600))
+	err := runPlugin(m, inputFile)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrInvalidSemverString)
+}
+
+func TestRunPlugin_InvalidPluginMinVersion(t *testing.T) {
+	m := &mockPlugin{minVersion: "latest"}
+	input := "action: pre-build\nocb_version: v0.150.0\nconfig:\n  key: foo\n"
+	inputFile := filepath.Join(t.TempDir(), "input.yaml")
+	require.NoError(t, os.WriteFile(inputFile, []byte(input), 0o600))
+	err := runPlugin(m, inputFile)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrInvalidSemverString)
+}
+
 func TestRunPlugin_ActionError(t *testing.T) {
 	expectedErr := errors.New("custom pre-build error")
 	m := &mockPlugin{preBuildErr: expectedErr}

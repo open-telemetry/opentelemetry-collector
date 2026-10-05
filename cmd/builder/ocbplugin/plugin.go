@@ -99,14 +99,15 @@ func checkSupportedVersion(impl OCBPlugin, ocbVersion string) error {
 	// The minimum version the plugin supports.
 	pluginMinVersion := impl.MinOCBVersion()
 
-	// Normalize by ensuring a `v` prefix as required by semver.
-	ocbVersionNorm := ocbVersion
-	if ocbVersionNorm != "" && !strings.HasPrefix(ocbVersionNorm, "v") {
-		ocbVersionNorm = "v" + ocbVersionNorm
+	// Normalize both semver strings by ensuring they are valid
+	// and prepending the expected `v` prefix if it's not there already.
+	ocbVersionNorm, err := normalizeSemverString(ocbVersion)
+	if err != nil {
+		return fmt.Errorf("couldn't normalize ocb version: %w", err)
 	}
-	pluginMinVersionNorm := pluginMinVersion
-	if pluginMinVersionNorm != "" && !strings.HasPrefix(pluginMinVersionNorm, "v") {
-		pluginMinVersionNorm = "v" + pluginMinVersionNorm
+	pluginMinVersionNorm, err := normalizeSemverString(pluginMinVersion)
+	if err != nil {
+		return fmt.Errorf("couldn't normalize plugin-specified min ocb version: %w", err)
 	}
 
 	compare := semver.Compare(ocbVersionNorm, pluginMinVersionNorm)
@@ -121,9 +122,22 @@ func checkSupportedVersion(impl OCBPlugin, ocbVersion string) error {
 	return nil
 }
 
+func normalizeSemverString(ver string) (string, error) {
+	normalized := ver
+	if !strings.HasPrefix(ver, "v") {
+		normalized = "v" + ver
+	}
+	if !semver.IsValid(normalized) {
+		return ver, fmt.Errorf("%w: %s (attempted to normalize to %s)", ErrInvalidSemverString, ver, normalized)
+	}
+	return normalized, nil
+}
+
 var (
 	// ErrUnsupportedOCBVersion is returned when the running ocb version is too old for the plugin.
 	ErrUnsupportedOCBVersion = errors.New("plugin does not support current ocb version")
+
+	ErrInvalidSemverString = errors.New("invalid semver string")
 
 	// ErrUnknownAction is returned when an action is requested of the plugin that is unrecognized.
 	ErrUnknownAction = errors.New("unrecognized action")
