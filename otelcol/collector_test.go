@@ -1728,9 +1728,10 @@ func TestCollectorLoggingOptions(t *testing.T) {
 	require.NotEmpty(t, entries, "Logger should have logged messages")
 }
 
-func TestCollectorFlushesFeatureGateWarnings(t *testing.T) {
+func TestCollectorRoutesFeatureGateWarningsToLogger(t *testing.T) {
 	reg := featuregate.GlobalRegistry()
 	reg.SetLogger(nil)
+	t.Cleanup(func() { reg.SetLogger(nil) })
 
 	// A gate set before any collector has installed a logger should log its
 	// warning to stdout.
@@ -1741,6 +1742,7 @@ func TestCollectorFlushesFeatureGateWarnings(t *testing.T) {
 	stdout := os.Stdout
 	readEnd, writeEnd, pipeErr := os.Pipe()
 	require.NoError(t, pipeErr)
+	t.Cleanup(func() { os.Stdout = stdout })
 	os.Stdout = writeEnd
 
 	require.NoError(t, reg.Set(startupGateID, true))

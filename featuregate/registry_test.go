@@ -90,6 +90,7 @@ func TestRegistrySetWarningsDefaultStdout(t *testing.T) {
 	stdout := os.Stdout
 	readEnd, writeEnd, err := os.Pipe()
 	require.NoError(t, err)
+	t.Cleanup(func() { os.Stdout = stdout })
 	os.Stdout = writeEnd
 
 	require.NoError(t, r.Set("foo", true))
