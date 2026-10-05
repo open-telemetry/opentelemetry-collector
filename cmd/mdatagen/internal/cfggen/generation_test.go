@@ -2460,7 +2460,7 @@ func TestFormatDefaultValue_CustomDefault(t *testing.T) {
 	}{
 		{
 			name:     "bare custom_default on an inline scalar property derives getDefault<PropName>",
-			schema:   &ConfigMetadata{Type: "string", GoType: "int", GoStruct: GoStructConfig{CustomDefault: &CustomDefaultConfig{}}},
+			schema:   &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "int", CustomDefault: &CustomDefaultConfig{}}},
 			expected: "getDefaultProtocol()",
 		},
 		{
@@ -2470,7 +2470,7 @@ func TestFormatDefaultValue_CustomDefault(t *testing.T) {
 		},
 		{
 			name:     "custom_default with explicit name ignores the derivation rules",
-			schema:   &ConfigMetadata{Type: "string", GoType: "int", GoStruct: GoStructConfig{CustomDefault: &CustomDefaultConfig{Name: "newProtocol"}}},
+			schema:   &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "int", CustomDefault: &CustomDefaultConfig{Name: "newProtocol"}}},
 			expected: "newProtocol()",
 		},
 		{
@@ -2506,8 +2506,8 @@ func TestFormatDefaultValue_CustomDefaultResolvesRefTypeName(t *testing.T) {
 	// come from the referenced type, not the local field name, so both call sites resolve to the
 	// same hand-written function instead of needing one per field name.
 	customDefault := &CustomDefaultConfig{}
-	proto := &ConfigMetadata{Type: "string", GoType: "int", Ref: "protocol", GoStruct: GoStructConfig{CustomDefault: customDefault}}
-	sourceProtocol := &ConfigMetadata{Type: "string", GoType: "int", Ref: "protocol", GoStruct: GoStructConfig{CustomDefault: customDefault}}
+	proto := &ConfigMetadata{Type: "string", Ref: "protocol", GoStruct: GoStructConfig{Type: "int", CustomDefault: customDefault}}
+	sourceProtocol := &ConfigMetadata{Type: "string", Ref: "protocol", GoStruct: GoStructConfig{Type: "int", CustomDefault: customDefault}}
 
 	require.Equal(t, "NewDefaultProtocol()", FormatDefaultValue(proto, "proto", nil, "", ""))
 	require.Equal(t, "NewDefaultProtocol()", FormatDefaultValue(sourceProtocol, "source_protocol", nil, "", ""))
