@@ -66,6 +66,7 @@ body:
       - processor/batch
       - processor/memorylimiter
       - processor/processorhelper
+      - processor/queue_batch
       - processor/x
       - receiver/nop
       - receiver/otlp

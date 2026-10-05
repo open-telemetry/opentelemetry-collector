@@ -67,8 +67,6 @@ sem_conv_url: https://github.com/open-telemetry/semantic-conventions/releases/ta
 config:
   # Optional: Description of the configuration schema.
   description: string
-  # Optional: Additional comments for developers (not included in JSON output).
-  $comment: string
   # Required: The type of the configuration object. Typically "object" for component configs.
   # Primitive types: string, bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, byte, rune, float32, float64, any
   # Container types: object (requires properties:), slice (requires values:), map (requires values:)
@@ -361,6 +359,10 @@ tests:
   skip_shutdown: false # false by default
   # Whether it's expected that the Consume[Logs|Metrics|Traces] method will return an error with the given configuration.
   expect_consumer_error: true # false by default
+  # Processors assert by default that they propagate the incoming context unchanged to the next consumer.
+  # Set this to true to skip that assertion for processors that intentionally detach or modify the context
+  # (for example asynchronous or buffering processors). Only valid for processors. false by default.
+  skip_context_propagation: true # false by default
   goleak: # {} by default generates a package_test to enable check for leaks
     skip: false # set to true if goleak tests should be skipped
     setup: string # Optional: supports configuring a setup function that runs before goleak checks
