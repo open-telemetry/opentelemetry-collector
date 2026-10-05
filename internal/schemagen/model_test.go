@@ -280,6 +280,32 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 			want:  GoStructConfig{},
 		},
 		{
+			name:  "custom_default present with empty map",
+			input: map[string]any{"custom_default": map[string]any{}},
+			want:  GoStructConfig{CustomDefault: &CustomDefaultConfig{}},
+		},
+		{
+			name:  "custom_default present with nil value",
+			input: map[string]any{"custom_default": nil},
+			want:  GoStructConfig{CustomDefault: &CustomDefaultConfig{}},
+		},
+		{
+			name:  "custom_default absent",
+			input: map[string]any{},
+			want:  GoStructConfig{},
+		},
+		{
+			name: "custom_validator and custom_default both present",
+			input: map[string]any{
+				"custom_validator": map[string]any{"name": "validateConfig"},
+				"custom_default":   map[string]any{"name": "defaultConfig"},
+			},
+			want: GoStructConfig{
+				CustomValidator: &CustomValidatorConfig{Name: "validateConfig"},
+				CustomDefault:   &CustomDefaultConfig{Name: "defaultConfig"},
+			},
+		},
+		{
 			name: "go_struct fields decode through mapstructure",
 			input: map[string]any{
 				"anonymous":      true,
@@ -289,6 +315,9 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 				"custom_validator": map[string]any{
 					"name": "validateConfig",
 				},
+				"custom_default": map[string]any{
+					"name": "defaultConfig",
+				},
 			},
 			want: GoStructConfig{
 				Anonymous:       true,
@@ -296,6 +325,7 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 				OptionalMode:    OptionalModeDefault,
 				PrivateFields:   true,
 				CustomValidator: &CustomValidatorConfig{Name: "validateConfig"},
+				CustomDefault:   &CustomDefaultConfig{Name: "defaultConfig"},
 			},
 		},
 		{
@@ -619,6 +649,7 @@ func TestConfigMetadata_Clone(t *testing.T) {
 			IgnoreDefault:   true,
 			FieldName:       "Endpoint",
 			CustomValidator: &CustomValidatorConfig{Name: "validate"},
+			CustomDefault:   &CustomDefaultConfig{Name: "defaultEndpoint"},
 		},
 	}
 
@@ -636,6 +667,7 @@ func TestConfigMetadata_Clone(t *testing.T) {
 	clone.Default.(map[string]any)["flag"] = false
 	clone.Default.(map[string]any)["nested"].([]any)[0] = "changed"
 	clone.GoStruct.CustomValidator.Name = "other"
+	clone.GoStruct.CustomDefault.Name = "other"
 	clone.Values.Type = "changed"
 
 	assert.Equal(t, "root", orig.Description)
@@ -646,6 +678,7 @@ func TestConfigMetadata_Clone(t *testing.T) {
 	assert.Equal(t, true, orig.Default.(map[string]any)["flag"])
 	assert.Equal(t, "a", orig.Default.(map[string]any)["nested"].([]any)[0])
 	assert.Equal(t, "validate", orig.GoStruct.CustomValidator.Name)
+	assert.Equal(t, "defaultEndpoint", orig.GoStruct.CustomDefault.Name)
 	assert.Equal(t, SchemaType("string"), orig.Values.Type)
 }
 

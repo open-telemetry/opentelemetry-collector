@@ -552,6 +552,77 @@ property; at the object level there is no property name to derive from, so the g
 name collapses to the unhelpful, literal `validate` — and two unnamed object-level validators in
 the same package (say, one on `config:` and one on an `exported_configs` entry) would collide.
 
+#### custom_default
+
+Hooks a hand-written function into the generated default-value expression, for defaults that
+can't be written as a Go literal, where the YAML `default` can't be converted into the custom
+Go type without real code.
+
+Add `go_struct.custom_default` and `mdatagen` calls a function instead of rendering a literal.
+Which function it calls depends on *where* you put it:
+
+* On an object schema, or on a definition referenced from one or more properties via `$ref`:
+  `NewDefault<TypeName>()` — the same exported naming convention `mdatagen` already uses for its
+  own generated default constructors (`NewDefaultClientConfig()` and so on). Every property that
+  `$ref`s the definition calls the same function, no matter what the property itself is called,
+  and an external `$ref` gets the same package qualifier an ordinary default would
+  (`confighttp.NewDefaultClientConfig()`).
+* On an inline scalar property with no `$ref`: `getDefault<PropName>()` — unexported, and scoped
+  to that one field; nothing else is expected to call it.
+
+Override either derivation with `go_struct.custom_default.name` if you need something else — for
+example to resolve a collision between two unrelated types that happen to derive the same name.
+
+```yaml
+exported_configs:
+  protocol:
+    type: string
+    x-customType: int
+    enum: [http, tcp, smtp, ftp]
+    default: http
+    go_struct:
+      custom_default:          # reusable definition -> calls NewDefaultProtocol()
+properties:
+  proto:
+    $ref: protocol             # still calls NewDefaultProtocol()
+  source_protocol:
+    $ref: protocol             # also calls NewDefaultProtocol()
+  retry_delay:
+    type: int
+    go_struct:
+      custom_default:          # inline scalar, no $ref -> calls getDefaultRetryDelay()
+```
+
+```go
+// protocol.go
+func NewDefaultProtocol() Protocol {
+    return Protocol(ProtocolHTTP)
+}
+
+func getDefaultRetryDelay() int {
+    return 500
+}
+```
+
+You implement the function yourself, in a regular (non-generated) file in the same package. It
+takes no arguments and returns the field's own Go type.
+
+The literal `default` in the YAML (if present) is unaffected and still appears as-is in
+`config.schema.json` and generated docs — `custom_default` only changes how the Go default
+*expression* is rendered, the same way `custom_validator` only changes `Validate()`.
+
+This works across components too: another component's `metadata.yaml` can `$ref` your definition
+directly, and `custom_default` carries over with it, qualified with your package automatically —
+same as the derivation itself, whether the name is derived or set explicitly:
+
+```yaml
+# samplescraper/metadata.yaml
+config:
+  properties:
+    protocol:
+      $ref: ../samplepkg.protocol   # calls samplepkg.NewDefaultProtocol()
+```
+
 ## Metrics and resource-attribute config are wired in automatically
 
 If your `metadata.yaml` also has `metrics`, `events`, or `resource_attributes` sections (the

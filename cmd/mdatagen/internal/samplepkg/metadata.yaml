@@ -15,6 +15,9 @@ exported_configs:
       - tcp
       - smtp
       - ftp
+    default: http
+    go_struct:
+      custom_default:
   port_number:
     type: int
     description: A port number to connect to.
@@ -33,5 +36,8 @@ exported_configs:
         description: The port to connect to.
         default: 8080
         maximum: 10000
+      proto:
+        $ref: protocol
+        description: The protocol to connect with.
     required:
       - host_name
