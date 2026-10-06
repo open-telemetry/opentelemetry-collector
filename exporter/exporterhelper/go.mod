@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/exporter/exporterhelper
 go 1.26.0
 
 require (
-	github.com/cenkalti/backoff/v7 v7.0.0
+	github.com/cenkalti/backoff/v7 v7.0.1
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/client v1.68.0
