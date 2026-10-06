@@ -191,6 +191,9 @@ func TestMetricsBuilder(t *testing.T) {
 				mb.RecordSystemMemoryUsageDataPoint(ts+1, 3, AttributeStateCached)
 				assert.Equal(t, 2, mb.metricSystemMemoryUsage.data.Sum().DataPoints().Len())
 			}
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordTestHistogramDataPoint(ts, 1)
 
 			rb := mb.NewResourceBuilder()
 			rb.SetHostArch("host.arch-val")
@@ -697,8 +700,74 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("state")
 						assert.False(t, ok)
 					}
+				case "test.histogram":
+					assert.False(t, validatedMetrics["test.histogram"], "Found a duplicate in the metrics slice: test.histogram")
+					validatedMetrics["test.histogram"] = true
+					assert.Equal(t, pmetric.MetricTypeHistogram, mi.Type())
+					assert.Equal(t, 1, mi.Histogram().DataPoints().Len())
+					assert.Equal(t, "Test histogram metric", mi.Description())
+					assert.Equal(t, "s", mi.Unit())
+					assert.Equal(t, pmetric.AggregationTemporalityUnspecified, mi.Histogram().AggregationTemporality())
+					dp := mi.Histogram().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, uint64(1), dp.Count())
+					assert.InDelta(t, float64(1), dp.Sum(), 0.01)
+					assert.Equal(t, []float64{1, 10, 100}, dp.ExplicitBounds().AsRaw())
+					assert.Equal(t, []uint64{1, 0, 0, 0}, dp.BucketCounts().AsRaw())
 				}
 			}
+		})
+	}
+}
+
+func TestTestHistogramBucketCounts(t *testing.T) {
+	tests := []struct {
+		name         string
+		value        float64
+		bucketCounts []uint64
+	}{
+		{
+			name:         "first bucket",
+			value:        1,
+			bucketCounts: []uint64{1, 0, 0, 0},
+		},
+		{
+			name:         "second bucket",
+			value:        10,
+			bucketCounts: []uint64{0, 1, 0, 0},
+		},
+		{
+			name:         "third bucket",
+			value:        100,
+			bucketCounts: []uint64{0, 0, 1, 0},
+		},
+		{
+			name:         "overflow bucket",
+			value:        101,
+			bucketCounts: []uint64{0, 0, 0, 1},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			start := pcommon.Timestamp(1_000_000_000)
+			ts := pcommon.Timestamp(1_000_001_000)
+
+			settings := receivertest.NewNopSettings(receivertest.NopType)
+			settings.Logger = zap.NewNop()
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "default"), settings, WithStartTime(start))
+
+			mb.RecordTestHistogramDataPoint(ts, tt.value)
+
+			metrics := mb.Emit()
+			dp := metrics.ResourceMetrics().At(0).
+				ScopeMetrics().At(0).
+				Metrics().At(0).
+				Histogram().DataPoints().At(0)
+
+			assert.Equal(t, []float64{1, 10, 100}, dp.ExplicitBounds().AsRaw())
+			assert.Equal(t, tt.bucketCounts, dp.BucketCounts().AsRaw())
 		})
 	}
 }

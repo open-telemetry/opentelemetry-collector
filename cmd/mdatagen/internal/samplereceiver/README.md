@@ -56,6 +56,7 @@ This is where warnings are described.
 | `reaggregate.metric.with_required` | object (see [metrics.reaggregate.metric.with_required](#metrics.reaggregate.metric.with_required)) |  | no | ReaggregateMetricWithRequiredMetricConfig provides config for the reaggregate.metric.with_required metric. |
 | `system.cpu.time` | object (see [metrics.system.cpu.time](#metrics.system.cpu.time)) |  | no | SystemCPUTimeMetricConfig provides config for the system.cpu.time metric. |
 | `system.memory.usage` | object (see [metrics.system.memory.usage](#metrics.system.memory.usage)) |  | no | SystemMemoryUsageMetricConfig provides config for the system.memory.usage metric. |
+| `test.histogram` | object (see [metrics.test.histogram](#metrics.test.histogram)) |  | no | TestHistogramMetricConfig provides config for the test.histogram metric. |
 
 ### <a id="metrics.default.metric"></a>metrics.default.metric
 | Setting | Type | Default | Required | Description |
@@ -116,6 +117,11 @@ This is where warnings are described.
 | ------- | ---- | ------- | -------- | ----------- |
 | `aggregation_strategy` | string (one of: sum, avg, min, max) | sum | no |  |
 | `attributes` | []string (one of: state) | [state] | no |  |
+| `enabled` | bool | true | no |  |
+
+### <a id="metrics.test.histogram"></a>metrics.test.histogram
+| Setting | Type | Default | Required | Description |
+| ------- | ---- | ------- | -------- | ----------- |
 | `enabled` | bool | true | no |  |
 
 ### <a id="resource_attributes"></a>resource_attributes
