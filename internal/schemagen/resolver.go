@@ -105,7 +105,7 @@ func (r *Resolver) resolveRef(root *ConfigsMetadata, md *ConfigMetadata, origin 
 	}
 
 	// fallback to type "any"
-	md.GoType = md.Ref
+	md.GoStruct.Type = md.Ref
 	return md, nil
 }
 

@@ -102,6 +102,9 @@ config:
       type: string
       enum: [debug, info, warn, error]
       default: info
+    protocol:
+      description: Protocol used when connecting to scrape targets, reused from samplepkg.
+      $ref: ../samplepkg.protocol
   required: [job_name, targets]
   go_struct:
     private_fields: true
