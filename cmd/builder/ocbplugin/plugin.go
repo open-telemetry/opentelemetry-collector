@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -30,6 +31,54 @@ type inputData struct {
 	Config     map[string]any `yaml:"config"`
 }
 
+type PluginExitCode int
+
+func (exitCode PluginExitCode) exit() {
+	os.Exit(int(exitCode))
+}
+
+// ErrExitCodeMismatch is returned when an cmd/exec error does not
+// match the expected PluginExitCode.
+var ErrExitCodeMismatch = errors.New("exit code did not match expectation")
+
+func (exitCode PluginExitCode) ExecErrIsExitCode(execErr error) error {
+	if exitCode == ExitCodeSuccess {
+		if execErr != nil {
+			return fmt.Errorf(
+				"%w: for exit code %d error should be nil but was %w",
+				ErrExitCodeMismatch,
+				ExitCodeSuccess,
+				execErr,
+			)
+		}
+		return nil
+	}
+	var exitErr *exec.ExitError
+	if ok := errors.As(execErr, &exitErr); !ok {
+		return fmt.Errorf(
+			"%w: error could not be cast to exec.ExitError: %w",
+			ErrExitCodeMismatch,
+			execErr,
+		)
+	}
+	if int(exitCode) != exitErr.ExitCode() {
+		return fmt.Errorf(
+			"%w: expected code %d got %d",
+			ErrExitCodeMismatch,
+			exitCode,
+			exitErr.ExitCode(),
+		)
+	}
+	return nil
+}
+
+const (
+	ExitCodeSuccess           PluginExitCode = 0
+	ExitCodeFailure           PluginExitCode = 1
+	ExitCodeCalledIncorrectly PluginExitCode = 2
+	ExitCodeInvalidPlugin     PluginExitCode = 3
+)
+
 // RunPlugin runs an OCBPlugin implementation. This should be called from main.
 func RunPlugin(impl OCBPlugin) {
 	// Currently plugins take no flags, but we want to do a flag parse and usage
@@ -47,13 +96,16 @@ func RunPlugin(impl OCBPlugin) {
 	// in a mistaken way then it needs to recognize that separately from a normal failure.
 	if flag.NArg() < 1 {
 		flag.Usage()
-		os.Exit(2)
+		ExitCodeCalledIncorrectly.exit()
 	}
 
 	// The first argument should be a path to a plugin config file.
 	if err := runPlugin(impl, flag.Arg(0)); err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		if errors.Is(err, ErrInvalidPlugin) {
+			ExitCodeInvalidPlugin.exit()
+		}
+		ExitCodeFailure.exit()
 	}
 }
 
