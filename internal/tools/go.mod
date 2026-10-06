@@ -9,6 +9,7 @@ tool (
 	github.com/dkorunic/betteralign/cmd/betteralign
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 	github.com/google/addlicense
+	github.com/itchyny/gojq/cmd/gojq
 	github.com/jcchavezs/porto/cmd/porto
 	github.com/pavius/impi/cmd/impi
 	go.opentelemetry.io/build-tools/checkapi
@@ -155,6 +156,9 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/itchyny/go-yaml v0.0.0-20251001235044-fca9a0999f15 // indirect
+	github.com/itchyny/gojq v0.12.19 // indirect
+	github.com/itchyny/timefmt-go v0.1.8 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jcchavezs/porto v0.7.0 // indirect
 	github.com/jgautheron/goconst v1.11.0 // indirect
