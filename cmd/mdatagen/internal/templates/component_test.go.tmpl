@@ -11,24 +11,42 @@ import (
 	"context"
 	{{- end }}
 	"testing"
+	{{- if isExporter }}
+	{{- if not .SendingQueue.IsOmitted }}
+	"fmt"
+	{{- end }}
+	"reflect"
+	"strings"
+	{{- end }}
 	{{- if and (not (and .Tests.SkipLifecycle .Tests.SkipShutdown)) (or isExporter isProcessor) }}
 	"time"
 	{{- end }}
 
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	{{- if isExporter }}
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	{{- if not .SendingQueue.IsOmitted }}
+	internalmetadata "{{ .PackageName }}/internal/{{ .GeneratedPackageName }}"
+	"go.opentelemetry.io/collector/featuregate"
+	{{- end }}
+	{{- end }}
 	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	{{- if isExporter }}
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	{{- if supportsProfiles }}
-	"go.opentelemetry.io/collector/exporter/xexporter"
-	{{- end }}
 	{{- end }}
 	{{- if isProcessor }}
+	{{- if not .Tests.SkipContextPropagation }}
+	"go.opentelemetry.io/collector/consumer"
+	{{- end }}
+	{{- if or .Tests.SkipContextPropagation supportsProfiles }}
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	{{- end }}
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	{{- if supportsProfiles }}
@@ -85,6 +103,74 @@ func TestComponentConfigStruct(t *testing.T) {
 	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
 }
 
+{{ if isExporter -}}
+func TestComponentDefaultQueueBatchSender(t *testing.T) {
+	optionalQueueType := reflect.TypeOf(configoptional.None[exporterhelper.QueueBatchConfig]())
+	{{- if .SendingQueue.IsOmitted }}
+	queueType := reflect.TypeOf(exporterhelper.QueueBatchConfig{})
+	{{- end }}
+
+	checkConfig := func(t *testing.T) configoptional.Optional[exporterhelper.QueueBatchConfig] {
+		cfg := reflect.Indirect(reflect.ValueOf(NewFactory().CreateDefaultConfig()))
+		require.Equal(t, reflect.Struct, cfg.Kind(), "exporter default config must be a struct or pointer to a struct")
+
+		var queueConfig configoptional.Optional[exporterhelper.QueueBatchConfig]
+		{{- if not .SendingQueue.IsOmitted }}
+		found := false
+		{{- end }}
+		for i := 0; i < cfg.NumField(); i++ {
+			fieldType := cfg.Type().Field(i)
+			tag := strings.Split(fieldType.Tag.Get("mapstructure"), ",")[0]
+			{{- if .SendingQueue.IsOmitted }}
+			require.NotEqual(t, "sending_queue", tag, "exporter default config must not define sending_queue")
+			require.NotEqual(t, optionalQueueType, fieldType.Type, "exporter default config must not contain an optional queue config")
+			require.NotEqual(t, queueType, fieldType.Type, "exporter default config must not contain a queue config")
+			{{- else }}
+			if tag != "sending_queue" {
+				continue
+			}
+			require.False(t, found, "exporter default config must define sending_queue exactly once")
+			require.Equal(t, optionalQueueType, fieldType.Type, "sending_queue must have type configoptional.Optional[exporterhelper.QueueBatchConfig]")
+			queueConfig = cfg.Field(i).Interface().(configoptional.Optional[exporterhelper.QueueBatchConfig])
+			found = true
+			{{- end }}
+		}
+
+		{{- if .SendingQueue.IsOmitted }}
+		return queueConfig
+		{{- else }}
+		require.True(t, found, "exporter default config must define sending_queue")
+		return queueConfig
+		{{- end }}
+	}
+
+	{{- if .SendingQueue.IsOmitted }}
+	checkConfig(t)
+	{{- else }}
+	const queueBatchFeatureGate = "pkg.exporterhelper.queueBatchEnabled"
+
+	var queueBatchGate *featuregate.Gate
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == queueBatchFeatureGate {
+			queueBatchGate = gate
+		}
+	})
+	require.NotNil(t, queueBatchGate)
+	initialValue := queueBatchGate.IsEnabled()
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(queueBatchFeatureGate, initialValue))
+	})
+
+	for _, enabled := range []bool{false, true} {
+		t.Run(fmt.Sprintf("batch-feature-gate-%v", enabled), func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(queueBatchFeatureGate, enabled))
+			require.Equal(t, internalmetadata.NewDefaultSendingQueueConfig(), checkConfig(t))
+		})
+	}
+	{{- end }}
+}
+
+{{ end -}}
 {{ if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) -}}
 {{ if isExporter -}}
 func TestComponentLifecycle(t *testing.T) {
@@ -184,6 +270,142 @@ func TestComponentLifecycle(t *testing.T) {
 {{ end }}
 
 {{ if isProcessor }}
+{{- if not .Tests.SkipContextPropagation }}
+type contextCapturingConsumer struct{ capturedCtx context.Context }
+
+func (*contextCapturingConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
+func (c *contextCapturingConsumer) ConsumeLogs(ctx context.Context, _ plog.Logs) error {
+	c.capturedCtx = ctx
+	return nil
+}
+
+func (c *contextCapturingConsumer) ConsumeMetrics(ctx context.Context, _ pmetric.Metrics) error {
+	c.capturedCtx = ctx
+	return nil
+}
+
+func (c *contextCapturingConsumer) ConsumeTraces(ctx context.Context, _ ptrace.Traces) error {
+	c.capturedCtx = ctx
+	return nil
+}
+
+type ccpKey struct{}
+
+func TestComponentLifecycle(t *testing.T) {
+	factory := NewFactory()
+
+	tests := []struct{
+		createFn func(ctx context.Context, set processor.Settings, cfg component.Config, next *contextCapturingConsumer) (component.Component, error)
+		name string
+	}{
+{{ if supportsLogs }}
+		{
+			name: "logs",
+			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config, next *contextCapturingConsumer) (component.Component, error) {
+				return factory.CreateLogs(ctx, set, cfg, next)
+			},
+		},
+{{ end }}
+{{ if supportsMetrics }}
+		{
+			name: "metrics",
+			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config, next *contextCapturingConsumer) (component.Component, error) {
+				return factory.CreateMetrics(ctx, set, cfg, next)
+			},
+		},
+{{ end }}
+{{ if supportsTraces }}
+		{
+			name: "traces",
+			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config, next *contextCapturingConsumer) (component.Component, error) {
+				return factory.CreateTraces(ctx, set, cfg, next)
+			},
+		},
+{{ end }}
+{{ if supportsProfiles }}
+		{
+			name: "profiles",
+			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config, _ *contextCapturingConsumer) (component.Component, error) {
+				return factory.(xprocessor.Factory).CreateProfiles(ctx, set, cfg, consumertest.NewNop())
+			},
+		},
+{{ end }}
+	}
+
+	cm, err := confmaptest.LoadConf("metadata.yaml")
+	require.NoError(t, err)
+	cfg := factory.CreateDefaultConfig()
+	sub, err := cm.Sub("tests::config")
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(&cfg))
+
+	for _, tt := range tests {
+		{{- if not .Tests.SkipShutdown }}
+		t.Run(tt.name + "-shutdown", func(t *testing.T) {
+			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(typ), cfg, &contextCapturingConsumer{})
+			require.NoError(t, err)
+			err = c.Shutdown(context.Background())
+			require.NoError(t, err)
+		})
+		{{- end }}
+
+		{{- if not .Tests.SkipLifecycle }}
+		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
+			next := &contextCapturingConsumer{}
+			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(typ), cfg, next)
+			require.NoError(t, err)
+			host := {{ .Tests.Host }}
+			err = c.Start(context.Background(), host)
+			require.NoError(t, err)
+			ctx := context.WithValue(context.Background(), ccpKey{}, "test-value")
+			require.NotPanics(t, func() {
+				switch tt.name {
+				case "logs":
+					e, ok := c.(processor.Logs)
+					require.True(t, ok)
+					logs := generateLifecycleTestLogs()
+					if !e.Capabilities().MutatesData {
+						logs.MarkReadOnly()
+					}
+					err = e.ConsumeLogs(ctx, logs)
+				case "metrics":
+					e, ok := c.(processor.Metrics)
+					require.True(t, ok)
+					metrics := generateLifecycleTestMetrics()
+					if !e.Capabilities().MutatesData {
+						metrics.MarkReadOnly()
+					}
+					err = e.ConsumeMetrics(ctx, metrics)
+				case "traces":
+					e, ok := c.(processor.Traces)
+					require.True(t, ok)
+					traces := generateLifecycleTestTraces()
+					if !e.Capabilities().MutatesData {
+						traces.MarkReadOnly()
+					}
+					err = e.ConsumeTraces(ctx, traces)
+				}
+			})
+			require.NoError(t, err)
+			{{- if supportsProfiles }}
+			if tt.name != "profiles" {
+				require.Same(t, ctx, next.capturedCtx)
+				require.Equal(t, "test-value", next.capturedCtx.Value(ccpKey{}))
+			}
+			{{- else }}
+			require.Same(t, ctx, next.capturedCtx)
+			require.Equal(t, "test-value", next.capturedCtx.Value(ccpKey{}))
+			{{- end }}
+			err = c.Shutdown(context.Background())
+			require.NoError(t, err)
+		})
+		{{- end }}
+	}
+}
+{{- else }}
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
@@ -284,6 +506,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{{- end }}
 	}
 }
+{{- end }}
 {{ end }}
 
 {{ if isReceiver }}

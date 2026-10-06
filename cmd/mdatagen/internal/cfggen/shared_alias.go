@@ -10,6 +10,7 @@ type (
 	ConfigsMetadata       = schemagen.ConfigsMetadata
 	GoStructConfig        = schemagen.GoStructConfig
 	CustomValidatorConfig = schemagen.CustomValidatorConfig
+	CustomDefaultConfig   = schemagen.CustomDefaultConfig
 	Loader                = schemagen.Loader
 	Ref                   = schemagen.Ref
 	RefKind               = schemagen.RefKind
@@ -50,6 +51,9 @@ const (
 	OpaqueStringType = schemagen.OpaqueStringType
 	ComponentIDType  = schemagen.ComponentIDType
 	OpaqueMapType    = schemagen.OpaqueMapType
+
+	OptionalModeSome    = schemagen.OptionalModeSome
+	OptionalModeDefault = schemagen.OptionalModeDefault
 )
 
 var (

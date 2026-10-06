@@ -11,3 +11,9 @@ func validateJobName(_ string) error {
 func validateComponentID(_ component.ID) error {
 	return nil
 }
+
+type privateConfigFields struct {
+	warnings []string //nolint:unused
+}
+
+type privateTargetsItemFields struct{}

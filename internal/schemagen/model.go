@@ -61,9 +61,8 @@ type ConfigMetadata struct {
 	ExclusiveMinimum *float64                   `mapstructure:"exclusiveMinimum,omitempty" json:"exclusiveMinimum,omitempty" yaml:"exclusiveMinimum,omitempty"`
 	// Additional custom fields
 	GoStruct   GoStructConfig `mapstructure:"go_struct,omitempty" json:"-" yaml:"go_struct,omitempty"`
-	GoType     string         `mapstructure:"x-customType,omitempty" json:"-" yaml:"x-customType,omitempty"`
-	IsPointer  bool           `mapstructure:"x-pointer,omitempty" json:"-" yaml:"x-pointer,omitempty"`
-	IsOptional bool           `mapstructure:"x-optional,omitempty" json:"-" yaml:"x-optional,omitempty"`
+	IsPointer  bool           `mapstructure:"pointer,omitempty" json:"-" yaml:"pointer,omitempty"`
+	IsOptional bool           `mapstructure:"optional,omitempty" json:"-" yaml:"optional,omitempty"`
 	Embed      bool           `mapstructure:"embed,omitempty" json:"-" yaml:"embed,omitempty"`
 	// internal
 	InternalOnly bool `mapstructure:"-" json:"-" yaml:"-"`
@@ -76,12 +75,25 @@ type ConfigsMetadata struct {
 
 type GoStructConfig struct {
 	CustomValidator *CustomValidatorConfig `mapstructure:"custom_validator" json:"-" yaml:"custom_validator,omitempty"`
+	CustomDefault   *CustomDefaultConfig   `mapstructure:"custom_default" json:"-" yaml:"custom_default,omitempty"`
 	Anonymous       bool                   `mapstructure:"anonymous" json:"-" yaml:"anonymous,omitempty"`
 	IgnoreDefault   bool                   `mapstructure:"ignore_default" json:"-" yaml:"ignore_default,omitempty"`
 	FieldName       string                 `mapstructure:"field_name" json:"-" yaml:"field_name,omitempty"`
+	OptionalMode    string                 `mapstructure:"optional_mode" json:"-" yaml:"optional_mode,omitempty"`
+	PrivateFields   bool                   `mapstructure:"private_fields" json:"-" yaml:"private_fields,omitempty"`
+	Type            string                 `mapstructure:"type" json:"-" yaml:"type,omitempty"`
 }
 
+const (
+	OptionalModeSome    = "some"
+	OptionalModeDefault = "default"
+)
+
 type CustomValidatorConfig struct {
+	Name string `mapstructure:"name,omitempty" json:"-" yaml:"name,omitempty"`
+}
+
+type CustomDefaultConfig struct {
 	Name string `mapstructure:"name,omitempty" json:"-" yaml:"name,omitempty"`
 }
 
@@ -90,15 +102,27 @@ func (g *GoStructConfig) Unmarshal(parser *confmap.Conf) error {
 	if err := parser.Unmarshal((*goStructConfig)(g), confmap.WithIgnoreUnused()); err != nil {
 		return err
 	}
-	if !parser.IsSet("custom_validator") || g.CustomValidator != nil {
-		return nil
+	if parser.IsSet("custom_validator") && g.CustomValidator == nil {
+		sub, err := parser.Sub("custom_validator")
+		if err != nil {
+			return fmt.Errorf("invalid custom_validator: %w", err)
+		}
+		g.CustomValidator = &CustomValidatorConfig{}
+		if err := sub.Unmarshal(g.CustomValidator); err != nil {
+			return err
+		}
 	}
-	sub, err := parser.Sub("custom_validator")
-	if err != nil {
-		return fmt.Errorf("invalid custom_validator: %w", err)
+	if parser.IsSet("custom_default") && g.CustomDefault == nil {
+		sub, err := parser.Sub("custom_default")
+		if err != nil {
+			return fmt.Errorf("invalid custom_default: %w", err)
+		}
+		g.CustomDefault = &CustomDefaultConfig{}
+		if err := sub.Unmarshal(g.CustomDefault); err != nil {
+			return err
+		}
 	}
-	g.CustomValidator = &CustomValidatorConfig{}
-	return sub.Unmarshal(g.CustomValidator)
+	return nil
 }
 
 func (md *ConfigsMetadata) Validate() error {
@@ -146,9 +170,6 @@ func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
 	}
 	if md.Format == "" {
 		md.Format = other.Format
-	}
-	if md.GoType == "" {
-		md.GoType = other.GoType
 	}
 
 	// any
@@ -242,6 +263,10 @@ func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
 		cv := *other.GoStruct.CustomValidator
 		md.GoStruct.CustomValidator = &cv
 	}
+	if md.GoStruct.CustomDefault == nil && other.GoStruct.CustomDefault != nil {
+		cd := *other.GoStruct.CustomDefault
+		md.GoStruct.CustomDefault = &cd
+	}
 	if !md.GoStruct.Anonymous {
 		md.GoStruct.Anonymous = other.GoStruct.Anonymous
 	}
@@ -250,6 +275,15 @@ func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
 	}
 	if md.GoStruct.FieldName == "" {
 		md.GoStruct.FieldName = other.GoStruct.FieldName
+	}
+	if md.GoStruct.OptionalMode == "" {
+		md.GoStruct.OptionalMode = other.GoStruct.OptionalMode
+	}
+	if !md.GoStruct.PrivateFields {
+		md.GoStruct.PrivateFields = other.GoStruct.PrivateFields
+	}
+	if md.GoStruct.Type == "" {
+		md.GoStruct.Type = other.GoStruct.Type
 	}
 }
 
@@ -307,6 +341,27 @@ func cloneAny(v any) any {
 
 func (md *ConfigMetadata) Validate() error {
 	var errs error
+
+	switch md.GoStruct.OptionalMode {
+	case "":
+		// The empty value preserves the existing Some behavior.
+	case OptionalModeSome:
+		if !md.IsOptional {
+			errs = errors.Join(errs, errors.New("go_struct.optional_mode requires optional: true"))
+		}
+	case OptionalModeDefault:
+		if !md.IsOptional {
+			errs = errors.Join(errs, errors.New("go_struct.optional_mode requires optional: true"))
+		}
+		if md.IsPointer {
+			errs = errors.Join(errs, errors.New("go_struct.optional_mode cannot be used with pointer: true"))
+		}
+		if md.Type != "" && md.Type != ObjectType {
+			errs = errors.Join(errs, fmt.Errorf("go_struct.optional_mode %q requires an object type, got %q", OptionalModeDefault, md.Type))
+		}
+	default:
+		errs = errors.Join(errs, fmt.Errorf("go_struct.optional_mode must be %q or %q, got %q", OptionalModeSome, OptionalModeDefault, md.GoStruct.OptionalMode))
+	}
 
 	if md.Type == "" || md.Type == ObjectType {
 		if len(md.Properties) == 0 && md.Ref == "" {

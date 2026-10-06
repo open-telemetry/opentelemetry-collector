@@ -7,6 +7,17 @@ status:
   class: pkg
 
 exported_configs:
+  protocol:
+    type: string
+    go_struct:
+      type: int
+      custom_default:
+    enum:
+      - http
+      - tcp
+      - smtp
+      - ftp
+    default: http
   port_number:
     type: int
     description: A port number to connect to.
@@ -25,5 +36,8 @@ exported_configs:
         description: The port to connect to.
         default: 8080
         maximum: 10000
+      proto:
+        $ref: protocol
+        description: The protocol to connect with.
     required:
       - host_name

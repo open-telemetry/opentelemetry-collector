@@ -1,0 +1,552 @@
+{
+  "$id": "go.opentelemetry.io/collector/config/configgrpc",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "client_config": {
+      "type": "object",
+      "properties": {
+        "auth": {
+          "type": "object",
+          "properties": {
+            "authenticator": {
+              "type": "string",
+              "description": "Specifies the name of the extension to use in order to authenticate the incoming data point."
+            }
+          },
+          "description": "Configuration for outgoing RPCs."
+        },
+        "authority": {
+          "type": "string",
+          "description": "Parameter that configures client to rewrite \":authority\" header \n(godoc.org/google.golang.org/grpc#WithAuthority)\n"
+        },
+        "balancer_name": {
+          "type": "string",
+          "description": "Sets the balancer in grpclb_policy to discover the servers. \nDefault is pick_first. \nhttps://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md\n",
+          "default": "round_robin"
+        },
+        "compression": {
+          "type": "string",
+          "description": "The compression key for supported compression types within collector.",
+          "enum": [
+            "gzip",
+            "zlib",
+            "deflate",
+            "snappy",
+            "x-snappy-framed",
+            "zstd",
+            "lz4",
+            "none",
+            ""
+          ]
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "The target to which the exporter is going to send traces or metrics, using the gRPC protocol. \nThe valid syntax is described at https://github.com/grpc/grpc/blob/master/doc/naming.md.\n"
+        },
+        "headers": {
+          "type": "object",
+          "description": "The headers associated with gRPC requests.",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "keepalive": {
+          "type": "object",
+          "properties": {
+            "permit_without_stream": {
+              "type": "boolean"
+            },
+            "time": {
+              "type": "string",
+              "default": "10s",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+            },
+            "timeout": {
+              "type": "string",
+              "default": "10s",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+            }
+          },
+          "description": "The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams. \n(https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).\n"
+        },
+        "middlewares": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Specifies the name of the extension to use."
+              }
+            },
+            "description": "Defines the extension ID for a middleware component."
+          },
+          "description": "Middlewares for the gRPC client."
+        },
+        "read_buffer_size": {
+          "type": "integer",
+          "description": "ReadBufferSize for gRPC client. See grpc.WithReadBufferSize. \n(https://godoc.org/google.golang.org/grpc#WithReadBufferSize).\n"
+        },
+        "tls": {
+          "type": "object",
+          "properties": {
+            "insecure": {
+              "type": "boolean",
+              "description": "In gRPC and HTTP when set to true, this is used to disable the client transport security. \nSee https://godoc.org/google.golang.org/grpc#WithInsecure for gRPC. \nPlease refer to https://godoc.org/crypto/tls#Config for more information. (optional, default false)\n"
+            },
+            "insecure_skip_verify": {
+              "type": "boolean",
+              "description": "Enables TLS but not verify the certificate."
+            },
+            "server_name_override": {
+              "type": "string",
+              "description": "Server name requested by client for virtual hosting. This sets the ServerName in the TLSConfig. \nPlease refer to https://godoc.org/crypto/tls#Config for more information. (optional)\n"
+            }
+          },
+          "description": "TLS struct exposes TLS client configuration.",
+          "allOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ca_file": {
+                  "type": "string",
+                  "description": "Path to the CA cert. For a client this verifies the server certificate. \nFor a server this verifies client certificates. If empty uses system root CA. (optional)\n"
+                },
+                "ca_pem": {
+                  "type": "string",
+                  "description": "In memory PEM encoded cert. (optional)"
+                },
+                "cert_file": {
+                  "type": "string",
+                  "description": "Path to the TLS cert to use for TLS required connections. (optional)"
+                },
+                "cert_pem": {
+                  "type": "string",
+                  "description": "In memory PEM encoded TLS cert to use for TLS required connections. (optional)"
+                },
+                "cipher_suites": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "A list of TLS cipher suites that the TLS transport can use. If left blank, a safe default list is used. \nSee https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.\n"
+                },
+                "curve_preferences": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Contains the elliptic curves that will be used in an ECDHE handshake, \nin preference order Defaults to empty list and \"crypto/tls\" defaults are used, internally.\n"
+                },
+                "include_insecure_cipher_suites": {
+                  "type": "boolean",
+                  "description": "Enables support for insecure cipher suites. When set to true, cipher suites returned by \ntls.InsecureCipherSuites() will be available for selection in addition to the secure ones. \nThis should only be used when working with legacy systems that require insecure cipher suites. \n(optional, default false)\n"
+                },
+                "include_system_ca_certs_pool": {
+                  "type": "boolean",
+                  "description": "If true, load system CA certificates pool in addition to the certificates configured in this struct."
+                },
+                "key_file": {
+                  "type": "string",
+                  "description": "Path to the TLS key to use for TLS required connections. (optional)"
+                },
+                "key_pem": {
+                  "type": "string",
+                  "description": "In memory PEM encoded TLS key to use for TLS required connections. (optional)"
+                },
+                "max_version": {
+                  "type": "string",
+                  "description": "Sets the maximum TLS version that is acceptable. If not set, refer to crypto/tls for defaults. (optional)"
+                },
+                "min_version": {
+                  "type": "string",
+                  "description": "Sets the minimum TLS version that is acceptable. If not set, TLS 1.2 will be used. (optional)"
+                },
+                "reload_interval": {
+                  "type": "string",
+                  "description": "Specifies the duration after which the certificate will be reloaded If not set, it will never be reloaded (optional)",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+                },
+                "tpm": {
+                  "type": "object",
+                  "properties": {
+                    "auth": {
+                      "type": "string"
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "owner_auth": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string",
+                      "description": "The path to the TPM device or Unix domain socket. For instance /dev/tpm0 or /dev/tpmrm0."
+                    }
+                  },
+                  "description": "Trusted platform module configuration"
+                }
+              },
+              "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn''t anything specific to a server connection. Components with server connections should use Config.\n",
+              "default": {}
+            }
+          ]
+        },
+        "user_agent": {
+          "type": "string",
+          "description": "UserAgent overrides the default user-agent header sent on gRPC requests. \nThe default is derived from the build info. When empty, the caller controls the user-agent \nvia grpc.WithUserAgent or similar options.\n"
+        },
+        "wait_for_ready": {
+          "type": "boolean",
+          "description": "A parameter configures client to wait for ready state before sending data. \n(https://github.com/grpc/grpc/blob/master/doc/wait-for-ready.md)\n"
+        },
+        "write_buffer_size": {
+          "type": "integer",
+          "description": "Write buffer size for gRPC gRPC. See grpc.WithWriteBufferSize. \n(https://godoc.org/google.golang.org/grpc#WithWriteBufferSize).\n"
+        }
+      },
+      "description": "Defines common settings for a gRPC client configuration."
+    },
+    "keepalive_client_config": {
+      "type": "object",
+      "properties": {
+        "permit_without_stream": {
+          "type": "boolean"
+        },
+        "time": {
+          "type": "string",
+          "default": "10s",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "timeout": {
+          "type": "string",
+          "default": "10s",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        }
+      },
+      "description": "Exposes the keepalive.ClientParameters to be used by the exporter. \nRefer to the original data-structure for the meaning of each parameter: \nhttps://godoc.org/google.golang.org/grpc/keepalive#ClientParameters'\n"
+    },
+    "keepalive_enforcement_policy": {
+      "type": "object",
+      "properties": {
+        "min_time": {
+          "type": "string",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "permit_without_stream": {
+          "type": "boolean"
+        }
+      },
+      "description": "Configuration of the keepalive.EnforcementPolicy. The same default values \nas keepalive.EnforcementPolicy are applicable and get applied by the server. \nSee https://godoc.org/google.golang.org/grpc/keepalive#EnforcementPolicy for details.\n",
+      "default": {}
+    },
+    "keepalive_server_config": {
+      "type": "object",
+      "properties": {
+        "enforcement_policy": {
+          "type": "object",
+          "properties": {
+            "min_time": {
+              "type": "string",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+            },
+            "permit_without_stream": {
+              "type": "boolean"
+            }
+          },
+          "description": "Configuration of the keepalive.EnforcementPolicy. The same default values \nas keepalive.EnforcementPolicy are applicable and get applied by the server. \nSee https://godoc.org/google.golang.org/grpc/keepalive#EnforcementPolicy for details.\n",
+          "default": {}
+        },
+        "server_parameters": {
+          "type": "object",
+          "properties": {
+            "max_connection_age": {
+              "type": "string",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+            },
+            "max_connection_age_grace": {
+              "type": "string",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+            },
+            "max_connection_idle": {
+              "type": "string",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+            },
+            "time": {
+              "type": "string",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+            },
+            "timeout": {
+              "type": "string",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+            }
+          },
+          "description": "Configuration of the keepalive.ServerParameters. The same default values \nas keepalive.ServerParameters are applicable and get applied by the server. \nSee https://godoc.org/google.golang.org/grpc/keepalive#ServerParameters for details.\n",
+          "default": {}
+        }
+      },
+      "description": "Configuration for keepalive.",
+      "default": {}
+    },
+    "keepalive_server_parameters": {
+      "type": "object",
+      "properties": {
+        "max_connection_age": {
+          "type": "string",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "max_connection_age_grace": {
+          "type": "string",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "max_connection_idle": {
+          "type": "string",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "time": {
+          "type": "string",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "timeout": {
+          "type": "string",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        }
+      },
+      "description": "Configuration of the keepalive.ServerParameters. The same default values \nas keepalive.ServerParameters are applicable and get applied by the server. \nSee https://godoc.org/google.golang.org/grpc/keepalive#ServerParameters for details.\n",
+      "default": {}
+    },
+    "server_config": {
+      "type": "object",
+      "properties": {
+        "auth": {
+          "type": "object",
+          "properties": {
+            "authenticator": {
+              "type": "string",
+              "description": "Specifies the name of the extension to use in order to authenticate the incoming data point."
+            }
+          },
+          "description": "Authentication for this receiver"
+        },
+        "include_metadata": {
+          "type": "boolean",
+          "description": "Propagates the incoming connection's metadata to downstream consumers."
+        },
+        "keepalive": {
+          "type": "object",
+          "properties": {
+            "enforcement_policy": {
+              "type": "object",
+              "properties": {
+                "min_time": {
+                  "type": "string",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+                },
+                "permit_without_stream": {
+                  "type": "boolean"
+                }
+              },
+              "description": "Configuration of the keepalive.EnforcementPolicy. The same default values \nas keepalive.EnforcementPolicy are applicable and get applied by the server. \nSee https://godoc.org/google.golang.org/grpc/keepalive#EnforcementPolicy for details.\n",
+              "default": {}
+            },
+            "server_parameters": {
+              "type": "object",
+              "properties": {
+                "max_connection_age": {
+                  "type": "string",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+                },
+                "max_connection_age_grace": {
+                  "type": "string",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+                },
+                "max_connection_idle": {
+                  "type": "string",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+                },
+                "time": {
+                  "type": "string",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+                },
+                "timeout": {
+                  "type": "string",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+                }
+              },
+              "description": "Configuration of the keepalive.ServerParameters. The same default values \nas keepalive.ServerParameters are applicable and get applied by the server. \nSee https://godoc.org/google.golang.org/grpc/keepalive#ServerParameters for details.\n",
+              "default": {}
+            }
+          },
+          "description": "Anchor for all the settings related to keepalive.",
+          "default": {}
+        },
+        "max_concurrent_streams": {
+          "type": "integer",
+          "description": "Sets the limit on the number of concurrent streams to each ServerTransport. \nIt has effect only for streaming RPCs.\n"
+        },
+        "max_recv_msg_size_mib": {
+          "type": "integer",
+          "description": "Sets the maximum size (in MiB) of messages accepted by the server."
+        },
+        "middlewares": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Specifies the name of the extension to use."
+              }
+            },
+            "description": "Defines the extension ID for a middleware component."
+          },
+          "description": "Middlewares for the gRPC server."
+        },
+        "read_buffer_size": {
+          "type": "integer",
+          "description": "ReadBufferSize for gRPC server. See grpc.ReadBufferSize. \n(https://godoc.org/google.golang.org/grpc#ReadBufferSize).\n",
+          "minimum": 0
+        },
+        "tls": {
+          "type": "object",
+          "properties": {
+            "client_ca_file": {
+              "type": "string",
+              "description": "Path to the TLS cert to use by the server to verify a client certificate. (optional) \nThis sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. \nPlease refer to https://godoc.org/crypto/tls#Config for more information. (optional)\n"
+            },
+            "client_ca_file_reload": {
+              "type": "boolean",
+              "description": "Reload the ClientCAs file when it is modified (optional, default false)"
+            }
+          },
+          "description": "Configures the protocol to use TLS. The default value is nil, which will cause the protocol to not use TLS.",
+          "allOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ca_file": {
+                  "type": "string",
+                  "description": "Path to the CA cert. For a client this verifies the server certificate. \nFor a server this verifies client certificates. If empty uses system root CA. (optional)\n"
+                },
+                "ca_pem": {
+                  "type": "string",
+                  "description": "In memory PEM encoded cert. (optional)"
+                },
+                "cert_file": {
+                  "type": "string",
+                  "description": "Path to the TLS cert to use for TLS required connections. (optional)"
+                },
+                "cert_pem": {
+                  "type": "string",
+                  "description": "In memory PEM encoded TLS cert to use for TLS required connections. (optional)"
+                },
+                "cipher_suites": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "A list of TLS cipher suites that the TLS transport can use. If left blank, a safe default list is used. \nSee https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.\n"
+                },
+                "curve_preferences": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Contains the elliptic curves that will be used in an ECDHE handshake, \nin preference order Defaults to empty list and \"crypto/tls\" defaults are used, internally.\n"
+                },
+                "include_insecure_cipher_suites": {
+                  "type": "boolean",
+                  "description": "Enables support for insecure cipher suites. When set to true, cipher suites returned by \ntls.InsecureCipherSuites() will be available for selection in addition to the secure ones. \nThis should only be used when working with legacy systems that require insecure cipher suites. \n(optional, default false)\n"
+                },
+                "include_system_ca_certs_pool": {
+                  "type": "boolean",
+                  "description": "If true, load system CA certificates pool in addition to the certificates configured in this struct."
+                },
+                "key_file": {
+                  "type": "string",
+                  "description": "Path to the TLS key to use for TLS required connections. (optional)"
+                },
+                "key_pem": {
+                  "type": "string",
+                  "description": "In memory PEM encoded TLS key to use for TLS required connections. (optional)"
+                },
+                "max_version": {
+                  "type": "string",
+                  "description": "Sets the maximum TLS version that is acceptable. If not set, refer to crypto/tls for defaults. (optional)"
+                },
+                "min_version": {
+                  "type": "string",
+                  "description": "Sets the minimum TLS version that is acceptable. If not set, TLS 1.2 will be used. (optional)"
+                },
+                "reload_interval": {
+                  "type": "string",
+                  "description": "Specifies the duration after which the certificate will be reloaded If not set, it will never be reloaded (optional)",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+                },
+                "tpm": {
+                  "type": "object",
+                  "properties": {
+                    "auth": {
+                      "type": "string"
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "owner_auth": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string",
+                      "description": "The path to the TPM device or Unix domain socket. For instance /dev/tpm0 or /dev/tpmrm0."
+                    }
+                  },
+                  "description": "Trusted platform module configuration"
+                }
+              },
+              "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn''t anything specific to a server connection. Components with server connections should use Config.\n",
+              "default": {}
+            }
+          ]
+        },
+        "write_buffer_size": {
+          "type": "integer",
+          "description": "WriteBufferSize for gRPC server. See grpc.WriteBufferSize. \n(https://godoc.org/google.golang.org/grpc#WriteBufferSize).\n",
+          "minimum": 0
+        }
+      },
+      "description": "Defines common settings for a gRPC server configuration.",
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "dialer": {
+              "type": "object",
+              "properties": {
+                "timeout": {
+                  "type": "string",
+                  "description": "The maximum amount of time a dial will wait for a connect to complete. The default is no timeout.",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+                }
+              },
+              "description": "Contains options for connecting to an address.",
+              "default": {}
+            },
+            "endpoint": {
+              "type": "string",
+              "description": "Configures the address for this network connection. For TCP and UDP networks, \nthe address has the form \"host:port\". The host must be a literal IP address, \nor a host name that can be resolved to IP addresses. The port must \nbe a literal port number or a service name. If the host is a literal IPv6 address \nit must be enclosed in square brackets, as in \"[2001:db8::1]:80\" or \"[fe80::1%zone]:80\". \nThe zone specifies the scope of the literal IPv6 address as defined in RFC 4007.\n"
+            },
+            "transport": {
+              "type": "string",
+              "description": "Defines the type of transport protocol used. Allowed protocols are \"tcp\", \"tcp4\" (IPv4-only), \n\"tcp6\" (IPv6-only), \"udp\", \"udp4\" (IPv4-only), \"udp6\" (IPv6-only), \"ip\", \"ip4\" (IPv4-only), \n\"ip6\" (IPv6-only), \"unix\", \"unixgram\", \"unixpacket\" and \"npipe\" (Windows named pipes, Windows-only).\n"
+            }
+          },
+          "description": "Represents a network endpoint address.",
+          "default": {
+            "transport": "tcp"
+          }
+        }
+      ]
+    }
+  },
+  "title": "pkg/config/configgrpc"
+}
