@@ -97,7 +97,7 @@ func TestRunPlugin_LifecycleActions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &mockPlugin{minVersion: "0.150.0"}
+			m := &mockPlugin{minVersion: "v0.150.0"}
 			input := "action: " + tt.action + "\nocb_version: v0.151.0\nconfig:\n  key: foo\n"
 			inputFile := filepath.Join(t.TempDir(), "input.yaml")
 			require.NoError(t, os.WriteFile(inputFile, []byte(input), 0o600))
@@ -109,7 +109,7 @@ func TestRunPlugin_LifecycleActions(t *testing.T) {
 }
 
 func TestRunPlugin_UnsupportedVersion(t *testing.T) {
-	m := &mockPlugin{minVersion: "0.151.0"}
+	m := &mockPlugin{minVersion: "v0.151.0"}
 	input := "action: pre-build\nocb_version: v0.150.0\nconfig:\n  key: foo\n"
 	inputFile := filepath.Join(t.TempDir(), "input.yaml")
 	require.NoError(t, os.WriteFile(inputFile, []byte(input), 0o600))
@@ -119,7 +119,7 @@ func TestRunPlugin_UnsupportedVersion(t *testing.T) {
 }
 
 func TestRunPlugin_InvalidOCBVersion(t *testing.T) {
-	m := &mockPlugin{minVersion: "0.151.0"}
+	m := &mockPlugin{minVersion: "v0.151.0"}
 	input := "action: pre-build\nocb_version: latest\nconfig:\n  key: foo\n"
 	inputFile := filepath.Join(t.TempDir(), "input.yaml")
 	require.NoError(t, os.WriteFile(inputFile, []byte(input), 0o600))

@@ -107,7 +107,7 @@ func checkSupportedVersion(impl OCBPlugin, ocbVersion string) error {
 	}
 	pluginMinVersionNorm, err := normalizeSemverString(pluginMinVersion)
 	if err != nil {
-		return fmt.Errorf("couldn't normalize plugin-specified min ocb version: %w", err)
+		return fmt.Errorf("couldn't normalize plugin-specified min ocb version: %w\n%w", err, ErrInvalidPlugin)
 	}
 
 	compare := semver.Compare(ocbVersionNorm, pluginMinVersionNorm)
@@ -137,7 +137,12 @@ var (
 	// ErrUnsupportedOCBVersion is returned when the running ocb version is too old for the plugin.
 	ErrUnsupportedOCBVersion = errors.New("plugin does not support current ocb version")
 
+	// ErrInvalidSemverString is returned when the plugin caller (usually OCB) passed in a bad semver string.
 	ErrInvalidSemverString = errors.New("invalid semver string")
+
+	// ErrInvalidPlugin is returned in a scenario where a plugin is fundamentally invalid and can't be executed.
+	// The message is written to prompt users to reach out to plugin authors if they have written something invalid.
+	ErrInvalidPlugin = errors.New("the plugin is invalid and can never be executed")
 
 	// ErrUnknownAction is returned when an action is requested of the plugin that is unrecognized.
 	ErrUnknownAction = errors.New("unrecognized action")
