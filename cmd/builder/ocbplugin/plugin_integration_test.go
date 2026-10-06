@@ -56,9 +56,10 @@ func TestRunPlugin_Subprocess(t *testing.T) {
 		input        string
 		noArgs       bool
 		noInputFile  bool
+		envMap       map[string]string
 		wantStdout   string
 		wantStderr   string
-		wantExitCode int
+		wantExitCode PluginExitCode
 	}{
 		{
 			name:       "pre-generate",
@@ -81,45 +82,54 @@ func TestRunPlugin_Subprocess(t *testing.T) {
 			wantStdout: "post-build:foo",
 		},
 		{
-			name:         "unsupported ocb version exits code 1",
+			name:         "unsupported ocb version exits with failure code",
 			input:        "action: pre-generate\nocb_version: v0.150.0\nconfig:\n  message: foo\n",
 			wantStderr:   ErrUnsupportedOCBVersion.Error(),
-			wantExitCode: 1,
+			wantExitCode: ExitCodeFailure,
 		},
 		{
-			name:         "unsupported hook action exits code 1",
+			name:  "plugin specifying invalid MinOCBVersion exits with invalid plugin code",
+			input: "action: pre-generate\nocb_version: v0.150.0\nconfig:\n  message: foo\n",
+			envMap: map[string]string{
+				"PRETEND_MIN_OCB_VERSION": "nonsense",
+			},
+			wantStderr:   ErrInvalidPlugin.Error(),
+			wantExitCode: ExitCodeInvalidPlugin,
+		},
+		{
+			name:         "unsupported hook action exits with failure code",
 			input:        "action: pre-generate\nocb_version: v0.151.0\nconfig:\n  unsupported: true\n",
 			wantStderr:   ErrUnsupportedActionPreGenerate.Error(),
-			wantExitCode: 1,
+			wantExitCode: ExitCodeFailure,
 		},
 		{
-			name:         "action error exits code 1",
+			name:         "action error exits code with failure code",
 			input:        "action: pre-build\nocb_version: v0.151.0\nconfig:\n  error: custom failure\n",
 			wantStderr:   "error running 'pre-build' plugin action: custom failure",
-			wantExitCode: 1,
+			wantExitCode: ExitCodeFailure,
 		},
 		{
-			name:         "unknown action exits code 1",
+			name:         "unknown action exits with failure code",
 			input:        "action: invalid-action\nocb_version: v0.151.0\n",
 			wantStderr:   ErrUnknownAction.Error(),
-			wantExitCode: 1,
+			wantExitCode: ExitCodeFailure,
 		},
 		{
-			name:         "input file exists but empty exits code 1",
+			name:         "input file exists but empty exits with failure code",
 			wantStderr:   "the plugin input file at",
-			wantExitCode: 1,
+			wantExitCode: ExitCodeFailure,
 		},
 		{
-			name:         "input file does not exist exits code 1",
+			name:         "input file does not exist exits code with failure code",
 			noInputFile:  true,
 			wantStderr:   "no such file or directory",
-			wantExitCode: 1,
+			wantExitCode: ExitCodeFailure,
 		},
 		{
-			name:         "missing args prints usage exits code 2",
+			name:         "missing args prints usage exits with called incorrectly code",
 			noArgs:       true,
 			wantStderr:   "usage:",
-			wantExitCode: 2,
+			wantExitCode: ExitCodeCalledIncorrectly,
 		},
 	}
 
@@ -134,15 +144,13 @@ func TestRunPlugin_Subprocess(t *testing.T) {
 				args = append(args, inputFilePath)
 			}
 
+			for envVar, value := range tt.envMap {
+				t.Setenv(envVar, value)
+			}
+
 			stdout, stderr, err := runDummyPluginSubprocess(t, binPath, args...)
 
-			if tt.wantExitCode > 0 {
-				var exitErr *exec.ExitError
-				require.ErrorAs(t, err, &exitErr)
-				require.Equal(t, tt.wantExitCode, exitErr.ExitCode())
-			} else {
-				require.NoError(t, err)
-			}
+			assert.NoError(t, tt.wantExitCode.ExecErrIsExitCode(err))
 
 			assert.Contains(t, stderr, tt.wantStderr)
 			assert.Contains(t, stdout, tt.wantStdout)

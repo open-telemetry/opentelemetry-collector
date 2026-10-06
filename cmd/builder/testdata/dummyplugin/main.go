@@ -6,11 +6,14 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/go-viper/mapstructure/v2"
 
 	"go.opentelemetry.io/collector/cmd/builder/ocbplugin"
 )
+
+var PretendMinOCBVersion = os.Getenv("PRETEND_MIN_OCB_VERSION")
 
 type Config struct {
 	Message     string `mapstructure:"message"`
@@ -52,7 +55,10 @@ func (d *dummyPlugin) PostBuild(config map[string]any) error {
 }
 
 func (d *dummyPlugin) MinOCBVersion() string {
-	return "0.151.0"
+	if PretendMinOCBVersion != "" {
+		return PretendMinOCBVersion
+	}
+	return "v0.151.0"
 }
 
 func main() {
