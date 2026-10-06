@@ -14,6 +14,7 @@ var Acronyms = map[string]bool{
 	"API":   true,
 	"ASCII": true,
 	"CA":    true,
+	"CORS":  true,
 	"CPU":   true,
 	"CSS":   true,
 	"DNS":   true,
