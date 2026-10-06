@@ -122,7 +122,7 @@ func TestRunPlugin_Subprocess(t *testing.T) {
 		{
 			name:         "input file does not exist exits code with failure code",
 			noInputFile:  true,
-			wantStderr:   "no such file or directory",
+			wantStderr:   "error reading plugin input",
 			wantExitCode: ExitCodeFailure,
 		},
 		{
