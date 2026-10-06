@@ -110,32 +110,33 @@ status:
 
 func TestRunContents(t *testing.T) {
 	tests := []struct {
-		yml                             string
-		wantMetricsGenerated            bool
-		wantLogsBuilderGenerated        bool
-		wantEventsGenerated             bool
-		wantMetricsContext              bool
-		wantLogsGenerated               bool
-		wantConfigGenerated             bool
-		wantTelemetryGenerated          bool
-		wantResourceAttributesGenerated bool
-		wantReadmeGenerated             bool
-		wantStatusGenerated             bool
-		wantComponentTestGenerated      bool
-		wantBuildTag                    string
-		wantReadmePlatform              string
-		wantGoleakIgnore                bool
-		wantGoleakSkip                  bool
-		wantGoleakSetup                 bool
-		wantGoleakTeardown              bool
-		wantFeatureGatesGenerated       bool
-		wantConfigSchemaGenerated       bool
-		wantMetricsSchemaYamlGenerated  bool
-		wantConfigDocGenerated          bool
-		wantErr                         bool
-		wantOrderErr                    bool
-		wantRunErr                      bool
-		wantAttributes                  []string
+		yml                               string
+		wantMetricsGenerated              bool
+		wantLogsBuilderGenerated          bool
+		wantEventsGenerated               bool
+		wantMetricsContext                bool
+		wantLogsGenerated                 bool
+		wantConfigGenerated               bool
+		wantTelemetryGenerated            bool
+		wantResourceAttributesGenerated   bool
+		wantReadmeGenerated               bool
+		wantStatusGenerated               bool
+		wantSendingQueueFunctionGenerated bool
+		wantComponentTestGenerated        bool
+		wantBuildTag                      string
+		wantReadmePlatform                string
+		wantGoleakIgnore                  bool
+		wantGoleakSkip                    bool
+		wantGoleakSetup                   bool
+		wantGoleakTeardown                bool
+		wantFeatureGatesGenerated         bool
+		wantConfigSchemaGenerated         bool
+		wantMetricsSchemaYamlGenerated    bool
+		wantConfigDocGenerated            bool
+		wantErr                           bool
+		wantOrderErr                      bool
+		wantRunErr                        bool
+		wantAttributes                    []string
 	}{
 		{
 			yml:     "invalid.yaml",
