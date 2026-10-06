@@ -9,8 +9,22 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 )
+
+func TestMapListPairKeys(t *testing.T) {
+	conf := confmap.New()
+	require.NoError(t, conf.Marshal(configopaque.Pair{
+		Name:  "header",
+		Value: "secret",
+	}))
+
+	assert.Equal(t, map[string]any{
+		nameKey:  "header",
+		valueKey: redactedMask,
+	}, conf.ToStringMap())
+}
 
 func TestRedactWithPreExpansion(t *testing.T) {
 	tests := []struct {
@@ -167,8 +181,8 @@ func TestRedactWithPreExpansion(t *testing.T) {
 				"exporters": map[string]any{
 					"foo": map[string]any{
 						"headers": []any{
-							map[string]any{"name": "token", "value": redactedMask},
-							map[string]any{"name": "other", "value": redactedMask},
+							map[string]any{nameKey: "token", valueKey: redactedMask},
+							map[string]any{nameKey: "other", valueKey: redactedMask},
 						},
 					},
 				},
@@ -203,9 +217,9 @@ func TestRedactWithPreExpansion(t *testing.T) {
 					"foo": map[string]any{
 						"headers": []any{
 							"non-map",
-							map[string]any{"name": 123, "value": redactedMask},
-							map[string]any{"name": "missing-value"},
-							map[string]any{"name": "valid", "value": redactedMask},
+							map[string]any{nameKey: 123, valueKey: redactedMask},
+							map[string]any{nameKey: "missing-value"},
+							map[string]any{nameKey: "valid", valueKey: redactedMask},
 						},
 					},
 				},

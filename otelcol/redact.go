@@ -10,6 +10,12 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
+// nameKey and valueKey are the serialized field names of configopaque.Pair.
+const (
+	nameKey  = "name"
+	valueKey = "value"
+)
+
 // redactedMask is the masked value emitted by configopaque.String.MarshalText.
 var redactedMask = func() string {
 	b, _ := configopaque.String("").MarshalText()
@@ -53,11 +59,11 @@ func applyMask(raw, redacted any) any {
 				if !ok {
 					continue
 				}
-				name, ok := redMap["name"].(string)
+				name, ok := redMap[nameKey].(string)
 				if !ok {
 					continue
 				}
-				redMapVal, ok := redMap["value"]
+				redMapVal, ok := redMap[valueKey]
 				if !ok {
 					continue
 				}
