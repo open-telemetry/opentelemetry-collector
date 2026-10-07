@@ -140,8 +140,8 @@ func TestRunPlugin_InvalidPluginMinVersion(t *testing.T) {
 
 func TestRunPlugin_ActionError(t *testing.T) {
 	expectedErr := errors.New("custom pre-build error")
-	m := &mockPlugin{preBuildErr: expectedErr}
-	input := "action: pre-build\nconfig:\n  key: foo\n"
+	m := &mockPlugin{minVersion: "v0.150.0", preBuildErr: expectedErr}
+	input := "action: pre-build\nocb_version: v0.151.0\nconfig:\n  key: foo\n"
 	inputFile := filepath.Join(t.TempDir(), "input.yaml")
 	require.NoError(t, os.WriteFile(inputFile, []byte(input), 0o600))
 	err := runPlugin(m, inputFile)
@@ -150,8 +150,8 @@ func TestRunPlugin_ActionError(t *testing.T) {
 }
 
 func TestRunPlugin_UnknownAction(t *testing.T) {
-	m := &mockPlugin{}
-	input := "action: invalid-action\n"
+	m := &mockPlugin{minVersion: "v0.150.0"}
+	input := "action: invalid-action\nocb_version: v0.151.0\n"
 	inputFile := filepath.Join(t.TempDir(), "input.yaml")
 	require.NoError(t, os.WriteFile(inputFile, []byte(input), 0o600))
 	err := runPlugin(m, inputFile)
