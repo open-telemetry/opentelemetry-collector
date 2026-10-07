@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplepkg"
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper/internal/metadata"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
@@ -23,6 +24,9 @@ func NewDefaultSamplePkg() SamplePkg {
 }
 
 type TargetsItem struct {
+	// Endpoint represents a network endpoint address.
+	Endpoint configoptional.Optional[confignet.AddrConfig] `mapstructure:"endpoint"`
+
 	Interval configoptional.Optional[time.Duration] `mapstructure:"interval"`
 
 	// Labels static key-value labels attached to all metrics from this target.
@@ -33,6 +37,9 @@ type TargetsItem struct {
 
 	// TimeoutSeconds timeout in seconds for each scrape request.
 	TimeoutSeconds float64 `mapstructure:"timeout_seconds"`
+
+	// placeholder for the private fields
+	privateTargetsItemFields
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -65,7 +72,10 @@ func (c *TargetsItem) Validate() error {
 
 // NewDefaultTargetsItem returns a new TargetsItem with default values consistent with the annotations in the schema.
 func NewDefaultTargetsItem() TargetsItem {
+	endpoint := confignet.NewDefaultAddrConfig()
+	endpoint.Transport = "ip4"
 	return TargetsItem{
+		Endpoint:       configoptional.Default(endpoint),
 		Interval:       configoptional.Some(10 * time.Second),
 		Labels:         map[string]string{"option1": "value1", "option2": "value2"},
 		RetryCount:     3,
@@ -90,8 +100,14 @@ type Config struct {
 	// LogLevel logging level for the scraper.
 	LogLevel string `mapstructure:"log_level"`
 
+	// Protocol protocol used when connecting to scrape targets, reused from samplepkg.
+	Protocol samplepkg.Protocol `mapstructure:"protocol"`
+
 	// Targets list of targets to scrape metrics from.
 	Targets *[]TargetsItem `mapstructure:"targets"`
+
+	// placeholder for the private fields
+	privateConfigFields
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -139,6 +155,7 @@ func createDefaultConfig() component.Config {
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		JobName:              "test_job",
 		LogLevel:             "info",
+		Protocol:             samplepkg.NewDefaultProtocol(),
 		Targets:              &[]TargetsItem{NewDefaultTargetsItem()},
 	}
 }

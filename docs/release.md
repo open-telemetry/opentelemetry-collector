@@ -34,7 +34,7 @@ Before the release, make sure there are no open release blockers in [core](https
 3. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/prepare-release.yml). This action will create an issue to track the progress of the release and a pull request to update the changelog and version numbers in the repo.
    - When prompted, enter the version numbers determined in Step 2, but do not include a leading `v`.
    - While this PR is open all merging in Core is automatically halted via the `Merge freeze / Check` CI check.
-   - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
+   - If the release PR needs changes, make them in your fork and open a separate PR that targets the release PR's `prepare-release-prs/x` branch. You don't need to wait for CI to pass on this separate PR before merging it.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
 4. On your local machine, make sure you are on the `main` branch and that the PR from step 3 is incorporated **at the head of your branch** (this is required to ensure the proper commit is used for the release tags and branch creation below). Tag the module groups with the new release version by running:
@@ -172,8 +172,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Core Release manager  | Contrib release manager | 'Releases' release manager |
 |------------|----------|-----------------------|-------------------------|----------------------------|
-| 2026-09-14 | v0.161.0 | [@codeboten][8]       | [@codeboten][8]         | [@codeboten][8]            |
-| 2026-09-28 | v0.162.0 | [@dmathieu][12]       | [@andrzej-stencel][4]   | [@dehaansa][16]            |
 | 2026-10-12 | v0.163.0 | [@bogdandrutu][9]     | [@bogdandrutu][9]       | [@bogdandrutu][9]          |
 | 2026-10-26 | v0.164.0 | [@jade-guiton-dd][10] | [@ChrsMark][18]         | [@crobert-1][19]           |
 | 2026-11-09 | v0.165.0 | [@codeboten][8]       | [@braydonk][13]         | [@MovieStoreGuy][17]       |
@@ -184,6 +182,8 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2027-01-18 | v0.170.0 | [@TylerHelmuth][3]    | [@TylerHelmuth][3]      | [@TylerHelmuth][3]         |
 | 2027-02-01 | v0.171.0 | [@songy23][6]         | [@songy23][6]           | [@songy23][6]              |
 | 2027-02-15 | v0.172.0 | [@dmitryax][7]        | [@dmitryax][7]          | [@dmitryax][7]             |
+| 2027-03-01 | v0.173.0 | [@codeboten][8]       | [@codeboten][8]         | [@codeboten][8]            |
+| 2027-03-15 | v0.174.0 | [@dmathieu][12]       | [@andrzej-stencel][4]   | [@dehaansa][16]            |
 
 [1]: https://github.com/jmacd
 [2]: https://github.com/evan-bradley

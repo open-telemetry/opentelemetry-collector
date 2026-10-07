@@ -25,28 +25,30 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                               metric.Meter
-	mu                                  sync.Mutex
-	registrations                       []metric.Registration
-	ExporterEnqueueFailedLogRecords     metric.Int64Counter
-	ExporterEnqueueFailedMetricPoints   metric.Int64Counter
-	ExporterEnqueueFailedProfileSamples metric.Int64Counter
-	ExporterEnqueueFailedSpans          metric.Int64Counter
-	ExporterEnqueueSize                 metric.Int64Histogram
-	ExporterEnqueueSizeBytes            metric.Int64Histogram
-	ExporterInFlightRequests            metric.Int64UpDownCounter
-	ExporterQueueBatchSendSize          metric.Int64Histogram
-	ExporterQueueBatchSendSizeBytes     metric.Int64Histogram
-	ExporterQueueCapacity               metric.Int64ObservableGauge
-	ExporterQueueSize                   metric.Int64ObservableGauge
-	ExporterSendFailedLogRecords        metric.Int64Counter
-	ExporterSendFailedMetricPoints      metric.Int64Counter
-	ExporterSendFailedProfileSamples    metric.Int64Counter
-	ExporterSendFailedSpans             metric.Int64Counter
-	ExporterSentLogRecords              metric.Int64Counter
-	ExporterSentMetricPoints            metric.Int64Counter
-	ExporterSentProfileSamples          metric.Int64Counter
-	ExporterSentSpans                   metric.Int64Counter
+	meter                                    metric.Meter
+	mu                                       sync.Mutex
+	registrations                            []metric.Registration
+	ExporterEnqueueFailedLogRecords          metric.Int64Counter
+	ExporterEnqueueFailedMetricPoints        metric.Int64Counter
+	ExporterEnqueueFailedProfileSamples      metric.Int64Counter
+	ExporterEnqueueFailedSpans               metric.Int64Counter
+	ExporterEnqueueSize                      metric.Int64Histogram
+	ExporterEnqueueSizeBytes                 metric.Int64Histogram
+	ExporterInFlightRequests                 metric.Int64UpDownCounter
+	ExporterQueueBatchPartitionCacheCapacity metric.Int64ObservableGauge
+	ExporterQueueBatchPartitionCacheSize     metric.Int64ObservableGauge
+	ExporterQueueBatchSendSize               metric.Int64Histogram
+	ExporterQueueBatchSendSizeBytes          metric.Int64Histogram
+	ExporterQueueCapacity                    metric.Int64ObservableGauge
+	ExporterQueueSize                        metric.Int64ObservableGauge
+	ExporterSendFailedLogRecords             metric.Int64Counter
+	ExporterSendFailedMetricPoints           metric.Int64Counter
+	ExporterSendFailedProfileSamples         metric.Int64Counter
+	ExporterSendFailedSpans                  metric.Int64Counter
+	ExporterSentLogRecords                   metric.Int64Counter
+	ExporterSentMetricPoints                 metric.Int64Counter
+	ExporterSentProfileSamples               metric.Int64Counter
+	ExporterSentSpans                        metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -58,6 +60,36 @@ type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
 
 func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
+}
+
+// RegisterExporterQueueBatchPartitionCacheCapacityCallback sets callback for observable ExporterQueueBatchPartitionCacheCapacity metric.
+func (builder *TelemetryBuilder) RegisterExporterQueueBatchPartitionCacheCapacityCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.ExporterQueueBatchPartitionCacheCapacity, obs: o})
+		return nil
+	}, builder.ExporterQueueBatchPartitionCacheCapacity)
+	if err != nil {
+		return err
+	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
+}
+
+// RegisterExporterQueueBatchPartitionCacheSizeCallback sets callback for observable ExporterQueueBatchPartitionCacheSize metric.
+func (builder *TelemetryBuilder) RegisterExporterQueueBatchPartitionCacheSizeCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.ExporterQueueBatchPartitionCacheSize, obs: o})
+		return nil
+	}, builder.ExporterQueueBatchPartitionCacheSize)
+	if err != nil {
+		return err
+	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
 }
 
 // RegisterExporterQueueCapacityCallback sets callback for observable ExporterQueueCapacity metric.
@@ -160,6 +192,18 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_exporter_in_flight_requests",
 		metric.WithDescription("Number of export requests currently in-flight (including retry backoff). [Development]"),
 		metric.WithUnit("{request}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterQueueBatchPartitionCacheCapacity, err = builder.meter.Int64ObservableGauge(
+		"otelcol_exporter_queue_batch_partition_cache_capacity",
+		metric.WithDescription("Maximum number of active partition batchers in the LRU cache. Only recorded when batch partitioning is enabled. [Development]"),
+		metric.WithUnit("{partition}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterQueueBatchPartitionCacheSize, err = builder.meter.Int64ObservableGauge(
+		"otelcol_exporter_queue_batch_partition_cache_size",
+		metric.WithDescription("Current number of active partition batchers in the LRU cache. Only recorded when batch partitioning is enabled. [Development]"),
+		metric.WithUnit("{partition}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterQueueBatchSendSize, err = builder.meter.Int64Histogram(

@@ -35,7 +35,10 @@ require (
 require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/mdlayher/socket v0.6.0 // indirect
+	github.com/mdlayher/vsock v1.3.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.162.0 // indirect
+	golang.org/x/sync v0.23.0 // indirect
 )
 
 require (

@@ -23,6 +23,12 @@ CHLOGGEN_CONFIG := .chloggen/config.yaml
 # no trailing slash
 JUNIT_OUT_DIR ?= $(TOOLS_MOD_DIR)/testresults
 
+# Ignored vulnerabilities with justification:
+# - GO-2026-6443: False positive, the vulndb entry marks google.golang.org/grpc
+#   v1.84.0 as affected, but v1.84.0 contains the fix.
+#   See https://github.com/golang/vulndb/issues/6659
+IGNORED_VULNS = GO-2026-6443
+
 .PHONY: test
 test:
     # GODEBUG=fips140=only is used to surface any FIPS-140-3 non-compliant cryptographic
@@ -37,6 +43,16 @@ test-with-cover:
 	$(GO_TOOL) gotestsum \
 		--packages="./..." -- \
 		$(GOTEST_OPT) -cover -covermode=atomic -coverpkg $(COVER_PKGS) -args -test.gocoverdir="$(PWD)/coverage/unit"
+
+COVERAGE_PROFILE ?= $(SRC_ROOT)/coverage.txt
+
+.PHONY: check-stability-mod
+check-stability-mod:
+	@for dir in $$($(GOCMD) list -f '{{.Dir}}' ./... | sort -u); do \
+		f="$$dir/metadata.yaml"; \
+		[ -f "$$f" ] || continue; \
+		mdatagen check-stability --profile=$(COVERAGE_PROFILE) "$$f" || exit 1; \
+	done
 
 .PHONY: test-with-junit
 test-with-junit:
@@ -82,9 +98,22 @@ common/goimports:
 common/gofumpt:
 	$(GO_TOOL) gofumpt -l -w -extra .
 
+# jq filter: IDs of vulnerabilities whose vulnerable symbols are called by the code
+_GOVULN_CALLED = [.[] | select(.finding.trace[0].function != null) | .finding.osv] | unique | .[]
 .PHONY: vulncheck
 vulncheck:
-	$(GO_TOOL) govulncheck ./...
+	@set -e; \
+	OUT="$$(mktemp)"; trap 'rm -f "$$OUT"' EXIT; \
+	$(GO_TOOL) govulncheck -format json ./... > "$$OUT"; \
+	FOUND="$$($(GO_TOOL) github.com/itchyny/gojq/cmd/gojq -r -s '$(_GOVULN_CALLED)' "$$OUT")"; \
+	UNIGNORED=""; \
+	for id in $$FOUND; do \
+		echo "$(IGNORED_VULNS)" | grep -qw "$$id" && echo "Ignoring $$id" || UNIGNORED="$$UNIGNORED $$id"; \
+	done; \
+	[ -z "$$UNIGNORED" ] && echo "No vulnerabilities found." && exit 0; \
+	echo "Vulnerabilities need attention:$$UNIGNORED"; \
+	$(GO_TOOL) govulncheck ./... || true; \
+	exit 1
 
 .PHONY: generate
 generate:

@@ -33,6 +33,7 @@ type obsQueue[T request.Request] struct {
 	enqueueSizeInst      metric.Int64Histogram
 	enqueueSizeBytesInst metric.Int64Histogram
 	tracer               trace.Tracer
+	spanAttrs            trace.SpanStartEventOption
 }
 
 func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T], error) {
@@ -66,6 +67,7 @@ func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T
 		tb:         tb,
 		metricAttr: metric.WithAttributeSet(attribute.NewSet(exporterAttr)),
 		tracer:     tracer,
+		spanAttrs:  trace.WithAttributes(exporterAttr, attribute.String(dataTypeKey, set.Signal.String())),
 	}
 
 	switch set.Signal {
@@ -100,7 +102,7 @@ func (or *obsQueue[T]) Offer(ctx context.Context, req T) error {
 		or.enqueueSizeBytesInst.Record(ctx, int64(req.BytesSize()), or.metricAttr)
 	}
 
-	ctx, span := or.tracer.Start(ctx, "exporter/enqueue")
+	ctx, span := or.tracer.Start(ctx, "exporter/enqueue", or.spanAttrs)
 	err := or.Queue.Offer(ctx, req)
 	span.End()
 

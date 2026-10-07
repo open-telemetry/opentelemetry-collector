@@ -122,6 +122,18 @@ default:
 	}
 }
 
+func TestConfigMetadata_UnmarshalYAMLPointerAndOptional(t *testing.T) {
+	var md ConfigMetadata
+	require.NoError(t, yaml.Unmarshal([]byte(`
+type: object
+pointer: true
+optional: true
+`), &md))
+
+	require.True(t, md.IsPointer)
+	require.True(t, md.IsOptional)
+}
+
 func TestConfigMetadata_ToJSONDefaultValue(t *testing.T) {
 	absent := &ConfigMetadata{Type: "string"}
 
@@ -188,7 +200,7 @@ func TestConfigMetadata_Validate_Valid(t *testing.T) {
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
 					"endpoint": {Type: "string"},
-					"timeout":  {Type: "string", GoType: "time.Duration"},
+					"timeout":  {Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 					"port":     {Type: "integer"},
 				},
 			},
@@ -268,18 +280,52 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 			want:  GoStructConfig{},
 		},
 		{
+			name:  "custom_default present with empty map",
+			input: map[string]any{"custom_default": map[string]any{}},
+			want:  GoStructConfig{CustomDefault: &CustomDefaultConfig{}},
+		},
+		{
+			name:  "custom_default present with nil value",
+			input: map[string]any{"custom_default": nil},
+			want:  GoStructConfig{CustomDefault: &CustomDefaultConfig{}},
+		},
+		{
+			name:  "custom_default absent",
+			input: map[string]any{},
+			want:  GoStructConfig{},
+		},
+		{
+			name: "custom_validator and custom_default both present",
+			input: map[string]any{
+				"custom_validator": map[string]any{"name": "validateConfig"},
+				"custom_default":   map[string]any{"name": "defaultConfig"},
+			},
+			want: GoStructConfig{
+				CustomValidator: &CustomValidatorConfig{Name: "validateConfig"},
+				CustomDefault:   &CustomDefaultConfig{Name: "defaultConfig"},
+			},
+		},
+		{
 			name: "go_struct fields decode through mapstructure",
 			input: map[string]any{
 				"anonymous":      true,
 				"ignore_default": true,
+				"optional_mode":  "default",
+				"private_fields": true,
 				"custom_validator": map[string]any{
 					"name": "validateConfig",
+				},
+				"custom_default": map[string]any{
+					"name": "defaultConfig",
 				},
 			},
 			want: GoStructConfig{
 				Anonymous:       true,
 				IgnoreDefault:   true,
+				OptionalMode:    OptionalModeDefault,
+				PrivateFields:   true,
 				CustomValidator: &CustomValidatorConfig{Name: "validateConfig"},
+				CustomDefault:   &CustomDefaultConfig{Name: "defaultConfig"},
 			},
 		},
 		{
@@ -356,6 +402,96 @@ func TestConfigMetadata_Validate_EnumOnComplexType(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestConfigMetadata_ValidateOptionalMode(t *testing.T) {
+	tests := []struct {
+		name    string
+		md      *ConfigMetadata
+		wantErr string
+	}{
+		{
+			name: "empty mode",
+			md:   &ConfigMetadata{Type: ObjectType, Properties: map[string]*ConfigMetadata{"field": {Type: StringType}}},
+		},
+		{
+			name: "some mode",
+			md: &ConfigMetadata{
+				Type:       ObjectType,
+				IsOptional: true,
+				Properties: map[string]*ConfigMetadata{"field": {Type: StringType}},
+				GoStruct:   GoStructConfig{OptionalMode: OptionalModeSome},
+			},
+		},
+		{
+			name: "default mode on object",
+			md: &ConfigMetadata{
+				Type:       ObjectType,
+				IsOptional: true,
+				Properties: map[string]*ConfigMetadata{"field": {Type: StringType}},
+				GoStruct:   GoStructConfig{OptionalMode: OptionalModeDefault},
+			},
+		},
+		{
+			name: "default mode on unresolved reference",
+			md: &ConfigMetadata{
+				Ref:        "example.config",
+				IsOptional: true,
+				GoStruct:   GoStructConfig{OptionalMode: OptionalModeDefault},
+			},
+		},
+		{
+			name: "unknown mode",
+			md: &ConfigMetadata{
+				Type:       ObjectType,
+				IsOptional: true,
+				Properties: map[string]*ConfigMetadata{"field": {Type: StringType}},
+				GoStruct:   GoStructConfig{OptionalMode: "invalid"},
+			},
+			wantErr: "go_struct.optional_mode must be",
+		},
+		{
+			name: "mode without optional",
+			md: &ConfigMetadata{
+				Type:       ObjectType,
+				Properties: map[string]*ConfigMetadata{"field": {Type: StringType}},
+				GoStruct:   GoStructConfig{OptionalMode: OptionalModeDefault},
+			},
+			wantErr: "requires optional: true",
+		},
+		{
+			name: "default mode with pointer",
+			md: &ConfigMetadata{
+				Type:       ObjectType,
+				IsOptional: true,
+				IsPointer:  true,
+				Properties: map[string]*ConfigMetadata{"field": {Type: StringType}},
+				GoStruct:   GoStructConfig{OptionalMode: OptionalModeDefault},
+			},
+			wantErr: "cannot be used with pointer: true",
+		},
+		{
+			name: "default mode with scalar",
+			md: &ConfigMetadata{
+				Type:       StringType,
+				IsOptional: true,
+				GoStruct:   GoStructConfig{OptionalMode: OptionalModeDefault},
+			},
+			wantErr: "requires an object type",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.md.Validate()
+			if tt.wantErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.wantErr)
 		})
 	}
 }
@@ -501,7 +637,6 @@ func TestConfigMetadata_Clone(t *testing.T) {
 		IsOptional:    true,
 		Embed:         true,
 		InternalOnly:  true,
-		GoType:        "time.Duration",
 		Pattern:       "^a$",
 		Format:        "duration",
 		Properties: map[string]*ConfigMetadata{
@@ -513,6 +648,8 @@ func TestConfigMetadata_Clone(t *testing.T) {
 			IgnoreDefault:   true,
 			FieldName:       "Endpoint",
 			CustomValidator: &CustomValidatorConfig{Name: "validate"},
+			CustomDefault:   &CustomDefaultConfig{Name: "defaultEndpoint"},
+			Type:            "time.Duration",
 		},
 	}
 
@@ -530,6 +667,7 @@ func TestConfigMetadata_Clone(t *testing.T) {
 	clone.Default.(map[string]any)["flag"] = false
 	clone.Default.(map[string]any)["nested"].([]any)[0] = "changed"
 	clone.GoStruct.CustomValidator.Name = "other"
+	clone.GoStruct.CustomDefault.Name = "other"
 	clone.Values.Type = "changed"
 
 	assert.Equal(t, "root", orig.Description)
@@ -540,6 +678,7 @@ func TestConfigMetadata_Clone(t *testing.T) {
 	assert.Equal(t, true, orig.Default.(map[string]any)["flag"])
 	assert.Equal(t, "a", orig.Default.(map[string]any)["nested"].([]any)[0])
 	assert.Equal(t, "validate", orig.GoStruct.CustomValidator.Name)
+	assert.Equal(t, "defaultEndpoint", orig.GoStruct.CustomDefault.Name)
 	assert.Equal(t, SchemaType("string"), orig.Values.Type)
 }
 
@@ -629,6 +768,8 @@ func TestConfigMetadata_MergeFrom(t *testing.T) {
 				Anonymous:     true,
 				IgnoreDefault: true,
 				FieldName:     "Field",
+				OptionalMode:  OptionalModeDefault,
+				PrivateFields: true,
 			},
 		}
 
@@ -643,5 +784,20 @@ func TestConfigMetadata_MergeFrom(t *testing.T) {
 		assert.True(t, md.GoStruct.Anonymous)
 		assert.True(t, md.GoStruct.IgnoreDefault)
 		assert.Equal(t, "Field", md.GoStruct.FieldName)
+		assert.Equal(t, OptionalModeDefault, md.GoStruct.OptionalMode)
+		assert.True(t, md.GoStruct.PrivateFields)
+	})
+
+	t.Run("explicit optional mode is preserved", func(t *testing.T) {
+		md := &ConfigMetadata{
+			GoStruct: GoStructConfig{OptionalMode: OptionalModeSome},
+		}
+		other := &ConfigMetadata{
+			GoStruct: GoStructConfig{OptionalMode: OptionalModeDefault},
+		}
+
+		md.MergeFrom(other)
+
+		assert.Equal(t, OptionalModeSome, md.GoStruct.OptionalMode)
 	})
 }
