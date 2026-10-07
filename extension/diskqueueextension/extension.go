@@ -23,7 +23,13 @@ import (
 	"go.opentelemetry.io/collector/extension/xextension/queue"
 )
 
-const separator = "\n"
+const (
+	separator         = "\n"
+	recordHeaderSize  = int64(24)
+	metadataValueSize = 32
+)
+
+var errClientClosed = errors.New("disk queue client is closed")
 
 type Extension interface {
 	extension.Extension
@@ -31,7 +37,6 @@ type Extension interface {
 	// GetClient will create a client for use by the specified component.
 	// Each component can have multiple storages (e.g. one for each signal),
 	// which can be identified using storageName parameter.
-	// The component can use the client to manage state
 	GetClient(ctx context.Context, kind component.Kind, id component.ID, storageName string) (queue.Client, error)
 }
 
@@ -60,25 +65,48 @@ func (d *diskAccessExtension) GetClient(_ context.Context, _ component.Kind, _ c
 		metadataTruncateEvery: d.cfg.MetadataTruncateEvery,
 		exitFlag:              atomic.Bool{},
 		logger:                d.logger,
+		pendingEntries:        make(map[uint64]queueEntry),
+		completed:             make(map[uint64]struct{}),
 	}
 
 	c.peekChan = make(chan queue.PeekWithCallback)
 	c.writeChan = make(chan queue.WriteOp)
-	c.writeResponseChan = make(chan error)
+	c.writeResponseChan = make(chan error, 1)
 	c.exitChan = make(chan int)
-	c.callbackChan = make(chan callback)
+	c.callbackChan = make(chan callback, 128)
 	c.peekRequestChan = make(chan struct{})
 	c.waitForWriteChan = make(chan struct{})
-	m, err := c.retrieveMetaData(c.metaDataFilePath())
+
+	m, err := c.retrieveMetadata(c.metadataFilePath())
 	if err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}
+	if m.size == nil {
+		m.size = &atomic.Int64{}
+	}
+
+	p, err := c.retrieveCompletionMetadata(c.completionMetadataFilePath())
+	if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+	if p.size == nil {
+		p.size = &atomic.Int64{}
+	}
+
+	// The write metadata stores the cumulative size appended to the queue,
+	// while the completion metadata stores the cumulative size acknowledged by
+	// consumers. Their difference is the queue size after a restart, even when
+	// the two metadata files were synced at different times.
+	queueSize := m.totalSize - p.totalSize
+	if queueSize < 0 {
+		queueSize = 0
+	}
+	m.size.Store(queueSize)
+	p.size.Store(queueSize)
+
 	c.metadata = *m
-	m, err = c.retrievePeekMetaData(c.peekMetaDataFilePath())
-	if err != nil && !os.IsNotExist(err) {
-		return nil, err
-	}
-	c.peekMetadata = *m
+	c.completionMetadata = *p
+	c.peekMetadata = *p
 	c.exitWG.Go(c.readLoop)
 	c.exitWG.Go(c.writeLoop)
 	return c, nil
@@ -87,67 +115,74 @@ func (d *diskAccessExtension) GetClient(_ context.Context, _ component.Kind, _ c
 var _ queue.Client = (*diskAccessClient)(nil)
 
 type diskAccessClient struct {
-	writeFile             *os.File
-	exitChan              chan int
-	peekFile              *os.File
-	peekRequestChan       chan struct{}
-	waitForWriteChan      chan struct{}
-	logger                *zap.Logger
-	callbackChan          chan callback
-	metadataFile          *os.File
-	peekMetadataFile      *os.File
-	peekChan              chan queue.PeekWithCallback
-	writeChan             chan queue.WriteOp
-	writeResponseChan     chan error
-	dataPath              string
-	name                  string
-	peekMetadata          metadata
-	metadata              metadata
-	exitWG                sync.WaitGroup
-	maxBytesPerFile       int64
-	syncTimeout           time.Duration
-	syncEvery             int64
-	metadataTruncateEvery int
-	metadataWrites        int
-	peekMetadataWrites    int
-	exitFlag              atomic.Bool
+	writeFile              *os.File
+	exitChan               chan int
+	peekFile               *os.File
+	peekFileNum            int64
+	peekRequestChan        chan struct{}
+	waitForWriteChan       chan struct{}
+	logger                 *zap.Logger
+	callbackChan           chan callback
+	metadataFile           *os.File
+	completionMetadataFile *os.File
+	peekChan               chan queue.PeekWithCallback
+	writeChan              chan queue.WriteOp
+	writeResponseChan      chan error
+	dataPath               string
+	name                   string
+	// peekMetadata is the in-memory dispatch/read head. It is deliberately
+	// not persisted: after a restart, entries after completionMetadata are replayed.
+	peekMetadata metadata
+	// completionMetadata is the persisted contiguous completion state.
+	completionMetadata metadata
+	metadata           metadata
+	// pendingEntries contains all peeked entries past the completionMetadata position.
+	pendingEntries           map[uint64]queueEntry
+	completed                map[uint64]struct{}
+	exitWG                   sync.WaitGroup
+	maxBytesPerFile          int64
+	syncTimeout              time.Duration
+	syncEvery                int64
+	metadataTruncateEvery    int
+	metadataWrites           int
+	completionMetadataWrites int
+	exitFlag                 atomic.Bool
 }
 
 func (d *diskAccessClient) Size() int64 {
+	if d.metadata.size == nil {
+		return 0
+	}
 	return d.metadata.size.Load()
 }
 
 func (d *diskAccessClient) Shutdown(_ context.Context) error {
+	if d.exitFlag.Swap(true) {
+		return nil
+	}
 	close(d.exitChan)
-
-	d.exitFlag.Store(true)
 	d.exitWG.Wait()
-
 	close(d.peekChan)
 
 	_ = d.sync()
-	_ = d.syncPeek()
+	_ = d.syncCompletionMetadata()
 
 	if d.writeFile != nil {
 		_ = d.writeFile.Close()
 		d.writeFile = nil
 	}
-
 	if d.peekFile != nil {
 		_ = d.peekFile.Close()
 		d.peekFile = nil
 	}
-
 	if d.metadataFile != nil {
 		_ = d.metadataFile.Close()
 		d.metadataFile = nil
 	}
-
-	if d.peekMetadataFile != nil {
-		_ = d.peekMetadataFile.Close()
-		d.peekMetadataFile = nil
+	if d.completionMetadataFile != nil {
+		_ = d.completionMetadataFile.Close()
+		d.completionMetadataFile = nil
 	}
-
 	return nil
 }
 
@@ -155,13 +190,29 @@ func (d *diskAccessClient) Peek() chan queue.PeekWithCallback {
 	if d.exitFlag.Load() {
 		return nil
 	}
-	d.peekRequestChan <- struct{}{}
-	return d.peekChan
+	select {
+	case d.peekRequestChan <- struct{}{}:
+		return d.peekChan
+	case <-d.exitChan:
+		return nil
+	}
 }
 
 func (d *diskAccessClient) Write(op queue.WriteOp) error {
-	d.writeChan <- op
-	return <-d.writeResponseChan
+	if d.exitFlag.Load() {
+		return errClientClosed
+	}
+	select {
+	case d.writeChan <- op:
+	case <-d.exitChan:
+		return errClientClosed
+	}
+	select {
+	case err := <-d.writeResponseChan:
+		return err
+	case <-d.exitChan:
+		return errClientClosed
+	}
 }
 
 var bufPool = sync.Pool{
@@ -171,55 +222,73 @@ var bufPool = sync.Pool{
 }
 
 type metadata struct {
+	fileNum      int64
+	pos          int64
+	logicalIndex uint64
+	totalSize    int64
+	size         *atomic.Int64
+}
+
+type queuePosition struct {
 	fileNum int64
 	pos     int64
-	size    *atomic.Int64
+}
+
+type queueEntry struct {
+	start        queuePosition
+	next         queuePosition
+	logicalIndex uint64
+	size         int64
+}
+
+type queueRecord struct {
+	Payload []byte
+	Size    int64
+	entry   queueEntry
 }
 
 type callback struct {
-	pos     int64
-	fileNum int64
-	size    int64
+	logicalIndex uint64
 }
 
-func (d *diskAccessClient) readOne(callbacks map[int64]int) bool {
-	peekData, err := d.peekData()
+func (d *diskAccessClient) readOne(_ map[int64]int) bool {
+	record, err := d.peekData()
 	if err != nil {
-		d.logger.Error("error peeking", zap.Error(err))
-		return true
-	}
-	// caught to the head of the queue.
-	if len(peekData.Payload) == 0 {
+		if !os.IsNotExist(err) {
+			d.logger.Error("error peeking", zap.Error(err))
+			return true
+		}
 		return false
 	}
-	messagePeekFileNum := d.peekMetadata.fileNum
-	messagePeekPos := d.peekMetadata.pos
-	callbacks[messagePeekFileNum]++
+	if len(record.Payload) == 0 {
+		return false
+	}
+
+	entry := record.entry
 	msg := queue.PeekWithCallback{
-		Payload: peekData.Payload,
+		Payload: record.Payload,
 		ConsumeCallback: func(_ error) {
-			d.callbackChan <- callback{
-				pos:     messagePeekPos,
-				fileNum: messagePeekFileNum,
-				size:    peekData.Size,
+			select {
+			case d.callbackChan <- callback{logicalIndex: entry.logicalIndex}:
+			case <-d.exitChan:
+				// A completion that races with shutdown is intentionally not
+				// persisted. It will be replayed after restart.
 			}
 		},
 	}
 	select {
 	case d.peekChan <- msg:
-		if d.peekMetadata.pos+int64(len(peekData.Payload)+16) > d.maxBytesPerFile {
-			d.peekMetadata.pos = 0
-			d.peekMetadata.fileNum++
-		} else {
-			d.peekMetadata.pos += int64(len(peekData.Payload) + 16)
-		}
+		d.pendingEntries[entry.logicalIndex] = entry
+		d.peekMetadata.fileNum = entry.next.fileNum
+		d.peekMetadata.pos = entry.next.pos
+		d.peekMetadata.logicalIndex = entry.logicalIndex + 1
 	case <-d.exitChan:
 	}
 	return true
 }
 
-func (d *diskAccessClient) persistMetaData() error {
-	fileName := d.metaDataFilePath()
+func (d *diskAccessClient) persistMetadata() error {
+	fileName := d.metadataFilePath()
 	if d.metadataFile == nil {
 		f, err := os.OpenFile(fileName, os.O_TRUNC|os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600) // #nosec G304
 		if err != nil {
@@ -231,77 +300,82 @@ func (d *diskAccessClient) persistMetaData() error {
 	buf.Reset()
 	defer bufPool.Put(buf)
 	buf.WriteString(separator)
-	buf.Write(binary.BigEndian.AppendUint64(nil, uint64(d.metadata.fileNum)))
-	buf.Write(binary.BigEndian.AppendUint64(nil, uint64(d.metadata.pos)))
-	buf.Write(binary.BigEndian.AppendUint64(nil, uint64(d.metadata.size.Load())))
+	d.appendMetadata(buf, d.metadata)
 
-	_, err := d.metadataFile.Write(buf.Bytes())
-	if err != nil {
+	if _, err := d.metadataFile.Write(buf.Bytes()); err != nil {
 		_ = d.metadataFile.Close()
 		d.metadataFile = nil
 		return err
 	}
-	err = d.metadataFile.Sync()
-	if err != nil {
+	if err := d.metadataFile.Sync(); err != nil {
 		_ = d.metadataFile.Close()
 		d.metadataFile = nil
 		return err
 	}
 	d.metadataWrites++
-
-	if d.metadataWrites%d.metadataTruncateEvery == 0 {
+	if d.metadataTruncateEvery > 0 && d.metadataWrites%d.metadataTruncateEvery == 0 {
 		_ = d.metadataFile.Close()
 		d.metadataFile = nil
 		d.metadataWrites = 0
 	}
-
 	return nil
 }
 
-func (d *diskAccessClient) peekData() (queue.WriteOp, error) {
-	var err error
+func (d *diskAccessClient) peekData() (queueRecord, error) {
+	if d.peekFile != nil && d.peekFileNum != d.peekMetadata.fileNum {
+		_ = d.peekFile.Close()
+		d.peekFile = nil
+	}
 	if d.peekFile == nil {
 		curFileName := d.fileName(d.peekMetadata.fileNum)
-		d.peekFile, err = os.OpenFile(curFileName, os.O_RDONLY, 0o600) // #nosec G304
+		f, err := os.OpenFile(curFileName, os.O_RDONLY, 0o600) // #nosec G304
 		if err != nil {
-			return queue.WriteOp{}, err
+			return queueRecord{}, err
 		}
+		d.peekFile = f
+		d.peekFileNum = d.peekMetadata.fileNum
 		d.logger.Debug("peekData() opened", zap.String("name", d.name), zap.String("filename", curFileName))
 	}
 
-	readLen := make([]byte, 8)
-	_, err = d.peekFile.ReadAt(readLen, d.peekMetadata.pos)
+	header := make([]byte, recordHeaderSize)
+	_, err := d.peekFile.ReadAt(header, d.peekMetadata.pos)
 	if err != nil {
 		if errors.Is(err, io.EOF) {
-			return queue.WriteOp{}, nil
+			return queueRecord{}, nil
 		}
 		_ = d.peekFile.Close()
 		d.peekFile = nil
-		return queue.WriteOp{}, err
-	}
-	datalen := binary.BigEndian.Uint64(readLen)
-	readSize := make([]byte, 8)
-	_, err = d.peekFile.ReadAt(readSize, d.peekMetadata.pos+8)
-	if err != nil {
-		if errors.Is(err, io.EOF) {
-			return queue.WriteOp{}, nil
-		}
-		_ = d.peekFile.Close()
-		d.peekFile = nil
-		return queue.WriteOp{}, err
-	}
-	size := binary.BigEndian.Uint64(readSize)
-	readBuf := make([]byte, datalen)
-	_, err = d.peekFile.ReadAt(readBuf, d.peekMetadata.pos+16)
-	if err != nil {
-		_ = d.peekFile.Close()
-		d.peekFile = nil
-		return queue.WriteOp{}, err
+		return queueRecord{}, err
 	}
 
-	return queue.WriteOp{
+	logicalIndex := binary.BigEndian.Uint64(header[0:8])
+	dataLen := binary.BigEndian.Uint64(header[8:16])
+	size := binary.BigEndian.Uint64(header[16:24])
+	readBuf := make([]byte, dataLen)
+	if _, err = d.peekFile.ReadAt(readBuf, d.peekMetadata.pos+recordHeaderSize); err != nil {
+		_ = d.peekFile.Close()
+		d.peekFile = nil
+		return queueRecord{}, err
+	}
+
+	start := queuePosition{fileNum: d.peekMetadata.fileNum, pos: d.peekMetadata.pos}
+	next := queuePosition{
+		fileNum: d.peekMetadata.fileNum,
+		pos:     d.peekMetadata.pos + recordHeaderSize + int64(dataLen),
+	}
+	if next.pos > d.maxBytesPerFile {
+		next.fileNum++
+		next.pos = 0
+	}
+	return queueRecord{
 		Payload: readBuf,
 		Size:    int64(size),
+		entry: queueEntry{
+			start:        start,
+			next:         next,
+			logicalIndex: logicalIndex,
+			size:         int64(size),
+		},
 	}, nil
 }
 
@@ -315,21 +389,20 @@ func (d *diskAccessClient) writeLoop() {
 			opCount++
 			err := d.write(msg)
 			d.writeResponseChan <- err
-			select {
-			case d.waitForWriteChan <- struct{}{}:
-			default:
+			if err == nil {
+				select {
+				case d.waitForWriteChan <- struct{}{}:
+				default:
+				}
 			}
 		case <-syncTicker.C:
 			if opCount == 0 {
-				// avoid sync when there's no activity
 				continue
 			}
-			if opCount == d.syncEvery {
-				err := d.sync()
-				if err != nil {
+			if opCount >= d.syncEvery {
+				if err := d.sync(); err != nil {
 					d.logger.Error("failed to sync", zap.String("name", d.name), zap.Error(err))
 				}
-
 				opCount = 0
 			}
 		case <-d.exitChan:
@@ -340,111 +413,142 @@ func (d *diskAccessClient) writeLoop() {
 
 func (d *diskAccessClient) readLoop() {
 	syncTicker := time.NewTicker(d.syncTimeout)
-	peekOps := int64(0)
-	callbacks := map[int64]int{}
 	defer syncTicker.Stop()
+	completionOps := int64(0)
 	var p chan struct{}
 	for {
 		select {
 		case <-p:
 			p = nil
-			if d.readOne(callbacks) {
-				peekOps++
-			} else {
+			if !d.readOne(nil) {
 				p = d.waitForWriteChan
 			}
 		case <-d.peekRequestChan:
-			if d.readOne(callbacks) {
-				peekOps++
-			} else {
+			if !d.readOne(nil) {
 				p = d.waitForWriteChan
 			}
 		case c := <-d.callbackChan:
-			callbacks[c.fileNum]--
-			d.metadata.size.Add(-c.size)
-			if c.fileNum != d.peekMetadata.fileNum && callbacks[c.fileNum] == 0 {
-				f := d.fileName(c.fileNum)
-				err := os.Remove(f)
-				if err != nil && !os.IsNotExist(err) {
-					d.logger.Error(" failed to Remove", zap.String("name", d.name), zap.String("filename", f), zap.Error(err))
+			if d.complete(c.logicalIndex) {
+				completionOps++
+				if completionOps >= d.syncEvery {
+					if err := d.syncCompletionMetadata(); err != nil {
+						d.logger.Error("failed to sync", zap.String("name", d.name), zap.Error(err))
+					}
+					completionOps = 0
 				}
 			}
 		case <-syncTicker.C:
-			if peekOps == 0 {
-				// avoid sync when there's no activity
+			if completionOps == 0 {
 				continue
 			}
-			if peekOps == d.syncEvery {
-				err := d.syncPeek()
-				if err != nil {
-					d.logger.Error("failed to sync", zap.String("name", d.name), zap.Error(err))
-				}
-				peekOps = 0
+			if err := d.syncCompletionMetadata(); err != nil {
+				d.logger.Error("failed to sync", zap.String("name", d.name), zap.Error(err))
 			}
+			completionOps = 0
 		case <-d.exitChan:
 			return
 		}
 	}
 }
 
+func (d *diskAccessClient) complete(logicalIndex uint64) bool {
+	if _, ok := d.pendingEntries[logicalIndex]; !ok {
+		return false
+	}
+	d.completed[logicalIndex] = struct{}{}
+	advanced := false
+	for {
+		current := d.completionMetadata.logicalIndex
+		if _, ok := d.completed[current]; !ok {
+			break
+		}
+		entry, ok := d.pendingEntries[current]
+		if !ok {
+			break
+		}
+		delete(d.completed, current)
+		delete(d.pendingEntries, current)
+		d.completionMetadata.fileNum = entry.next.fileNum
+		d.completionMetadata.pos = entry.next.pos
+		d.completionMetadata.logicalIndex++
+		d.completionMetadata.totalSize += entry.size
+		d.metadata.size.Add(-entry.size)
+		advanced = true
+	}
+	if advanced {
+		d.completionMetadata.size.Store(d.metadata.size.Load())
+		d.removeFilesBefore(d.completionMetadata.fileNum)
+	}
+	return advanced
+}
+
+func (d *diskAccessClient) removeFilesBefore(fileNum int64) {
+	if d.peekFile != nil && d.peekFileNum < fileNum {
+		_ = d.peekFile.Close()
+		d.peekFile = nil
+	}
+	for n := int64(0); n < fileNum; n++ {
+		f := d.fileName(n)
+		if err := os.Remove(f); err != nil && !os.IsNotExist(err) {
+			d.logger.Error("failed to remove", zap.String("name", d.name), zap.String("filename", f), zap.Error(err))
+		}
+	}
+}
+
 func (d *diskAccessClient) sync() error {
 	if d.writeFile != nil {
-		err := d.writeFile.Sync()
-		if err != nil {
+		if err := d.writeFile.Sync(); err != nil {
 			_ = d.writeFile.Close()
 			d.writeFile = nil
 			return err
 		}
 	}
-	if err := d.persistMetaData(); err != nil {
-		d.logger.Error("error persisting metadata", zap.Error(err))
-	}
-
-	return nil
+	return d.persistMetadata()
 }
 
-func (d *diskAccessClient) syncPeek() error {
-	fileName := d.peekMetaDataFilePath()
-	if d.peekMetadataFile == nil {
+func (d *diskAccessClient) syncCompletionMetadata() error {
+	fileName := d.completionMetadataFilePath()
+	if d.completionMetadataFile == nil {
 		f, err := os.OpenFile(fileName, os.O_TRUNC|os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600) // #nosec G304
 		if err != nil {
 			return err
 		}
-		d.peekMetadataFile = f
+		d.completionMetadataFile = f
 	}
 	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
 	defer bufPool.Put(buf)
 	buf.WriteString(separator)
-	buf.Write(binary.BigEndian.AppendUint64(nil, uint64(d.peekMetadata.fileNum)))
-	buf.Write(binary.BigEndian.AppendUint64(nil, uint64(d.peekMetadata.pos)))
-	_, err := d.peekMetadataFile.Write(buf.Bytes())
-	if err != nil {
-		_ = d.peekMetadataFile.Close()
-		d.peekMetadataFile = nil
+	d.appendMetadata(buf, d.completionMetadata)
+	if _, err := d.completionMetadataFile.Write(buf.Bytes()); err != nil {
+		_ = d.completionMetadataFile.Close()
+		d.completionMetadataFile = nil
 		return err
 	}
-	err = d.peekMetadataFile.Sync()
-	if err != nil {
-		_ = d.peekMetadataFile.Close()
-		d.peekMetadataFile = nil
+	if err := d.completionMetadataFile.Sync(); err != nil {
+		_ = d.completionMetadataFile.Close()
+		d.completionMetadataFile = nil
 		return err
 	}
-	d.peekMetadataWrites++
-
-	if d.peekMetadataWrites%d.metadataTruncateEvery == 0 {
-		_ = d.peekMetadataFile.Close()
-		d.peekMetadataFile = nil
-		d.peekMetadataWrites = 0
+	d.completionMetadataWrites++
+	if d.metadataTruncateEvery > 0 && d.completionMetadataWrites%d.metadataTruncateEvery == 0 {
+		_ = d.completionMetadataFile.Close()
+		d.completionMetadataFile = nil
+		d.completionMetadataWrites = 0
 	}
-
 	return nil
+}
+
+func (d *diskAccessClient) appendMetadata(buf *bytes.Buffer, m metadata) {
+	buf.Write(binary.BigEndian.AppendUint64(nil, uint64(m.fileNum)))
+	buf.Write(binary.BigEndian.AppendUint64(nil, uint64(m.pos)))
+	buf.Write(binary.BigEndian.AppendUint64(nil, m.logicalIndex))
+	buf.Write(binary.BigEndian.AppendUint64(nil, uint64(m.totalSize)))
 }
 
 func (d *diskAccessClient) write(op queue.WriteOp) error {
 	data := op.Payload
 	dataLen := int64(len(data))
-
 	if d.writeFile == nil {
 		curFileName := d.fileName(d.metadata.fileNum)
 		var err error
@@ -452,12 +556,9 @@ func (d *diskAccessClient) write(op queue.WriteOp) error {
 		if err != nil {
 			return err
 		}
-
 		d.logger.Debug("writeOne() opened", zap.String("name", d.name), zap.String("filename", curFileName))
-
 		if d.metadata.pos > 0 {
-			_, err = d.writeFile.Seek(d.metadata.pos, 0)
-			if err != nil {
+			if _, err = d.writeFile.Seek(d.metadata.pos, 0); err != nil {
 				_ = d.writeFile.Close()
 				d.writeFile = nil
 				return err
@@ -467,11 +568,9 @@ func (d *diskAccessClient) write(op queue.WriteOp) error {
 
 	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
-	b := make([]byte, 8)
-	binary.BigEndian.PutUint64(b, uint64(dataLen))
-	buf.Write(b)
-	binary.BigEndian.PutUint64(b, uint64(op.Size))
-	buf.Write(b)
+	buf.Write(binary.BigEndian.AppendUint64(nil, d.metadata.logicalIndex))
+	buf.Write(binary.BigEndian.AppendUint64(nil, uint64(dataLen)))
+	buf.Write(binary.BigEndian.AppendUint64(nil, uint64(op.Size)))
 	buf.Write(data)
 	_, err := d.writeFile.Write(buf.Bytes())
 	bufPool.Put(buf)
@@ -481,57 +580,34 @@ func (d *diskAccessClient) write(op queue.WriteOp) error {
 		return err
 	}
 
-	d.metadata.pos = d.metadata.pos + dataLen + 16
+	d.metadata.pos += dataLen + recordHeaderSize
+	d.metadata.logicalIndex++
+	d.metadata.totalSize += op.Size
 	d.metadata.size.Add(op.Size)
-
-	// will not wrap-around if maxBytesPerFile + maxMsgSize < Int64Max
 	if d.metadata.pos > 0 && d.metadata.pos > d.maxBytesPerFile {
 		d.metadata.pos = 0
 		d.metadata.fileNum++
-
-		// sync every time we start writing to a new file
 		err = d.sync()
 		if err != nil {
-			d.logger.Error(" failed to sync - %s", zap.String("name", d.name), zap.Error(err))
+			d.logger.Error("failed to sync", zap.String("name", d.name), zap.Error(err))
 		}
-
 		if d.writeFile != nil {
 			_ = d.writeFile.Close()
 			d.writeFile = nil
 		}
 	}
-
 	return err
 }
 
-func (d *diskAccessClient) retrievePeekMetaData(fileName string) (*metadata, error) {
-	f, err := os.OpenFile(fileName, os.O_RDONLY, 0o600) // #nosec G304
-	if err != nil {
-		return &metadata{}, err
-	}
-	defer func() {
-		_ = f.Close()
-	}()
-	_, err = f.Seek(-16, io.SeekEnd)
-	if err != nil {
-		return nil, err
-	}
-	buf := bufPool.Get().(*bytes.Buffer)
-	buf.Reset()
-	defer bufPool.Put(buf)
-	_, err = buf.ReadFrom(f)
-	if err != nil {
-		return nil, err
-	}
-	fileNum := binary.BigEndian.Uint64(buf.Bytes()[0:8])
-	pos := binary.BigEndian.Uint64(buf.Bytes()[8:])
-	return &metadata{
-		fileNum: int64(fileNum),
-		pos:     int64(pos),
-	}, nil
+func (d *diskAccessClient) retrieveCompletionMetadata(fileName string) (*metadata, error) {
+	return d.retrieveMetadataFile(fileName)
 }
 
-func (d *diskAccessClient) retrieveMetaData(fileName string) (*metadata, error) {
+func (d *diskAccessClient) retrieveMetadata(fileName string) (*metadata, error) {
+	return d.retrieveMetadataFile(fileName)
+}
+
+func (d *diskAccessClient) retrieveMetadataFile(fileName string) (*metadata, error) {
 	f, err := os.OpenFile(fileName, os.O_RDONLY, 0o600) // #nosec G304
 	if err != nil {
 		return &metadata{size: &atomic.Int64{}}, err
@@ -539,35 +615,32 @@ func (d *diskAccessClient) retrieveMetaData(fileName string) (*metadata, error) 
 	defer func() {
 		_ = f.Close()
 	}()
-	buf := bufPool.Get().(*bytes.Buffer)
-	buf.Reset()
-	defer bufPool.Put(buf)
-	_, err = f.Seek(-24, io.SeekEnd)
-	if err != nil {
+	if _, err = f.Seek(-metadataValueSize, io.SeekEnd); err != nil {
 		return nil, err
 	}
-	_, err = buf.ReadFrom(f)
-	if err != nil {
+	data := make([]byte, metadataValueSize)
+	if _, err = io.ReadFull(f, data); err != nil {
 		return nil, err
 	}
-	fileNum := binary.BigEndian.Uint64(buf.Bytes()[0:8])
-	pos := binary.BigEndian.Uint64(buf.Bytes()[8:16])
-	size := binary.BigEndian.Uint64(buf.Bytes()[16:24])
-	sizeV := &atomic.Int64{}
-	sizeV.Store(int64(size))
+	totalSize := int64(binary.BigEndian.Uint64(data[24:32]))
+	size := &atomic.Int64{}
+	size.Store(totalSize)
 	return &metadata{
-		fileNum: int64(fileNum),
-		pos:     int64(pos),
-		size:    sizeV,
+		fileNum:      int64(binary.BigEndian.Uint64(data[0:8])),
+		pos:          int64(binary.BigEndian.Uint64(data[8:16])),
+		logicalIndex: binary.BigEndian.Uint64(data[16:24]),
+		totalSize:    totalSize,
+		size:         size,
 	}, nil
 }
 
-func (d *diskAccessClient) metaDataFilePath() string {
+func (d *diskAccessClient) metadataFilePath() string {
 	return path.Join(d.dataPath, d.name+".diskaccess.meta.dat")
 }
 
-func (d *diskAccessClient) peekMetaDataFilePath() string {
-	return path.Join(d.dataPath, d.name+".diskaccess.peek.dat")
+func (d *diskAccessClient) completionMetadataFilePath() string {
+	// This file stores the durable completion head.
+	return path.Join(d.dataPath, d.name+".diskaccess.completion.dat")
 }
 
 func (d *diskAccessClient) fileName(fileNum int64) string {
