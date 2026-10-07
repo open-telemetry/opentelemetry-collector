@@ -152,6 +152,50 @@ func TestMapHash(t *testing.T) {
 	}
 }
 
+// TestMapHashNoBoundaryCollisions checks that the end of a variable-length key or value can't be
+// shifted into the next entry to make distinct maps encode to the same bytes.
+func TestMapHashNoBoundaryCollisions(t *testing.T) {
+	tests := []struct {
+		name string
+		m1   func(pcommon.Map)
+		m2   func(pcommon.Map)
+	}{
+		{
+			name: "bytes",
+			m1:   func(m pcommon.Map) { m.PutEmptyBytes("a").Append(0xf4, 'b', 0xf6, 0xbb) },
+			m2: func(m pcommon.Map) {
+				m.PutEmptyBytes("a")
+				m.PutEmptyBytes("b").Append(0xbb)
+			},
+		},
+		{
+			name: "string",
+			m1:   func(m pcommon.Map) { m.PutStr("a", "x\xf4b\xf7y") },
+			m2: func(m pcommon.Map) {
+				m.PutStr("a", "x")
+				m.PutStr("b", "y")
+			},
+		},
+		{
+			name: "key",
+			m1:   func(m pcommon.Map) { m.PutStr("a\xf7x\xf4b", "y") },
+			m2: func(m pcommon.Map) {
+				m.PutStr("a", "x")
+				m.PutStr("b", "y")
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m1, m2 := pcommon.NewMap(), pcommon.NewMap()
+			tt.m1(m1)
+			tt.m2(m2)
+			assert.NotEqual(t, MapHash(m1), MapHash(m2),
+				"maps %v and %v must have different hashes", m1.AsRaw(), m2.AsRaw())
+		})
+	}
+}
+
 func TestValueHash(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -351,6 +395,7 @@ func TestHash(t *testing.T) {
 	stringHashA, stringHashB := Hash(WithString("s")), Hash(WithString("s"))
 	assert.Equal(t, stringHashA, stringHashB)
 	assert.NotEqual(t, Hash(WithString("s1")), Hash(WithString("s2")))
+	assert.NotEqual(t, Hash(WithString("a\xf7b")), Hash(WithString("a"), WithString("b")))
 
 	assert.NotEqual(t, mapHashA, valueHashA)
 	assert.NotEqual(t, Hash(), Hash(WithString("")))
@@ -458,7 +503,7 @@ func BenchmarkMapHashWideMap(b *testing.B) {
 // TestMapHashWideMapGolden pins the hash of a wide map so that changes to how map entries are
 // collected and ordered cannot silently change the produced hashes.
 func TestMapHashWideMapGolden(t *testing.T) {
-	want := [16]byte{0xb1, 0xb0, 0x35, 0xb0, 0x70, 0x31, 0x7a, 0x89, 0x34, 0x45, 0xfd, 0xb7, 0xff, 0x4b, 0x8c, 0x73}
+	want := [16]byte{0x73, 0x91, 0xb1, 0x8e, 0xc5, 0xe3, 0x13, 0xac, 0x78, 0xe9, 0x0e, 0x50, 0xdc, 0x4c, 0x57, 0xc5}
 
 	assert.Equal(t, want, MapHash(newWideMap(256)))
 }
@@ -497,10 +542,10 @@ func newNestedMap() pcommon.Map {
 }
 
 // TestMapHashNestedGolden pins the hash of a map with nested maps and slices, which goes through the
-// recursive path of writeMapHash. The value was captured before entries were collected together
-// with their values, so the hash must stay byte-identical.
+// recursive path of writeMapHash. The value was last updated when keys, strings and bytes became
+// length-prefixed; any other change to the hash must be deliberate.
 func TestMapHashNestedGolden(t *testing.T) {
-	want := [16]byte{0x63, 0xe7, 0xdf, 0xbc, 0xb3, 0x55, 0x7f, 0x0f, 0x67, 0x7f, 0xb3, 0x32, 0xd4, 0xb2, 0xc8, 0xcd}
+	want := [16]byte{0x52, 0xcc, 0xe7, 0xd6, 0x27, 0x42, 0x9d, 0x41, 0xaa, 0x39, 0xbb, 0x69, 0xf1, 0x00, 0xad, 0xad}
 
 	assert.Equal(t, want, MapHash(newNestedMap()))
 	assert.Equal(t, want, MapHash(newNestedMap()), "hashing must not leave state in the pooled writer")
