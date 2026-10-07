@@ -8,8 +8,8 @@ require (
 	go.opentelemetry.io/collector/internal/testutil v0.162.0
 	go.opentelemetry.io/collector/pdata v1.68.0
 	go.opentelemetry.io/otel v1.46.0
-	go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.4.0
-	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.4.0
+	go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.4.1
+	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.4.1
 	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.84.0
 	google.golang.org/protobuf v1.36.12
