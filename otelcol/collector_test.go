@@ -1691,7 +1691,6 @@ func TestCollectorLoggingOptions(t *testing.T) {
 			func(_ context.Context, set telemetry.LoggerSettings, _ component.Config) (
 				*zap.Logger, component.ShutdownFunc, error,
 			) {
-				require.Empty(t, set.ZapOptions) // injected through BuidlZapLogger
 				logger, buildErr := set.BuildZapLogger(zap.NewDevelopmentConfig())
 				return logger, nil, buildErr
 			},

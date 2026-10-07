@@ -4,11 +4,7 @@
 package pprofileotlp // import "go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 
 import (
-	"slices"
-
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/json"
-	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
@@ -38,40 +34,36 @@ func NewExportRequestFromProfiles(td pprofile.Profiles) ExportRequest {
 }
 
 // MarshalProto marshals ExportRequest into proto bytes.
+// Delegates to pprofile.ProtoMarshaler so attribute strings are referenced via
+// the ProfilesDictionary string table.
 func (ms ExportRequest) MarshalProto() ([]byte, error) {
-	size := ms.orig.SizeProto()
-	buf := make([]byte, size)
-	_ = ms.orig.MarshalProto(buf)
-	return buf, nil
+	return (&pprofile.ProtoMarshaler{}).MarshalProfiles(ms.Profiles())
 }
 
 // UnmarshalProto unmarshalls ExportRequest from proto bytes.
+// Delegates to pprofile.ProtoUnmarshaler so string-table references are resolved.
 func (ms ExportRequest) UnmarshalProto(data []byte) error {
-	err := ms.orig.UnmarshalProto(data)
+	pd, err := (&pprofile.ProtoUnmarshaler{}).UnmarshalProfiles(data)
 	if err != nil {
 		return err
 	}
-	otlp.MigrateProfiles(ms.orig.ResourceProfiles)
+	pd.MoveTo(ms.Profiles())
 	return nil
 }
 
 // MarshalJSON marshals ExportRequest into JSON bytes.
 func (ms ExportRequest) MarshalJSON() ([]byte, error) {
-	dest := json.BorrowStream(nil)
-	defer json.ReturnStream(dest)
-	ms.orig.MarshalJSON(dest)
-	if dest.Error() != nil {
-		return nil, dest.Error()
-	}
-	return slices.Clone(dest.Buffer()), nil
+	return (&pprofile.JSONMarshaler{}).MarshalProfiles(ms.Profiles())
 }
 
 // UnmarshalJSON unmarshalls ExportRequest from JSON bytes.
 func (ms ExportRequest) UnmarshalJSON(data []byte) error {
-	iter := json.BorrowIterator(data)
-	defer json.ReturnIterator(iter)
-	ms.orig.UnmarshalJSON(iter)
-	return iter.Error()
+	pd, err := (&pprofile.JSONUnmarshaler{}).UnmarshalProfiles(data)
+	if err != nil {
+		return err
+	}
+	pd.MoveTo(ms.Profiles())
+	return nil
 }
 
 func (ms ExportRequest) Profiles() pprofile.Profiles {

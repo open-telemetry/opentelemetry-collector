@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 // captureWarnings redirects warnings to a buffer for the test.
@@ -84,6 +86,32 @@ exclusions:
 				},
 			},
 		}, cfg)
+	})
+
+	t.Run("coverage targets are parsed", func(t *testing.T) {
+		dir := t.TempDir()
+		contents := "stability:\n  coverage:\n    beta: 60\n    stable: 80\n"
+		require.NoError(t, os.WriteFile(filepath.Join(dir, centralConfigFileName), []byte(contents), 0o600))
+
+		cfg, err := loadCentralConfig(dir)
+		require.NoError(t, err)
+		assert.Equal(t, &CentralConfig{
+			Stability: StabilityConfig{
+				Coverage: map[component.StabilityLevel]float64{
+					component.StabilityLevelBeta:   60,
+					component.StabilityLevelStable: 80,
+				},
+			},
+		}, cfg)
+	})
+
+	t.Run("unknown stability level is rejected", func(t *testing.T) {
+		dir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(dir, centralConfigFileName), []byte("stability:\n  coverage:\n    stabel: 80\n"), 0o600))
+
+		_, err := loadCentralConfig(dir)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, `unsupported stability level: "stabel"`)
 	})
 
 	t.Run("unknown field is rejected", func(t *testing.T) {
