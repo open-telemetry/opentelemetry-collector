@@ -60,6 +60,7 @@ import (
 {{ $defValidators := extractValidators $defName $def }}
 {{- if and $defValidators (not (isExternalRef $def.Ref)) }}
     // Validate validates the {{$typeName}} fields according to schema annotations.
+    // Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
     {{- if (isPrimitiveSchema $def) }}
     func (c {{ $typeName }}) Validate() error {
     {{- else }}
