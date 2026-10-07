@@ -56,7 +56,7 @@ func applyMask(raw, redacted any) any {
 			// of name/value pairs. Match those pairs back to the raw map by name.
 			for _, redItem := range redVal {
 				redMap, ok := redItem.(map[string]any)
-				if !ok {
+				if !ok || len(redMap) != 2 {
 					continue
 				}
 				name, ok := redMap[nameKey].(string)
