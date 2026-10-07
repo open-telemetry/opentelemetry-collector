@@ -11,8 +11,10 @@ import (
 type Config struct {
 	// MetricsBuilderConfig is a configuration for samplemigration metrics builder.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+
 	// EmitLegacyMetrics whether to emit legacy metric names alongside new ones.
 	EmitLegacyMetrics bool `mapstructure:"emit_legacy_metrics"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

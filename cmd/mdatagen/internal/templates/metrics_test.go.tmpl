@@ -115,8 +115,8 @@ func TestMetricsBuilder(t *testing.T) {
 
 			expectedWarnings := 0
 			{{- range $name, $metric := .Metrics }}
-			{{- if and $metric.Enabled $metric.Warnings.IfEnabled }}
-			if tt.metricsSet == testDataSetDefault || tt.metricsSet == testDataSetAll {
+			{{- if $metric.Warnings.IfEnabled }}
+			if {{- if $metric.Enabled }} tt.metricsSet == testDataSetDefault || {{- end }} tt.metricsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `{{ $name }}` should not be enabled: {{ $metric.Warnings.IfEnabled }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
@@ -234,7 +234,7 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- end -}}
 			{{- range $metric.Attributes -}}
 			{{- if (attributeInfo .).IsConditional -}}
-				, With{{ .Render }}MetricAttribute({{- template "getAttributeValue" . -}})
+				, With{{ .Render }}MetricAttribute({{- template "getConditionalAttributeValue" . -}})
 			{{- end -}}
 			{{- end -}}
 			)
@@ -252,10 +252,28 @@ func TestMetricsBuilder(t *testing.T) {
 				{{- end -}}
 				{{- range $metric.Attributes -}}
 				{{- if (attributeInfo .).IsConditional -}}
-					, With{{ .Render }}MetricAttribute({{- template "getAttributeValue" . -}})
+					, With{{ .Render }}MetricAttribute({{- template "getConditionalAttributeValue" . -}})
 				{{- end -}}
 				{{- end -}}
 				)
+				// a different timestamp is a different key: must not merge with the above.
+				{{ if $metric.Entity }}eb{{ publicVar $metric.Entity }}{{ else }}mb{{ end }}.Record{{ $name.Render }}DataPoint(ts+1, {{ if $metric.Data.HasMetricInputType }}"3"{{ else }}3{{ end }}
+				{{- range $metric.Attributes -}}
+				{{- if not (attributeInfo .).IsConditional -}}
+					{{- if (attributeInfo .).IsRequired -}}
+					, {{- template "getAttributeValue" . -}}
+					{{- else -}}
+					, {{- template "getAttributeValueTwo" . -}}
+					{{- end -}}
+				{{- end -}}
+				{{- end -}}
+				{{- range $metric.Attributes -}}
+				{{- if (attributeInfo .).IsConditional -}}
+					, With{{ .Render }}MetricAttribute({{- template "getConditionalAttributeValue" . -}})
+				{{- end -}}
+				{{- end -}}
+				)
+				assert.Equal(t, 2, mb.metric{{ $name.Render }}.data.{{ $metric.Data.Type }}().DataPoints().Len())
 			}
 			{{- end }}
 			{{- end }}
@@ -356,7 +374,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
 						validatedMetrics["{{ $name }}"] = true
 						assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, mi.Type())
-						assert.Equal(t, 1, mi.{{ $metric.Data.Type }}().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.{{ $metric.Data.Type }}().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.{{ $metric.Data.Type }}().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "{{ trimRight $metric.Description "\n" }}", mi.Description())
 						{{- if len $metric.Unit}}
 						assert.Equal(t, "{{ $metric.Unit }}", mi.Unit())
@@ -404,6 +424,9 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
 						assert.True(t, ok)
 						{{- else if eq (attributeInfo $attr).RequirementLevel.String "Conditionally Required" }}
+						{{ $attr.RenderUnexported }}AttrVal, ok := dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
+						assert.True(t, ok)
+						{{- template "assertMetricAttributeValue" $attr }}
 						{{- else }}
 						_, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
 						assert.False(t, ok)
@@ -450,6 +473,41 @@ func TestMetricsBuilder(t *testing.T) {
 		})
 	}
 }
+
+{{- $hasEntityMetrics := false }}
+{{- range $name, $metric := .Metrics }}{{- if $metric.Entity }}{{- $hasEntityMetrics = true }}{{- end }}{{- end }}
+{{- if $hasEntityMetrics }}
+
+func TestDeprecatedRecordMethods(t *testing.T) {
+	start := pcommon.Timestamp(1_000_000_000)
+	ts := pcommon.Timestamp(1_000_001_000)
+	{{- if or isReceiver isScraper isConnector }}
+	settings := {{ .Status.Class }}test.NewNopSettings({{ .Status.Class }}test.NopType)
+	{{- end }}
+	settings.Logger = zap.NewNop()
+	mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+	{{- range $name, $metric := .Metrics }}
+	{{- if $metric.Entity }}
+	mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
+	{{- range $metric.Attributes -}}
+	{{- if not (attributeInfo .).IsConditional -}}
+		, {{- template "getAttributeValue" . -}}
+	{{- end -}}
+	{{- end -}}
+	{{- range $metric.Attributes -}}
+	{{- if (attributeInfo .).IsConditional -}}
+		, With{{ .Render }}MetricAttribute({{- template "getConditionalAttributeValue" . -}})
+	{{- end -}}
+	{{- end -}}
+	)
+	{{- end }}
+	{{- end }}
+
+	metrics := mb.Emit()
+	assert.Greater(t, metrics.ResourceMetrics().Len(), 0)
+}
+{{- end }}
 
 {{- $hasVersionedMetrics := false }}
 {{- range $name, $metric := .Metrics }}{{- if $metric.Migration }}{{- $hasVersionedMetrics = true }}{{- end }}{{- end }}
@@ -571,11 +629,19 @@ func TestVersionedMetrics(t *testing.T) {
                           if m.Type() == pmetric.MetricType{{ $targetMetric.Data.Type }} {
                               newFound = true
                               {{- if $targetLegacyAttrs }}
+                              dp := m.{{ $targetMetric.Data.Type }}().DataPoints().At(0)
                               if tt.expectLegacyAttrs {
-                                  dp := m.{{ $targetMetric.Data.Type }}().DataPoints().At(0)
                                   {{- range $targetLegacyAttrs }}
                                   _, has{{ .Render }} := dp.Attributes().Get("{{ (attributeInfo .).Name }}")
                                   assert.True(t, has{{ .Render }}, "expected legacy attr {{ . }}")
+                                  {{- end }}
+                              } else if tt.enableNew && tt.disableOld {
+                                  {{- range $i, $legacyAttr := $targetLegacyAttrs }}
+                                  {{- $v1Attr := index $targetMetric.Attributes $i }}
+                                  {{- if or (ne (attributeInfo $v1Attr).Name (attributeInfo $legacyAttr).Name) (ne (attributeInfo $v1Attr).Type.String (attributeInfo $legacyAttr).Type.String) }}
+                                  _, has{{ $legacyAttr.Render }} := dp.Attributes().Get("{{ (attributeInfo $legacyAttr).Name }}")
+                                  assert.False(t, has{{ $legacyAttr.Render }}, "didn't expect legacy attr {{ $legacyAttr }}")
+                                  {{- end }}
                                   {{- end }}
                               }
                               {{- end }}
@@ -599,6 +665,14 @@ func TestVersionedMetrics(t *testing.T) {
                                   {{- range $targetLegacyAttrs }}
                                   _, has{{ .Render }} := dp.Attributes().Get("{{ (attributeInfo .).Name }}")
                                   assert.True(t, has{{ .Render }}, "expected legacy attr {{ . }}")
+                                  {{- end }}
+                              } else if tt.enableNew && tt.disableOld {
+                                  {{- range $i, $legacyAttr := $targetLegacyAttrs }}
+                                  {{- $v1Attr := index $targetMetric.Attributes $i }}
+                                  {{- if or (ne (attributeInfo $v1Attr).Name (attributeInfo $legacyAttr).Name) (ne (attributeInfo $v1Attr).Type.String (attributeInfo $legacyAttr).Type.String) }}
+                                  _, has{{ $legacyAttr.Render }} := dp.Attributes().Get("{{ (attributeInfo $legacyAttr).Name }}")
+                                  assert.False(t, has{{ $legacyAttr.Render }}, "didn't expect legacy attr {{ $legacyAttr }}")
+                                  {{- end }}
                                   {{- end }}
                               }
                               {{- end }}
@@ -632,7 +706,7 @@ func TestVersionedMetrics(t *testing.T) {
                   assert.Equal(t, tt.expectNewMetric, newFound) 
 
                   {{- if ne $name.EmittedName $metric.Migration.To.EmittedName }}
-                  // For metrics with different emitted names, no collison warning shoulds be logged
+                  // For metrics with different emitted names, no collision warning should be logged
                   // This guards against the regression where same name collision logic was
                   // incorrectly applied to renamed metrics.
                   if tt.enableNew {

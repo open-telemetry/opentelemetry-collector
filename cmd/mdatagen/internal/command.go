@@ -72,7 +72,43 @@ func NewCommand() (*cobra.Command, error) {
 			return run(args[0])
 		},
 	}
+
+	var profile string
+	checkStabilityCmd := &cobra.Command{
+		Use:          "check-stability",
+		Short:        "Check a component fulfills stability criteria",
+		SilenceUsage: true,
+		Args:         cobra.ExactArgs(1),
+		RunE: func(_ *cobra.Command, args []string) error {
+			return runCheckStability(args[0], profile)
+		},
+	}
+	checkStabilityCmd.Flags().StringVar(&profile, "profile", "", "path to a Go coverage profile")
+	if err := checkStabilityCmd.MarkFlagRequired("profile"); err != nil {
+		return nil, err
+	}
+	rootCmd.AddCommand(checkStabilityCmd)
+
 	return rootCmd, nil
+}
+
+func runCheckStability(ymlPath, profilePath string) error {
+	ymlPath, err := filepath.Abs(ymlPath)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path for %v: %w", ymlPath, err)
+	}
+
+	md, err := LoadMetadata(ymlPath)
+	if err != nil {
+		return fmt.Errorf("failed loading %v: %w", ymlPath, err)
+	}
+
+	central, err := loadCentralConfig(filepath.Dir(ymlPath))
+	if err != nil {
+		return fmt.Errorf("unable to load central mdatagen config: %w", err)
+	}
+
+	return checkCoverage(md, central.Stability.Coverage, profilePath)
 }
 
 func run(ymlPath string) error {
@@ -186,7 +222,7 @@ func run(ymlPath string) error {
 		}
 	}
 
-	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 || len(md.ResourceAttributes) != 0 || len(md.Events) != 0 || len(md.FeatureGates) != 0 { // if there's metrics or internal metrics or events or feature gates, generate documentation for them
+	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 || len(md.ResourceAttributes) != 0 || len(md.Events) != 0 || len(md.FeatureGates) != 0 || (md.SendingQueue != nil && !md.SendingQueue.IsImplicit()) { // if there's component metadata to document
 		toGenerate[filepath.Join(tmplDir, "documentation.md.tmpl")] = filepath.Join(ymlDir, "documentation.md")
 	} else {
 		if _, err = os.Stat(filepath.Join(ymlDir, "documentation.md")); err == nil {

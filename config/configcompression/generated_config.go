@@ -2,8 +2,14 @@
 
 package configcompression
 
+import (
+	"errors"
+	"slices"
+)
+
 type CompressionParams struct {
 	Level Level `mapstructure:"level,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -12,3 +18,14 @@ type Level int
 
 // Type type represents a compression method
 type Type string
+
+// Validate validates the Type fields according to schema annotations.
+func (c Type) Validate() error {
+	var err error
+
+	if !slices.Contains([]string{"gzip", "zlib", "deflate", "snappy", "x-snappy-framed", "zstd", "lz4", "none", ""}, string(c)) {
+		err = errors.Join(err, errors.New("type must be one of [gzip, zlib, deflate, snappy, x-snappy-framed, zstd, lz4, none]"))
+	}
+
+	return err
+}

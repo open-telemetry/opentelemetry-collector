@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 
 	"go.yaml.in/yaml/v3"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 const centralConfigFileName = ".mdatagen.yaml"
@@ -20,6 +22,12 @@ const centralConfigFileName = ".mdatagen.yaml"
 // CentralConfig is the repository-level configuration for mdatagen.
 type CentralConfig struct {
 	Exclusions []ComponentExclusion `yaml:"exclusions"`
+	Stability  StabilityConfig      `yaml:"stability"`
+}
+
+type StabilityConfig struct {
+	// Coverage maps a stability level to the minimum required component coverage.
+	Coverage map[component.StabilityLevel]float64 `yaml:"coverage"`
 }
 
 type ComponentExclusion struct {

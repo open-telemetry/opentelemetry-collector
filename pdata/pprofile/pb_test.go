@@ -21,8 +21,8 @@ func TestProfilesProtoWireCompatibility(t *testing.T) {
 	// this repository are wire compatible.
 
 	// Generate Profiles as pdata struct.
-	td := generateTestProfiles()
-
+	td := generateProfiles(t, 1, 1, 1, 100)
+	td.MarkReadOnly()
 	// Marshal its underlying ProtoBuf to wire.
 	marshaler := &ProtoMarshaler{}
 	wire1, err := marshaler.MarshalProfiles(td)
@@ -45,18 +45,22 @@ func TestProfilesProtoWireCompatibility(t *testing.T) {
 	td2, err = unmarshaler.UnmarshalProfiles(wire2)
 	require.NoError(t, err)
 
-	// After unmarshal, td2 will have resolved references (strings instead of string_value_ref/key_ref)
-	// while td may have references. Marshal td2 again to verify wire compatibility.
-	wire3, err := marshaler.MarshalProfiles(td2)
-	require.NoError(t, err)
+	// Now compare that the original and final ProtoBuf messages are the same.
+	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
+	requireProfilesEqualIgnoringAppendedStrings(t, td, td2)
+}
 
-	// Verify full round-trip fidelity: unmarshal both wire1 and wire3 into goproto
-	// messages and compare them semantically. This ensures all data (attributes,
-	// dictionary, profiles, etc.) survives the round-trip through both libraries.
-	var check1, check2 gootlpprofiles.ProfilesData
-	require.NoError(t, goproto.Unmarshal(wire1, &check1))
-	require.NoError(t, goproto.Unmarshal(wire3, &check2))
-	assert.True(t, goproto.Equal(&check1, &check2), "round-trip through goproto did not preserve profile data")
+// Marshaling appends attribute strings to the dictionary and unmarshaling inlines
+// them again without pruning, so got's string table is want's plus an unused tail.
+func requireProfilesEqualIgnoringAppendedStrings(t *testing.T, want, got Profiles) {
+	t.Helper()
+	w, g := NewProfiles(), NewProfiles()
+	want.CopyTo(w)
+	got.CopyTo(g)
+	wantStrings, gotStrings := w.Dictionary().StringTable(), g.Dictionary().StringTable()
+	require.GreaterOrEqual(t, gotStrings.Len(), wantStrings.Len())
+	gotStrings.FromRaw(gotStrings.AsRaw()[:wantStrings.Len()])
+	require.Equal(t, w, g)
 }
 
 func TestProtoProfilesUnmarshalerError(t *testing.T) {
@@ -125,14 +129,21 @@ func generateBenchmarkProfiles(samplesCount int) Profiles {
 }
 
 // generateProfiles creates a Profiles object with the specified number of resources, scopes, profiles, and samples.
-func generateProfiles(b *testing.B, resourceCount, scopeCount, profileCount, sampleCount int) Profiles {
-	b.Helper()
+func generateProfiles(tb testing.TB, resourceCount, scopeCount, profileCount, sampleCount int) Profiles {
+	tb.Helper()
 
 	profiles := NewProfiles()
 	dict := profiles.Dictionary()
+	// By convention, the first element is empty in all dictionary tables
+	dict.MappingTable().AppendEmpty()
+	dict.LocationTable().AppendEmpty()
+	dict.FunctionTable().AppendEmpty()
+	dict.LinkTable().AppendEmpty()
+	dict.StringTable().Append("")
+	dict.AttributeTable().AppendEmpty()
+	dict.StackTable().AppendEmpty()
 
 	// Pre-populate dictionary with common strings
-	dict.StringTable().Append("") // Index 0 is always empty string
 	dict.StringTable().Append("cpu")
 	dict.StringTable().Append("nanoseconds")
 	dict.StringTable().Append("samples")
@@ -172,8 +183,8 @@ func generateProfiles(b *testing.B, resourceCount, scopeCount, profileCount, sam
 
 				// Add period type
 				periodType := profile.PeriodType()
-				periodType.SetTypeStrindex(1) // "cpu"
-				periodType.SetUnitStrindex(2) // "nanoseconds"
+				periodType.SetTypeStrindex(3) // "samples"
+				periodType.SetUnitStrindex(4) // "count"
 				profile.SetPeriod(1000000)
 
 				// Generate samples

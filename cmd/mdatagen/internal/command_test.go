@@ -59,32 +59,82 @@ func TestCommandErrorOutputOnce(t *testing.T) {
 	assert.Equal(t, 1, strings.Count(out, msg), out)
 }
 
+func TestCheckStability(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "checkstabilitytest")
+	require.NoError(t, os.MkdirAll(dir, 0o700))
+	require.NoError(t, os.Mkdir(filepath.Join(dir, ".git"), 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module checkstabilitytest\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "component.go"), []byte("package checkstabilitytest\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "metadata.yaml"), []byte(`type: sample
+status:
+  class: receiver
+  stability:
+    stable: [metrics]
+`), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, centralConfigFileName), []byte("stability:\n  coverage:\n    stable: 80\n"), 0o600))
+	metadataFile := filepath.Join(dir, "metadata.yaml")
+
+	t.Run("passes above target", func(t *testing.T) {
+		profile := filepath.Join(dir, "cover_high.out")
+		require.NoError(t, os.WriteFile(profile, []byte("mode: atomic\ncheckstabilitytest/foo.go:1.1,10.2 8 1\n"), 0o600))
+
+		cmd, err := NewCommand()
+		require.NoError(t, err)
+		cmd.SetArgs([]string{"check-stability", "--profile", profile, metadataFile})
+		require.NoError(t, cmd.Execute())
+	})
+
+	t.Run("fails below target", func(t *testing.T) {
+		profile := filepath.Join(dir, "cover_low.out")
+		require.NoError(t, os.WriteFile(profile, []byte("mode: atomic\ncheckstabilitytest/foo.go:1.1,10.2 8 0\n"), 0o600))
+
+		cmd, err := NewCommand()
+		require.NoError(t, err)
+		cmd.SetOut(&bytes.Buffer{})
+		cmd.SetErr(&bytes.Buffer{})
+		cmd.SetArgs([]string{"check-stability", "--profile", profile, metadataFile})
+		err = cmd.Execute()
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "below the 80.0% target")
+	})
+
+	t.Run("requires --profile", func(t *testing.T) {
+		cmd, err := NewCommand()
+		require.NoError(t, err)
+		cmd.SetOut(&bytes.Buffer{})
+		cmd.SetErr(&bytes.Buffer{})
+		cmd.SetArgs([]string{"check-stability", metadataFile})
+		require.Error(t, cmd.Execute())
+	})
+}
+
 func TestRunContents(t *testing.T) {
 	tests := []struct {
-		yml                             string
-		wantMetricsGenerated            bool
-		wantLogsBuilderGenerated        bool
-		wantEventsGenerated             bool
-		wantMetricsContext              bool
-		wantLogsGenerated               bool
-		wantConfigGenerated             bool
-		wantTelemetryGenerated          bool
-		wantResourceAttributesGenerated bool
-		wantReadmeGenerated             bool
-		wantStatusGenerated             bool
-		wantComponentTestGenerated      bool
-		wantGoleakIgnore                bool
-		wantGoleakSkip                  bool
-		wantGoleakSetup                 bool
-		wantGoleakTeardown              bool
-		wantFeatureGatesGenerated       bool
-		wantConfigSchemaGenerated       bool
-		wantMetricsSchemaYamlGenerated  bool
-		wantConfigDocGenerated          bool
-		wantErr                         bool
-		wantOrderErr                    bool
-		wantRunErr                      bool
-		wantAttributes                  []string
+		yml                               string
+		wantMetricsGenerated              bool
+		wantLogsBuilderGenerated          bool
+		wantEventsGenerated               bool
+		wantMetricsContext                bool
+		wantLogsGenerated                 bool
+		wantConfigGenerated               bool
+		wantTelemetryGenerated            bool
+		wantResourceAttributesGenerated   bool
+		wantReadmeGenerated               bool
+		wantStatusGenerated               bool
+		wantSendingQueueFunctionGenerated bool
+		wantComponentTestGenerated        bool
+		wantGoleakIgnore                  bool
+		wantGoleakSkip                    bool
+		wantGoleakSetup                   bool
+		wantGoleakTeardown                bool
+		wantFeatureGatesGenerated         bool
+		wantConfigSchemaGenerated         bool
+		wantMetricsSchemaYamlGenerated    bool
+		wantConfigDocGenerated            bool
+		wantErr                           bool
+		wantOrderErr                      bool
+		wantRunErr                        bool
+		wantAttributes                    []string
 	}{
 		{
 			yml:     "invalid.yaml",
@@ -149,10 +199,11 @@ func TestRunContents(t *testing.T) {
 			wantLogsGenerated:          true,
 		},
 		{
-			yml:                        "with_tests_exporter.yaml",
-			wantStatusGenerated:        true,
-			wantReadmeGenerated:        true,
-			wantComponentTestGenerated: true,
+			yml:                               "with_tests_exporter.yaml",
+			wantStatusGenerated:               true,
+			wantSendingQueueFunctionGenerated: true,
+			wantReadmeGenerated:               true,
+			wantComponentTestGenerated:        true,
 		},
 		{
 			yml:                        "with_tests_processor.yaml",
@@ -348,7 +399,7 @@ foo
 			require.NoError(t, err)
 
 			// Documentation is generated when any of these features are present
-			wantDocumentationGenerated := tt.wantFeatureGatesGenerated || tt.wantMetricsGenerated || tt.wantTelemetryGenerated || tt.wantResourceAttributesGenerated || tt.wantEventsGenerated
+			wantDocumentationGenerated := tt.wantFeatureGatesGenerated || tt.wantMetricsGenerated || tt.wantTelemetryGenerated || tt.wantResourceAttributesGenerated || tt.wantEventsGenerated || (md.SendingQueue != nil && !md.SendingQueue.IsImplicit())
 
 			var contents []byte
 			if tt.wantMetricsGenerated {
@@ -425,7 +476,15 @@ foo
 			}
 
 			if tt.wantStatusGenerated {
-				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_status.go"))
+				statusPath := filepath.Join(tmpdir, generatedPackageDir, "generated_status.go")
+				require.FileExists(t, statusPath)
+				contents, err = os.ReadFile(filepath.Clean(statusPath))
+				require.NoError(t, err)
+				if tt.wantSendingQueueFunctionGenerated {
+					require.Contains(t, string(contents), "func NewDefaultSendingQueueConfig()")
+				} else {
+					require.NotContains(t, string(contents), "func NewDefaultSendingQueueConfig()")
+				}
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_status.go"))
 			}
@@ -443,6 +502,7 @@ foo
 				contents, err = os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "generated_component_test.go")))
 				require.NoError(t, err)
 				require.Contains(t, string(contents), "func Test")
+				require.NotContains(t, string(contents), `"go.opentelemetry.io/collector/internal/testutil"`)
 				_, err = parser.ParseFile(token.NewFileSet(), "", contents, parser.DeclarationErrors)
 				require.NoError(t, err)
 			} else {
@@ -849,14 +909,18 @@ func TestGenerateConfigGoStruct_ResolvedImports(t *testing.T) {
 			Config: &cfggen.ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*schemagen.ConfigMetadata{
+					"component_id": {
+						Type:     "string",
+						GoStruct: cfggen.GoStructConfig{FieldName: "ComponentID", Type: "go.opentelemetry.io/collector/component.ID"},
+					},
 					"AllOf": {
 						Type:  "object",
 						Embed: true,
 						Ref:   "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
 						Properties: map[string]*cfggen.ConfigMetadata{
 							"timeout": {
-								Type:   "string",
-								GoType: "time.Duration",
+								Type:     "string",
+								GoStruct: cfggen.GoStructConfig{Type: "time.Duration"},
 							},
 						},
 						Default: map[string]any{"timeout": "30s"},
@@ -877,6 +941,7 @@ func TestGenerateConfigGoStruct_ResolvedImports(t *testing.T) {
 
 	generated := string(content)
 	require.Contains(t, generated, `"go.opentelemetry.io/collector/component"`)
+	require.Equal(t, 1, strings.Count(generated, `"go.opentelemetry.io/collector/component"`))
 	require.Contains(t, generated, `"go.opentelemetry.io/collector/scraper/scraperhelper"`)
 	require.Contains(t, generated, "func createDefaultConfig() component.Config")
 }
@@ -902,8 +967,8 @@ func TestGenerateConfigGoStruct_NamedEmbeddedStruct(t *testing.T) {
 						Default: map[string]any{"timeout": "30s"},
 						Properties: map[string]*cfggen.ConfigMetadata{
 							"timeout": {
-								Type:   "string",
-								GoType: "time.Duration",
+								Type:     "string",
+								GoStruct: cfggen.GoStructConfig{Type: "time.Duration"},
 							},
 						},
 						GoStruct: cfggen.GoStructConfig{
@@ -929,6 +994,42 @@ func TestGenerateConfigGoStruct_NamedEmbeddedStruct(t *testing.T) {
 	require.Contains(t, generated, "ControllerConfig: controllerConfig,")
 }
 
+func TestGenerateConfigGoStruct_PrivateFields(t *testing.T) {
+	root := t.TempDir()
+	outputDir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(outputDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "receiver"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{
+				Type:     "object",
+				GoStruct: cfggen.GoStructConfig{PrivateFields: true},
+			},
+			ExportedConfigs: map[string]*cfggen.ConfigMetadata{
+				"sample_config": {
+					Type:     "object",
+					GoStruct: cfggen.GoStructConfig{PrivateFields: true},
+				},
+			},
+		},
+	}
+
+	require.NoError(t, generateConfigGoStruct(md, outputDir))
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+
+	generated := string(content)
+	require.Contains(t, generated, "type SampleConfig struct {")
+	require.Contains(t, generated, "privateSampleConfigFields")
+	require.Contains(t, generated, "type Config struct {")
+	require.Contains(t, generated, "privateConfigFields")
+}
+
 func TestGenerateConfigGoStruct_PropertyDefaultsAndImports(t *testing.T) {
 	root := t.TempDir()
 	outputDir := filepath.Join(root, "shortname")
@@ -945,9 +1046,8 @@ func TestGenerateConfigGoStruct_PropertyDefaultsAndImports(t *testing.T) {
 				Properties: map[string]*cfggen.ConfigMetadata{
 					"timeout": {
 						Type:     "string",
-						GoType:   "time.Duration",
 						Default:  "30s",
-						GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
+						GoStruct: cfggen.GoStructConfig{FieldName: "timeout", Type: "time.Duration"},
 					},
 				},
 			},
@@ -988,9 +1088,8 @@ func TestGenerateConfigGoStruct_InternalResolvedRefGeneratesLocalType(t *testing
 						Properties: map[string]*cfggen.ConfigMetadata{
 							"timeout": {
 								Type:     "string",
-								GoType:   "time.Duration",
 								Default:  "30s",
-								GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
+								GoStruct: cfggen.GoStructConfig{FieldName: "timeout", Type: "time.Duration"},
 							},
 						},
 					},
@@ -1032,8 +1131,7 @@ func TestGenerateConfigGoStruct_ComponentIDFieldUsesGoName(t *testing.T) {
 				Properties: map[string]*cfggen.ConfigMetadata{
 					"storage": {
 						Type:     "string",
-						GoType:   "go.opentelemetry.io/collector/component.ID",
-						GoStruct: cfggen.GoStructConfig{FieldName: "storage_id"},
+						GoStruct: cfggen.GoStructConfig{FieldName: "storage_id", Type: "go.opentelemetry.io/collector/component.ID"},
 					},
 				},
 			},
@@ -1049,6 +1147,42 @@ func TestGenerateConfigGoStruct_ComponentIDFieldUsesGoName(t *testing.T) {
 	generated := string(content)
 	require.Contains(t, generated, `StorageID component.ID`)
 	require.Contains(t, generated, "`mapstructure:\"storage,omitempty\"`")
+}
+
+func TestGenerateConfigGoStruct_RequiredFieldWithoutDefaultOmitsOmitempty(t *testing.T) {
+	root := t.TempDir()
+	outputDir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(outputDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "receiver"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{
+				Type:     "object",
+				Required: []string{"endpoint"},
+				Properties: map[string]*cfggen.ConfigMetadata{
+					"endpoint": {
+						Type:     "string",
+						GoStruct: cfggen.GoStructConfig{FieldName: "endpoint"},
+					},
+				},
+			},
+		},
+	}
+
+	err := generateConfigGoStruct(md, outputDir)
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+
+	generated := string(content)
+	// Required fields must never get ",omitempty", even without a default value.
+	require.Contains(t, generated, "Endpoint string `mapstructure:\"endpoint\"`")
+	require.NotContains(t, generated, "omitempty")
 }
 
 func TestGenerateConfigFiles_GoStructError(t *testing.T) {
@@ -1702,6 +1836,128 @@ func TestGenerateConfigGoStruct_GeneratesTestFile(t *testing.T) {
 	require.Contains(t, string(content), "func TestCreateDefaultConfig(")
 }
 
+func TestGenerateComponentTestExporterDefaultQueueBatchSender(t *testing.T) {
+	md := Metadata{
+		Type:         "test",
+		PackageName:  "go.opentelemetry.io/collector/exporter/testexporter",
+		Status:       &Status{Class: "exporter"},
+		SendingQueue: &SendingQueue{Support: SendingQueueSupportDefault},
+	}
+
+	generated, err := executeTemplate(
+		"templates/component_test.go.tmpl",
+		md,
+		"testexporter",
+		"go.opentelemetry.io/collector",
+		getTemplateFuncMap(md, "go.opentelemetry.io/collector"),
+	)
+	require.NoError(t, err)
+	require.Contains(t, string(generated), "func TestComponentDefaultQueueBatchSender(")
+	require.Contains(t, string(generated), "configoptional.Optional[exporterhelper.QueueBatchConfig]")
+	require.Contains(t, string(generated), `Tag.Get("mapstructure")`)
+	require.Contains(t, string(generated), "internalmetadata.NewDefaultSendingQueueConfig()")
+	require.Contains(t, string(generated), "pkg.exporterhelper.queueBatchEnabled")
+
+	md.SendingQueue = &SendingQueue{
+		Support:   SendingQueueSupportOmitted,
+		Rationale: "This exporter has no sender.",
+	}
+	generated, err = executeTemplate(
+		"templates/component_test.go.tmpl",
+		md,
+		"testexporter",
+		"go.opentelemetry.io/collector",
+		getTemplateFuncMap(md, "go.opentelemetry.io/collector"),
+	)
+	require.NoError(t, err)
+	require.Contains(t, string(generated), "func TestComponentDefaultQueueBatchSender(")
+	require.Contains(t, string(generated), "require.NotEqual(t, optionalQueueType, fieldType.Type")
+	require.Contains(t, string(generated), "require.NotEqual(t, queueType, fieldType.Type")
+	require.NotContains(t, string(generated), "internalmetadata.NewDefaultSendingQueueConfig()")
+}
+
+func TestGenerateSendingQueueNestedBatchOverrides(t *testing.T) {
+	md := Metadata{
+		Type:   "test",
+		Status: &Status{Class: "exporter"},
+		SendingQueue: &SendingQueue{
+			Support: SendingQueueSupportHasOverrides,
+			Overrides: SendingQueueOverrides{
+				"enabled": false,
+				"batch": map[string]any{
+					"enabled":  false,
+					"min_size": int64(123),
+				},
+			},
+		},
+	}
+
+	generated, err := executeTemplate(
+		"templates/status.go.tmpl",
+		md,
+		"metadata",
+		"go.opentelemetry.io/collector",
+		getTemplateFuncMap(md, "go.opentelemetry.io/collector"),
+	)
+	require.NoError(t, err)
+	_, err = parser.ParseFile(token.NewFileSet(), "generated_status.go", generated, parser.AllErrors)
+	require.NoError(t, err)
+	require.NotContains(t, string(generated), "confmap")
+	require.NotContains(t, string(generated), "panic(")
+	require.Contains(t, string(generated), "cfg := exporterhelper.NewDefaultQueueConfig()")
+	require.Contains(t, string(generated), "batchCfg.MinSize = 123")
+	require.NotContains(t, string(generated), "cfg.QueueSize =")
+	require.Contains(t, string(generated), "cfg.Batch = configoptional.Default(batchCfg)")
+	require.Contains(t, string(generated), "return configoptional.Default(cfg)")
+}
+
+func TestGenerateSendingQueueDefaultFollowsFeatureGate(t *testing.T) {
+	md := Metadata{
+		Type:         "test",
+		Status:       &Status{Class: "exporter"},
+		SendingQueue: &SendingQueue{Support: SendingQueueSupportDefault},
+	}
+
+	generated, err := executeTemplate(
+		"templates/status.go.tmpl",
+		md,
+		"metadata",
+		"go.opentelemetry.io/collector",
+		getTemplateFuncMap(md, "go.opentelemetry.io/collector"),
+	)
+	require.NoError(t, err)
+	require.Contains(t, string(generated), "return configoptional.Some(exporterhelper.NewDefaultQueueConfig())")
+	require.NotContains(t, string(generated), "time")
+	require.NotContains(t, string(generated), "confmap")
+	require.NotContains(t, string(generated), "panic(")
+}
+
+func TestRunImplicitSendingQueueOptOut(t *testing.T) {
+	tmpdir := filepath.Join(t.TempDir(), "shortname")
+	require.NoError(t, os.MkdirAll(tmpdir, 0o750))
+	ymlContent, err := os.ReadFile(filepath.Join("testdata", "status_only.yaml"))
+	require.NoError(t, err)
+	metadataFile := filepath.Join(tmpdir, "metadata.yaml")
+	require.NoError(t, os.WriteFile(metadataFile, ymlContent, 0o600)) // #nosec G703
+	require.NoError(t, os.WriteFile(filepath.Join(tmpdir, "empty.go"), []byte("package shortname"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpdir, "go.mod"), []byte("module shortname"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpdir, "README.md"), []byte(`
+<!-- status autogenerated section -->
+foo
+<!-- end autogenerated section -->`), 0o600))
+
+	t.Setenv(sendingQueueOptOutEnvVar, "true")
+
+	require.NoError(t, run(metadataFile))
+
+	statusPath := filepath.Join(tmpdir, "internal", "metadata", "generated_status.go")
+	require.FileExists(t, statusPath)
+	contents, err := os.ReadFile(filepath.Clean(statusPath))
+	require.NoError(t, err)
+	require.Contains(t, string(contents), "func NewDefaultSendingQueueConfig()")
+	require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
+}
+
 func TestGenerateConfigGoStruct_TestFileContainsValidateTestWhenValidatorsPresent(t *testing.T) {
 	root := t.TempDir()
 	outputDir := filepath.Join(root, "shortname")
@@ -1723,6 +1979,12 @@ func TestGenerateConfigGoStruct_TestFileContainsValidateTestWhenValidatorsPresen
 					},
 				},
 			},
+			ExportedConfigs: map[string]*cfggen.ConfigMetadata{
+				"port": {
+					Type:    "int",
+					Minimum: new(1.0),
+				},
+			},
 		},
 	}
 
@@ -1732,6 +1994,7 @@ func TestGenerateConfigGoStruct_TestFileContainsValidateTestWhenValidatorsPresen
 	require.NoError(t, err)
 	require.Contains(t, string(content), "func TestCreateDefaultConfig(")
 	require.Contains(t, string(content), "func TestConfigValidate_DefaultValid(")
+	require.Contains(t, string(content), "func TestPortValidate_MinimumPort(")
 }
 
 func TestGenerateConfigGoStruct_TestFileNoValidateTestWhenNoValidators(t *testing.T) {
@@ -1750,8 +2013,7 @@ func TestGenerateConfigGoStruct_TestFileNoValidateTestWhenNoValidators(t *testin
 				Properties: map[string]*cfggen.ConfigMetadata{
 					"timeout": {
 						Type:     "string",
-						GoType:   "time.Duration",
-						GoStruct: cfggen.GoStructConfig{FieldName: "timeout"},
+						GoStruct: cfggen.GoStructConfig{FieldName: "timeout", Type: "time.Duration"},
 					},
 				},
 			},

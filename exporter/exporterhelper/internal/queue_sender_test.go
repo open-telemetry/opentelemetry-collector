@@ -64,6 +64,8 @@ func TestNewDefaultQueueConfigBatchFeatureGate(t *testing.T) {
 	require.Equal(t, int64(8192), qCfg.Batch.Get().MinSize)
 	require.Equal(t, 200*time.Millisecond, qCfg.Batch.Get().FlushTimeout)
 	require.Equal(t, request.SizerTypeItems, qCfg.Batch.Get().Sizer)
+	require.Equal(t, 10000, qCfg.Batch.Get().Partition.CacheSize)
+	require.Equal(t, 90*time.Second, qCfg.Batch.Get().Partition.IdleTimeout)
 }
 
 func TestQueueConfig_Validate(t *testing.T) {
