@@ -151,6 +151,15 @@
       "matchManagers": [
         "gomod"
       ],
+      "groupName": "All go.opentelemetry.io/proto packages",
+      "matchPackageNames": [
+        "go.opentelemetry.io/proto{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
       "matchDepTypes": [
         "toolchain"
       ],
