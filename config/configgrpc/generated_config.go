@@ -71,6 +71,7 @@ type ClientConfig struct {
 }
 
 // Validate validates the ClientConfig fields according to schema annotations.
+// Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
 func (c *ClientConfig) Validate() error {
 	var err error
 
@@ -217,6 +218,7 @@ type ServerConfig struct {
 }
 
 // Validate validates the ServerConfig fields according to schema annotations.
+// Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
 func (c *ServerConfig) Validate() error {
 	var err error
 
