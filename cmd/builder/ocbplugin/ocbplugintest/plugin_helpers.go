@@ -1,8 +1,9 @@
 package ocbplugintest
 
 import (
-	"go.opentelemetry.io/collector/cmd/builder/ocbplugin"
 	"golang.org/x/mod/semver"
+
+	"go.opentelemetry.io/collector/cmd/builder/ocbplugin"
 )
 
 // IsValidOCBPlugin allows plugin authors to ensure the written plugin
