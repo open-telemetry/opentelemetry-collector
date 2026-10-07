@@ -72,6 +72,7 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["metric.input_type"] = mb.metricMetricInputType.config.AggregationStrategy
 			aggMap["optional.metric"] = mb.metricOptionalMetric.config.AggregationStrategy
 			aggMap["optional.metric.empty_unit"] = mb.metricOptionalMetricEmptyUnit.config.AggregationStrategy
+			aggMap["optional.metric.to_be_removed"] = mb.metricOptionalMetricToBeRemoved.config.AggregationStrategy
 			aggMap["reaggregate.metric"] = mb.metricReaggregateMetric.config.AggregationStrategy
 
 			expectedWarnings := 0
@@ -89,6 +90,10 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 			if tt.metricsSet == testDataSetAll || tt.metricsSet == testDataSetNone {
 				assert.Equal(t, "[WARNING] `optional.metric.empty_unit` should not be configured: This metric is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if tt.metricsSet == testDataSetAll {
+				assert.Equal(t, "[WARNING] `optional.metric.to_be_removed` should not be enabled: This metric is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			if tt.resAttrsSet == testDataSetDefault {
@@ -114,6 +119,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 			if tt.name == "reaggregate_set" {
 				mb.RecordDefaultMetricDataPoint(ts, 3, "string_attr-val-2", 20, AttributeEnumAttrGreen, []any{"slice_attr-item3", "slice_attr-item4"}, map[string]any{"key3": "map_attr-val3", "key4": "map_attr-val4"})
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordDefaultMetricDataPoint(ts+1, 3, "string_attr-val-2", 20, AttributeEnumAttrGreen, []any{"slice_attr-item3", "slice_attr-item4"}, map[string]any{"key3": "map_attr-val3", "key4": "map_attr-val4"})
+				assert.Equal(t, 2, mb.metricDefaultMetric.data.Sum().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -123,24 +131,45 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 			if tt.name == "reaggregate_set" {
 				mb.RecordMetricInputTypeDataPoint(ts, "3", "string_attr-val-2", 20, AttributeEnumAttrGreen, []any{"slice_attr-item3", "slice_attr-item4"}, map[string]any{"key3": "map_attr-val3", "key4": "map_attr-val4"})
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordMetricInputTypeDataPoint(ts+1, "3", "string_attr-val-2", 20, AttributeEnumAttrGreen, []any{"slice_attr-item3", "slice_attr-item4"}, map[string]any{"key3": "map_attr-val3", "key4": "map_attr-val4"})
+				assert.Equal(t, 2, mb.metricMetricInputType.data.Sum().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true, false)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOptionalMetricDataPoint(ts, 3, "string_attr-val-2", false, true)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOptionalMetricDataPoint(ts+1, 3, "string_attr-val-2", false, true)
+				assert.Equal(t, 2, mb.metricOptionalMetric.data.Gauge().DataPoints().Len())
 			}
 
 			allMetricsCount++
 			mb.RecordOptionalMetricEmptyUnitDataPoint(ts, 1, "string_attr-val", true)
 			if tt.name == "reaggregate_set" {
 				mb.RecordOptionalMetricEmptyUnitDataPoint(ts, 3, "string_attr-val-2", false)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOptionalMetricEmptyUnitDataPoint(ts+1, 3, "string_attr-val-2", false)
+				assert.Equal(t, 2, mb.metricOptionalMetricEmptyUnit.data.Gauge().DataPoints().Len())
+			}
+
+			allMetricsCount++
+			mb.RecordOptionalMetricToBeRemovedDataPoint(ts, 1, "string_attr-val")
+			if tt.name == "reaggregate_set" {
+				mb.RecordOptionalMetricToBeRemovedDataPoint(ts, 3, "string_attr-val-2")
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordOptionalMetricToBeRemovedDataPoint(ts+1, 3, "string_attr-val-2")
+				assert.Equal(t, 2, mb.metricOptionalMetricToBeRemoved.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordReaggregateMetricDataPoint(ts, 1, "string_attr-val", true)
 			if tt.name == "reaggregate_set" {
 				mb.RecordReaggregateMetricDataPoint(ts, 3, "string_attr-val-2", false)
+				// a different timestamp is a different key: must not merge with the above.
+				mb.RecordReaggregateMetricDataPoint(ts+1, 3, "string_attr-val-2", false)
+				assert.Equal(t, 2, mb.metricReaggregateMetric.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -162,6 +191,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Empty(t, mb.metricMetricInputType.aggDataPoints)
 				assert.Empty(t, mb.metricOptionalMetric.aggDataPoints)
 				assert.Empty(t, mb.metricOptionalMetricEmptyUnit.aggDataPoints)
+				assert.Empty(t, mb.metricOptionalMetricToBeRemoved.aggDataPoints)
 				assert.Empty(t, mb.metricReaggregateMetric.aggDataPoints)
 			}
 
@@ -224,7 +254,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["default.metric"], "Found a duplicate in the metrics slice: default.metric")
 						validatedMetrics["default.metric"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Monotonic cumulative sum int metric enabled by default.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -302,7 +334,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["metric.input_type"], "Found a duplicate in the metrics slice: metric.input_type")
 						validatedMetrics["metric.input_type"] = true
 						assert.Equal(t, pmetric.MetricTypeSum, mi.Type())
-						assert.Equal(t, 1, mi.Sum().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Sum().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Sum().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Monotonic cumulative sum int metric with string input_type enabled by default.", mi.Description())
 						assert.Equal(t, "s", mi.Unit())
 						assert.True(t, mi.Sum().IsMonotonic())
@@ -358,7 +392,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["optional.metric"], "Found a duplicate in the metrics slice: optional.metric")
 						validatedMetrics["optional.metric"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "[DEPRECATED] Gauge double metric disabled by default.", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -405,7 +441,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["optional.metric.empty_unit"], "Found a duplicate in the metrics slice: optional.metric.empty_unit")
 						validatedMetrics["optional.metric.empty_unit"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "[DEPRECATED] Gauge double metric disabled by default.", mi.Description())
 						assert.Empty(t, mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)
@@ -425,6 +463,48 @@ func TestMetricsBuilder(t *testing.T) {
 						_, ok := dp.Attributes().Get("string_attr")
 						assert.False(t, ok)
 						_, ok = dp.Attributes().Get("boolean_attr")
+						assert.False(t, ok)
+					}
+				case "optional.metric.to_be_removed":
+					if tt.name != "reaggregate_set" {
+						assert.False(t, validatedMetrics["optional.metric.to_be_removed"], "Found a duplicate in the metrics slice: optional.metric.to_be_removed")
+						validatedMetrics["optional.metric.to_be_removed"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, "[DEPRECATED] Gauge double metric disabled by default with if_enabled warning.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						stringAttrAttrVal, ok := dp.Attributes().Get("string_attr")
+						assert.True(t, ok)
+						assert.Equal(t, "string_attr-val", stringAttrAttrVal.Str())
+					} else {
+						assert.False(t, validatedMetrics["optional.metric.to_be_removed"], "Found a duplicate in the metrics slice: optional.metric.to_be_removed")
+						validatedMetrics["optional.metric.to_be_removed"] = true
+						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
+						assert.Equal(t, "[DEPRECATED] Gauge double metric disabled by default with if_enabled warning.", mi.Description())
+						assert.Equal(t, "1", mi.Unit())
+						dp := mi.Gauge().DataPoints().At(0)
+						assert.Equal(t, start, dp.StartTimestamp())
+						assert.Equal(t, ts, dp.Timestamp())
+						assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+						switch aggMap["optional.metric.to_be_removed"] {
+						case "sum":
+							assert.InDelta(t, float64(4), dp.DoubleValue(), 0.01)
+						case "avg":
+							assert.InDelta(t, float64(2), dp.DoubleValue(), 0.01)
+						case "min":
+							assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+						case "max":
+							assert.InDelta(t, float64(3), dp.DoubleValue(), 0.01)
+						}
+						_, ok := dp.Attributes().Get("string_attr")
 						assert.False(t, ok)
 					}
 				case "reaggregate.metric":
@@ -450,7 +530,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["reaggregate.metric"], "Found a duplicate in the metrics slice: reaggregate.metric")
 						validatedMetrics["reaggregate.metric"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Metric for testing spatial reaggregation", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)

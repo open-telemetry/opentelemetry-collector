@@ -15,6 +15,9 @@ all_set:
     optional.metric.empty_unit:
       enabled: true
       attributes: ["string_attr","boolean_attr"]
+    optional.metric.to_be_removed:
+      enabled: true
+      attributes: ["string_attr"]
     reaggregate.metric:
       enabled: true
       attributes: ["string_attr","boolean_attr"]
@@ -51,6 +54,9 @@ reaggregate_set:
       enabled: true
       attributes: []
     optional.metric.empty_unit:
+      enabled: true
+      attributes: []
+    optional.metric.to_be_removed:
       enabled: true
       attributes: []
     reaggregate.metric:
@@ -91,6 +97,9 @@ none_set:
     optional.metric.empty_unit:
       enabled: false
       attributes: ["string_attr","boolean_attr"]
+    optional.metric.to_be_removed:
+      enabled: false
+      attributes: ["string_attr"]
     reaggregate.metric:
       enabled: false
       attributes: ["string_attr","boolean_attr"]
