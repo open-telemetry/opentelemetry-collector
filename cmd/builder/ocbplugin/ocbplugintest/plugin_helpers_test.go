@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"go.opentelemetry.io/collector/cmd/builder/ocbplugin"
 )
 
@@ -43,18 +44,18 @@ func (m *mockPlugin) MinOCBVersion() string {
 	return m.minVersion
 }
 
-func (m *mockPlugin) PreGenerate(config map[string]any) error {
+func (m *mockPlugin) PreGenerate(_ map[string]any) error {
 	return errors.New("unimplemented")
 }
 
-func (m *mockPlugin) PostGenerate(config map[string]any) error {
+func (m *mockPlugin) PostGenerate(_ map[string]any) error {
 	return errors.New("unimplemented")
 }
 
-func (m *mockPlugin) PreBuild(config map[string]any) error {
+func (m *mockPlugin) PreBuild(_ map[string]any) error {
 	return errors.New("unimplemented")
 }
 
-func (m *mockPlugin) PostBuild(config map[string]any) error {
+func (m *mockPlugin) PostBuild(_ map[string]any) error {
 	return errors.New("unimplemented")
 }
