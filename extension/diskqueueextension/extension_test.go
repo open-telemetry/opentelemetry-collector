@@ -131,6 +131,48 @@ func TestThreePutsThreeConsumesOutOfOrder(t *testing.T) {
 	require.NoError(t, c.Shutdown(context.Background()))
 }
 
+func TestOutOfOrderCompletionDoesNotAdvanceCompletionHead(t *testing.T) {
+	c := newTestClient(t, t.TempDir())
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("one"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("two"), Size: 1}))
+	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("three"), Size: 1}))
+
+	msg1 := <-c.Peek()
+	msg2 := <-c.Peek()
+	msg3 := <-c.Peek()
+	msg3.ConsumeCallback(nil)
+	assert.Eventually(t, func() bool { return c.Size() == 3 }, time.Second, 10*time.Millisecond)
+
+	msg1.ConsumeCallback(nil)
+	assert.Eventually(t, func() bool { return c.Size() == 2 }, time.Second, 10*time.Millisecond)
+	msg2.ConsumeCallback(nil)
+	assert.Eventually(t, func() bool { return c.Size() == 0 }, time.Second, 10*time.Millisecond)
+	require.NoError(t, c.Shutdown(context.Background()))
+}
+
+func TestOutOfOrderCompletionReplaysAfterRestart(t *testing.T) {
+	dir := t.TempDir()
+	c := newTestClient(t, dir)
+	for _, payload := range []string{"one", "two", "three"} {
+		require.NoError(t, c.Write(queue.WriteOp{Payload: []byte(payload), Size: 1}))
+	}
+	_ = <-c.Peek()
+	_ = <-c.Peek()
+	msg3 := <-c.Peek()
+	msg3.ConsumeCallback(nil)
+	assert.Eventually(t, func() bool { return c.Size() == 3 }, time.Second, 10*time.Millisecond)
+	require.NoError(t, c.Shutdown(context.Background()))
+
+	c2 := newTestClient(t, dir)
+	for _, expected := range []string{"one", "two", "three"} {
+		msg := <-c2.Peek()
+		assert.Equal(t, expected, string(msg.Payload))
+		msg.ConsumeCallback(nil)
+	}
+	assert.Eventually(t, func() bool { return c2.Size() == 0 }, time.Second, 10*time.Millisecond)
+	require.NoError(t, c2.Shutdown(context.Background()))
+}
+
 func TestStartStopRestart(t *testing.T) {
 	dir := t.TempDir()
 	c := newTestClient(t, dir)
@@ -139,6 +181,7 @@ func TestStartStopRestart(t *testing.T) {
 	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world3"), Size: 1}))
 	msg1 := <-c.Peek()
 	msg1.ConsumeCallback(nil)
+	assert.Eventually(t, func() bool { return c.Size() == 2 }, time.Second, 10*time.Millisecond)
 	require.NoError(t, c.Shutdown(context.Background()))
 
 	c2 := newTestClient(t, dir)
@@ -193,10 +236,10 @@ func TestGetClientCorruptedMetadataSeekError(t *testing.T) {
 	assert.False(t, os.IsNotExist(err))
 }
 
-func TestGetClientCorruptedPeekMetadataSeekError(t *testing.T) {
+func TestGetClientCorruptedCompletionMetadataSeekError(t *testing.T) {
 	dir := t.TempDir()
 	ext := newTestExtension(t, dir)
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "test.diskaccess.peek.dat"), []byte("x"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "test.diskaccess.completion.dat"), []byte("x"), 0o600))
 	_, err := ext.GetClient(context.Background(), component.KindExporter, component.MustNewID("foo"), "test")
 	require.Error(t, err)
 	assert.False(t, os.IsNotExist(err))
@@ -212,10 +255,10 @@ func TestGetClientMetadataReadFromError(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestGetClientPeekMetadataReadFromError(t *testing.T) {
+func TestGetClientCompletionMetadataReadFromError(t *testing.T) {
 	dir := t.TempDir()
 	ext := newTestExtension(t, dir)
-	require.NoError(t, os.Mkdir(filepath.Join(dir, "test.diskaccess.peek.dat"), 0o600))
+	require.NoError(t, os.Mkdir(filepath.Join(dir, "test.diskaccess.completion.dat"), 0o600))
 	_, err := ext.GetClient(context.Background(), component.KindExporter, component.MustNewID("foo"), "test")
 	require.Error(t, err)
 }
@@ -230,17 +273,17 @@ func TestWriteOpenFileError(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestPersistMetaDataOpenFileError(t *testing.T) {
+func TestPersistMetadataOpenFileError(t *testing.T) {
 	dir := t.TempDir()
 	c := newTestClient(t, dir)
 	t.Cleanup(func() { _ = c.Shutdown(context.Background()) })
 	require.NoError(t, os.Chmod(dir, 0o500))       // #nosec G302
 	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) }) // #nosec G302
-	err := c.persistMetaData()
+	err := c.persistMetadata()
 	require.Error(t, err)
 }
 
-func TestPersistMetaDataWriteError(t *testing.T) {
+func TestPersistMetadataWriteError(t *testing.T) {
 	c := newTestClient(t, t.TempDir())
 	t.Cleanup(func() { _ = c.Shutdown(context.Background()) })
 	r, w, err := os.Pipe()
@@ -248,30 +291,30 @@ func TestPersistMetaDataWriteError(t *testing.T) {
 	require.NoError(t, r.Close())
 	require.NoError(t, w.Close())
 	c.metadataFile = w
-	err = c.persistMetaData()
+	err = c.persistMetadata()
 	require.Error(t, err)
 	assert.Nil(t, c.metadataFile)
 }
 
-func TestPersistMetaDataSyncError(t *testing.T) {
+func TestPersistMetadataSyncError(t *testing.T) {
 	c := newTestClient(t, t.TempDir())
 	t.Cleanup(func() { _ = c.Shutdown(context.Background()) })
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
 	defer func() { _ = r.Close() }()
 	c.metadataFile = w
-	err = c.persistMetaData()
+	err = c.persistMetadata()
 	require.Error(t, err)
 	assert.Nil(t, c.metadataFile)
 }
 
-func TestSyncPeekOpenFileError(t *testing.T) {
+func TestSyncCompletionMetadataOpenFileError(t *testing.T) {
 	dir := t.TempDir()
 	c := newTestClient(t, dir)
 	t.Cleanup(func() { _ = c.Shutdown(context.Background()) })
 	require.NoError(t, os.Chmod(dir, 0o500))       // #nosec G302
 	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) }) // #nosec G302
-	err := c.syncPeek()
+	err := c.syncCompletionMetadata()
 	require.Error(t, err)
 }
 
@@ -323,8 +366,9 @@ func TestPeekDataReadBufError(t *testing.T) {
 	dir := t.TempDir()
 	c := newTestClient(t, dir)
 	t.Cleanup(func() { _ = c.Shutdown(context.Background()) })
-	buf := binary.BigEndian.AppendUint64(nil, 100) // datalen
-	buf = binary.BigEndian.AppendUint64(buf, 1)    // size
+	buf := binary.BigEndian.AppendUint64(nil, 0)  // logical index
+	buf = binary.BigEndian.AppendUint64(buf, 100) // datalen
+	buf = binary.BigEndian.AppendUint64(buf, 1)   // size
 	require.NoError(t, os.WriteFile(c.fileName(0), buf, 0o600))
 	_, err := c.peekData()
 	require.Error(t, err)
@@ -385,29 +429,29 @@ func TestPeekDataReadLenErrNonEOF(t *testing.T) {
 	assert.Nil(t, c.peekFile)
 }
 
-func TestSyncPeekWriteError(t *testing.T) {
+func TestSyncCompletionMetadataWriteError(t *testing.T) {
 	c := newTestClient(t, t.TempDir())
 	t.Cleanup(func() { _ = c.Shutdown(context.Background()) })
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
 	require.NoError(t, r.Close())
 	require.NoError(t, w.Close())
-	c.peekMetadataFile = w
-	err = c.syncPeek()
+	c.completionMetadataFile = w
+	err = c.syncCompletionMetadata()
 	require.Error(t, err)
-	assert.Nil(t, c.peekMetadataFile)
+	assert.Nil(t, c.completionMetadataFile)
 }
 
-func TestSyncPeekSyncError(t *testing.T) {
+func TestSyncCompletionMetadataSyncError(t *testing.T) {
 	c := newTestClient(t, t.TempDir())
 	t.Cleanup(func() { _ = c.Shutdown(context.Background()) })
 	r, w, err := os.Pipe()
 	require.NoError(t, err)
 	defer func() { _ = r.Close() }()
-	c.peekMetadataFile = w
-	err = c.syncPeek()
+	c.completionMetadataFile = w
+	err = c.syncCompletionMetadata()
 	require.Error(t, err)
-	assert.Nil(t, c.peekMetadataFile)
+	assert.Nil(t, c.completionMetadataFile)
 }
 
 func TestWriteOpenFileErrorOnRotatedFile(t *testing.T) {
@@ -475,7 +519,7 @@ func TestWriteLoopSyncErrorLogged(t *testing.T) {
 	require.NoError(t, c.Shutdown(context.Background()))
 }
 
-func TestReadLoopSyncPeekErrorLogged(t *testing.T) {
+func TestReadLoopSyncCompletionMetadataErrorLogged(t *testing.T) {
 	dir := t.TempDir()
 	ext := newTestExtension(t, dir)
 	ext.cfg.SyncEvery = 1
@@ -487,7 +531,7 @@ func TestReadLoopSyncPeekErrorLogged(t *testing.T) {
 	c := c0.(*diskAccessClient)
 	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 1}))
 	msg := <-c.Peek()
-	// force the periodic syncPeek() triggered by the ticker to fail.
+	// force the periodic completion metadata sync triggered by the ticker to fail.
 	require.NoError(t, os.Chmod(dir, 0o500)) // #nosec G302
 	require.Eventually(t, func() bool {
 		return observed.FilterMessage("failed to sync").Len() > 0
@@ -567,7 +611,7 @@ func TestReadOneExitDuringSend(t *testing.T) {
 
 	close(c.peekChan)
 	_ = c.sync()
-	_ = c.syncPeek()
+	_ = c.syncCompletionMetadata()
 	if c.writeFile != nil {
 		_ = c.writeFile.Close()
 	}
@@ -577,8 +621,8 @@ func TestReadOneExitDuringSend(t *testing.T) {
 	if c.metadataFile != nil {
 		_ = c.metadataFile.Close()
 	}
-	if c.peekMetadataFile != nil {
-		_ = c.peekMetadataFile.Close()
+	if c.completionMetadataFile != nil {
+		_ = c.completionMetadataFile.Close()
 	}
 }
 
@@ -604,28 +648,28 @@ func TestWriteLoopAndReadLoopTicker(t *testing.T) {
 	require.NoError(t, c.Shutdown(context.Background()))
 }
 
-func TestRetrieveMetaDataSuccess(t *testing.T) {
+func TestRetrieveMetadataSuccess(t *testing.T) {
 	dir := t.TempDir()
 	c := newTestClient(t, dir)
 	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 5}))
 	require.NoError(t, c.sync())
 
-	m, err := c.retrieveMetaData(c.metaDataFilePath())
+	m, err := c.retrieveMetadata(c.metadataFilePath())
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), m.fileNum)
 	assert.Equal(t, int64(5), m.size.Load())
 	require.NoError(t, c.Shutdown(context.Background()))
 }
 
-func TestRetrievePeekMetaDataSuccess(t *testing.T) {
+func TestRetrieveCompletionMetadataSuccess(t *testing.T) {
 	dir := t.TempDir()
 	c := newTestClient(t, dir)
 	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 5}))
 	msg := <-c.Peek()
 	msg.ConsumeCallback(nil)
-	require.NoError(t, c.syncPeek())
+	require.NoError(t, c.syncCompletionMetadata())
 
-	m, err := c.retrievePeekMetaData(c.peekMetaDataFilePath())
+	m, err := c.retrieveCompletionMetadata(c.completionMetadataFilePath())
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), m.fileNum)
 	require.NoError(t, c.Shutdown(context.Background()))
