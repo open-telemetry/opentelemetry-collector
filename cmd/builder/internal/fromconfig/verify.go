@@ -178,25 +178,43 @@ func chunkArgs(args []string) [][]string {
 
 // goList is the ListFunc backed by the Go toolchain.
 func goList(ctx context.Context, modules []string) ([]ListedModule, error) {
+	out, err := runGo(ctx, append([]string{"list", "-m", "-e", "-mod=mod", "-versions", "-json"}, modules...)...)
+	if err != nil {
+		return nil, err
+	}
+	return decodeListed(bytes.NewReader(out))
+}
+
+// newLookupModule creates a throwaway module to run go commands from.
+func newLookupModule() (string, error) {
 	dir, err := os.MkdirTemp("", "ocb-from-config")
+	if err != nil {
+		return "", err
+	}
+	err = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module ocb.invalid/lookup\n\ngo 1.25\n"), 0o600)
+	if err != nil {
+		return "", errors.Join(err, os.RemoveAll(dir))
+	}
+	return dir, nil
+}
+
+// runGo runs the go command from within a throwaway module, and returns its output.
+func runGo(ctx context.Context, args ...string) ([]byte, error) {
+	dir, err := newLookupModule()
 	if err != nil {
 		return nil, err
 	}
 	defer os.RemoveAll(dir)
-	if err = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module ocb.invalid/lookup\n\ngo 1.25\n"), 0o600); err != nil {
-		return nil, err
-	}
 
-	args := append([]string{"list", "-m", "-e", "-mod=mod", "-versions", "-json"}, modules...)
-	cmd := exec.CommandContext(ctx, "go", args...)
+	cmd := exec.CommandContext(ctx, "go", args...) //nolint:gosec // G204: the arguments are built from validated module paths
 	cmd.Dir = dir
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf("go list failed: %w (%s)", err, strings.TrimSpace(stderr.String()))
+		return nil, fmt.Errorf("go %s failed: %w (%s)", args[0], err, strings.TrimSpace(stderr.String()))
 	}
-	return decodeListed(bytes.NewReader(out))
+	return out, nil
 }
 
 // decodeListed decodes the stream of concatenated JSON objects printed by `go list -json`.
