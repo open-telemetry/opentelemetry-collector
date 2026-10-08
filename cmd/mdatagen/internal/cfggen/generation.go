@@ -559,6 +559,18 @@ type Validator struct {
 	IsType          bool
 }
 
+func (v Validator) RequiredCheckEmitted() bool {
+	if v.IsPointer {
+		return true
+	}
+	switch v.FieldType {
+	case StringType, SliceType, MapType:
+		return true
+	default:
+		return false
+	}
+}
+
 func createValidator(validators *[]Validator, fieldName string, md *ConfigMetadata, isType, required bool) {
 	rules := ValidationRules{
 		Required:         required,
