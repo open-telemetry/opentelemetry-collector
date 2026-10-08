@@ -27,6 +27,8 @@ type TargetsItem struct {
 	// Endpoint represents a network endpoint address.
 	Endpoint configoptional.Optional[confignet.AddrConfig] `mapstructure:"endpoint"`
 
+	// Interval polling interval for the scraper target.
+	// Deprecated: [v0.160.0] Support for this property will be dropped soon.
 	Interval configoptional.Optional[time.Duration] `mapstructure:"interval"`
 
 	// Labels static key-value labels attached to all metrics from this target.
@@ -46,6 +48,7 @@ type TargetsItem struct {
 }
 
 // Validate validates the TargetsItem fields according to schema annotations.
+// Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
 func (c *TargetsItem) Validate() error {
 	var err error
 

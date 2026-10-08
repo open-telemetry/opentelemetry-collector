@@ -67,7 +67,7 @@ func collectPropDocs(cfg *ConfigMetadata, docs *[]PropDoc) {
 			Schema:      prop,
 			Required:    slices.Contains(cfg.Required, name),
 			Description: prop.Description,
-			Deprecated:  prop.Deprecated,
+			Deprecated:  prop.Deprecated != nil,
 		})
 	}
 }
