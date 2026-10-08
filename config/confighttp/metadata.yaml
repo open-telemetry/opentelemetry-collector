@@ -11,7 +11,8 @@ status:
 feature_gates:
   - id: pkg.confighttp.PrioritizeNewKeepalive
     description: When enabled, the Keepalive configuration is prioritized over the deprecated configuration fields.
-    stage: beta
+    stage: stable
     from_version: v0.162.0
+    to_version: v0.166.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector/issues/9380
   

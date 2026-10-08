@@ -33,7 +33,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
-	"go.opentelemetry.io/collector/featuregate"
 )
 
 var (
@@ -991,20 +990,6 @@ func BenchmarkHTTPRequest(b *testing.B) {
 	}
 }
 
-func TestDefaultHTTPServerSettingsDeprecatedFields(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", false))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.confighttp.PrioritizeNewKeepalive", true))
-	})
-	httpServerSettings := NewDefaultServerConfig()
-	assert.NotNil(t, httpServerSettings.CORS)
-	assert.NotNil(t, httpServerSettings.TLS)
-	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)
-	assert.Equal(t, time.Duration(0), httpServerSettings.ReadTimeout)
-	assert.Equal(t, 1*time.Minute, httpServerSettings.ReadHeaderTimeout)
-	assert.True(t, httpServerSettings.Keepalive.HasValue())
-}
-
 func TestDefaultHTTPServerSettings(t *testing.T) {
 	httpServerSettings := NewDefaultServerConfig()
 	assert.NotNil(t, httpServerSettings.CORS)
@@ -1012,7 +997,6 @@ func TestDefaultHTTPServerSettings(t *testing.T) {
 	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)
 	assert.Equal(t, time.Duration(0), httpServerSettings.ReadTimeout)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.ReadHeaderTimeout)
-	assert.Equal(t, 0*time.Minute, httpServerSettings.IdleTimeout)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.Keepalive.Get().IdleTimeout)
 	assert.True(t, httpServerSettings.Keepalive.HasValue())
 }
@@ -1170,9 +1154,6 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 
 	// Validate the server configuration using reflection-based validation
 	require.NoError(t, confmap.Validate(&serverConfig), "Server configuration should be valid")
-
-	keepaliveConfig := configoptional.Some(NewDefaultKeepaliveServerConfig())
-	keepaliveConfig.Get().IdleTimeout = 120 * time.Second
 	// Verify basic fields
 	assert.Equal(t, "0.0.0.0:4318", serverConfig.NetAddr.Endpoint)
 	assert.Equal(t, 30*time.Second, serverConfig.ReadTimeout)
