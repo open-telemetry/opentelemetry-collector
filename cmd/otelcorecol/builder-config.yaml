@@ -42,7 +42,6 @@ telemetry:
   import: go.opentelemetry.io/collector/service/telemetry/otelconftelemetry
 
 replaces:
-  - go.opentelemetry.io/collector => ../../
   - go.opentelemetry.io/collector/client => ../../client
   - go.opentelemetry.io/collector/component => ../../component
   - go.opentelemetry.io/collector/component/componenttest => ../../component/componenttest
