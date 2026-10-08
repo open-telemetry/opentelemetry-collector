@@ -46,7 +46,7 @@ func candidates(c Component) []candidate {
 	for i, suffix := range suffixes(c) {
 		for j, prefix := range prefixes {
 			path := prefix + suffix
-			if module.CheckPath(path) != nil {
+			if module.CheckPath(path) != nil || isNotComponent(c.Class, path) {
 				continue
 			}
 			if slices.ContainsFunc(result, func(o candidate) bool { return o.path == path }) {
