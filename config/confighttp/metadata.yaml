@@ -102,20 +102,24 @@ exported_configs:
           never unmarshaled) and takes precedence over the deprecated fields.
       idle_conn_timeout:
         type: duration
-        deprecated: true
-        description: "Deprecated: [v0.160.0] use Keepalive.IdleConnTimeout instead."
+        deprecated:
+          since: v0.160.0
+          note: Use Keepalive.IdleConnTimeout instead.
       max_idle_conns:
         type: int
-        deprecated: true
-        description: "Deprecated: [v0.160.0] use Keepalive.MaxIdleConns instead."
+        deprecated:
+          since: v0.160.0
+          note: Use Keepalive.MaxIdleConns instead.
       max_idle_conns_per_host:
         type: int
-        deprecated: true
-        description: "Deprecated: [v0.160.0] use Keepalive.MaxIdleConnsPerHost instead."
+        deprecated:
+          since: v0.160.0
+          note: Use Keepalive.MaxIdleConnsPerHost instead.
       disable_keep_alives:
         type: bool
-        deprecated: true
-        description: "Deprecated: [v0.160.0] set 'keepalive::enabled' to false to disable keep-alives."
+        deprecated:
+          since: v0.160.0
+          note: Set 'keepalive::enabled' to false to disable keep-alives.
     go_struct:
       private_fields: true
       ignore_default: true
@@ -234,16 +238,18 @@ exported_configs:
           and takes precedence over the deprecated fields.
       idle_timeout:
         type: duration
-        deprecated: true
+        deprecated:
+          since: v0.160.0
+          note: Use Keepalive.IdleTimeout instead.
         default: 1m
-        description: "Deprecated: [v0.160.0] use Keepalive.IdleTimeout instead."
         go_struct:
           ignore_default: true
       keep_alives_enabled:
         type: bool
-        deprecated: true
+        deprecated:
+          since: v0.160.0
+          note: Set 'keepalive::enabled' to false to disable keep-alives.
         default: true
-        description: "Deprecated: [v0.160.0] set 'keepalive::enabled' to false to disable keep-alives."
         go_struct:
           ignore_default: true
     go_struct:

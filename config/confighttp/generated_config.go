@@ -40,7 +40,7 @@ type ClientConfig struct {
 	// Cookies configures the cookie management of the HTTP client.
 	Cookies configoptional.Optional[CookiesConfig] `mapstructure:"cookies,omitempty"`
 
-	// DisableKeepAlives deprecated: [v0.160.0] set 'keepalive::enabled' to false to disable keep-alives.
+	// Deprecated: [v0.160.0] Set 'keepalive::enabled' to false to disable keep-alives.
 	DisableKeepAlives bool `mapstructure:"disable_keep_alives,omitempty"`
 
 	// Endpoint the target URL to send data to (e.g.: http://some.url:9411/v1/traces).
@@ -64,7 +64,7 @@ type ClientConfig struct {
 	// 0s means no health check will be performed.
 	HTTP2ReadIdleTimeout time.Duration `mapstructure:"http2_read_idle_timeout,omitempty"`
 
-	// IdleConnTimeout deprecated: [v0.160.0] use Keepalive.IdleConnTimeout instead.
+	// Deprecated: [v0.160.0] Use Keepalive.IdleConnTimeout instead.
 	IdleConnTimeout time.Duration `mapstructure:"idle_conn_timeout,omitempty"`
 
 	// Keepalive is keepalive configuration. Unmarshal folds this section into the deprecated
@@ -78,10 +78,10 @@ type ClientConfig struct {
 	// active, and idle states. Default is 0 (unlimited).
 	MaxConnsPerHost int `mapstructure:"max_conns_per_host,omitempty"`
 
-	// MaxIdleConns deprecated: [v0.160.0] use Keepalive.MaxIdleConns instead.
+	// Deprecated: [v0.160.0] Use Keepalive.MaxIdleConns instead.
 	MaxIdleConns int `mapstructure:"max_idle_conns,omitempty"`
 
-	// MaxIdleConnsPerHost deprecated: [v0.160.0] use Keepalive.MaxIdleConnsPerHost instead.
+	// Deprecated: [v0.160.0] Use Keepalive.MaxIdleConnsPerHost instead.
 	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host,omitempty"`
 
 	// Middlewares the middlewares are used to add custom functionality to the HTTP client.
@@ -201,13 +201,13 @@ type ServerConfig struct {
 	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
 	CORS configoptional.Optional[CORSConfig] `mapstructure:"cors,omitempty"`
 
-	// IdleTimeout deprecated: [v0.160.0] use Keepalive.IdleTimeout instead.
+	// Deprecated: [v0.160.0] Use Keepalive.IdleTimeout instead.
 	IdleTimeout time.Duration `mapstructure:"idle_timeout,omitempty"`
 
 	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers.
 	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
 
-	// KeepAlivesEnabled deprecated: [v0.160.0] set 'keepalive::enabled' to false to disable keep-alives.
+	// Deprecated: [v0.160.0] Set 'keepalive::enabled' to false to disable keep-alives.
 	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled,omitempty"`
 
 	// Keepalive controls HTTP keep-alives.

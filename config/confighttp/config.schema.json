@@ -68,7 +68,6 @@
         },
         "disable_keep_alives": {
           "type": "boolean",
-          "description": "Deprecated: [v0.160.0] set 'keepalive::enabled' to false to disable keep-alives.",
           "deprecated": true
         },
         "endpoint": {
@@ -99,7 +98,6 @@
         },
         "idle_conn_timeout": {
           "type": "string",
-          "description": "Deprecated: [v0.160.0] use Keepalive.IdleConnTimeout instead.",
           "deprecated": true,
           "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
         },
@@ -130,12 +128,10 @@
         },
         "max_idle_conns": {
           "type": "integer",
-          "description": "Deprecated: [v0.160.0] use Keepalive.MaxIdleConns instead.",
           "deprecated": true
         },
         "max_idle_conns_per_host": {
           "type": "integer",
-          "description": "Deprecated: [v0.160.0] use Keepalive.MaxIdleConnsPerHost instead.",
           "deprecated": true
         },
         "middlewares": {
@@ -410,7 +406,6 @@
         },
         "idle_timeout": {
           "type": "string",
-          "description": "Deprecated: [v0.160.0] use Keepalive.IdleTimeout instead.",
           "default": "1m",
           "deprecated": true,
           "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
@@ -421,7 +416,6 @@
         },
         "keep_alives_enabled": {
           "type": "boolean",
-          "description": "Deprecated: [v0.160.0] set 'keepalive::enabled' to false to disable keep-alives.",
           "default": true,
           "deprecated": true
         },
