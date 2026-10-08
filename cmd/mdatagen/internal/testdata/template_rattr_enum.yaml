@@ -1,0 +1,12 @@
+type: sample
+status:
+  class: receiver
+  stability:
+    stable: [metrics]
+
+resource_attributes:
+  process.environment_variable:
+    description: Process environment variables.
+    type: template[string]
+    enum: [one, two]
+    enabled: false
