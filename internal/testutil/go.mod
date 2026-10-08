@@ -13,7 +13,7 @@ require (
 )
 
 require (
-	go.opentelemetry.io/collector/featuregate v1.67.0
+	go.opentelemetry.io/collector/featuregate v1.68.0
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 )
 

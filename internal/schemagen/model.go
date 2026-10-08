@@ -151,6 +151,14 @@ func (md *ConfigsMetadata) Validate() error {
 // For maps (Properties, PatternProperties), missing keys are merged in individually.
 // Calling MergeFrom on a zero-value ConfigMetadata is equivalent to a deep clone of other.
 func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
+	md.mergeFrom(other, false)
+}
+
+func (md *ConfigMetadata) mergeResolvedRef(other *ConfigMetadata) {
+	md.mergeFrom(other, true)
+}
+
+func (md *ConfigMetadata) mergeFrom(other *ConfigMetadata, isRef bool) {
 	if other == nil {
 		return
 	}
@@ -259,7 +267,7 @@ func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
 	}
 
 	// GoStructConfig — merge field by field
-	if md.GoStruct.CustomValidator == nil && other.GoStruct.CustomValidator != nil {
+	if !isRef && md.GoStruct.CustomValidator == nil && other.GoStruct.CustomValidator != nil {
 		cv := *other.GoStruct.CustomValidator
 		md.GoStruct.CustomValidator = &cv
 	}
