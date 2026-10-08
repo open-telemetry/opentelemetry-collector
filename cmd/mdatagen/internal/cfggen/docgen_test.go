@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCfgPropDocs_DirectProperties(t *testing.T) {
@@ -27,6 +28,22 @@ func TestCfgPropDocs_DirectProperties(t *testing.T) {
 	assert.True(t, docs[0].Required)
 	assert.Equal(t, "timeout", docs[1].Name)
 	assert.False(t, docs[1].Required)
+}
+
+func TestCfgPropDocs_Deprecated(t *testing.T) {
+	t.Parallel()
+	cfg := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"endpoint": {Type: "string"},
+			"interval": {Type: "string", Deprecated: &DeprecatedConfig{Since: "v0.160.0", Note: "will be removed"}},
+		},
+	}
+
+	docs := CfgPropDocs(cfg)
+	require.Len(t, docs, 2)
+	assert.False(t, docs[0].Deprecated, "endpoint should not be marked deprecated")
+	assert.True(t, docs[1].Deprecated, "interval should be marked deprecated")
 }
 
 func TestCfgPropDocs_FlattensAllOf(t *testing.T) {

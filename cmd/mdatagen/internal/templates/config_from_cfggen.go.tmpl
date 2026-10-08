@@ -18,6 +18,9 @@ import (
         {{- if $prop.Description }}
         {{ $prop.Description | goComment }}
         {{- end }}
+        {{- if $prop.Deprecated }}
+            {{ printf "Deprecated: [%s] %s" $prop.Deprecated.Since $prop.Deprecated.Note | goComment }}
+        {{- end }}
         {{- if $prop.GoStruct.Anonymous }}
             {{ $prop.Ref | publicType }} `mapstructure:",squash"`
         {{- else }}
@@ -28,6 +31,9 @@ import (
     {{- range $propName, $prop := .data.Properties | namedProps }}
         {{- if $prop.Description }}
             {{ printf "%s %s" ($prop.GoStruct.FieldName | publicVar) ($prop.Description | uncapitalize) | goComment }}
+        {{- end }}
+        {{- if $prop.Deprecated }}
+            {{ printf "Deprecated: [%s] %s" $prop.Deprecated.Since $prop.Deprecated.Note | goComment }}
         {{- end }}
         {{ $prop.GoStruct.FieldName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}{{ if shouldOmitEmpty $parent $propName $prop }},omitempty{{ end }}"`
     {{ end }}
@@ -45,6 +51,9 @@ import (
 {{ range $defName, $def := $defs }}
     {{- if $def.Description }}
         {{ printf "%s %s" ($defName | publicVar) ($def.Description | uncapitalize) | goComment }}
+    {{- end }}
+    {{- if $def.Deprecated }}
+        {{ printf "Deprecated: [%s] %s" $def.Deprecated.Since $def.Deprecated.Note | goComment }}
     {{- end }}
     {{- $typeName := $defName | publicVar }}
     {{- if isExternalRef $def.Ref }}
@@ -96,6 +105,9 @@ import (
         // {{ .Metadata.Config.Description }}
     {{- else }}
         // Config defines the configuration for {{ .Metadata.DisplayName }} component.
+    {{- end }}
+    {{- if .Metadata.Config.Deprecated }}
+        {{ printf "Deprecated: [%s] %s" .Metadata.Config.Deprecated.Since .Metadata.Config.Deprecated.Note | goComment }}
     {{- end }}
     type Config struct {
         {{- template "struct" entry "Config" .Metadata.Config }}
