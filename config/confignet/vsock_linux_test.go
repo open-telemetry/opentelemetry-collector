@@ -9,7 +9,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"os"
 	"testing"
 	"time"
 
@@ -75,10 +74,10 @@ func TestVsockListenErrors(t *testing.T) {
 }
 
 func TestVsockListenAndDial(t *testing.T) {
-	if _, err := os.Stat("/dev/vsock"); err != nil {
-		t.Skip("vsock device not available")
-	}
-
+	// Don't gate on /dev/vsock: it only appears once the vsock module is
+	// loaded, and the kernel loads vsock and vsock_loopback on demand when
+	// the first AF_VSOCK socket is created.
+	//
 	// Use the local loopback CID (vsock.Local = 1) for self-connections,
 	// which requires Linux 5.6+. Port 0 lets the kernel assign a free port.
 	listenEndpoint := fmt.Sprintf("%d:0", vsock.Local)
