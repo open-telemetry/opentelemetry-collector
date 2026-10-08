@@ -46,6 +46,7 @@ type TargetsItem struct {
 }
 
 // Validate validates the TargetsItem fields according to schema annotations.
+// Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
 func (c *TargetsItem) Validate() error {
 	var err error
 

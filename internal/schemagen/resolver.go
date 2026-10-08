@@ -57,7 +57,7 @@ func (r *Resolver) resolveSchema(root *ConfigsMetadata, target *ConfigMetadata, 
 		}
 
 		// merge resolved node
-		target.MergeFrom(resolved)
+		target.mergeResolvedRef(resolved)
 
 		return nil
 	}

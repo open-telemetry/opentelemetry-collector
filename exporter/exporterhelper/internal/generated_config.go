@@ -17,6 +17,7 @@ type TimeoutConfig struct {
 }
 
 // Validate validates the TimeoutConfig fields according to schema annotations.
+// Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
 func (c *TimeoutConfig) Validate() error {
 	var err error
 
