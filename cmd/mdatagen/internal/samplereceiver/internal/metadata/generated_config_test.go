@@ -83,6 +83,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					StringResourceAttrRemoveWarning:       StringResourceAttrRemoveWarningResourceAttributeConfig{Enabled: true},
 					StringResourceAttrToBeRemoved:         StringResourceAttrToBeRemovedResourceAttributeConfig{Enabled: true},
 					StringResourceDisabledAttrToBeRemoved: StringResourceDisabledAttrToBeRemovedResourceAttributeConfig{Enabled: true},
+					TemplateResourceAttr:                  TemplateResourceAttributeConfig{Enabled: true, Keys: []string{"test_key"}},
 				},
 			},
 		},
@@ -145,6 +146,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					StringResourceAttrRemoveWarning:       StringResourceAttrRemoveWarningResourceAttributeConfig{Enabled: false},
 					StringResourceAttrToBeRemoved:         StringResourceAttrToBeRemovedResourceAttributeConfig{Enabled: false},
 					StringResourceDisabledAttrToBeRemoved: StringResourceDisabledAttrToBeRemovedResourceAttributeConfig{Enabled: false},
+					TemplateResourceAttr:                  TemplateResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -152,7 +154,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(DefaultMetricMetricConfig{}, DefaultMetricToBeRemovedMetricConfig{}, MetricInputTypeMetricConfig{}, OptionalMetricMetricConfig{}, OptionalMetricEmptyUnitMetricConfig{}, ReaggregateMetricMetricConfig{}, ReaggregateMetricWithRequiredMetricConfig{}, SystemCPUTimeMetricConfig{}, SystemMemoryUsageMetricConfig{}, HostArchResourceAttributeConfig{}, MapResourceAttrResourceAttributeConfig{}, OptionalResourceAttrResourceAttributeConfig{}, SliceResourceAttrResourceAttributeConfig{}, StringEnumResourceAttrResourceAttributeConfig{}, StringResourceAttrResourceAttributeConfig{}, StringResourceAttrDisableWarningResourceAttributeConfig{}, StringResourceAttrRemoveWarningResourceAttributeConfig{}, StringResourceAttrToBeRemovedResourceAttributeConfig{}, StringResourceDisabledAttrToBeRemovedResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(DefaultMetricMetricConfig{}, DefaultMetricToBeRemovedMetricConfig{}, MetricInputTypeMetricConfig{}, OptionalMetricMetricConfig{}, OptionalMetricEmptyUnitMetricConfig{}, ReaggregateMetricMetricConfig{}, ReaggregateMetricWithRequiredMetricConfig{}, SystemCPUTimeMetricConfig{}, SystemMemoryUsageMetricConfig{}, HostArchResourceAttributeConfig{}, MapResourceAttrResourceAttributeConfig{}, OptionalResourceAttrResourceAttributeConfig{}, SliceResourceAttrResourceAttributeConfig{}, StringEnumResourceAttrResourceAttributeConfig{}, StringResourceAttrResourceAttributeConfig{}, StringResourceAttrDisableWarningResourceAttributeConfig{}, StringResourceAttrRemoveWarningResourceAttributeConfig{}, StringResourceAttrToBeRemovedResourceAttributeConfig{}, StringResourceDisabledAttrToBeRemovedResourceAttributeConfig{}, TemplateResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
@@ -295,6 +297,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				StringResourceAttrRemoveWarning:       StringResourceAttrRemoveWarningResourceAttributeConfig{Enabled: true},
 				StringResourceAttrToBeRemoved:         StringResourceAttrToBeRemovedResourceAttributeConfig{Enabled: true},
 				StringResourceDisabledAttrToBeRemoved: StringResourceDisabledAttrToBeRemovedResourceAttributeConfig{Enabled: true},
+				TemplateResourceAttr:                  TemplateResourceAttributeConfig{Enabled: true, Keys: []string{"test_key"}},
 			},
 		},
 		{
@@ -310,13 +313,14 @@ func TestResourceAttributesConfig(t *testing.T) {
 				StringResourceAttrRemoveWarning:       StringResourceAttrRemoveWarningResourceAttributeConfig{Enabled: false},
 				StringResourceAttrToBeRemoved:         StringResourceAttrToBeRemovedResourceAttributeConfig{Enabled: false},
 				StringResourceDisabledAttrToBeRemoved: StringResourceDisabledAttrToBeRemovedResourceAttributeConfig{Enabled: false},
+				TemplateResourceAttr:                  TemplateResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(HostArchResourceAttributeConfig{}, MapResourceAttrResourceAttributeConfig{}, OptionalResourceAttrResourceAttributeConfig{}, SliceResourceAttrResourceAttributeConfig{}, StringEnumResourceAttrResourceAttributeConfig{}, StringResourceAttrResourceAttributeConfig{}, StringResourceAttrDisableWarningResourceAttributeConfig{}, StringResourceAttrRemoveWarningResourceAttributeConfig{}, StringResourceAttrToBeRemovedResourceAttributeConfig{}, StringResourceDisabledAttrToBeRemovedResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(HostArchResourceAttributeConfig{}, MapResourceAttrResourceAttributeConfig{}, OptionalResourceAttrResourceAttributeConfig{}, SliceResourceAttrResourceAttributeConfig{}, StringEnumResourceAttrResourceAttributeConfig{}, StringResourceAttrResourceAttributeConfig{}, StringResourceAttrDisableWarningResourceAttributeConfig{}, StringResourceAttrRemoveWarningResourceAttributeConfig{}, StringResourceAttrToBeRemovedResourceAttributeConfig{}, StringResourceDisabledAttrToBeRemovedResourceAttributeConfig{}, TemplateResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

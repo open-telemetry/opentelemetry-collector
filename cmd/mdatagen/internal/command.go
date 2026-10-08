@@ -304,6 +304,16 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 		"attributeInfo": func(an AttributeName) Attribute {
 			return md.Attributes[an]
 		},
+		"resourceAttributeConfigType": func(an AttributeName) (string, error) {
+			if md.ResourceAttributes[an].Type.Template {
+				return "TemplateResourceAttributeConfig", nil
+			}
+			if !md.OverrideValueEnabled {
+				return "ResourceAttributeConfig", nil
+			}
+			name, err := an.Render()
+			return name + "ResourceAttributeConfig", err
+		},
 		"convertValue": func(fromType, toType ValueType, valueName string) string {
 			if fromType.ValueType == toType.ValueType {
 				return valueName

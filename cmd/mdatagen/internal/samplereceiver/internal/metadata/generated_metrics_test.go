@@ -203,6 +203,7 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetStringResourceAttrRemoveWarning("string.resource.attr_remove_warning-val")
 			rb.SetStringResourceAttrToBeRemoved("string.resource.attr_to_be_removed-val")
 			rb.SetStringResourceDisabledAttrToBeRemoved("string.resource.disabled_attr_to_be_removed-val")
+			rb.SetTemplateResourceAttr("test_key", "template.resource.attr-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 			if tt.name == "reaggregate_set" {

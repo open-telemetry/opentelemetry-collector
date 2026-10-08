@@ -1,0 +1,20 @@
+type: sample
+status:
+  class: receiver
+  stability:
+    stable: [metrics]
+
+attributes:
+  template_attr:
+    description: Template attribute.
+    type: template[string]
+
+metrics:
+  metric:
+    enabled: true
+    description: Metric.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [template_attr]

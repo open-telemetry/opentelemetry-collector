@@ -22,6 +22,19 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 }
 
 {{- range $name, $attr := .ResourceAttributes }}
+{{- if $attr.Type.Template }}
+// Set{{ $name.Render }} sets provided value as "{{ $name }}.<key>" attribute.
+// The attribute is set only if the key is configured in the resource attribute keys.
+func (rb *ResourceBuilder) Set{{ $name.Render }}(key string, val {{ $attr.Type.Primitive }}) {
+	if rb.config.{{ $name.Render }}.KeyEnabled(key) {
+		{{- if or (eq $attr.Type.String "Bytes") (eq $attr.Type.String "Slice") (eq $attr.Type.String "Map") }}
+		rb.res.Attributes().PutEmpty{{ $attr.Type }}("{{ $name }}."+key).FromRaw(val)
+		{{- else }}
+		rb.res.Attributes().Put{{ $attr.Type }}("{{ $name }}."+key, val)
+		{{- end }}
+	}
+}
+{{- else }}
 {{- range $attr.Enum }}
 // Set{{ $name.Render }}{{ . | publicVar }} sets "{{ $name }}={{ . }}" attribute.
 func (rb *ResourceBuilder) Set{{ $name.Render }}{{ . | publicVar }}() {
@@ -40,6 +53,7 @@ func (rb *ResourceBuilder) Set{{ $name.Render }}(val {{ $attr.Type.Primitive }})
 		{{- end }}
 	}
 }
+{{- end }}
 {{- end }}
 {{ end }}
 

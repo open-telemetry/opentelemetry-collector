@@ -26,6 +26,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetStringResourceAttrRemoveWarning("string.resource.attr_remove_warning-val")
 			rb.SetStringResourceAttrToBeRemoved("string.resource.attr_to_be_removed-val")
 			rb.SetStringResourceDisabledAttrToBeRemoved("string.resource.disabled_attr_to_be_removed-val")
+			rb.SetTemplateResourceAttr("test_key", "template.resource.attr-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
@@ -34,7 +35,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 6, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 10, res.Attributes().Len())
+				assert.Equal(t, 11, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -91,6 +92,11 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.Equal(t, "string.resource.disabled_attr_to_be_removed-val", stringResourceDisabledAttrToBeRemovedAttrVal.Str())
 			}
+			templateResourceAttrAttrVal, ok := res.Attributes().Get("template.resource.attr.test_key")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "template.resource.attr-val", templateResourceAttrAttrVal.Str())
+			}
 		})
 	}
 }
@@ -109,6 +115,7 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 	rb.SetStringResourceAttrRemoveWarning("string.resource.attr_remove_warning-val")
 	rb.SetStringResourceAttrToBeRemoved("string.resource.attr_to_be_removed-val")
 	rb.SetStringResourceDisabledAttrToBeRemoved("string.resource.disabled_attr_to_be_removed-val")
+	rb.SetTemplateResourceAttr("test_key", "template.resource.attr-val")
 
 	res := rb.Emit()
 	{
@@ -275,6 +282,7 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 	cfg.StringResourceAttrRemoveWarning.Enabled = false
 	cfg.StringResourceAttrToBeRemoved.Enabled = false
 	cfg.StringResourceDisabledAttrToBeRemoved.Enabled = false
+	cfg.TemplateResourceAttr.Enabled = false
 	require.NoError(t, confmap.Validate(cfg))
 	rb := NewResourceBuilder(cfg)
 
@@ -307,9 +315,10 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	rb.SetStringResourceAttrRemoveWarning("string.resource.attr_remove_warning-val")
 	rb.SetStringResourceAttrToBeRemoved("string.resource.attr_to_be_removed-val")
 	rb.SetStringResourceDisabledAttrToBeRemoved("string.resource.disabled_attr_to_be_removed-val")
+	rb.SetTemplateResourceAttr("test_key", "template.resource.attr-val")
 
 	res := rb.Emit()
-	assert.Equal(t, 10, res.Attributes().Len())
+	assert.Equal(t, 11, res.Attributes().Len())
 	hostArchAttrVal, ok := res.Attributes().Get("host.arch")
 	assert.True(t, ok)
 	if ok {
@@ -359,5 +368,10 @@ func TestResourceBuilderNoOverride(t *testing.T) {
 	assert.True(t, ok)
 	if ok {
 		assert.Equal(t, "string.resource.disabled_attr_to_be_removed-val", stringResourceDisabledAttrToBeRemovedAttrVal.Str())
+	}
+	templateResourceAttrAttrVal, ok := res.Attributes().Get("template.resource.attr.test_key")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "template.resource.attr-val", templateResourceAttrAttrVal.Str())
 	}
 }

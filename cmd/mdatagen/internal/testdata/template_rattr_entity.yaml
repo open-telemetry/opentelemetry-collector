@@ -1,0 +1,24 @@
+type: sample
+status:
+  class: receiver
+  stability:
+    stable: [metrics]
+
+resource_attributes:
+  host.name:
+    description: The hostname
+    type: string
+    enabled: true
+  host.label:
+    description: The host labels
+    type: template[string]
+    enabled: true
+
+entities:
+  - type: host
+    brief: A host instance.
+    stability: stable
+    identity:
+      - ref: host.name
+    description:
+      - ref: host.label

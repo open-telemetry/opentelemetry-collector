@@ -1124,6 +1124,23 @@
                 }
               },
               "description": "ResourceAttributeConfig provides common config for a string.resource.disabled_attr_to_be_removed resource attribute."
+            },
+            "template.resource.attr": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "keys": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Keys defines the keys to record. Only \"template.resource.attr.\u003ckey\u003e\" attributes with a listed key are emitted."
+                }
+              },
+              "description": "ResourceAttributeConfig provides common config for a template.resource.attr resource attribute."
             }
           },
           "description": "ResourceAttributesConfig provides config for sample resource attributes."
