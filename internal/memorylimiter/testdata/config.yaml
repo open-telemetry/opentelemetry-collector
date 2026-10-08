@@ -11,3 +11,7 @@ limit_mib: 4000
 
 # The maximum, in MiB, spike expected between the measurements of memory usage.
 spike_limit_mib: 500
+
+# Set enabled: false to disable forced garbage collection.
+garbage_collector:
+  enabled: true
