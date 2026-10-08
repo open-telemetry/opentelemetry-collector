@@ -75,6 +75,7 @@ type ConfigsMetadata struct {
 
 type GoStructConfig struct {
 	CustomValidator *CustomValidatorConfig `mapstructure:"custom_validator" json:"-" yaml:"custom_validator,omitempty"`
+	CustomDefault   *CustomDefaultConfig   `mapstructure:"custom_default" json:"-" yaml:"custom_default,omitempty"`
 	Anonymous       bool                   `mapstructure:"anonymous" json:"-" yaml:"anonymous,omitempty"`
 	IgnoreDefault   bool                   `mapstructure:"ignore_default" json:"-" yaml:"ignore_default,omitempty"`
 	FieldName       string                 `mapstructure:"field_name" json:"-" yaml:"field_name,omitempty"`
@@ -92,20 +93,36 @@ type CustomValidatorConfig struct {
 	Name string `mapstructure:"name,omitempty" json:"-" yaml:"name,omitempty"`
 }
 
+type CustomDefaultConfig struct {
+	Name string `mapstructure:"name,omitempty" json:"-" yaml:"name,omitempty"`
+}
+
 func (g *GoStructConfig) Unmarshal(parser *confmap.Conf) error {
 	type goStructConfig GoStructConfig
 	if err := parser.Unmarshal((*goStructConfig)(g), confmap.WithIgnoreUnused()); err != nil {
 		return err
 	}
-	if !parser.IsSet("custom_validator") || g.CustomValidator != nil {
-		return nil
+	if parser.IsSet("custom_validator") && g.CustomValidator == nil {
+		sub, err := parser.Sub("custom_validator")
+		if err != nil {
+			return fmt.Errorf("invalid custom_validator: %w", err)
+		}
+		g.CustomValidator = &CustomValidatorConfig{}
+		if err := sub.Unmarshal(g.CustomValidator); err != nil {
+			return err
+		}
 	}
-	sub, err := parser.Sub("custom_validator")
-	if err != nil {
-		return fmt.Errorf("invalid custom_validator: %w", err)
+	if parser.IsSet("custom_default") && g.CustomDefault == nil {
+		sub, err := parser.Sub("custom_default")
+		if err != nil {
+			return fmt.Errorf("invalid custom_default: %w", err)
+		}
+		g.CustomDefault = &CustomDefaultConfig{}
+		if err := sub.Unmarshal(g.CustomDefault); err != nil {
+			return err
+		}
 	}
-	g.CustomValidator = &CustomValidatorConfig{}
-	return sub.Unmarshal(g.CustomValidator)
+	return nil
 }
 
 func (md *ConfigsMetadata) Validate() error {
@@ -134,6 +151,14 @@ func (md *ConfigsMetadata) Validate() error {
 // For maps (Properties, PatternProperties), missing keys are merged in individually.
 // Calling MergeFrom on a zero-value ConfigMetadata is equivalent to a deep clone of other.
 func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
+	md.mergeFrom(other, false)
+}
+
+func (md *ConfigMetadata) mergeResolvedRef(other *ConfigMetadata) {
+	md.mergeFrom(other, true)
+}
+
+func (md *ConfigMetadata) mergeFrom(other *ConfigMetadata, isRef bool) {
 	if other == nil {
 		return
 	}
@@ -242,9 +267,13 @@ func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
 	}
 
 	// GoStructConfig — merge field by field
-	if md.GoStruct.CustomValidator == nil && other.GoStruct.CustomValidator != nil {
+	if !isRef && md.GoStruct.CustomValidator == nil && other.GoStruct.CustomValidator != nil {
 		cv := *other.GoStruct.CustomValidator
 		md.GoStruct.CustomValidator = &cv
+	}
+	if md.GoStruct.CustomDefault == nil && other.GoStruct.CustomDefault != nil {
+		cd := *other.GoStruct.CustomDefault
+		md.GoStruct.CustomDefault = &cd
 	}
 	if !md.GoStruct.Anonymous {
 		md.GoStruct.Anonymous = other.GoStruct.Anonymous

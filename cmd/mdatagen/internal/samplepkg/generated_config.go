@@ -10,6 +10,7 @@ import (
 type PortNumber int
 
 // Validate validates the PortNumber fields according to schema annotations.
+// Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
 func (c PortNumber) Validate() error {
 	var err error
 
@@ -32,11 +33,15 @@ type SampleConfig struct {
 	// Port the port to connect to.
 	Port PortNumber `mapstructure:"port"`
 
+	// Proto the protocol to connect with.
+	Proto Protocol `mapstructure:"proto"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
 // Validate validates the SampleConfig fields according to schema annotations.
+// Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
 func (c *SampleConfig) Validate() error {
 	var err error
 
@@ -56,5 +61,6 @@ func NewDefaultSampleConfig() SampleConfig {
 	return SampleConfig{
 		HostName: "localhost",
 		Port:     8080,
+		Proto:    NewDefaultProtocol(),
 	}
 }

@@ -652,6 +652,36 @@ func generateValidatorName(propName string, desc *CustomValidatorConfig) string 
 	return "validate" + id
 }
 
+func generateDefaultCall(md *ConfigMetadata, name, rootPackage, componentPackage string) string {
+	baseName := md.GoStruct.CustomDefault.Name
+	qualifier := ""
+
+	if md.Ref != "" {
+		refType, err := ResolveGoTypeRef(md.Ref, rootPackage, componentPackage)
+		if err != nil {
+			panic(err)
+		}
+		qualifier = refType.Qualifier()
+		if baseName == "" {
+			baseName = "NewDefault" + refType.TypeName
+		}
+	}
+
+	if baseName == "" {
+		id, _ := helpers.FormatIdentifier(name, true)
+		if md.Type == ObjectType {
+			baseName = "NewDefault" + id
+		} else {
+			baseName = "getDefault" + id
+		}
+	}
+
+	if qualifier != "" && !strings.Contains(baseName, ".") {
+		return qualifier + "." + baseName + "()"
+	}
+	return baseName + "()"
+}
+
 func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, componentPackage string) []string {
 	if schema.GoStruct.IgnoreDefault {
 		return nil
@@ -785,7 +815,7 @@ func WrapDefaultValue(md *ConfigMetadata, varName string) string {
 
 func hasDefaultValue(md *ConfigMetadata) bool {
 	if !md.GoStruct.IgnoreDefault {
-		if md.Default != nil {
+		if md.Default != nil || md.GoStruct.CustomDefault != nil {
 			return true
 		}
 		for _, prop := range md.Properties {
@@ -798,6 +828,9 @@ func hasDefaultValue(md *ConfigMetadata) bool {
 }
 
 func hasNonZeroDefault(md *ConfigMetadata) bool {
+	if !md.GoStruct.IgnoreDefault && md.GoStruct.CustomDefault != nil {
+		return true
+	}
 	if !md.GoStruct.IgnoreDefault && md.Default != nil {
 		m, isMap := md.Default.(map[string]any)
 		// empty map {} is the zero value
@@ -829,6 +862,11 @@ func CamelVar(ref string) string {
 }
 
 func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
+	// A custom default takes precedence over any schema-derived expression.
+	if md.GoStruct.CustomDefault != nil {
+		return generateDefaultCall(md, name, rootPackage, componentPackage)
+	}
+
 	// handle references
 	isReference := md.Ref != ""
 	isSubStruct := md.Type == ObjectType

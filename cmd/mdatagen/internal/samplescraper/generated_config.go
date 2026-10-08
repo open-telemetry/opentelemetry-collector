@@ -46,6 +46,7 @@ type TargetsItem struct {
 }
 
 // Validate validates the TargetsItem fields according to schema annotations.
+// Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
 func (c *TargetsItem) Validate() error {
 	var err error
 
@@ -100,6 +101,9 @@ type Config struct {
 	// LogLevel logging level for the scraper.
 	LogLevel string `mapstructure:"log_level"`
 
+	// Protocol protocol used when connecting to scrape targets, reused from samplepkg.
+	Protocol samplepkg.Protocol `mapstructure:"protocol"`
+
 	// Targets list of targets to scrape metrics from.
 	Targets *[]TargetsItem `mapstructure:"targets"`
 
@@ -152,6 +156,7 @@ func createDefaultConfig() component.Config {
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		JobName:              "test_job",
 		LogLevel:             "info",
+		Protocol:             samplepkg.NewDefaultProtocol(),
 		Targets:              &[]TargetsItem{NewDefaultTargetsItem()},
 	}
 }
