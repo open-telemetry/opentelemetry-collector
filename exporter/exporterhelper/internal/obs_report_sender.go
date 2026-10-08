@@ -23,8 +23,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
+	queuebatchtelemetry "go.opentelemetry.io/collector/internal/telemetry/queuebatch"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
 const (
@@ -50,62 +50,32 @@ type obsReportSender[K request.Request] struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	spanName           string
-	tracer             trace.Tracer
-	spanAttrs          trace.SpanStartEventOption
-	metricAttr         metric.MeasurementOption
-	inFlightMetricAttr metric.MeasurementOption
-	itemsSentInst      metric.Int64Counter
-	itemsFailedInst    metric.Int64Counter
-	inFlightInst       metric.Int64UpDownCounter
-	sendSizeInst       metric.Int64Histogram
-	sendSizeBytesInst  metric.Int64Histogram
-	batchEnabled       bool
-	next               sender.Sender[K]
+	spanName     string
+	tracer       trace.Tracer
+	spanAttrs    trace.SpanStartEventOption
+	obsMetrics   queuebatchtelemetry.ObsMetrics
+	batchEnabled bool
+	next         sender.Sender[K]
 }
 
-func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, extraAttrs []attribute.KeyValue, batchEnabled bool, next sender.Sender[K]) (sender.Sender[K], error) {
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
-	if err != nil {
-		return nil, err
-	}
-
+func newObsReportSender[K request.Request](
+	set exporter.Settings,
+	signal pipeline.Signal,
+	obsMetrics queuebatchtelemetry.ObsMetrics,
+	batchEnabled bool,
+	next sender.Sender[K],
+) sender.Sender[K] {
 	idStr := set.ID.String()
 	expAttr := attribute.String(ExporterKey, idStr)
 
-	or := &obsReportSender[K]{
-		spanName:           ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
-		tracer:             metadata.Tracer(set.TelemetrySettings),
-		spanAttrs:          trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
-		metricAttr:         metric.WithAttributeSet(attribute.NewSet(append(extraAttrs, expAttr)...)),
-		inFlightMetricAttr: metric.WithAttributeSet(attribute.NewSet(expAttr, attribute.String(DataTypeKey, signal.String()))),
-		batchEnabled:       batchEnabled,
-		next:               next,
+	return &obsReportSender[K]{
+		spanName:     ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
+		tracer:       metadata.Tracer(set.TelemetrySettings),
+		spanAttrs:    trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
+		obsMetrics:   obsMetrics,
+		batchEnabled: batchEnabled,
+		next:         next,
 	}
-
-	or.inFlightInst = telemetryBuilder.ExporterInFlightRequests
-	or.sendSizeInst = telemetryBuilder.ExporterQueueBatchSendSize
-	or.sendSizeBytesInst = telemetryBuilder.ExporterQueueBatchSendSizeBytes
-
-	switch signal {
-	case pipeline.SignalTraces:
-		or.itemsSentInst = telemetryBuilder.ExporterSentSpans
-		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedSpans
-
-	case pipeline.SignalMetrics:
-		or.itemsSentInst = telemetryBuilder.ExporterSentMetricPoints
-		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedMetricPoints
-
-	case pipeline.SignalLogs:
-		or.itemsSentInst = telemetryBuilder.ExporterSentLogRecords
-		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedLogRecords
-
-	case xpipeline.SignalProfiles:
-		or.itemsSentInst = telemetryBuilder.ExporterSentProfileSamples
-		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedProfileSamples
-	}
-
-	return or, nil
 }
 
 func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
@@ -114,9 +84,9 @@ func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
 	c := ors.startOp(ctx)
 	items := req.ItemsCount()
 	if ors.batchEnabled {
-		ors.sendSizeInst.Record(c, int64(items), ors.metricAttr)
-		if ors.sendSizeBytesInst.Enabled(c) {
-			ors.sendSizeBytesInst.Record(c, int64(req.BytesSize()), ors.metricAttr)
+		ors.obsMetrics.RecordInt(c, queuebatchtelemetry.MetricBatchSendSize, int64(items))
+		if ors.obsMetrics.ShouldRecord(c, queuebatchtelemetry.MetricBatchSendSizeBytes) {
+			ors.obsMetrics.RecordInt(c, queuebatchtelemetry.MetricBatchSendSizeBytes, int64(req.BytesSize()))
 		}
 	}
 	// Forward the data to the next consumer (this pusher is the next).
@@ -128,9 +98,7 @@ func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
 // startOp increments the in-flight request counter and creates the span
 // used to trace the operation. Returns the updated context.
 func (ors *obsReportSender[K]) startOp(ctx context.Context) context.Context {
-	if ors.inFlightInst != nil {
-		ors.inFlightInst.Add(ctx, 1, ors.inFlightMetricAttr)
-	}
+	ors.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricInFlight, 1)
 
 	ctx, _ = ors.tracer.Start(ctx,
 		ors.spanName,
@@ -141,19 +109,15 @@ func (ors *obsReportSender[K]) startOp(ctx context.Context) context.Context {
 
 // EndOp completes the export operation that was started with StartOp.
 func (ors *obsReportSender[K]) endOp(ctx context.Context, numRecords int, err error) {
-	if ors.inFlightInst != nil {
-		ors.inFlightInst.Add(ctx, -1, ors.inFlightMetricAttr)
-	}
+	ors.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricInFlight, -1)
 
 	numSent, numFailedToSend := toNumItems(numRecords, err)
 
-	if ors.itemsSentInst != nil {
-		ors.itemsSentInst.Add(ctx, numSent, ors.metricAttr)
-	}
+	ors.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricSent, numSent)
 
-	if ors.itemsFailedInst != nil && numFailedToSend > 0 {
+	if numFailedToSend > 0 {
 		withFailedAttrs := metric.WithAttributeSet(extractFailureAttributes(err))
-		ors.itemsFailedInst.Add(ctx, numFailedToSend, ors.metricAttr, withFailedAttrs)
+		ors.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricSendFailure, numFailedToSend, withFailedAttrs)
 	}
 
 	span := trace.SpanFromContext(ctx)

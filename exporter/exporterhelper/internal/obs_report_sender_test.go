@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
@@ -37,6 +38,23 @@ var (
 
 	errFake = errors.New("errFake")
 )
+
+func newTestObsReportSender[K request.Request](
+	t *testing.T,
+	set exporter.Settings,
+	signal pipeline.Signal,
+	extraAttrs []attribute.KeyValue,
+	batchEnabled bool,
+	next sender.Sender[K],
+) (sender.Sender[K], error) {
+	t.Helper()
+	obsMetrics, err := queue.NewExporterObsMetrics(set.TelemetrySettings, set.ID, signal, extraAttrs)
+	if err != nil {
+		return nil, err
+	}
+	t.Cleanup(obsMetrics.Shutdown)
+	return newObsReportSender(set, signal, obsMetrics, batchEnabled, next), nil
+}
 
 func TestExportTraceFailureAttributes(t *testing.T) {
 	tests := []struct {
@@ -96,7 +114,7 @@ func TestExportTraceFailureAttributes(t *testing.T) {
 			telemetry := componenttest.NewTelemetry()
 			t.Cleanup(func() { require.NoError(t, telemetry.Shutdown(context.Background())) })
 
-			obsrep, err := newObsReportSender(
+			obsrep, err := newTestObsReportSender(t,
 				exporter.Settings{ID: exporterID, TelemetrySettings: telemetry.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 				pipeline.SignalTraces,
 				nil,
@@ -172,7 +190,7 @@ func TestExportTraceFailureAttributesGRPCError(t *testing.T) {
 			t.Cleanup(func() { require.NoError(t, telemetry.Shutdown(context.Background())) })
 
 			grpcErr := status.Error(tt.grpcCode, "test error")
-			obsrep, err := newObsReportSender(
+			obsrep, err := newTestObsReportSender(t,
 				exporter.Settings{ID: exporterID, TelemetrySettings: telemetry.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 				pipeline.SignalTraces,
 				nil,
@@ -212,7 +230,7 @@ func TestExportTraceDataOp(t *testing.T) {
 	defer parentSpan.End()
 
 	var exporterErr error
-	obsrep, err := newObsReportSender(
+	obsrep, err := newTestObsReportSender(t,
 		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		pipeline.SignalTraces,
 		nil,
@@ -289,7 +307,7 @@ func TestExportMetricsOp(t *testing.T) {
 	defer parentSpan.End()
 
 	var exporterErr error
-	obsrep, err := newObsReportSender(
+	obsrep, err := newTestObsReportSender(t,
 		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		pipeline.SignalMetrics,
 		nil,
@@ -366,7 +384,7 @@ func TestExportLogsOp(t *testing.T) {
 	defer parentSpan.End()
 
 	var exporterErr error
-	obsrep, err := newObsReportSender(
+	obsrep, err := newTestObsReportSender(t,
 		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		pipeline.SignalLogs,
 		nil,
@@ -565,7 +583,7 @@ func TestExportProfilesOp(t *testing.T) {
 	defer parentSpan.End()
 
 	var exporterErr error
-	obsrep, err := newObsReportSender(
+	obsrep, err := newTestObsReportSender(t,
 		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		xpipeline.SignalProfiles,
 		nil,
@@ -643,7 +661,7 @@ func TestObsReportSenderBatchSizeDisabled(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	obsrep, err := newObsReportSender(
+	obsrep, err := newTestObsReportSender(t,
 		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		pipeline.SignalLogs,
 		nil,
@@ -679,7 +697,7 @@ func testBatchSize(t *testing.T, signal pipeline.Signal, req *requesttest.FakeRe
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	obsrep, err := newObsReportSender(
+	obsrep, err := newTestObsReportSender(t,
 		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		signal,
 		nil,
