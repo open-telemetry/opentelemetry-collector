@@ -72,69 +72,77 @@ type Value internal.ValueWrapper
 
 // NewValueEmpty creates a new Value with an empty value.
 func NewValueEmpty() Value {
-	return newValue(&internal.AnyValue{}, internal.NewState())
+	st := internal.NewState()
+	return newValue(internal.Alloc[internal.AnyValue](st), st)
 }
 
 // NewValueStr creates a new Value with the given string value.
 func NewValueStr(v string) Value {
-	ov := internal.NewAnyValueStringValue()
-	ov.StringValue = v
-	orig := internal.NewAnyValue()
+	st := internal.NewState()
+	ov := internal.Alloc[internal.AnyValue_StringValue](st)
+	ov.StringValue = internal.CopyString(st, v)
+	orig := internal.Alloc[internal.AnyValue](st)
 	orig.Value = ov
-	return newValue(orig, internal.NewState())
+	return newValue(orig, st)
 }
 
 // NewValueInt creates a new Value with the given int64 value.
 func NewValueInt(v int64) Value {
-	ov := internal.NewAnyValueIntValue()
+	st := internal.NewState()
+	ov := internal.Alloc[internal.AnyValue_IntValue](st)
 	ov.IntValue = v
-	orig := internal.NewAnyValue()
+	orig := internal.Alloc[internal.AnyValue](st)
 	orig.Value = ov
-	return newValue(orig, internal.NewState())
+	return newValue(orig, st)
 }
 
 // NewValueDouble creates a new Value with the given float64 value.
 func NewValueDouble(v float64) Value {
-	ov := internal.NewAnyValueDoubleValue()
+	st := internal.NewState()
+	ov := internal.Alloc[internal.AnyValue_DoubleValue](st)
 	ov.DoubleValue = v
-	orig := internal.NewAnyValue()
+	orig := internal.Alloc[internal.AnyValue](st)
 	orig.Value = ov
-	return newValue(orig, internal.NewState())
+	return newValue(orig, st)
 }
 
 // NewValueBool creates a new Value with the given bool value.
 func NewValueBool(v bool) Value {
-	ov := internal.NewAnyValueBoolValue()
+	st := internal.NewState()
+	ov := internal.Alloc[internal.AnyValue_BoolValue](st)
 	ov.BoolValue = v
-	orig := internal.NewAnyValue()
+	orig := internal.Alloc[internal.AnyValue](st)
 	orig.Value = ov
-	return newValue(orig, internal.NewState())
+	return newValue(orig, st)
 }
 
 // NewValueMap creates a new Value of map type.
 func NewValueMap() Value {
-	ov := internal.NewAnyValueKvlistValue()
-	ov.KvlistValue = internal.NewKeyValueList()
-	orig := internal.NewAnyValue()
+	st := internal.NewState()
+	ov := internal.Alloc[internal.AnyValue_KvlistValue](st)
+	ov.KvlistValue = internal.Alloc[internal.KeyValueList](st)
+	orig := internal.Alloc[internal.AnyValue](st)
 	orig.Value = ov
-	return newValue(orig, internal.NewState())
+	return newValue(orig, st)
 }
 
 // NewValueSlice creates a new Value of array type.
 func NewValueSlice() Value {
-	ov := internal.NewAnyValueArrayValue()
-	ov.ArrayValue = internal.NewArrayValue()
-	orig := internal.NewAnyValue()
+	st := internal.NewState()
+	ov := internal.Alloc[internal.AnyValue_ArrayValue](st)
+	ov.ArrayValue = internal.Alloc[internal.ArrayValue](st)
+	orig := internal.Alloc[internal.AnyValue](st)
 	orig.Value = ov
-	return newValue(orig, internal.NewState())
+	return newValue(orig, st)
 }
 
 // NewValueBytes creates a new empty Value of byte type.
 func NewValueBytes() Value {
-	ov := internal.NewAnyValueBytesValue()
-	orig := internal.NewAnyValue()
+	st := internal.NewState()
+	ov := internal.Alloc[internal.AnyValue_BytesValue](st)
+	orig := internal.Alloc[internal.AnyValue](st)
 	orig.Value = ov
-	return newValue(orig, internal.NewState())
+	return newValue(orig, st)
 }
 
 func newValue(orig *internal.AnyValue, state *internal.State) Value {
@@ -284,8 +292,8 @@ func (v Value) SetStr(sv string) {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
 	internal.DeleteAnyValue(v.getOrig(), false)
-	ov := internal.NewAnyValueStringValue()
-	ov.StringValue = sv
+	ov := internal.Alloc[internal.AnyValue_StringValue](v.getState())
+	ov.StringValue = internal.CopyString(v.getState(), sv)
 	v.getOrig().Value = ov
 }
 
@@ -296,7 +304,7 @@ func (v Value) SetInt(iv int64) {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
 	internal.DeleteAnyValue(v.getOrig(), false)
-	ov := internal.NewAnyValueIntValue()
+	ov := internal.Alloc[internal.AnyValue_IntValue](v.getState())
 	ov.IntValue = iv
 	v.getOrig().Value = ov
 }
@@ -308,7 +316,7 @@ func (v Value) SetDouble(dv float64) {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
 	internal.DeleteAnyValue(v.getOrig(), false)
-	ov := internal.NewAnyValueDoubleValue()
+	ov := internal.Alloc[internal.AnyValue_DoubleValue](v.getState())
 	ov.DoubleValue = dv
 	v.getOrig().Value = ov
 }
@@ -320,7 +328,7 @@ func (v Value) SetBool(bv bool) {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
 	internal.DeleteAnyValue(v.getOrig(), false)
-	ov := internal.NewAnyValueBoolValue()
+	ov := internal.Alloc[internal.AnyValue_BoolValue](v.getState())
 	ov.BoolValue = bv
 	v.getOrig().Value = ov
 }
@@ -331,7 +339,7 @@ func (v Value) SetEmptyBytes() ByteSlice {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
 	internal.DeleteAnyValue(v.getOrig(), false)
-	bv := internal.NewAnyValueBytesValue()
+	bv := internal.Alloc[internal.AnyValue_BytesValue](v.getState())
 	v.getOrig().Value = bv
 	return ByteSlice(internal.NewByteSliceWrapper(&bv.BytesValue, v.getState()))
 }
@@ -342,8 +350,8 @@ func (v Value) SetEmptyMap() Map {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
 	internal.DeleteAnyValue(v.getOrig(), false)
-	ov := internal.NewAnyValueKvlistValue()
-	ov.KvlistValue = internal.NewKeyValueList()
+	ov := internal.Alloc[internal.AnyValue_KvlistValue](v.getState())
+	ov.KvlistValue = internal.Alloc[internal.KeyValueList](v.getState())
 	v.getOrig().Value = ov
 	return newMap(&ov.KvlistValue.Values, v.getState())
 }
@@ -354,8 +362,8 @@ func (v Value) SetEmptySlice() Slice {
 	v.getState().AssertMutable()
 	// Delete everything but the AnyValue object itself.
 	internal.DeleteAnyValue(v.getOrig(), false)
-	ov := internal.NewAnyValueArrayValue()
-	ov.ArrayValue = internal.NewArrayValue()
+	ov := internal.Alloc[internal.AnyValue_ArrayValue](v.getState())
+	ov.ArrayValue = internal.Alloc[internal.ArrayValue](v.getState())
 	v.getOrig().Value = ov
 	return newSlice(&ov.ArrayValue.Values, v.getState())
 }
@@ -370,6 +378,11 @@ func (v Value) MoveTo(dest Value) {
 	if v.getOrig() == dest.getOrig() {
 		return
 	}
+	if internal.MoveNeedsCopy(v.getState(), dest.getState()) {
+		v.CopyTo(dest)
+		internal.DeleteAnyValue(v.getOrig(), false)
+		return
+	}
 	*dest.getOrig() = *v.getOrig()
 	v.getOrig().Value = nil
 }
@@ -378,7 +391,7 @@ func (v Value) MoveTo(dest Value) {
 // Calling this function on zero-initialized Value will cause a panic.
 func (v Value) CopyTo(dest Value) {
 	dest.getState().AssertMutable()
-	internal.CopyAnyValue(dest.getOrig(), v.getOrig())
+	internal.CopyAnyValue(dest.getOrig(), v.getOrig(), dest.getState())
 }
 
 // AsString converts an OTLP Value object of any type to its equivalent string

@@ -9,7 +9,6 @@ package internal
 import (
 	"encoding/binary"
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -37,19 +36,8 @@ type Span struct {
 	Status                 Status
 }
 
-var (
-	protoPoolSpan = sync.Pool{
-		New: func() any {
-			return &Span{}
-		},
-	}
-)
-
 func NewSpan() *Span {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &Span{}
-	}
-	return protoPoolSpan.Get().(*Span)
+	return Alloc[Span](nil)
 }
 
 func DeleteSpan(orig *Span, nullable bool) {
@@ -80,12 +68,10 @@ func DeleteSpan(orig *Span, nullable bool) {
 
 	DeleteStatus(&orig.Status, false)
 	orig.Reset()
-	if nullable {
-		protoPoolSpan.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopySpan(dest, src *Span) *Span {
+func CopySpan(dest, src *Span, st *State) *Span {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -96,38 +82,40 @@ func CopySpan(dest, src *Span) *Span {
 	}
 
 	if dest == nil {
-		dest = NewSpan()
+		dest = Alloc[Span](st)
 	}
-	CopyTraceID(&dest.TraceId, &src.TraceId)
+	CopyTraceID(&dest.TraceId, &src.TraceId, st)
 
-	CopySpanID(&dest.SpanId, &src.SpanId)
+	CopySpanID(&dest.SpanId, &src.SpanId, st)
 
-	dest.TraceState = src.TraceState
-	CopySpanID(&dest.ParentSpanId, &src.ParentSpanId)
+	dest.TraceState = CopyString(st, src.TraceState)
+
+	CopySpanID(&dest.ParentSpanId, &src.ParentSpanId, st)
 
 	dest.Flags = src.Flags
-	dest.Name = src.Name
+	dest.Name = CopyString(st, src.Name)
+
 	dest.Kind = src.Kind
 	dest.StartTimeUnixNano = src.StartTimeUnixNano
 	dest.EndTimeUnixNano = src.EndTimeUnixNano
-	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes)
+	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes, st)
 
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
-	dest.Events = CopySpanEventPtrSlice(dest.Events, src.Events)
+	dest.Events = CopySpanEventPtrSlice(dest.Events, src.Events, st)
 
 	dest.DroppedEventsCount = src.DroppedEventsCount
-	dest.Links = CopySpanLinkPtrSlice(dest.Links, src.Links)
+	dest.Links = CopySpanLinkPtrSlice(dest.Links, src.Links, st)
 
 	dest.DroppedLinksCount = src.DroppedLinksCount
-	CopyStatus(&dest.Status, &src.Status)
+	CopyStatus(&dest.Status, &src.Status, st)
 
 	return dest
 }
 
-func CopySpanSlice(dest, src []Span) []Span {
+func CopySpanSlice(dest, src []Span, st *State) []Span {
 	var newDest []Span
 	if cap(dest) < len(src) {
-		newDest = make([]Span, len(src))
+		newDest = AllocSlice[Span](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -137,20 +125,20 @@ func CopySpanSlice(dest, src []Span) []Span {
 		}
 	}
 	for i := range src {
-		CopySpan(&newDest[i], &src[i])
+		CopySpan(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopySpanPtrSlice(dest, src []*Span) []*Span {
+func CopySpanPtrSlice(dest, src []*Span, st *State) []*Span {
 	var newDest []*Span
 	if cap(dest) < len(src) {
-		newDest = make([]*Span, len(src))
+		newDest = AllocSlice[*Span](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewSpan()
+			newDest[i] = Alloc[Span](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -163,11 +151,11 @@ func CopySpanPtrSlice(dest, src []*Span) []*Span {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewSpan()
+			newDest[i] = Alloc[Span](st)
 		}
 	}
 	for i := range src {
-		CopySpan(newDest[i], src[i])
+		CopySpan(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -265,56 +253,69 @@ func (orig *Span) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *Span) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *Span) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "traceId", "trace_id":
 
-			orig.TraceId.UnmarshalJSON(iter)
+			orig.TraceId.UnmarshalJSONState(iter, st)
 		case "spanId", "span_id":
 
-			orig.SpanId.UnmarshalJSON(iter)
+			orig.SpanId.UnmarshalJSONState(iter, st)
 		case "traceState", "trace_state":
-			orig.TraceState = iter.ReadString()
+
+			orig.TraceState = CopyString(st, iter.ReadString())
 		case "parentSpanId", "parent_span_id":
 
-			orig.ParentSpanId.UnmarshalJSON(iter)
+			orig.ParentSpanId.UnmarshalJSONState(iter, st)
 		case "flags":
+
 			orig.Flags = iter.ReadUint32()
 		case "name":
-			orig.Name = iter.ReadString()
+
+			orig.Name = CopyString(st, iter.ReadString())
 		case "kind":
 			orig.Kind = SpanKind(iter.ReadEnumValue(SpanKind_value))
 		case "startTimeUnixNano", "start_time_unix_nano":
+
 			orig.StartTimeUnixNano = iter.ReadUint64()
 		case "endTimeUnixNano", "end_time_unix_nano":
+
 			orig.EndTimeUnixNano = iter.ReadUint64()
 		case "attributes":
 			for iter.ReadArray() {
-				orig.Attributes = append(orig.Attributes, KeyValue{})
-				orig.Attributes[len(orig.Attributes)-1].UnmarshalJSON(iter)
+				orig.Attributes = Append(st, orig.Attributes, KeyValue{})
+				orig.Attributes[len(orig.Attributes)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "droppedAttributesCount", "dropped_attributes_count":
+
 			orig.DroppedAttributesCount = iter.ReadUint32()
 		case "events":
 			for iter.ReadArray() {
-				orig.Events = append(orig.Events, NewSpanEvent())
-				orig.Events[len(orig.Events)-1].UnmarshalJSON(iter)
+				orig.Events = Append(st, orig.Events, Alloc[SpanEvent](st))
+				orig.Events[len(orig.Events)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "droppedEventsCount", "dropped_events_count":
+
 			orig.DroppedEventsCount = iter.ReadUint32()
 		case "links":
 			for iter.ReadArray() {
-				orig.Links = append(orig.Links, NewSpanLink())
-				orig.Links[len(orig.Links)-1].UnmarshalJSON(iter)
+				orig.Links = Append(st, orig.Links, Alloc[SpanLink](st))
+				orig.Links[len(orig.Links)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "droppedLinksCount", "dropped_links_count":
+
 			orig.DroppedLinksCount = iter.ReadUint32()
 		case "status":
 
-			orig.Status.UnmarshalJSON(iter)
+			orig.Status.UnmarshalJSONState(iter, st)
 		default:
 			iter.HandleUnknownField(f)
 		}
@@ -488,6 +489,10 @@ func (orig *Span) MarshalProto(buf []byte) int {
 }
 
 func (orig *Span) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *Span) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -513,7 +518,7 @@ func (orig *Span) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.TraceId.UnmarshalProto(buf[startPos:pos])
+			err = orig.TraceId.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -529,7 +534,7 @@ func (orig *Span) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.SpanId.UnmarshalProto(buf[startPos:pos])
+			err = orig.SpanId.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -544,7 +549,7 @@ func (orig *Span) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.TraceState = string(buf[startPos:pos])
+			orig.TraceState = BorrowString(st, buf, startPos, pos)
 
 		case 4:
 			if wireType != proto.WireTypeLen {
@@ -557,7 +562,7 @@ func (orig *Span) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.ParentSpanId.UnmarshalProto(buf[startPos:pos])
+			err = orig.ParentSpanId.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -584,7 +589,7 @@ func (orig *Span) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Name = string(buf[startPos:pos])
+			orig.Name = BorrowString(st, buf, startPos, pos)
 
 		case 6:
 			if wireType != proto.WireTypeVarint {
@@ -631,8 +636,8 @@ func (orig *Span) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Attributes = AppendEstimated(st, orig.Attributes, KeyValue{}, len(buf)-pos, length+2)
+			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -658,8 +663,8 @@ func (orig *Span) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Events = append(orig.Events, NewSpanEvent())
-			err = orig.Events[len(orig.Events)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Events = AppendEstimated(st, orig.Events, Alloc[SpanEvent](st), len(buf)-pos, length+2)
+			err = orig.Events[len(orig.Events)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -685,8 +690,8 @@ func (orig *Span) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Links = append(orig.Links, NewSpanLink())
-			err = orig.Links[len(orig.Links)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Links = AppendEstimated(st, orig.Links, Alloc[SpanLink](st), len(buf)-pos, length+2)
+			err = orig.Links[len(orig.Links)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -713,7 +718,7 @@ func (orig *Span) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Status.UnmarshalProto(buf[startPos:pos])
+			err = orig.Status.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -728,7 +733,7 @@ func (orig *Span) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestSpan() *Span {
-	orig := NewSpan()
+	orig := Alloc[Span](nil)
 	orig.TraceId = *GenTestTraceID()
 	orig.SpanId = *GenTestSpanID()
 	orig.TraceState = "test_tracestate"
@@ -750,11 +755,11 @@ func GenTestSpan() *Span {
 
 func GenTestSpanPtrSlice() []*Span {
 	orig := make([]*Span, 5)
-	orig[0] = NewSpan()
+	orig[0] = Alloc[Span](nil)
 	orig[1] = GenTestSpan()
-	orig[2] = NewSpan()
+	orig[2] = Alloc[Span](nil)
 	orig[3] = GenTestSpan()
-	orig[4] = NewSpan()
+	orig[4] = Alloc[Span](nil)
 	return orig
 }
 

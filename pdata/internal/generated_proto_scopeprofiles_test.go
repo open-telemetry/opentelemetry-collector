@@ -31,9 +31,9 @@ func TestCopyScopeProfiles(t *testing.T) {
 				}()
 
 				dest := NewScopeProfiles()
-				CopyScopeProfiles(dest, src)
+				CopyScopeProfiles(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyScopeProfiles(dest, dest)
+				CopyScopeProfiles(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyScopeProfilesSlice(t *testing.T) {
 	src := []ScopeProfiles{}
 	dest := []ScopeProfiles{}
 	// Test CopyTo empty
-	dest = CopyScopeProfilesSlice(dest, src)
+	dest = CopyScopeProfilesSlice(dest, src, nil)
 	assert.Equal(t, []ScopeProfiles{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestScopeProfilesSlice()
-	dest = CopyScopeProfilesSlice(dest, src)
+	dest = CopyScopeProfilesSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeProfilesSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyScopeProfilesSlice(dest, src)
+	dest = CopyScopeProfilesSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeProfilesSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyScopeProfilesSlice(dest, []ScopeProfiles{})
+	dest = CopyScopeProfilesSlice(dest, []ScopeProfiles{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyScopeProfilesSlice(dest, src)
+	dest = CopyScopeProfilesSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeProfilesSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyScopeProfilesPtrSlice(t *testing.T) {
 	src := []*ScopeProfiles{}
 	dest := []*ScopeProfiles{}
 	// Test CopyTo empty
-	dest = CopyScopeProfilesPtrSlice(dest, src)
+	dest = CopyScopeProfilesPtrSlice(dest, src, nil)
 	assert.Equal(t, []*ScopeProfiles{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestScopeProfilesPtrSlice()
-	dest = CopyScopeProfilesPtrSlice(dest, src)
+	dest = CopyScopeProfilesPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeProfilesPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyScopeProfilesPtrSlice(dest, src)
+	dest = CopyScopeProfilesPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeProfilesPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyScopeProfilesPtrSlice(dest, []*ScopeProfiles{})
+	dest = CopyScopeProfilesPtrSlice(dest, []*ScopeProfiles{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyScopeProfilesPtrSlice(dest, src)
+	dest = CopyScopeProfilesPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeProfilesPtrSlice(), dest)
 }
 

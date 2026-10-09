@@ -10,7 +10,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -56,31 +55,8 @@ type NumberDataPoint struct {
 	Flags             uint32
 }
 
-var (
-	protoPoolNumberDataPoint = sync.Pool{
-		New: func() any {
-			return &NumberDataPoint{}
-		},
-	}
-
-	ProtoPoolNumberDataPoint_AsDouble = sync.Pool{
-		New: func() any {
-			return &NumberDataPoint_AsDouble{}
-		},
-	}
-
-	ProtoPoolNumberDataPoint_AsInt = sync.Pool{
-		New: func() any {
-			return &NumberDataPoint_AsInt{}
-		},
-	}
-)
-
 func NewNumberDataPoint() *NumberDataPoint {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &NumberDataPoint{}
-	}
-	return protoPoolNumberDataPoint.Get().(*NumberDataPoint)
+	return Alloc[NumberDataPoint](nil)
 }
 
 func DeleteNumberDataPoint(orig *NumberDataPoint, nullable bool) {
@@ -100,12 +76,10 @@ func DeleteNumberDataPoint(orig *NumberDataPoint, nullable bool) {
 	case *NumberDataPoint_AsDouble:
 		if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov.AsDouble = float64(0)
-			ProtoPoolNumberDataPoint_AsDouble.Put(ov)
 		}
 	case *NumberDataPoint_AsInt:
 		if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov.AsInt = int64(0)
-			ProtoPoolNumberDataPoint_AsInt.Put(ov)
 		}
 	}
 	for i := range orig.Exemplars {
@@ -113,12 +87,10 @@ func DeleteNumberDataPoint(orig *NumberDataPoint, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolNumberDataPoint.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyNumberDataPoint(dest, src *NumberDataPoint) *NumberDataPoint {
+func CopyNumberDataPoint(dest, src *NumberDataPoint, st *State) *NumberDataPoint {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -129,47 +101,37 @@ func CopyNumberDataPoint(dest, src *NumberDataPoint) *NumberDataPoint {
 	}
 
 	if dest == nil {
-		dest = NewNumberDataPoint()
+		dest = Alloc[NumberDataPoint](st)
 	}
-	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes)
+	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes, st)
 
 	dest.StartTimeUnixNano = src.StartTimeUnixNano
 	dest.TimeUnixNano = src.TimeUnixNano
 	switch t := src.Value.(type) {
 	case *NumberDataPoint_AsDouble:
-		var ov *NumberDataPoint_AsDouble
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &NumberDataPoint_AsDouble{}
-		} else {
-			ov = ProtoPoolNumberDataPoint_AsDouble.Get().(*NumberDataPoint_AsDouble)
-		}
+		ov := Alloc[NumberDataPoint_AsDouble](st)
 		ov.AsDouble = t.AsDouble
 		dest.Value = ov
 
 	case *NumberDataPoint_AsInt:
-		var ov *NumberDataPoint_AsInt
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &NumberDataPoint_AsInt{}
-		} else {
-			ov = ProtoPoolNumberDataPoint_AsInt.Get().(*NumberDataPoint_AsInt)
-		}
+		ov := Alloc[NumberDataPoint_AsInt](st)
 		ov.AsInt = t.AsInt
 		dest.Value = ov
 
 	default:
 		dest.Value = nil
 	}
-	dest.Exemplars = CopyExemplarSlice(dest.Exemplars, src.Exemplars)
+	dest.Exemplars = CopyExemplarSlice(dest.Exemplars, src.Exemplars, st)
 
 	dest.Flags = src.Flags
 
 	return dest
 }
 
-func CopyNumberDataPointSlice(dest, src []NumberDataPoint) []NumberDataPoint {
+func CopyNumberDataPointSlice(dest, src []NumberDataPoint, st *State) []NumberDataPoint {
 	var newDest []NumberDataPoint
 	if cap(dest) < len(src) {
-		newDest = make([]NumberDataPoint, len(src))
+		newDest = AllocSlice[NumberDataPoint](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -179,20 +141,20 @@ func CopyNumberDataPointSlice(dest, src []NumberDataPoint) []NumberDataPoint {
 		}
 	}
 	for i := range src {
-		CopyNumberDataPoint(&newDest[i], &src[i])
+		CopyNumberDataPoint(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyNumberDataPointPtrSlice(dest, src []*NumberDataPoint) []*NumberDataPoint {
+func CopyNumberDataPointPtrSlice(dest, src []*NumberDataPoint, st *State) []*NumberDataPoint {
 	var newDest []*NumberDataPoint
 	if cap(dest) < len(src) {
-		newDest = make([]*NumberDataPoint, len(src))
+		newDest = AllocSlice[*NumberDataPoint](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewNumberDataPoint()
+			newDest[i] = Alloc[NumberDataPoint](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -205,11 +167,11 @@ func CopyNumberDataPointPtrSlice(dest, src []*NumberDataPoint) []*NumberDataPoin
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewNumberDataPoint()
+			newDest[i] = Alloc[NumberDataPoint](st)
 		}
 	}
 	for i := range src {
-		CopyNumberDataPoint(newDest[i], src[i])
+		CopyNumberDataPoint(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -266,49 +228,47 @@ func (orig *NumberDataPoint) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *NumberDataPoint) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *NumberDataPoint) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "attributes":
 			for iter.ReadArray() {
-				orig.Attributes = append(orig.Attributes, KeyValue{})
-				orig.Attributes[len(orig.Attributes)-1].UnmarshalJSON(iter)
+				orig.Attributes = Append(st, orig.Attributes, KeyValue{})
+				orig.Attributes[len(orig.Attributes)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "startTimeUnixNano", "start_time_unix_nano":
+
 			orig.StartTimeUnixNano = iter.ReadUint64()
 		case "timeUnixNano", "time_unix_nano":
+
 			orig.TimeUnixNano = iter.ReadUint64()
 
 		case "asDouble", "as_double":
 			{
-				var ov *NumberDataPoint_AsDouble
-				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-					ov = &NumberDataPoint_AsDouble{}
-				} else {
-					ov = ProtoPoolNumberDataPoint_AsDouble.Get().(*NumberDataPoint_AsDouble)
-				}
+				ov := Alloc[NumberDataPoint_AsDouble](st)
 				ov.AsDouble = iter.ReadFloat64()
 				orig.Value = ov
 			}
 		case "asInt", "as_int":
 			{
-				var ov *NumberDataPoint_AsInt
-				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-					ov = &NumberDataPoint_AsInt{}
-				} else {
-					ov = ProtoPoolNumberDataPoint_AsInt.Get().(*NumberDataPoint_AsInt)
-				}
+				ov := Alloc[NumberDataPoint_AsInt](st)
 				ov.AsInt = iter.ReadInt64()
 				orig.Value = ov
 			}
 
 		case "exemplars":
 			for iter.ReadArray() {
-				orig.Exemplars = append(orig.Exemplars, Exemplar{})
-				orig.Exemplars[len(orig.Exemplars)-1].UnmarshalJSON(iter)
+				orig.Exemplars = Append(st, orig.Exemplars, Exemplar{})
+				orig.Exemplars[len(orig.Exemplars)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "flags":
+
 			orig.Flags = iter.ReadUint32()
 		default:
 			iter.HandleUnknownField(f)
@@ -404,6 +364,10 @@ func (orig *NumberDataPoint) MarshalProto(buf []byte) int {
 }
 
 func (orig *NumberDataPoint) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *NumberDataPoint) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -428,8 +392,8 @@ func (orig *NumberDataPoint) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Attributes = AppendEstimated(st, orig.Attributes, KeyValue{}, len(buf)-pos, length+2)
+			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -467,12 +431,7 @@ func (orig *NumberDataPoint) UnmarshalProto(buf []byte) error {
 			if err != nil {
 				return err
 			}
-			var ov *NumberDataPoint_AsDouble
-			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-				ov = &NumberDataPoint_AsDouble{}
-			} else {
-				ov = ProtoPoolNumberDataPoint_AsDouble.Get().(*NumberDataPoint_AsDouble)
-			}
+			ov := Alloc[NumberDataPoint_AsDouble](st)
 			ov.AsDouble = math.Float64frombits(num)
 			orig.Value = ov
 
@@ -485,12 +444,7 @@ func (orig *NumberDataPoint) UnmarshalProto(buf []byte) error {
 			if err != nil {
 				return err
 			}
-			var ov *NumberDataPoint_AsInt
-			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-				ov = &NumberDataPoint_AsInt{}
-			} else {
-				ov = ProtoPoolNumberDataPoint_AsInt.Get().(*NumberDataPoint_AsInt)
-			}
+			ov := Alloc[NumberDataPoint_AsInt](st)
 			ov.AsInt = int64(num)
 			orig.Value = ov
 
@@ -504,8 +458,8 @@ func (orig *NumberDataPoint) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Exemplars = append(orig.Exemplars, Exemplar{})
-			err = orig.Exemplars[len(orig.Exemplars)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Exemplars = AppendEstimated(st, orig.Exemplars, Exemplar{}, len(buf)-pos, length+2)
+			err = orig.Exemplars[len(orig.Exemplars)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -531,7 +485,7 @@ func (orig *NumberDataPoint) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestNumberDataPoint() *NumberDataPoint {
-	orig := NewNumberDataPoint()
+	orig := Alloc[NumberDataPoint](nil)
 	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
 	orig.StartTimeUnixNano = uint64(13)
 	orig.TimeUnixNano = uint64(13)
@@ -543,11 +497,11 @@ func GenTestNumberDataPoint() *NumberDataPoint {
 
 func GenTestNumberDataPointPtrSlice() []*NumberDataPoint {
 	orig := make([]*NumberDataPoint, 5)
-	orig[0] = NewNumberDataPoint()
+	orig[0] = Alloc[NumberDataPoint](nil)
 	orig[1] = GenTestNumberDataPoint()
-	orig[2] = NewNumberDataPoint()
+	orig[2] = Alloc[NumberDataPoint](nil)
 	orig[3] = GenTestNumberDataPoint()
-	orig[4] = NewNumberDataPoint()
+	orig[4] = Alloc[NumberDataPoint](nil)
 	return orig
 }
 

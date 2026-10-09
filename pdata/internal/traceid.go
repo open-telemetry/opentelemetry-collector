@@ -20,7 +20,7 @@ type TraceID [traceIDSize]byte
 
 func DeleteTraceID(*TraceID, bool) {}
 
-func CopyTraceID(dest, src *TraceID) {
+func CopyTraceID(dest, src *TraceID, _ *State) {
 	*dest = *src
 }
 
@@ -49,6 +49,10 @@ func (tid TraceID) MarshalProto(buf []byte) int {
 
 // UnmarshalProto inflates this trace ID from binary representation. Called by Protobuf serialization.
 func (tid *TraceID) UnmarshalProto(buf []byte) error {
+	return tid.UnmarshalProtoState(buf, nil)
+}
+
+func (tid *TraceID) UnmarshalProtoState(buf []byte, _ *State) error {
 	if len(buf) == 0 {
 		*tid = [traceIDSize]byte{}
 		return nil
@@ -73,6 +77,10 @@ func (tid TraceID) MarshalJSON(dest *json.Stream) {
 //
 //nolint:govet
 func (tid *TraceID) UnmarshalJSON(iter *json.Iterator) {
+	tid.UnmarshalJSONState(iter, nil)
+}
+
+func (tid *TraceID) UnmarshalJSONState(iter *json.Iterator, _ *State) {
 	*tid = [profileIDSize]byte{}
 	unmarshalJSON(tid[:], iter)
 }

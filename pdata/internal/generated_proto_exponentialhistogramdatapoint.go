@@ -10,7 +10,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -39,19 +38,8 @@ type ExponentialHistogramDataPoint struct {
 	metadata          [1]uint64
 }
 
-var (
-	protoPoolExponentialHistogramDataPoint = sync.Pool{
-		New: func() any {
-			return &ExponentialHistogramDataPoint{}
-		},
-	}
-)
-
 func NewExponentialHistogramDataPoint() *ExponentialHistogramDataPoint {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &ExponentialHistogramDataPoint{}
-	}
-	return protoPoolExponentialHistogramDataPoint.Get().(*ExponentialHistogramDataPoint)
+	return Alloc[ExponentialHistogramDataPoint](nil)
 }
 
 func DeleteExponentialHistogramDataPoint(orig *ExponentialHistogramDataPoint, nullable bool) {
@@ -75,12 +63,10 @@ func DeleteExponentialHistogramDataPoint(orig *ExponentialHistogramDataPoint, nu
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolExponentialHistogramDataPoint.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyExponentialHistogramDataPoint(dest, src *ExponentialHistogramDataPoint) *ExponentialHistogramDataPoint {
+func CopyExponentialHistogramDataPoint(dest, src *ExponentialHistogramDataPoint, st *State) *ExponentialHistogramDataPoint {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -91,9 +77,9 @@ func CopyExponentialHistogramDataPoint(dest, src *ExponentialHistogramDataPoint)
 	}
 
 	if dest == nil {
-		dest = NewExponentialHistogramDataPoint()
+		dest = Alloc[ExponentialHistogramDataPoint](st)
 	}
-	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes)
+	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes, st)
 
 	dest.StartTimeUnixNano = src.StartTimeUnixNano
 	dest.TimeUnixNano = src.TimeUnixNano
@@ -106,12 +92,12 @@ func CopyExponentialHistogramDataPoint(dest, src *ExponentialHistogramDataPoint)
 
 	dest.Scale = src.Scale
 	dest.ZeroCount = src.ZeroCount
-	CopyExponentialHistogramDataPointBuckets(&dest.Positive, &src.Positive)
+	CopyExponentialHistogramDataPointBuckets(&dest.Positive, &src.Positive, st)
 
-	CopyExponentialHistogramDataPointBuckets(&dest.Negative, &src.Negative)
+	CopyExponentialHistogramDataPointBuckets(&dest.Negative, &src.Negative, st)
 
 	dest.Flags = src.Flags
-	dest.Exemplars = CopyExemplarSlice(dest.Exemplars, src.Exemplars)
+	dest.Exemplars = CopyExemplarSlice(dest.Exemplars, src.Exemplars, st)
 
 	if src.HasMin() {
 		dest.SetMin(src.Min)
@@ -130,10 +116,10 @@ func CopyExponentialHistogramDataPoint(dest, src *ExponentialHistogramDataPoint)
 	return dest
 }
 
-func CopyExponentialHistogramDataPointSlice(dest, src []ExponentialHistogramDataPoint) []ExponentialHistogramDataPoint {
+func CopyExponentialHistogramDataPointSlice(dest, src []ExponentialHistogramDataPoint, st *State) []ExponentialHistogramDataPoint {
 	var newDest []ExponentialHistogramDataPoint
 	if cap(dest) < len(src) {
-		newDest = make([]ExponentialHistogramDataPoint, len(src))
+		newDest = AllocSlice[ExponentialHistogramDataPoint](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -143,20 +129,20 @@ func CopyExponentialHistogramDataPointSlice(dest, src []ExponentialHistogramData
 		}
 	}
 	for i := range src {
-		CopyExponentialHistogramDataPoint(&newDest[i], &src[i])
+		CopyExponentialHistogramDataPoint(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyExponentialHistogramDataPointPtrSlice(dest, src []*ExponentialHistogramDataPoint) []*ExponentialHistogramDataPoint {
+func CopyExponentialHistogramDataPointPtrSlice(dest, src []*ExponentialHistogramDataPoint, st *State) []*ExponentialHistogramDataPoint {
 	var newDest []*ExponentialHistogramDataPoint
 	if cap(dest) < len(src) {
-		newDest = make([]*ExponentialHistogramDataPoint, len(src))
+		newDest = AllocSlice[*ExponentialHistogramDataPoint](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewExponentialHistogramDataPoint()
+			newDest[i] = Alloc[ExponentialHistogramDataPoint](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -169,11 +155,11 @@ func CopyExponentialHistogramDataPointPtrSlice(dest, src []*ExponentialHistogram
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewExponentialHistogramDataPoint()
+			newDest[i] = Alloc[ExponentialHistogramDataPoint](st)
 		}
 	}
 	for i := range src {
-		CopyExponentialHistogramDataPoint(newDest[i], src[i])
+		CopyExponentialHistogramDataPoint(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -254,39 +240,50 @@ func (orig *ExponentialHistogramDataPoint) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *ExponentialHistogramDataPoint) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *ExponentialHistogramDataPoint) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "attributes":
 			for iter.ReadArray() {
-				orig.Attributes = append(orig.Attributes, KeyValue{})
-				orig.Attributes[len(orig.Attributes)-1].UnmarshalJSON(iter)
+				orig.Attributes = Append(st, orig.Attributes, KeyValue{})
+				orig.Attributes[len(orig.Attributes)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "startTimeUnixNano", "start_time_unix_nano":
+
 			orig.StartTimeUnixNano = iter.ReadUint64()
 		case "timeUnixNano", "time_unix_nano":
+
 			orig.TimeUnixNano = iter.ReadUint64()
 		case "count":
+
 			orig.Count = iter.ReadUint64()
 		case "sum":
 			orig.SetSum(iter.ReadFloat64())
 
 		case "scale":
+
 			orig.Scale = iter.ReadInt32()
 		case "zeroCount", "zero_count":
+
 			orig.ZeroCount = iter.ReadUint64()
 		case "positive":
 
-			orig.Positive.UnmarshalJSON(iter)
+			orig.Positive.UnmarshalJSONState(iter, st)
 		case "negative":
 
-			orig.Negative.UnmarshalJSON(iter)
+			orig.Negative.UnmarshalJSONState(iter, st)
 		case "flags":
+
 			orig.Flags = iter.ReadUint32()
 		case "exemplars":
 			for iter.ReadArray() {
-				orig.Exemplars = append(orig.Exemplars, Exemplar{})
-				orig.Exemplars[len(orig.Exemplars)-1].UnmarshalJSON(iter)
+				orig.Exemplars = Append(st, orig.Exemplars, Exemplar{})
+				orig.Exemplars[len(orig.Exemplars)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "min":
@@ -296,6 +293,7 @@ func (orig *ExponentialHistogramDataPoint) UnmarshalJSON(iter *json.Iterator) {
 			orig.SetMax(iter.ReadFloat64())
 
 		case "zeroThreshold", "zero_threshold":
+
 			orig.ZeroThreshold = iter.ReadFloat64()
 		default:
 			iter.HandleUnknownField(f)
@@ -444,6 +442,10 @@ func (orig *ExponentialHistogramDataPoint) MarshalProto(buf []byte) int {
 }
 
 func (orig *ExponentialHistogramDataPoint) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *ExponentialHistogramDataPoint) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -468,8 +470,8 @@ func (orig *ExponentialHistogramDataPoint) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Attributes = AppendEstimated(st, orig.Attributes, KeyValue{}, len(buf)-pos, length+2)
+			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -555,7 +557,7 @@ func (orig *ExponentialHistogramDataPoint) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Positive.UnmarshalProto(buf[startPos:pos])
+			err = orig.Positive.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -571,7 +573,7 @@ func (orig *ExponentialHistogramDataPoint) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Negative.UnmarshalProto(buf[startPos:pos])
+			err = orig.Negative.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -597,8 +599,8 @@ func (orig *ExponentialHistogramDataPoint) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Exemplars = append(orig.Exemplars, Exemplar{})
-			err = orig.Exemplars[len(orig.Exemplars)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Exemplars = AppendEstimated(st, orig.Exemplars, Exemplar{}, len(buf)-pos, length+2)
+			err = orig.Exemplars[len(orig.Exemplars)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -697,7 +699,7 @@ func (m *ExponentialHistogramDataPoint) HasMax() bool {
 }
 
 func GenTestExponentialHistogramDataPoint() *ExponentialHistogramDataPoint {
-	orig := NewExponentialHistogramDataPoint()
+	orig := Alloc[ExponentialHistogramDataPoint](nil)
 	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
 	orig.StartTimeUnixNano = uint64(13)
 	orig.TimeUnixNano = uint64(13)
@@ -717,11 +719,11 @@ func GenTestExponentialHistogramDataPoint() *ExponentialHistogramDataPoint {
 
 func GenTestExponentialHistogramDataPointPtrSlice() []*ExponentialHistogramDataPoint {
 	orig := make([]*ExponentialHistogramDataPoint, 5)
-	orig[0] = NewExponentialHistogramDataPoint()
+	orig[0] = Alloc[ExponentialHistogramDataPoint](nil)
 	orig[1] = GenTestExponentialHistogramDataPoint()
-	orig[2] = NewExponentialHistogramDataPoint()
+	orig[2] = Alloc[ExponentialHistogramDataPoint](nil)
 	orig[3] = GenTestExponentialHistogramDataPoint()
-	orig[4] = NewExponentialHistogramDataPoint()
+	orig[4] = Alloc[ExponentialHistogramDataPoint](nil)
 	return orig
 }
 

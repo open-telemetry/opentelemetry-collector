@@ -31,9 +31,9 @@ func TestCopyMapping(t *testing.T) {
 				}()
 
 				dest := NewMapping()
-				CopyMapping(dest, src)
+				CopyMapping(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyMapping(dest, dest)
+				CopyMapping(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyMappingSlice(t *testing.T) {
 	src := []Mapping{}
 	dest := []Mapping{}
 	// Test CopyTo empty
-	dest = CopyMappingSlice(dest, src)
+	dest = CopyMappingSlice(dest, src, nil)
 	assert.Equal(t, []Mapping{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestMappingSlice()
-	dest = CopyMappingSlice(dest, src)
+	dest = CopyMappingSlice(dest, src, nil)
 	assert.Equal(t, GenTestMappingSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyMappingSlice(dest, src)
+	dest = CopyMappingSlice(dest, src, nil)
 	assert.Equal(t, GenTestMappingSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyMappingSlice(dest, []Mapping{})
+	dest = CopyMappingSlice(dest, []Mapping{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyMappingSlice(dest, src)
+	dest = CopyMappingSlice(dest, src, nil)
 	assert.Equal(t, GenTestMappingSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyMappingPtrSlice(t *testing.T) {
 	src := []*Mapping{}
 	dest := []*Mapping{}
 	// Test CopyTo empty
-	dest = CopyMappingPtrSlice(dest, src)
+	dest = CopyMappingPtrSlice(dest, src, nil)
 	assert.Equal(t, []*Mapping{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestMappingPtrSlice()
-	dest = CopyMappingPtrSlice(dest, src)
+	dest = CopyMappingPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestMappingPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyMappingPtrSlice(dest, src)
+	dest = CopyMappingPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestMappingPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyMappingPtrSlice(dest, []*Mapping{})
+	dest = CopyMappingPtrSlice(dest, []*Mapping{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyMappingPtrSlice(dest, src)
+	dest = CopyMappingPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestMappingPtrSlice(), dest)
 }
 

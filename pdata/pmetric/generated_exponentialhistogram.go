@@ -32,7 +32,8 @@ func newExponentialHistogram(orig *internal.ExponentialHistogram, state *interna
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExponentialHistogram() ExponentialHistogram {
-	return newExponentialHistogram(internal.NewExponentialHistogram(), internal.NewState())
+	st := internal.NewState()
+	return newExponentialHistogram(internal.Alloc[internal.ExponentialHistogram](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -42,6 +43,14 @@ func (ms ExponentialHistogram) MoveTo(dest ExponentialHistogram) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteExponentialHistogram(dest.orig, false)
+		ms.CopyTo(dest)
+		internal.DeleteExponentialHistogram(ms.orig, false)
 		return
 	}
 	internal.DeleteExponentialHistogram(dest.orig, false)
@@ -67,5 +76,5 @@ func (ms ExponentialHistogram) SetAggregationTemporality(v AggregationTemporalit
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExponentialHistogram) CopyTo(dest ExponentialHistogram) {
 	dest.state.AssertMutable()
-	internal.CopyExponentialHistogram(dest.orig, ms.orig)
+	internal.CopyExponentialHistogram(dest.orig, ms.orig, dest.state)
 }

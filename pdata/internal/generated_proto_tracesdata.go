@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -22,19 +21,8 @@ type TracesData struct {
 	ResourceSpans []*ResourceSpans
 }
 
-var (
-	protoPoolTracesData = sync.Pool{
-		New: func() any {
-			return &TracesData{}
-		},
-	}
-)
-
 func NewTracesData() *TracesData {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &TracesData{}
-	}
-	return protoPoolTracesData.Get().(*TracesData)
+	return Alloc[TracesData](nil)
 }
 
 func DeleteTracesData(orig *TracesData, nullable bool) {
@@ -50,12 +38,10 @@ func DeleteTracesData(orig *TracesData, nullable bool) {
 		DeleteResourceSpans(orig.ResourceSpans[i], true)
 	}
 	orig.Reset()
-	if nullable {
-		protoPoolTracesData.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyTracesData(dest, src *TracesData) *TracesData {
+func CopyTracesData(dest, src *TracesData, st *State) *TracesData {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -66,17 +52,17 @@ func CopyTracesData(dest, src *TracesData) *TracesData {
 	}
 
 	if dest == nil {
-		dest = NewTracesData()
+		dest = Alloc[TracesData](st)
 	}
-	dest.ResourceSpans = CopyResourceSpansPtrSlice(dest.ResourceSpans, src.ResourceSpans)
+	dest.ResourceSpans = CopyResourceSpansPtrSlice(dest.ResourceSpans, src.ResourceSpans, st)
 
 	return dest
 }
 
-func CopyTracesDataSlice(dest, src []TracesData) []TracesData {
+func CopyTracesDataSlice(dest, src []TracesData, st *State) []TracesData {
 	var newDest []TracesData
 	if cap(dest) < len(src) {
-		newDest = make([]TracesData, len(src))
+		newDest = AllocSlice[TracesData](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -86,20 +72,20 @@ func CopyTracesDataSlice(dest, src []TracesData) []TracesData {
 		}
 	}
 	for i := range src {
-		CopyTracesData(&newDest[i], &src[i])
+		CopyTracesData(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyTracesDataPtrSlice(dest, src []*TracesData) []*TracesData {
+func CopyTracesDataPtrSlice(dest, src []*TracesData, st *State) []*TracesData {
 	var newDest []*TracesData
 	if cap(dest) < len(src) {
-		newDest = make([]*TracesData, len(src))
+		newDest = AllocSlice[*TracesData](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewTracesData()
+			newDest[i] = Alloc[TracesData](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -112,11 +98,11 @@ func CopyTracesDataPtrSlice(dest, src []*TracesData) []*TracesData {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewTracesData()
+			newDest[i] = Alloc[TracesData](st)
 		}
 	}
 	for i := range src {
-		CopyTracesData(newDest[i], src[i])
+		CopyTracesData(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -143,12 +129,17 @@ func (orig *TracesData) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *TracesData) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *TracesData) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resourceSpans", "resource_spans":
 			for iter.ReadArray() {
-				orig.ResourceSpans = append(orig.ResourceSpans, NewResourceSpans())
-				orig.ResourceSpans[len(orig.ResourceSpans)-1].UnmarshalJSON(iter)
+				orig.ResourceSpans = Append(st, orig.ResourceSpans, Alloc[ResourceSpans](st))
+				orig.ResourceSpans[len(orig.ResourceSpans)-1].UnmarshalJSONState(iter, st)
 			}
 
 		default:
@@ -183,6 +174,10 @@ func (orig *TracesData) MarshalProto(buf []byte) int {
 }
 
 func (orig *TracesData) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *TracesData) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -207,8 +202,8 @@ func (orig *TracesData) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceSpans = append(orig.ResourceSpans, NewResourceSpans())
-			err = orig.ResourceSpans[len(orig.ResourceSpans)-1].UnmarshalProto(buf[startPos:pos])
+			orig.ResourceSpans = AppendEstimated(st, orig.ResourceSpans, Alloc[ResourceSpans](st), len(buf)-pos, length+2)
+			err = orig.ResourceSpans[len(orig.ResourceSpans)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -223,18 +218,18 @@ func (orig *TracesData) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestTracesData() *TracesData {
-	orig := NewTracesData()
+	orig := Alloc[TracesData](nil)
 	orig.ResourceSpans = []*ResourceSpans{{}, GenTestResourceSpans()}
 	return orig
 }
 
 func GenTestTracesDataPtrSlice() []*TracesData {
 	orig := make([]*TracesData, 5)
-	orig[0] = NewTracesData()
+	orig[0] = Alloc[TracesData](nil)
 	orig[1] = GenTestTracesData()
-	orig[2] = NewTracesData()
+	orig[2] = Alloc[TracesData](nil)
 	orig[3] = GenTestTracesData()
-	orig[4] = NewTracesData()
+	orig[4] = Alloc[TracesData](nil)
 	return orig
 }
 

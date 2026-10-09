@@ -21,9 +21,10 @@ type ExportRequest struct {
 
 // NewExportRequest returns an empty ExportRequest.
 func NewExportRequest() ExportRequest {
+	st := internal.NewState()
 	return ExportRequest{
-		orig:  &internal.ExportMetricsServiceRequest{},
-		state: internal.NewState(),
+		orig:  internal.Alloc[internal.ExportMetricsServiceRequest](st),
+		state: st,
 	}
 }
 
@@ -46,8 +47,12 @@ func (ms ExportRequest) MarshalProto() ([]byte, error) {
 }
 
 // UnmarshalProto unmarshalls ExportRequest from proto bytes.
+//
+// With the pdata.useProtoPooling feature gate enabled the result borrows its string and bytes
+// fields straight from data, so the caller must not modify or reuse data while the result is in use.
 func (ms ExportRequest) UnmarshalProto(data []byte) error {
-	err := ms.orig.UnmarshalProto(data)
+	ms.state.RetainWire(data)
+	err := ms.orig.UnmarshalProtoState(data, ms.state)
 	if err != nil {
 		return err
 	}
@@ -70,7 +75,7 @@ func (ms ExportRequest) MarshalJSON() ([]byte, error) {
 func (ms ExportRequest) UnmarshalJSON(data []byte) error {
 	iter := json.BorrowIterator(data)
 	defer json.ReturnIterator(iter)
-	ms.orig.UnmarshalJSON(iter)
+	ms.orig.UnmarshalJSONState(iter, ms.state)
 	return iter.Error()
 }
 

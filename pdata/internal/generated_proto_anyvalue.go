@@ -10,7 +10,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -116,67 +115,8 @@ type AnyValue struct {
 	Value any
 }
 
-var (
-	protoPoolAnyValue = sync.Pool{
-		New: func() any {
-			return &AnyValue{}
-		},
-	}
-
-	ProtoPoolAnyValue_StringValue = sync.Pool{
-		New: func() any {
-			return &AnyValue_StringValue{}
-		},
-	}
-
-	ProtoPoolAnyValue_BoolValue = sync.Pool{
-		New: func() any {
-			return &AnyValue_BoolValue{}
-		},
-	}
-
-	ProtoPoolAnyValue_IntValue = sync.Pool{
-		New: func() any {
-			return &AnyValue_IntValue{}
-		},
-	}
-
-	ProtoPoolAnyValue_DoubleValue = sync.Pool{
-		New: func() any {
-			return &AnyValue_DoubleValue{}
-		},
-	}
-
-	ProtoPoolAnyValue_ArrayValue = sync.Pool{
-		New: func() any {
-			return &AnyValue_ArrayValue{}
-		},
-	}
-
-	ProtoPoolAnyValue_KvlistValue = sync.Pool{
-		New: func() any {
-			return &AnyValue_KvlistValue{}
-		},
-	}
-
-	ProtoPoolAnyValue_BytesValue = sync.Pool{
-		New: func() any {
-			return &AnyValue_BytesValue{}
-		},
-	}
-
-	ProtoPoolAnyValue_StringValueStrindex = sync.Pool{
-		New: func() any {
-			return &AnyValue_StringValueStrindex{}
-		},
-	}
-)
-
 func NewAnyValue() *AnyValue {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &AnyValue{}
-	}
-	return protoPoolAnyValue.Get().(*AnyValue)
+	return Alloc[AnyValue](nil)
 }
 
 func DeleteAnyValue(orig *AnyValue, nullable bool) {
@@ -192,49 +132,39 @@ func DeleteAnyValue(orig *AnyValue, nullable bool) {
 	case *AnyValue_StringValue:
 		if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov.StringValue = ""
-			ProtoPoolAnyValue_StringValue.Put(ov)
 		}
 	case *AnyValue_BoolValue:
 		if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov.BoolValue = false
-			ProtoPoolAnyValue_BoolValue.Put(ov)
 		}
 	case *AnyValue_IntValue:
 		if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov.IntValue = int64(0)
-			ProtoPoolAnyValue_IntValue.Put(ov)
 		}
 	case *AnyValue_DoubleValue:
 		if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov.DoubleValue = float64(0)
-			ProtoPoolAnyValue_DoubleValue.Put(ov)
 		}
 	case *AnyValue_ArrayValue:
 		DeleteArrayValue(ov.ArrayValue, true)
 		ov.ArrayValue = nil
-		ProtoPoolAnyValue_ArrayValue.Put(ov)
 	case *AnyValue_KvlistValue:
 		DeleteKeyValueList(ov.KvlistValue, true)
 		ov.KvlistValue = nil
-		ProtoPoolAnyValue_KvlistValue.Put(ov)
 	case *AnyValue_BytesValue:
 		if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov.BytesValue = nil
-			ProtoPoolAnyValue_BytesValue.Put(ov)
 		}
 	case *AnyValue_StringValueStrindex:
 		if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov.StringValueStrindex = int32(0)
-			ProtoPoolAnyValue_StringValueStrindex.Put(ov)
 		}
 	}
 	orig.Reset()
-	if nullable {
-		protoPoolAnyValue.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyAnyValue(dest, src *AnyValue) *AnyValue {
+func CopyAnyValue(dest, src *AnyValue, st *State) *AnyValue {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -245,88 +175,48 @@ func CopyAnyValue(dest, src *AnyValue) *AnyValue {
 	}
 
 	if dest == nil {
-		dest = NewAnyValue()
+		dest = Alloc[AnyValue](st)
 	}
 	switch t := src.Value.(type) {
 	case *AnyValue_StringValue:
-		var ov *AnyValue_StringValue
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &AnyValue_StringValue{}
-		} else {
-			ov = ProtoPoolAnyValue_StringValue.Get().(*AnyValue_StringValue)
-		}
-		ov.StringValue = t.StringValue
+		ov := Alloc[AnyValue_StringValue](st)
+		ov.StringValue = CopyString(st, t.StringValue)
 		dest.Value = ov
 
 	case *AnyValue_BoolValue:
-		var ov *AnyValue_BoolValue
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &AnyValue_BoolValue{}
-		} else {
-			ov = ProtoPoolAnyValue_BoolValue.Get().(*AnyValue_BoolValue)
-		}
+		ov := Alloc[AnyValue_BoolValue](st)
 		ov.BoolValue = t.BoolValue
 		dest.Value = ov
 
 	case *AnyValue_IntValue:
-		var ov *AnyValue_IntValue
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &AnyValue_IntValue{}
-		} else {
-			ov = ProtoPoolAnyValue_IntValue.Get().(*AnyValue_IntValue)
-		}
+		ov := Alloc[AnyValue_IntValue](st)
 		ov.IntValue = t.IntValue
 		dest.Value = ov
 
 	case *AnyValue_DoubleValue:
-		var ov *AnyValue_DoubleValue
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &AnyValue_DoubleValue{}
-		} else {
-			ov = ProtoPoolAnyValue_DoubleValue.Get().(*AnyValue_DoubleValue)
-		}
+		ov := Alloc[AnyValue_DoubleValue](st)
 		ov.DoubleValue = t.DoubleValue
 		dest.Value = ov
 
 	case *AnyValue_ArrayValue:
-		var ov *AnyValue_ArrayValue
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &AnyValue_ArrayValue{}
-		} else {
-			ov = ProtoPoolAnyValue_ArrayValue.Get().(*AnyValue_ArrayValue)
-		}
-		ov.ArrayValue = NewArrayValue()
-		CopyArrayValue(ov.ArrayValue, t.ArrayValue)
+		ov := Alloc[AnyValue_ArrayValue](st)
+		ov.ArrayValue = Alloc[ArrayValue](st)
+		CopyArrayValue(ov.ArrayValue, t.ArrayValue, st)
 		dest.Value = ov
 
 	case *AnyValue_KvlistValue:
-		var ov *AnyValue_KvlistValue
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &AnyValue_KvlistValue{}
-		} else {
-			ov = ProtoPoolAnyValue_KvlistValue.Get().(*AnyValue_KvlistValue)
-		}
-		ov.KvlistValue = NewKeyValueList()
-		CopyKeyValueList(ov.KvlistValue, t.KvlistValue)
+		ov := Alloc[AnyValue_KvlistValue](st)
+		ov.KvlistValue = Alloc[KeyValueList](st)
+		CopyKeyValueList(ov.KvlistValue, t.KvlistValue, st)
 		dest.Value = ov
 
 	case *AnyValue_BytesValue:
-		var ov *AnyValue_BytesValue
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &AnyValue_BytesValue{}
-		} else {
-			ov = ProtoPoolAnyValue_BytesValue.Get().(*AnyValue_BytesValue)
-		}
-		ov.BytesValue = append(ov.BytesValue[:0], t.BytesValue...)
+		ov := Alloc[AnyValue_BytesValue](st)
+		ov.BytesValue = CopySlice(st, ov.BytesValue, t.BytesValue)
 		dest.Value = ov
 
 	case *AnyValue_StringValueStrindex:
-		var ov *AnyValue_StringValueStrindex
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &AnyValue_StringValueStrindex{}
-		} else {
-			ov = ProtoPoolAnyValue_StringValueStrindex.Get().(*AnyValue_StringValueStrindex)
-		}
+		ov := Alloc[AnyValue_StringValueStrindex](st)
 		ov.StringValueStrindex = t.StringValueStrindex
 		dest.Value = ov
 
@@ -337,10 +227,10 @@ func CopyAnyValue(dest, src *AnyValue) *AnyValue {
 	return dest
 }
 
-func CopyAnyValueSlice(dest, src []AnyValue) []AnyValue {
+func CopyAnyValueSlice(dest, src []AnyValue, st *State) []AnyValue {
 	var newDest []AnyValue
 	if cap(dest) < len(src) {
-		newDest = make([]AnyValue, len(src))
+		newDest = AllocSlice[AnyValue](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -350,20 +240,20 @@ func CopyAnyValueSlice(dest, src []AnyValue) []AnyValue {
 		}
 	}
 	for i := range src {
-		CopyAnyValue(&newDest[i], &src[i])
+		CopyAnyValue(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyAnyValuePtrSlice(dest, src []*AnyValue) []*AnyValue {
+func CopyAnyValuePtrSlice(dest, src []*AnyValue, st *State) []*AnyValue {
 	var newDest []*AnyValue
 	if cap(dest) < len(src) {
-		newDest = make([]*AnyValue, len(src))
+		newDest = AllocSlice[*AnyValue](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewAnyValue()
+			newDest[i] = Alloc[AnyValue](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -376,11 +266,11 @@ func CopyAnyValuePtrSlice(dest, src []*AnyValue) []*AnyValue {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewAnyValue()
+			newDest[i] = Alloc[AnyValue](st)
 		}
 	}
 	for i := range src {
-		CopyAnyValue(newDest[i], src[i])
+		CopyAnyValue(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -428,96 +318,61 @@ func (orig *AnyValue) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *AnyValue) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *AnyValue) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 
 		case "stringValue", "string_value":
 			{
-				var ov *AnyValue_StringValue
-				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-					ov = &AnyValue_StringValue{}
-				} else {
-					ov = ProtoPoolAnyValue_StringValue.Get().(*AnyValue_StringValue)
-				}
-				ov.StringValue = iter.ReadString()
+				ov := Alloc[AnyValue_StringValue](st)
+				ov.StringValue = CopyString(st, iter.ReadString())
 				orig.Value = ov
 			}
 		case "boolValue", "bool_value":
 			{
-				var ov *AnyValue_BoolValue
-				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-					ov = &AnyValue_BoolValue{}
-				} else {
-					ov = ProtoPoolAnyValue_BoolValue.Get().(*AnyValue_BoolValue)
-				}
+				ov := Alloc[AnyValue_BoolValue](st)
 				ov.BoolValue = iter.ReadBool()
 				orig.Value = ov
 			}
 		case "intValue", "int_value":
 			{
-				var ov *AnyValue_IntValue
-				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-					ov = &AnyValue_IntValue{}
-				} else {
-					ov = ProtoPoolAnyValue_IntValue.Get().(*AnyValue_IntValue)
-				}
+				ov := Alloc[AnyValue_IntValue](st)
 				ov.IntValue = iter.ReadInt64()
 				orig.Value = ov
 			}
 		case "doubleValue", "double_value":
 			{
-				var ov *AnyValue_DoubleValue
-				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-					ov = &AnyValue_DoubleValue{}
-				} else {
-					ov = ProtoPoolAnyValue_DoubleValue.Get().(*AnyValue_DoubleValue)
-				}
+				ov := Alloc[AnyValue_DoubleValue](st)
 				ov.DoubleValue = iter.ReadFloat64()
 				orig.Value = ov
 			}
 		case "arrayValue", "array_value":
 			{
-				var ov *AnyValue_ArrayValue
-				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-					ov = &AnyValue_ArrayValue{}
-				} else {
-					ov = ProtoPoolAnyValue_ArrayValue.Get().(*AnyValue_ArrayValue)
-				}
-				ov.ArrayValue = NewArrayValue()
-				ov.ArrayValue.UnmarshalJSON(iter)
+				ov := Alloc[AnyValue_ArrayValue](st)
+				ov.ArrayValue = Alloc[ArrayValue](st)
+				ov.ArrayValue.UnmarshalJSONState(iter, st)
 				orig.Value = ov
 			}
 		case "kvlistValue", "kvlist_value":
 			{
-				var ov *AnyValue_KvlistValue
-				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-					ov = &AnyValue_KvlistValue{}
-				} else {
-					ov = ProtoPoolAnyValue_KvlistValue.Get().(*AnyValue_KvlistValue)
-				}
-				ov.KvlistValue = NewKeyValueList()
-				ov.KvlistValue.UnmarshalJSON(iter)
+				ov := Alloc[AnyValue_KvlistValue](st)
+				ov.KvlistValue = Alloc[KeyValueList](st)
+				ov.KvlistValue.UnmarshalJSONState(iter, st)
 				orig.Value = ov
 			}
 		case "bytesValue", "bytes_value":
 			{
-				var ov *AnyValue_BytesValue
-				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-					ov = &AnyValue_BytesValue{}
-				} else {
-					ov = ProtoPoolAnyValue_BytesValue.Get().(*AnyValue_BytesValue)
-				}
-				ov.BytesValue = iter.ReadBytes()
+				ov := Alloc[AnyValue_BytesValue](st)
+				ov.BytesValue = CopyBytes(st, iter.ReadBytes())
 				orig.Value = ov
 			}
 		case "stringValueStrindex", "string_value_strindex":
 			{
-				var ov *AnyValue_StringValueStrindex
-				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-					ov = &AnyValue_StringValueStrindex{}
-				} else {
-					ov = ProtoPoolAnyValue_StringValueStrindex.Get().(*AnyValue_StringValueStrindex)
-				}
+				ov := Alloc[AnyValue_StringValueStrindex](st)
 				ov.StringValueStrindex = iter.ReadInt32()
 				orig.Value = ov
 			}
@@ -636,6 +491,10 @@ func (orig *AnyValue) MarshalProto(buf []byte) int {
 }
 
 func (orig *AnyValue) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *AnyValue) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -660,13 +519,8 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			var ov *AnyValue_StringValue
-			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-				ov = &AnyValue_StringValue{}
-			} else {
-				ov = ProtoPoolAnyValue_StringValue.Get().(*AnyValue_StringValue)
-			}
-			ov.StringValue = string(buf[startPos:pos])
+			ov := Alloc[AnyValue_StringValue](st)
+			ov.StringValue = BorrowString(st, buf, startPos, pos)
 			orig.Value = ov
 
 		case 2:
@@ -678,12 +532,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 			if err != nil {
 				return err
 			}
-			var ov *AnyValue_BoolValue
-			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-				ov = &AnyValue_BoolValue{}
-			} else {
-				ov = ProtoPoolAnyValue_BoolValue.Get().(*AnyValue_BoolValue)
-			}
+			ov := Alloc[AnyValue_BoolValue](st)
 			ov.BoolValue = num != 0
 			orig.Value = ov
 
@@ -696,12 +545,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 			if err != nil {
 				return err
 			}
-			var ov *AnyValue_IntValue
-			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-				ov = &AnyValue_IntValue{}
-			} else {
-				ov = ProtoPoolAnyValue_IntValue.Get().(*AnyValue_IntValue)
-			}
+			ov := Alloc[AnyValue_IntValue](st)
 			ov.IntValue = int64(num)
 			orig.Value = ov
 
@@ -714,12 +558,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 			if err != nil {
 				return err
 			}
-			var ov *AnyValue_DoubleValue
-			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-				ov = &AnyValue_DoubleValue{}
-			} else {
-				ov = ProtoPoolAnyValue_DoubleValue.Get().(*AnyValue_DoubleValue)
-			}
+			ov := Alloc[AnyValue_DoubleValue](st)
 			ov.DoubleValue = math.Float64frombits(num)
 			orig.Value = ov
 
@@ -733,14 +572,9 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			var ov *AnyValue_ArrayValue
-			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-				ov = &AnyValue_ArrayValue{}
-			} else {
-				ov = ProtoPoolAnyValue_ArrayValue.Get().(*AnyValue_ArrayValue)
-			}
-			ov.ArrayValue = NewArrayValue()
-			err = ov.ArrayValue.UnmarshalProto(buf[startPos:pos])
+			ov := Alloc[AnyValue_ArrayValue](st)
+			ov.ArrayValue = Alloc[ArrayValue](st)
+			err = ov.ArrayValue.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -756,14 +590,9 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			var ov *AnyValue_KvlistValue
-			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-				ov = &AnyValue_KvlistValue{}
-			} else {
-				ov = ProtoPoolAnyValue_KvlistValue.Get().(*AnyValue_KvlistValue)
-			}
-			ov.KvlistValue = NewKeyValueList()
-			err = ov.KvlistValue.UnmarshalProto(buf[startPos:pos])
+			ov := Alloc[AnyValue_KvlistValue](st)
+			ov.KvlistValue = Alloc[KeyValueList](st)
+			err = ov.KvlistValue.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -779,16 +608,8 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			var ov *AnyValue_BytesValue
-			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-				ov = &AnyValue_BytesValue{}
-			} else {
-				ov = ProtoPoolAnyValue_BytesValue.Get().(*AnyValue_BytesValue)
-			}
-			if length != 0 {
-				ov.BytesValue = make([]byte, length)
-				copy(ov.BytesValue, buf[startPos:pos])
-			}
+			ov := Alloc[AnyValue_BytesValue](st)
+			ov.BytesValue = BorrowBytes(st, buf, startPos, pos)
 			orig.Value = ov
 
 		case 8:
@@ -800,12 +621,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 			if err != nil {
 				return err
 			}
-			var ov *AnyValue_StringValueStrindex
-			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-				ov = &AnyValue_StringValueStrindex{}
-			} else {
-				ov = ProtoPoolAnyValue_StringValueStrindex.Get().(*AnyValue_StringValueStrindex)
-			}
+			ov := Alloc[AnyValue_StringValueStrindex](st)
 			ov.StringValueStrindex = int32(num)
 			orig.Value = ov
 
@@ -820,18 +636,18 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestAnyValue() *AnyValue {
-	orig := NewAnyValue()
+	orig := Alloc[AnyValue](nil)
 	orig.Value = &AnyValue_StringValue{StringValue: "test_stringvalue"}
 	return orig
 }
 
 func GenTestAnyValuePtrSlice() []*AnyValue {
 	orig := make([]*AnyValue, 5)
-	orig[0] = NewAnyValue()
+	orig[0] = Alloc[AnyValue](nil)
 	orig[1] = GenTestAnyValue()
-	orig[2] = NewAnyValue()
+	orig[2] = Alloc[AnyValue](nil)
 	orig[3] = GenTestAnyValue()
-	orig[4] = NewAnyValue()
+	orig[4] = Alloc[AnyValue](nil)
 	return orig
 }
 

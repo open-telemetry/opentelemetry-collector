@@ -31,9 +31,9 @@ func TestCopyMetric(t *testing.T) {
 				}()
 
 				dest := NewMetric()
-				CopyMetric(dest, src)
+				CopyMetric(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyMetric(dest, dest)
+				CopyMetric(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyMetricSlice(t *testing.T) {
 	src := []Metric{}
 	dest := []Metric{}
 	// Test CopyTo empty
-	dest = CopyMetricSlice(dest, src)
+	dest = CopyMetricSlice(dest, src, nil)
 	assert.Equal(t, []Metric{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestMetricSlice()
-	dest = CopyMetricSlice(dest, src)
+	dest = CopyMetricSlice(dest, src, nil)
 	assert.Equal(t, GenTestMetricSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyMetricSlice(dest, src)
+	dest = CopyMetricSlice(dest, src, nil)
 	assert.Equal(t, GenTestMetricSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyMetricSlice(dest, []Metric{})
+	dest = CopyMetricSlice(dest, []Metric{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyMetricSlice(dest, src)
+	dest = CopyMetricSlice(dest, src, nil)
 	assert.Equal(t, GenTestMetricSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyMetricPtrSlice(t *testing.T) {
 	src := []*Metric{}
 	dest := []*Metric{}
 	// Test CopyTo empty
-	dest = CopyMetricPtrSlice(dest, src)
+	dest = CopyMetricPtrSlice(dest, src, nil)
 	assert.Equal(t, []*Metric{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestMetricPtrSlice()
-	dest = CopyMetricPtrSlice(dest, src)
+	dest = CopyMetricPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestMetricPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyMetricPtrSlice(dest, src)
+	dest = CopyMetricPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestMetricPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyMetricPtrSlice(dest, []*Metric{})
+	dest = CopyMetricPtrSlice(dest, []*Metric{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyMetricPtrSlice(dest, src)
+	dest = CopyMetricPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestMetricPtrSlice(), dest)
 }
 

@@ -31,9 +31,9 @@ func TestCopyResourceMetrics(t *testing.T) {
 				}()
 
 				dest := NewResourceMetrics()
-				CopyResourceMetrics(dest, src)
+				CopyResourceMetrics(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyResourceMetrics(dest, dest)
+				CopyResourceMetrics(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyResourceMetricsSlice(t *testing.T) {
 	src := []ResourceMetrics{}
 	dest := []ResourceMetrics{}
 	// Test CopyTo empty
-	dest = CopyResourceMetricsSlice(dest, src)
+	dest = CopyResourceMetricsSlice(dest, src, nil)
 	assert.Equal(t, []ResourceMetrics{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestResourceMetricsSlice()
-	dest = CopyResourceMetricsSlice(dest, src)
+	dest = CopyResourceMetricsSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceMetricsSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyResourceMetricsSlice(dest, src)
+	dest = CopyResourceMetricsSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceMetricsSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyResourceMetricsSlice(dest, []ResourceMetrics{})
+	dest = CopyResourceMetricsSlice(dest, []ResourceMetrics{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyResourceMetricsSlice(dest, src)
+	dest = CopyResourceMetricsSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceMetricsSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyResourceMetricsPtrSlice(t *testing.T) {
 	src := []*ResourceMetrics{}
 	dest := []*ResourceMetrics{}
 	// Test CopyTo empty
-	dest = CopyResourceMetricsPtrSlice(dest, src)
+	dest = CopyResourceMetricsPtrSlice(dest, src, nil)
 	assert.Equal(t, []*ResourceMetrics{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestResourceMetricsPtrSlice()
-	dest = CopyResourceMetricsPtrSlice(dest, src)
+	dest = CopyResourceMetricsPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceMetricsPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyResourceMetricsPtrSlice(dest, src)
+	dest = CopyResourceMetricsPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceMetricsPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyResourceMetricsPtrSlice(dest, []*ResourceMetrics{})
+	dest = CopyResourceMetricsPtrSlice(dest, []*ResourceMetrics{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyResourceMetricsPtrSlice(dest, src)
+	dest = CopyResourceMetricsPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceMetricsPtrSlice(), dest)
 }
 

@@ -31,9 +31,9 @@ func TestCopyStatus(t *testing.T) {
 				}()
 
 				dest := NewStatus()
-				CopyStatus(dest, src)
+				CopyStatus(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyStatus(dest, dest)
+				CopyStatus(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyStatusSlice(t *testing.T) {
 	src := []Status{}
 	dest := []Status{}
 	// Test CopyTo empty
-	dest = CopyStatusSlice(dest, src)
+	dest = CopyStatusSlice(dest, src, nil)
 	assert.Equal(t, []Status{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestStatusSlice()
-	dest = CopyStatusSlice(dest, src)
+	dest = CopyStatusSlice(dest, src, nil)
 	assert.Equal(t, GenTestStatusSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyStatusSlice(dest, src)
+	dest = CopyStatusSlice(dest, src, nil)
 	assert.Equal(t, GenTestStatusSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyStatusSlice(dest, []Status{})
+	dest = CopyStatusSlice(dest, []Status{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyStatusSlice(dest, src)
+	dest = CopyStatusSlice(dest, src, nil)
 	assert.Equal(t, GenTestStatusSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyStatusPtrSlice(t *testing.T) {
 	src := []*Status{}
 	dest := []*Status{}
 	// Test CopyTo empty
-	dest = CopyStatusPtrSlice(dest, src)
+	dest = CopyStatusPtrSlice(dest, src, nil)
 	assert.Equal(t, []*Status{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestStatusPtrSlice()
-	dest = CopyStatusPtrSlice(dest, src)
+	dest = CopyStatusPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestStatusPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyStatusPtrSlice(dest, src)
+	dest = CopyStatusPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestStatusPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyStatusPtrSlice(dest, []*Status{})
+	dest = CopyStatusPtrSlice(dest, []*Status{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyStatusPtrSlice(dest, src)
+	dest = CopyStatusPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestStatusPtrSlice(), dest)
 }
 

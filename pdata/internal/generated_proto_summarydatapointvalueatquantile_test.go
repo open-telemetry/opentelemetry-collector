@@ -31,9 +31,9 @@ func TestCopySummaryDataPointValueAtQuantile(t *testing.T) {
 				}()
 
 				dest := NewSummaryDataPointValueAtQuantile()
-				CopySummaryDataPointValueAtQuantile(dest, src)
+				CopySummaryDataPointValueAtQuantile(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopySummaryDataPointValueAtQuantile(dest, dest)
+				CopySummaryDataPointValueAtQuantile(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopySummaryDataPointValueAtQuantileSlice(t *testing.T) {
 	src := []SummaryDataPointValueAtQuantile{}
 	dest := []SummaryDataPointValueAtQuantile{}
 	// Test CopyTo empty
-	dest = CopySummaryDataPointValueAtQuantileSlice(dest, src)
+	dest = CopySummaryDataPointValueAtQuantileSlice(dest, src, nil)
 	assert.Equal(t, []SummaryDataPointValueAtQuantile{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSummaryDataPointValueAtQuantileSlice()
-	dest = CopySummaryDataPointValueAtQuantileSlice(dest, src)
+	dest = CopySummaryDataPointValueAtQuantileSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryDataPointValueAtQuantileSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySummaryDataPointValueAtQuantileSlice(dest, src)
+	dest = CopySummaryDataPointValueAtQuantileSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryDataPointValueAtQuantileSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySummaryDataPointValueAtQuantileSlice(dest, []SummaryDataPointValueAtQuantile{})
+	dest = CopySummaryDataPointValueAtQuantileSlice(dest, []SummaryDataPointValueAtQuantile{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySummaryDataPointValueAtQuantileSlice(dest, src)
+	dest = CopySummaryDataPointValueAtQuantileSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryDataPointValueAtQuantileSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopySummaryDataPointValueAtQuantilePtrSlice(t *testing.T) {
 	src := []*SummaryDataPointValueAtQuantile{}
 	dest := []*SummaryDataPointValueAtQuantile{}
 	// Test CopyTo empty
-	dest = CopySummaryDataPointValueAtQuantilePtrSlice(dest, src)
+	dest = CopySummaryDataPointValueAtQuantilePtrSlice(dest, src, nil)
 	assert.Equal(t, []*SummaryDataPointValueAtQuantile{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSummaryDataPointValueAtQuantilePtrSlice()
-	dest = CopySummaryDataPointValueAtQuantilePtrSlice(dest, src)
+	dest = CopySummaryDataPointValueAtQuantilePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryDataPointValueAtQuantilePtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySummaryDataPointValueAtQuantilePtrSlice(dest, src)
+	dest = CopySummaryDataPointValueAtQuantilePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryDataPointValueAtQuantilePtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySummaryDataPointValueAtQuantilePtrSlice(dest, []*SummaryDataPointValueAtQuantile{})
+	dest = CopySummaryDataPointValueAtQuantilePtrSlice(dest, []*SummaryDataPointValueAtQuantile{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySummaryDataPointValueAtQuantilePtrSlice(dest, src)
+	dest = CopySummaryDataPointValueAtQuantilePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSummaryDataPointValueAtQuantilePtrSlice(), dest)
 }
 

@@ -8,7 +8,6 @@ package pmetric
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/metadata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -33,7 +32,8 @@ func newNumberDataPoint(orig *internal.NumberDataPoint, state *internal.State) N
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewNumberDataPoint() NumberDataPoint {
-	return newNumberDataPoint(internal.NewNumberDataPoint(), internal.NewState())
+	st := internal.NewState()
+	return newNumberDataPoint(internal.Alloc[internal.NumberDataPoint](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -43,6 +43,14 @@ func (ms NumberDataPoint) MoveTo(dest NumberDataPoint) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteNumberDataPoint(dest.orig, false)
+		ms.CopyTo(dest)
+		internal.DeleteNumberDataPoint(ms.orig, false)
 		return
 	}
 	internal.DeleteNumberDataPoint(dest.orig, false)
@@ -96,12 +104,7 @@ func (ms NumberDataPoint) DoubleValue() float64 {
 // SetDoubleValue replaces the double associated with this NumberDataPoint.
 func (ms NumberDataPoint) SetDoubleValue(v float64) {
 	ms.state.AssertMutable()
-	var ov *internal.NumberDataPoint_AsDouble
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		ov = &internal.NumberDataPoint_AsDouble{}
-	} else {
-		ov = internal.ProtoPoolNumberDataPoint_AsDouble.Get().(*internal.NumberDataPoint_AsDouble)
-	}
+	ov := internal.Alloc[internal.NumberDataPoint_AsDouble](ms.state)
 	ov.AsDouble = v
 	ms.orig.Value = ov
 } // IntValue returns the int associated with this NumberDataPoint.
@@ -112,12 +115,7 @@ func (ms NumberDataPoint) IntValue() int64 {
 // SetIntValue replaces the int associated with this NumberDataPoint.
 func (ms NumberDataPoint) SetIntValue(v int64) {
 	ms.state.AssertMutable()
-	var ov *internal.NumberDataPoint_AsInt
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		ov = &internal.NumberDataPoint_AsInt{}
-	} else {
-		ov = internal.ProtoPoolNumberDataPoint_AsInt.Get().(*internal.NumberDataPoint_AsInt)
-	}
+	ov := internal.Alloc[internal.NumberDataPoint_AsInt](ms.state)
 	ov.AsInt = v
 	ms.orig.Value = ov
 }
@@ -141,5 +139,5 @@ func (ms NumberDataPoint) SetFlags(v DataPointFlags) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	dest.state.AssertMutable()
-	internal.CopyNumberDataPoint(dest.orig, ms.orig)
+	internal.CopyNumberDataPoint(dest.orig, ms.orig, dest.state)
 }

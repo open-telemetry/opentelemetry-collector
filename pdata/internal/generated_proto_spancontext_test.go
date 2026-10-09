@@ -31,9 +31,9 @@ func TestCopySpanContext(t *testing.T) {
 				}()
 
 				dest := NewSpanContext()
-				CopySpanContext(dest, src)
+				CopySpanContext(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopySpanContext(dest, dest)
+				CopySpanContext(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopySpanContextSlice(t *testing.T) {
 	src := []SpanContext{}
 	dest := []SpanContext{}
 	// Test CopyTo empty
-	dest = CopySpanContextSlice(dest, src)
+	dest = CopySpanContextSlice(dest, src, nil)
 	assert.Equal(t, []SpanContext{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSpanContextSlice()
-	dest = CopySpanContextSlice(dest, src)
+	dest = CopySpanContextSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanContextSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySpanContextSlice(dest, src)
+	dest = CopySpanContextSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanContextSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySpanContextSlice(dest, []SpanContext{})
+	dest = CopySpanContextSlice(dest, []SpanContext{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySpanContextSlice(dest, src)
+	dest = CopySpanContextSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanContextSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopySpanContextPtrSlice(t *testing.T) {
 	src := []*SpanContext{}
 	dest := []*SpanContext{}
 	// Test CopyTo empty
-	dest = CopySpanContextPtrSlice(dest, src)
+	dest = CopySpanContextPtrSlice(dest, src, nil)
 	assert.Equal(t, []*SpanContext{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSpanContextPtrSlice()
-	dest = CopySpanContextPtrSlice(dest, src)
+	dest = CopySpanContextPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanContextPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySpanContextPtrSlice(dest, src)
+	dest = CopySpanContextPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanContextPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySpanContextPtrSlice(dest, []*SpanContext{})
+	dest = CopySpanContextPtrSlice(dest, []*SpanContext{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySpanContextPtrSlice(dest, src)
+	dest = CopySpanContextPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanContextPtrSlice(), dest)
 }
 

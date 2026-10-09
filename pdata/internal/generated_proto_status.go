@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -22,19 +21,8 @@ type Status struct {
 	Code    StatusCode
 }
 
-var (
-	protoPoolStatus = sync.Pool{
-		New: func() any {
-			return &Status{}
-		},
-	}
-)
-
 func NewStatus() *Status {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &Status{}
-	}
-	return protoPoolStatus.Get().(*Status)
+	return Alloc[Status](nil)
 }
 
 func DeleteStatus(orig *Status, nullable bool) {
@@ -48,12 +36,10 @@ func DeleteStatus(orig *Status, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolStatus.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyStatus(dest, src *Status) *Status {
+func CopyStatus(dest, src *Status, st *State) *Status {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -64,18 +50,19 @@ func CopyStatus(dest, src *Status) *Status {
 	}
 
 	if dest == nil {
-		dest = NewStatus()
+		dest = Alloc[Status](st)
 	}
-	dest.Message = src.Message
+	dest.Message = CopyString(st, src.Message)
+
 	dest.Code = src.Code
 
 	return dest
 }
 
-func CopyStatusSlice(dest, src []Status) []Status {
+func CopyStatusSlice(dest, src []Status, st *State) []Status {
 	var newDest []Status
 	if cap(dest) < len(src) {
-		newDest = make([]Status, len(src))
+		newDest = AllocSlice[Status](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -85,20 +72,20 @@ func CopyStatusSlice(dest, src []Status) []Status {
 		}
 	}
 	for i := range src {
-		CopyStatus(&newDest[i], &src[i])
+		CopyStatus(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyStatusPtrSlice(dest, src []*Status) []*Status {
+func CopyStatusPtrSlice(dest, src []*Status, st *State) []*Status {
 	var newDest []*Status
 	if cap(dest) < len(src) {
-		newDest = make([]*Status, len(src))
+		newDest = AllocSlice[*Status](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewStatus()
+			newDest[i] = Alloc[Status](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -111,11 +98,11 @@ func CopyStatusPtrSlice(dest, src []*Status) []*Status {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewStatus()
+			newDest[i] = Alloc[Status](st)
 		}
 	}
 	for i := range src {
-		CopyStatus(newDest[i], src[i])
+		CopyStatus(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -141,10 +128,16 @@ func (orig *Status) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *Status) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *Status) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "message":
-			orig.Message = iter.ReadString()
+
+			orig.Message = CopyString(st, iter.ReadString())
 		case "code":
 			orig.Code = StatusCode(iter.ReadEnumValue(StatusCode_value))
 		default:
@@ -189,6 +182,10 @@ func (orig *Status) MarshalProto(buf []byte) int {
 }
 
 func (orig *Status) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *Status) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -213,7 +210,7 @@ func (orig *Status) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Message = string(buf[startPos:pos])
+			orig.Message = BorrowString(st, buf, startPos, pos)
 
 		case 3:
 			if wireType != proto.WireTypeVarint {
@@ -236,7 +233,7 @@ func (orig *Status) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestStatus() *Status {
-	orig := NewStatus()
+	orig := Alloc[Status](nil)
 	orig.Message = "test_message"
 	orig.Code = StatusCode(13)
 	return orig
@@ -244,11 +241,11 @@ func GenTestStatus() *Status {
 
 func GenTestStatusPtrSlice() []*Status {
 	orig := make([]*Status, 5)
-	orig[0] = NewStatus()
+	orig[0] = Alloc[Status](nil)
 	orig[1] = GenTestStatus()
-	orig[2] = NewStatus()
+	orig[2] = Alloc[Status](nil)
 	orig[3] = GenTestStatus()
-	orig[4] = NewStatus()
+	orig[4] = Alloc[Status](nil)
 	return orig
 }
 

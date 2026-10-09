@@ -31,9 +31,9 @@ func TestCopyInstrumentationScope(t *testing.T) {
 				}()
 
 				dest := NewInstrumentationScope()
-				CopyInstrumentationScope(dest, src)
+				CopyInstrumentationScope(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyInstrumentationScope(dest, dest)
+				CopyInstrumentationScope(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyInstrumentationScopeSlice(t *testing.T) {
 	src := []InstrumentationScope{}
 	dest := []InstrumentationScope{}
 	// Test CopyTo empty
-	dest = CopyInstrumentationScopeSlice(dest, src)
+	dest = CopyInstrumentationScopeSlice(dest, src, nil)
 	assert.Equal(t, []InstrumentationScope{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestInstrumentationScopeSlice()
-	dest = CopyInstrumentationScopeSlice(dest, src)
+	dest = CopyInstrumentationScopeSlice(dest, src, nil)
 	assert.Equal(t, GenTestInstrumentationScopeSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyInstrumentationScopeSlice(dest, src)
+	dest = CopyInstrumentationScopeSlice(dest, src, nil)
 	assert.Equal(t, GenTestInstrumentationScopeSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyInstrumentationScopeSlice(dest, []InstrumentationScope{})
+	dest = CopyInstrumentationScopeSlice(dest, []InstrumentationScope{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyInstrumentationScopeSlice(dest, src)
+	dest = CopyInstrumentationScopeSlice(dest, src, nil)
 	assert.Equal(t, GenTestInstrumentationScopeSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyInstrumentationScopePtrSlice(t *testing.T) {
 	src := []*InstrumentationScope{}
 	dest := []*InstrumentationScope{}
 	// Test CopyTo empty
-	dest = CopyInstrumentationScopePtrSlice(dest, src)
+	dest = CopyInstrumentationScopePtrSlice(dest, src, nil)
 	assert.Equal(t, []*InstrumentationScope{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestInstrumentationScopePtrSlice()
-	dest = CopyInstrumentationScopePtrSlice(dest, src)
+	dest = CopyInstrumentationScopePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestInstrumentationScopePtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyInstrumentationScopePtrSlice(dest, src)
+	dest = CopyInstrumentationScopePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestInstrumentationScopePtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyInstrumentationScopePtrSlice(dest, []*InstrumentationScope{})
+	dest = CopyInstrumentationScopePtrSlice(dest, []*InstrumentationScope{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyInstrumentationScopePtrSlice(dest, src)
+	dest = CopyInstrumentationScopePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestInstrumentationScopePtrSlice(), dest)
 }
 

@@ -31,7 +31,8 @@ func newExportPartialSuccess(orig *internal.ExportTracePartialSuccess, state *in
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExportPartialSuccess() ExportPartialSuccess {
-	return newExportPartialSuccess(internal.NewExportTracePartialSuccess(), internal.NewState())
+	st := internal.NewState()
+	return newExportPartialSuccess(internal.Alloc[internal.ExportTracePartialSuccess](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -41,6 +42,14 @@ func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteExportTracePartialSuccess(dest.orig, false)
+		ms.CopyTo(dest)
+		internal.DeleteExportTracePartialSuccess(ms.orig, false)
 		return
 	}
 	internal.DeleteExportTracePartialSuccess(dest.orig, false)
@@ -66,11 +75,11 @@ func (ms ExportPartialSuccess) ErrorMessage() string {
 // SetErrorMessage replaces the errormessage associated with this ExportPartialSuccess.
 func (ms ExportPartialSuccess) SetErrorMessage(v string) {
 	ms.state.AssertMutable()
-	ms.orig.ErrorMessage = v
+	ms.orig.ErrorMessage = internal.CopyString(ms.state, v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExportPartialSuccess) CopyTo(dest ExportPartialSuccess) {
 	dest.state.AssertMutable()
-	internal.CopyExportTracePartialSuccess(dest.orig, ms.orig)
+	internal.CopyExportTracePartialSuccess(dest.orig, ms.orig, dest.state)
 }

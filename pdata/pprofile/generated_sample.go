@@ -32,7 +32,8 @@ func newSample(orig *internal.Sample, state *internal.State) Sample {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewSample() Sample {
-	return newSample(internal.NewSample(), internal.NewState())
+	st := internal.NewState()
+	return newSample(internal.Alloc[internal.Sample](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -42,6 +43,14 @@ func (ms Sample) MoveTo(dest Sample) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteSample(dest.orig, false)
+		ms.CopyTo(dest)
+		internal.DeleteSample(ms.orig, false)
 		return
 	}
 	internal.DeleteSample(dest.orig, false)
@@ -88,5 +97,5 @@ func (ms Sample) TimestampsUnixNano() pcommon.UInt64Slice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Sample) CopyTo(dest Sample) {
 	dest.state.AssertMutable()
-	internal.CopySample(dest.orig, ms.orig)
+	internal.CopySample(dest.orig, ms.orig, dest.state)
 }

@@ -117,7 +117,7 @@ func (m Map) PutEmpty(k string) Value {
 		av.getOrig().Value = nil
 		return newValue(av.getOrig(), m.getState())
 	}
-	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k})
+	*m.getOrig() = internal.Append(m.getState(), *m.getOrig(), internal.KeyValue{Key: internal.CopyString(m.getState(), k)})
 	return newValue(&(*m.getOrig())[len(*m.getOrig())-1].Value, m.getState())
 }
 
@@ -129,7 +129,7 @@ func (m Map) GetOrPutEmpty(k string) (Value, bool) {
 	if av, existing := m.Get(k); existing {
 		return av, true
 	}
-	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k})
+	*m.getOrig() = internal.Append(m.getState(), *m.getOrig(), internal.KeyValue{Key: internal.CopyString(m.getState(), k)})
 	return newValue(&(*m.getOrig())[len(*m.getOrig())-1].Value, m.getState()), false
 }
 
@@ -142,9 +142,9 @@ func (m Map) PutStr(k, v string) {
 		av.SetStr(v)
 		return
 	}
-	ov := internal.NewAnyValueStringValue()
-	ov.StringValue = v
-	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
+	ov := internal.Alloc[internal.AnyValue_StringValue](m.getState())
+	ov.StringValue = internal.CopyString(m.getState(), v)
+	*m.getOrig() = internal.Append(m.getState(), *m.getOrig(), internal.KeyValue{Key: internal.CopyString(m.getState(), k), Value: internal.AnyValue{Value: ov}})
 }
 
 // PutInt performs the Insert or Update action. The int Value is
@@ -156,9 +156,9 @@ func (m Map) PutInt(k string, v int64) {
 		av.SetInt(v)
 		return
 	}
-	ov := internal.NewAnyValueIntValue()
+	ov := internal.Alloc[internal.AnyValue_IntValue](m.getState())
 	ov.IntValue = v
-	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
+	*m.getOrig() = internal.Append(m.getState(), *m.getOrig(), internal.KeyValue{Key: internal.CopyString(m.getState(), k), Value: internal.AnyValue{Value: ov}})
 }
 
 // PutDouble performs the Insert or Update action. The double Value is
@@ -170,9 +170,9 @@ func (m Map) PutDouble(k string, v float64) {
 		av.SetDouble(v)
 		return
 	}
-	ov := internal.NewAnyValueDoubleValue()
+	ov := internal.Alloc[internal.AnyValue_DoubleValue](m.getState())
 	ov.DoubleValue = v
-	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
+	*m.getOrig() = internal.Append(m.getState(), *m.getOrig(), internal.KeyValue{Key: internal.CopyString(m.getState(), k), Value: internal.AnyValue{Value: ov}})
 }
 
 // PutBool performs the Insert or Update action. The bool Value is
@@ -184,9 +184,9 @@ func (m Map) PutBool(k string, v bool) {
 		av.SetBool(v)
 		return
 	}
-	ov := internal.NewAnyValueBoolValue()
+	ov := internal.Alloc[internal.AnyValue_BoolValue](m.getState())
 	ov.BoolValue = v
-	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
+	*m.getOrig() = internal.Append(m.getState(), *m.getOrig(), internal.KeyValue{Key: internal.CopyString(m.getState(), k), Value: internal.AnyValue{Value: ov}})
 }
 
 // PutEmptyBytes inserts or updates an empty byte slice under given key and returns it.
@@ -195,8 +195,8 @@ func (m Map) PutEmptyBytes(k string) ByteSlice {
 	if av, existing := m.Get(k); existing {
 		return av.SetEmptyBytes()
 	}
-	ov := internal.NewAnyValueBytesValue()
-	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
+	ov := internal.Alloc[internal.AnyValue_BytesValue](m.getState())
+	*m.getOrig() = internal.Append(m.getState(), *m.getOrig(), internal.KeyValue{Key: internal.CopyString(m.getState(), k), Value: internal.AnyValue{Value: ov}})
 	return ByteSlice(internal.NewByteSliceWrapper(&ov.BytesValue, m.getState()))
 }
 
@@ -206,9 +206,9 @@ func (m Map) PutEmptyMap(k string) Map {
 	if av, existing := m.Get(k); existing {
 		return av.SetEmptyMap()
 	}
-	ov := internal.NewAnyValueKvlistValue()
-	ov.KvlistValue = internal.NewKeyValueList()
-	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
+	ov := internal.Alloc[internal.AnyValue_KvlistValue](m.getState())
+	ov.KvlistValue = internal.Alloc[internal.KeyValueList](m.getState())
+	*m.getOrig() = internal.Append(m.getState(), *m.getOrig(), internal.KeyValue{Key: internal.CopyString(m.getState(), k), Value: internal.AnyValue{Value: ov}})
 	return Map(internal.NewMapWrapper(&ov.KvlistValue.Values, m.getState()))
 }
 
@@ -218,9 +218,9 @@ func (m Map) PutEmptySlice(k string) Slice {
 	if av, existing := m.Get(k); existing {
 		return av.SetEmptySlice()
 	}
-	ov := internal.NewAnyValueArrayValue()
-	ov.ArrayValue = internal.NewArrayValue()
-	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
+	ov := internal.Alloc[internal.AnyValue_ArrayValue](m.getState())
+	ov.ArrayValue = internal.Alloc[internal.ArrayValue](m.getState())
+	*m.getOrig() = internal.Append(m.getState(), *m.getOrig(), internal.KeyValue{Key: internal.CopyString(m.getState(), k), Value: internal.AnyValue{Value: ov}})
 	return Slice(internal.NewSliceWrapper(&ov.ArrayValue.Values, m.getState()))
 }
 
@@ -273,6 +273,13 @@ func (m Map) MoveTo(dest Map) {
 	if m.getOrig() == dest.getOrig() {
 		return
 	}
+	if internal.MoveNeedsCopy(m.getState(), dest.getState()) {
+		// Copying into a nil destination rather than dest's own buffer keeps an empty
+		// source nil, which is what assigning it below would leave behind.
+		*dest.getOrig() = internal.CopyKeyValueSlice(nil, *m.getOrig(), dest.getState())
+		*m.getOrig() = nil
+		return
+	}
 	*dest.getOrig() = *m.getOrig()
 	*m.getOrig() = nil
 }
@@ -283,7 +290,7 @@ func (m Map) CopyTo(dest Map) {
 	if m.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = internal.CopyKeyValueSlice(*dest.getOrig(), *m.getOrig())
+	*dest.getOrig() = internal.CopyKeyValueSlice(*dest.getOrig(), *m.getOrig(), dest.getState())
 }
 
 // AsRaw returns a standard go map representation of this Map.

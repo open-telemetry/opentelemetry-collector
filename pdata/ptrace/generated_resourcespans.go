@@ -32,7 +32,8 @@ func newResourceSpans(orig *internal.ResourceSpans, state *internal.State) Resou
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewResourceSpans() ResourceSpans {
-	return newResourceSpans(internal.NewResourceSpans(), internal.NewState())
+	st := internal.NewState()
+	return newResourceSpans(internal.Alloc[internal.ResourceSpans](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -42,6 +43,14 @@ func (ms ResourceSpans) MoveTo(dest ResourceSpans) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteResourceSpans(dest.orig, false)
+		ms.CopyTo(dest)
+		internal.DeleteResourceSpans(ms.orig, false)
 		return
 	}
 	internal.DeleteResourceSpans(dest.orig, false)
@@ -66,11 +75,11 @@ func (ms ResourceSpans) SchemaUrl() string {
 // SetSchemaUrl replaces the schemaurl associated with this ResourceSpans.
 func (ms ResourceSpans) SetSchemaUrl(v string) {
 	ms.state.AssertMutable()
-	ms.orig.SchemaUrl = v
+	ms.orig.SchemaUrl = internal.CopyString(ms.state, v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceSpans) CopyTo(dest ResourceSpans) {
 	dest.state.AssertMutable()
-	internal.CopyResourceSpans(dest.orig, ms.orig)
+	internal.CopyResourceSpans(dest.orig, ms.orig, dest.state)
 }

@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -21,19 +20,8 @@ type Stack struct {
 	LocationIndices []int32
 }
 
-var (
-	protoPoolStack = sync.Pool{
-		New: func() any {
-			return &Stack{}
-		},
-	}
-)
-
 func NewStack() *Stack {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &Stack{}
-	}
-	return protoPoolStack.Get().(*Stack)
+	return Alloc[Stack](nil)
 }
 
 func DeleteStack(orig *Stack, nullable bool) {
@@ -47,12 +35,10 @@ func DeleteStack(orig *Stack, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolStack.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyStack(dest, src *Stack) *Stack {
+func CopyStack(dest, src *Stack, st *State) *Stack {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -63,17 +49,17 @@ func CopyStack(dest, src *Stack) *Stack {
 	}
 
 	if dest == nil {
-		dest = NewStack()
+		dest = Alloc[Stack](st)
 	}
-	dest.LocationIndices = append(dest.LocationIndices[:0], src.LocationIndices...)
+	dest.LocationIndices = CopySlice(st, dest.LocationIndices, src.LocationIndices)
 
 	return dest
 }
 
-func CopyStackSlice(dest, src []Stack) []Stack {
+func CopyStackSlice(dest, src []Stack, st *State) []Stack {
 	var newDest []Stack
 	if cap(dest) < len(src) {
-		newDest = make([]Stack, len(src))
+		newDest = AllocSlice[Stack](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -83,20 +69,20 @@ func CopyStackSlice(dest, src []Stack) []Stack {
 		}
 	}
 	for i := range src {
-		CopyStack(&newDest[i], &src[i])
+		CopyStack(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyStackPtrSlice(dest, src []*Stack) []*Stack {
+func CopyStackPtrSlice(dest, src []*Stack, st *State) []*Stack {
 	var newDest []*Stack
 	if cap(dest) < len(src) {
-		newDest = make([]*Stack, len(src))
+		newDest = AllocSlice[*Stack](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewStack()
+			newDest[i] = Alloc[Stack](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -109,11 +95,11 @@ func CopyStackPtrSlice(dest, src []*Stack) []*Stack {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewStack()
+			newDest[i] = Alloc[Stack](st)
 		}
 	}
 	for i := range src {
-		CopyStack(newDest[i], src[i])
+		CopyStack(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -141,11 +127,16 @@ func (orig *Stack) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *Stack) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *Stack) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "locationIndices", "location_indices":
 			for iter.ReadArray() {
-				orig.LocationIndices = append(orig.LocationIndices, iter.ReadInt32())
+				orig.LocationIndices = Append(st, orig.LocationIndices, iter.ReadInt32())
 			}
 
 		default:
@@ -187,6 +178,10 @@ func (orig *Stack) MarshalProto(buf []byte) int {
 }
 
 func (orig *Stack) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *Stack) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -215,7 +210,7 @@ func (orig *Stack) UnmarshalProto(buf []byte) error {
 					if err != nil {
 						return err
 					}
-					orig.LocationIndices = append(orig.LocationIndices, int32(num))
+					orig.LocationIndices = AppendEstimated(st, orig.LocationIndices, int32(num), pos-startPos, 1)
 				}
 				if startPos != pos {
 					return fmt.Errorf("proto: invalid field len = %d for field LocationIndices", pos-startPos)
@@ -226,7 +221,7 @@ func (orig *Stack) UnmarshalProto(buf []byte) error {
 				if err != nil {
 					return err
 				}
-				orig.LocationIndices = append(orig.LocationIndices, int32(num))
+				orig.LocationIndices = AppendEstimated(st, orig.LocationIndices, int32(num), len(buf)-pos, 2)
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field LocationIndices", wireType)
 			}
@@ -241,18 +236,18 @@ func (orig *Stack) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestStack() *Stack {
-	orig := NewStack()
+	orig := Alloc[Stack](nil)
 	orig.LocationIndices = []int32{int32(0), int32(13)}
 	return orig
 }
 
 func GenTestStackPtrSlice() []*Stack {
 	orig := make([]*Stack, 5)
-	orig[0] = NewStack()
+	orig[0] = Alloc[Stack](nil)
 	orig[1] = GenTestStack()
-	orig[2] = NewStack()
+	orig[2] = Alloc[Stack](nil)
 	orig[3] = GenTestStack()
-	orig[4] = NewStack()
+	orig[4] = Alloc[Stack](nil)
 	return orig
 }
 

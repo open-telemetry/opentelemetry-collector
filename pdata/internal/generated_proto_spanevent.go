@@ -9,7 +9,6 @@ package internal
 import (
 	"encoding/binary"
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -25,19 +24,8 @@ type SpanEvent struct {
 	DroppedAttributesCount uint32
 }
 
-var (
-	protoPoolSpanEvent = sync.Pool{
-		New: func() any {
-			return &SpanEvent{}
-		},
-	}
-)
-
 func NewSpanEvent() *SpanEvent {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &SpanEvent{}
-	}
-	return protoPoolSpanEvent.Get().(*SpanEvent)
+	return Alloc[SpanEvent](nil)
 }
 
 func DeleteSpanEvent(orig *SpanEvent, nullable bool) {
@@ -55,12 +43,10 @@ func DeleteSpanEvent(orig *SpanEvent, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolSpanEvent.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopySpanEvent(dest, src *SpanEvent) *SpanEvent {
+func CopySpanEvent(dest, src *SpanEvent, st *State) *SpanEvent {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -71,21 +57,22 @@ func CopySpanEvent(dest, src *SpanEvent) *SpanEvent {
 	}
 
 	if dest == nil {
-		dest = NewSpanEvent()
+		dest = Alloc[SpanEvent](st)
 	}
 	dest.TimeUnixNano = src.TimeUnixNano
-	dest.Name = src.Name
-	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes)
+	dest.Name = CopyString(st, src.Name)
+
+	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes, st)
 
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
 
 	return dest
 }
 
-func CopySpanEventSlice(dest, src []SpanEvent) []SpanEvent {
+func CopySpanEventSlice(dest, src []SpanEvent, st *State) []SpanEvent {
 	var newDest []SpanEvent
 	if cap(dest) < len(src) {
-		newDest = make([]SpanEvent, len(src))
+		newDest = AllocSlice[SpanEvent](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -95,20 +82,20 @@ func CopySpanEventSlice(dest, src []SpanEvent) []SpanEvent {
 		}
 	}
 	for i := range src {
-		CopySpanEvent(&newDest[i], &src[i])
+		CopySpanEvent(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopySpanEventPtrSlice(dest, src []*SpanEvent) []*SpanEvent {
+func CopySpanEventPtrSlice(dest, src []*SpanEvent, st *State) []*SpanEvent {
 	var newDest []*SpanEvent
 	if cap(dest) < len(src) {
-		newDest = make([]*SpanEvent, len(src))
+		newDest = AllocSlice[*SpanEvent](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewSpanEvent()
+			newDest[i] = Alloc[SpanEvent](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -121,11 +108,11 @@ func CopySpanEventPtrSlice(dest, src []*SpanEvent) []*SpanEvent {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewSpanEvent()
+			newDest[i] = Alloc[SpanEvent](st)
 		}
 	}
 	for i := range src {
-		CopySpanEvent(newDest[i], src[i])
+		CopySpanEvent(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -164,19 +151,27 @@ func (orig *SpanEvent) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *SpanEvent) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *SpanEvent) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "timeUnixNano", "time_unix_nano":
+
 			orig.TimeUnixNano = iter.ReadUint64()
 		case "name":
-			orig.Name = iter.ReadString()
+
+			orig.Name = CopyString(st, iter.ReadString())
 		case "attributes":
 			for iter.ReadArray() {
-				orig.Attributes = append(orig.Attributes, KeyValue{})
-				orig.Attributes[len(orig.Attributes)-1].UnmarshalJSON(iter)
+				orig.Attributes = Append(st, orig.Attributes, KeyValue{})
+				orig.Attributes[len(orig.Attributes)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "droppedAttributesCount", "dropped_attributes_count":
+
 			orig.DroppedAttributesCount = iter.ReadUint32()
 		default:
 			iter.HandleUnknownField(f)
@@ -240,6 +235,10 @@ func (orig *SpanEvent) MarshalProto(buf []byte) int {
 }
 
 func (orig *SpanEvent) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *SpanEvent) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -276,7 +275,7 @@ func (orig *SpanEvent) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Name = string(buf[startPos:pos])
+			orig.Name = BorrowString(st, buf, startPos, pos)
 
 		case 3:
 			if wireType != proto.WireTypeLen {
@@ -288,8 +287,8 @@ func (orig *SpanEvent) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Attributes = AppendEstimated(st, orig.Attributes, KeyValue{}, len(buf)-pos, length+2)
+			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -315,7 +314,7 @@ func (orig *SpanEvent) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestSpanEvent() *SpanEvent {
-	orig := NewSpanEvent()
+	orig := Alloc[SpanEvent](nil)
 	orig.TimeUnixNano = uint64(13)
 	orig.Name = "test_name"
 	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
@@ -325,11 +324,11 @@ func GenTestSpanEvent() *SpanEvent {
 
 func GenTestSpanEventPtrSlice() []*SpanEvent {
 	orig := make([]*SpanEvent, 5)
-	orig[0] = NewSpanEvent()
+	orig[0] = Alloc[SpanEvent](nil)
 	orig[1] = GenTestSpanEvent()
-	orig[2] = NewSpanEvent()
+	orig[2] = Alloc[SpanEvent](nil)
 	orig[3] = GenTestSpanEvent()
-	orig[4] = NewSpanEvent()
+	orig[4] = Alloc[SpanEvent](nil)
 	return orig
 }
 

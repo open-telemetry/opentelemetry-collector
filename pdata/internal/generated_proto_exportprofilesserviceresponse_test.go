@@ -31,9 +31,9 @@ func TestCopyExportProfilesServiceResponse(t *testing.T) {
 				}()
 
 				dest := NewExportProfilesServiceResponse()
-				CopyExportProfilesServiceResponse(dest, src)
+				CopyExportProfilesServiceResponse(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyExportProfilesServiceResponse(dest, dest)
+				CopyExportProfilesServiceResponse(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyExportProfilesServiceResponseSlice(t *testing.T) {
 	src := []ExportProfilesServiceResponse{}
 	dest := []ExportProfilesServiceResponse{}
 	// Test CopyTo empty
-	dest = CopyExportProfilesServiceResponseSlice(dest, src)
+	dest = CopyExportProfilesServiceResponseSlice(dest, src, nil)
 	assert.Equal(t, []ExportProfilesServiceResponse{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExportProfilesServiceResponseSlice()
-	dest = CopyExportProfilesServiceResponseSlice(dest, src)
+	dest = CopyExportProfilesServiceResponseSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportProfilesServiceResponseSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExportProfilesServiceResponseSlice(dest, src)
+	dest = CopyExportProfilesServiceResponseSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportProfilesServiceResponseSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExportProfilesServiceResponseSlice(dest, []ExportProfilesServiceResponse{})
+	dest = CopyExportProfilesServiceResponseSlice(dest, []ExportProfilesServiceResponse{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExportProfilesServiceResponseSlice(dest, src)
+	dest = CopyExportProfilesServiceResponseSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportProfilesServiceResponseSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyExportProfilesServiceResponsePtrSlice(t *testing.T) {
 	src := []*ExportProfilesServiceResponse{}
 	dest := []*ExportProfilesServiceResponse{}
 	// Test CopyTo empty
-	dest = CopyExportProfilesServiceResponsePtrSlice(dest, src)
+	dest = CopyExportProfilesServiceResponsePtrSlice(dest, src, nil)
 	assert.Equal(t, []*ExportProfilesServiceResponse{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExportProfilesServiceResponsePtrSlice()
-	dest = CopyExportProfilesServiceResponsePtrSlice(dest, src)
+	dest = CopyExportProfilesServiceResponsePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportProfilesServiceResponsePtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExportProfilesServiceResponsePtrSlice(dest, src)
+	dest = CopyExportProfilesServiceResponsePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportProfilesServiceResponsePtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExportProfilesServiceResponsePtrSlice(dest, []*ExportProfilesServiceResponse{})
+	dest = CopyExportProfilesServiceResponsePtrSlice(dest, []*ExportProfilesServiceResponse{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExportProfilesServiceResponsePtrSlice(dest, src)
+	dest = CopyExportProfilesServiceResponsePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportProfilesServiceResponsePtrSlice(), dest)
 }
 

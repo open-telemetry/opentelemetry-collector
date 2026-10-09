@@ -27,7 +27,8 @@ func newEntityRef(orig *internal.EntityRef, state *internal.State) EntityRef {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewEntityRef() EntityRef {
-	return newEntityRef(internal.NewEntityRef(), internal.NewState())
+	st := internal.NewState()
+	return newEntityRef(internal.Alloc[internal.EntityRef](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -37,6 +38,14 @@ func (ms EntityRef) MoveTo(dest EntityRef) {
 	dest.getState().AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.getOrig() == dest.getOrig() {
+		return
+	}
+	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteEntityRef(dest.getOrig(), false)
+		ms.CopyTo(dest)
+		internal.DeleteEntityRef(ms.getOrig(), false)
 		return
 	}
 	internal.DeleteEntityRef(dest.getOrig(), false)
@@ -51,7 +60,7 @@ func (ms EntityRef) SchemaUrl() string {
 // SetSchemaUrl replaces the schemaurl associated with this EntityRef.
 func (ms EntityRef) SetSchemaUrl(v string) {
 	ms.getState().AssertMutable()
-	ms.getOrig().SchemaUrl = v
+	ms.getOrig().SchemaUrl = internal.CopyString(ms.getState(), v)
 }
 
 // Type returns the type associated with this EntityRef.
@@ -62,7 +71,7 @@ func (ms EntityRef) Type() string {
 // SetType replaces the type associated with this EntityRef.
 func (ms EntityRef) SetType(v string) {
 	ms.getState().AssertMutable()
-	ms.getOrig().Type = v
+	ms.getOrig().Type = internal.CopyString(ms.getState(), v)
 }
 
 // IdKeys returns the IdKeys associated with this EntityRef.
@@ -78,7 +87,7 @@ func (ms EntityRef) DescriptionKeys() pcommon.StringSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms EntityRef) CopyTo(dest EntityRef) {
 	dest.getState().AssertMutable()
-	internal.CopyEntityRef(dest.getOrig(), ms.getOrig())
+	internal.CopyEntityRef(dest.getOrig(), ms.getOrig(), dest.getState())
 }
 
 func (ms EntityRef) getOrig() *internal.EntityRef {

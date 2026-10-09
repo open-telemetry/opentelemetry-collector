@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -20,19 +19,8 @@ type ArrayValue struct {
 	Values []AnyValue
 }
 
-var (
-	protoPoolArrayValue = sync.Pool{
-		New: func() any {
-			return &ArrayValue{}
-		},
-	}
-)
-
 func NewArrayValue() *ArrayValue {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &ArrayValue{}
-	}
-	return protoPoolArrayValue.Get().(*ArrayValue)
+	return Alloc[ArrayValue](nil)
 }
 
 func DeleteArrayValue(orig *ArrayValue, nullable bool) {
@@ -48,12 +36,10 @@ func DeleteArrayValue(orig *ArrayValue, nullable bool) {
 		DeleteAnyValue(&orig.Values[i], false)
 	}
 	orig.Reset()
-	if nullable {
-		protoPoolArrayValue.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyArrayValue(dest, src *ArrayValue) *ArrayValue {
+func CopyArrayValue(dest, src *ArrayValue, st *State) *ArrayValue {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -64,17 +50,17 @@ func CopyArrayValue(dest, src *ArrayValue) *ArrayValue {
 	}
 
 	if dest == nil {
-		dest = NewArrayValue()
+		dest = Alloc[ArrayValue](st)
 	}
-	dest.Values = CopyAnyValueSlice(dest.Values, src.Values)
+	dest.Values = CopyAnyValueSlice(dest.Values, src.Values, st)
 
 	return dest
 }
 
-func CopyArrayValueSlice(dest, src []ArrayValue) []ArrayValue {
+func CopyArrayValueSlice(dest, src []ArrayValue, st *State) []ArrayValue {
 	var newDest []ArrayValue
 	if cap(dest) < len(src) {
-		newDest = make([]ArrayValue, len(src))
+		newDest = AllocSlice[ArrayValue](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -84,20 +70,20 @@ func CopyArrayValueSlice(dest, src []ArrayValue) []ArrayValue {
 		}
 	}
 	for i := range src {
-		CopyArrayValue(&newDest[i], &src[i])
+		CopyArrayValue(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyArrayValuePtrSlice(dest, src []*ArrayValue) []*ArrayValue {
+func CopyArrayValuePtrSlice(dest, src []*ArrayValue, st *State) []*ArrayValue {
 	var newDest []*ArrayValue
 	if cap(dest) < len(src) {
-		newDest = make([]*ArrayValue, len(src))
+		newDest = AllocSlice[*ArrayValue](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewArrayValue()
+			newDest[i] = Alloc[ArrayValue](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -110,11 +96,11 @@ func CopyArrayValuePtrSlice(dest, src []*ArrayValue) []*ArrayValue {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewArrayValue()
+			newDest[i] = Alloc[ArrayValue](st)
 		}
 	}
 	for i := range src {
-		CopyArrayValue(newDest[i], src[i])
+		CopyArrayValue(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -141,12 +127,17 @@ func (orig *ArrayValue) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *ArrayValue) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *ArrayValue) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "values":
 			for iter.ReadArray() {
-				orig.Values = append(orig.Values, AnyValue{})
-				orig.Values[len(orig.Values)-1].UnmarshalJSON(iter)
+				orig.Values = Append(st, orig.Values, AnyValue{})
+				orig.Values[len(orig.Values)-1].UnmarshalJSONState(iter, st)
 			}
 
 		default:
@@ -181,6 +172,10 @@ func (orig *ArrayValue) MarshalProto(buf []byte) int {
 }
 
 func (orig *ArrayValue) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *ArrayValue) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -205,8 +200,8 @@ func (orig *ArrayValue) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Values = append(orig.Values, AnyValue{})
-			err = orig.Values[len(orig.Values)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Values = AppendEstimated(st, orig.Values, AnyValue{}, len(buf)-pos, length+2)
+			err = orig.Values[len(orig.Values)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -221,18 +216,18 @@ func (orig *ArrayValue) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestArrayValue() *ArrayValue {
-	orig := NewArrayValue()
+	orig := Alloc[ArrayValue](nil)
 	orig.Values = []AnyValue{{}, *GenTestAnyValue()}
 	return orig
 }
 
 func GenTestArrayValuePtrSlice() []*ArrayValue {
 	orig := make([]*ArrayValue, 5)
-	orig[0] = NewArrayValue()
+	orig[0] = Alloc[ArrayValue](nil)
 	orig[1] = GenTestArrayValue()
-	orig[2] = NewArrayValue()
+	orig[2] = Alloc[ArrayValue](nil)
 	orig[3] = GenTestArrayValue()
-	orig[4] = NewArrayValue()
+	orig[4] = Alloc[ArrayValue](nil)
 	return orig
 }
 

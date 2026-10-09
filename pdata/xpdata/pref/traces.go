@@ -28,6 +28,7 @@ func UnrefTraces(td ptrace.Traces) {
 	// Don't call DeleteExportLogsServiceRequest without the gate because we reset the data and that may still cause issues.
 	if pmetadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 		internal.DeleteExportTraceServiceRequest(internal.GetTracesOrig(internal.TracesWrapper(td)), true)
+		internal.GetTracesState(internal.TracesWrapper(td)).DropArena()
 	}
 }
 

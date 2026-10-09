@@ -28,7 +28,8 @@ func newInstrumentationScope(orig *internal.InstrumentationScope, state *interna
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewInstrumentationScope() InstrumentationScope {
-	return newInstrumentationScope(internal.NewInstrumentationScope(), internal.NewState())
+	st := internal.NewState()
+	return newInstrumentationScope(internal.Alloc[internal.InstrumentationScope](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -38,6 +39,14 @@ func (ms InstrumentationScope) MoveTo(dest InstrumentationScope) {
 	dest.getState().AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.getOrig() == dest.getOrig() {
+		return
+	}
+	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteInstrumentationScope(dest.getOrig(), false)
+		ms.CopyTo(dest)
+		internal.DeleteInstrumentationScope(ms.getOrig(), false)
 		return
 	}
 	internal.DeleteInstrumentationScope(dest.getOrig(), false)
@@ -52,7 +61,7 @@ func (ms InstrumentationScope) Name() string {
 // SetName replaces the name associated with this InstrumentationScope.
 func (ms InstrumentationScope) SetName(v string) {
 	ms.getState().AssertMutable()
-	ms.getOrig().Name = v
+	ms.getOrig().Name = internal.CopyString(ms.getState(), v)
 }
 
 // Version returns the version associated with this InstrumentationScope.
@@ -63,7 +72,7 @@ func (ms InstrumentationScope) Version() string {
 // SetVersion replaces the version associated with this InstrumentationScope.
 func (ms InstrumentationScope) SetVersion(v string) {
 	ms.getState().AssertMutable()
-	ms.getOrig().Version = v
+	ms.getOrig().Version = internal.CopyString(ms.getState(), v)
 }
 
 // Attributes returns the Attributes associated with this InstrumentationScope.
@@ -85,7 +94,7 @@ func (ms InstrumentationScope) SetDroppedAttributesCount(v uint32) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms InstrumentationScope) CopyTo(dest InstrumentationScope) {
 	dest.getState().AssertMutable()
-	internal.CopyInstrumentationScope(dest.getOrig(), ms.getOrig())
+	internal.CopyInstrumentationScope(dest.getOrig(), ms.getOrig(), dest.getState())
 }
 
 func (ms InstrumentationScope) getOrig() *internal.InstrumentationScope {

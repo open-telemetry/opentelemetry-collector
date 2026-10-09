@@ -31,9 +31,9 @@ func TestCopyScopeLogs(t *testing.T) {
 				}()
 
 				dest := NewScopeLogs()
-				CopyScopeLogs(dest, src)
+				CopyScopeLogs(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyScopeLogs(dest, dest)
+				CopyScopeLogs(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyScopeLogsSlice(t *testing.T) {
 	src := []ScopeLogs{}
 	dest := []ScopeLogs{}
 	// Test CopyTo empty
-	dest = CopyScopeLogsSlice(dest, src)
+	dest = CopyScopeLogsSlice(dest, src, nil)
 	assert.Equal(t, []ScopeLogs{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestScopeLogsSlice()
-	dest = CopyScopeLogsSlice(dest, src)
+	dest = CopyScopeLogsSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeLogsSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyScopeLogsSlice(dest, src)
+	dest = CopyScopeLogsSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeLogsSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyScopeLogsSlice(dest, []ScopeLogs{})
+	dest = CopyScopeLogsSlice(dest, []ScopeLogs{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyScopeLogsSlice(dest, src)
+	dest = CopyScopeLogsSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeLogsSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyScopeLogsPtrSlice(t *testing.T) {
 	src := []*ScopeLogs{}
 	dest := []*ScopeLogs{}
 	// Test CopyTo empty
-	dest = CopyScopeLogsPtrSlice(dest, src)
+	dest = CopyScopeLogsPtrSlice(dest, src, nil)
 	assert.Equal(t, []*ScopeLogs{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestScopeLogsPtrSlice()
-	dest = CopyScopeLogsPtrSlice(dest, src)
+	dest = CopyScopeLogsPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeLogsPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyScopeLogsPtrSlice(dest, src)
+	dest = CopyScopeLogsPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeLogsPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyScopeLogsPtrSlice(dest, []*ScopeLogs{})
+	dest = CopyScopeLogsPtrSlice(dest, []*ScopeLogs{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyScopeLogsPtrSlice(dest, src)
+	dest = CopyScopeLogsPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeLogsPtrSlice(), dest)
 }
 

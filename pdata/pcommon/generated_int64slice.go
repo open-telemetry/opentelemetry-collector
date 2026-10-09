@@ -42,7 +42,7 @@ func (ms Int64Slice) AsRaw() []int64 {
 // FromRaw copies raw []int64 into the slice Int64Slice.
 func (ms Int64Slice) FromRaw(val []int64) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = copyInt64Slice(*ms.getOrig(), val)
+	*ms.getOrig() = internal.CopySlice(ms.getState(), *ms.getOrig(), val)
 }
 
 // Len returns length of the []int64 slice value.
@@ -88,7 +88,7 @@ func (ms Int64Slice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]int64, len(*ms.getOrig()), newCap)
+	newOrig := internal.AllocSlice[int64](ms.getState(), len(*ms.getOrig()), newCap)
 	copy(newOrig, *ms.getOrig())
 	*ms.getOrig() = newOrig
 }
@@ -97,7 +97,7 @@ func (ms Int64Slice) EnsureCapacity(newCap int) {
 // Equivalent of int64Slice = append(int64Slice, elms...)
 func (ms Int64Slice) Append(elms ...int64) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = append(*ms.getOrig(), elms...)
+	*ms.getOrig() = internal.AppendSeq(ms.getState(), *ms.getOrig(), elms)
 }
 
 // MoveTo moves all elements from the current slice overriding the destination and
@@ -109,6 +109,13 @@ func (ms Int64Slice) MoveTo(dest Int64Slice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
+	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
+		// Copying into a nil destination rather than dest's own buffer keeps an empty
+		// source nil, which is what assigning it below would leave behind.
+		*dest.getOrig() = internal.CopySlice(dest.getState(), nil, *ms.getOrig())
+		*ms.getOrig() = nil
+		return
+	}
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = nil
 }
@@ -118,11 +125,16 @@ func (ms Int64Slice) MoveTo(dest Int64Slice) {
 func (ms Int64Slice) MoveAndAppendTo(dest Int64Slice) {
 	ms.getState().AssertMutable()
 	dest.getState().AssertMutable()
+	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
+		dest.Append(*ms.getOrig()...)
+		*ms.getOrig() = nil
+		return
+	}
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *ms.getOrig()
 	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *ms.getOrig()...)
+		*dest.getOrig() = internal.AppendSeq(dest.getState(), *dest.getOrig(), *ms.getOrig())
 	}
 	*ms.getOrig() = nil
 }
@@ -155,7 +167,7 @@ func (ms Int64Slice) CopyTo(dest Int64Slice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = copyInt64Slice(*dest.getOrig(), *ms.getOrig())
+	*dest.getOrig() = internal.CopySlice(dest.getState(), *dest.getOrig(), *ms.getOrig())
 }
 
 // Equal checks equality with another Int64Slice

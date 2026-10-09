@@ -31,9 +31,9 @@ func TestCopyValueType(t *testing.T) {
 				}()
 
 				dest := NewValueType()
-				CopyValueType(dest, src)
+				CopyValueType(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyValueType(dest, dest)
+				CopyValueType(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyValueTypeSlice(t *testing.T) {
 	src := []ValueType{}
 	dest := []ValueType{}
 	// Test CopyTo empty
-	dest = CopyValueTypeSlice(dest, src)
+	dest = CopyValueTypeSlice(dest, src, nil)
 	assert.Equal(t, []ValueType{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestValueTypeSlice()
-	dest = CopyValueTypeSlice(dest, src)
+	dest = CopyValueTypeSlice(dest, src, nil)
 	assert.Equal(t, GenTestValueTypeSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyValueTypeSlice(dest, src)
+	dest = CopyValueTypeSlice(dest, src, nil)
 	assert.Equal(t, GenTestValueTypeSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyValueTypeSlice(dest, []ValueType{})
+	dest = CopyValueTypeSlice(dest, []ValueType{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyValueTypeSlice(dest, src)
+	dest = CopyValueTypeSlice(dest, src, nil)
 	assert.Equal(t, GenTestValueTypeSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyValueTypePtrSlice(t *testing.T) {
 	src := []*ValueType{}
 	dest := []*ValueType{}
 	// Test CopyTo empty
-	dest = CopyValueTypePtrSlice(dest, src)
+	dest = CopyValueTypePtrSlice(dest, src, nil)
 	assert.Equal(t, []*ValueType{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestValueTypePtrSlice()
-	dest = CopyValueTypePtrSlice(dest, src)
+	dest = CopyValueTypePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestValueTypePtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyValueTypePtrSlice(dest, src)
+	dest = CopyValueTypePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestValueTypePtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyValueTypePtrSlice(dest, []*ValueType{})
+	dest = CopyValueTypePtrSlice(dest, []*ValueType{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyValueTypePtrSlice(dest, src)
+	dest = CopyValueTypePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestValueTypePtrSlice(), dest)
 }
 

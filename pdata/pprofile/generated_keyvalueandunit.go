@@ -34,7 +34,8 @@ func newKeyValueAndUnit(orig *internal.KeyValueAndUnit, state *internal.State) K
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewKeyValueAndUnit() KeyValueAndUnit {
-	return newKeyValueAndUnit(internal.NewKeyValueAndUnit(), internal.NewState())
+	st := internal.NewState()
+	return newKeyValueAndUnit(internal.Alloc[internal.KeyValueAndUnit](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,6 +45,14 @@ func (ms KeyValueAndUnit) MoveTo(dest KeyValueAndUnit) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteKeyValueAndUnit(dest.orig, false)
+		ms.CopyTo(dest)
+		internal.DeleteKeyValueAndUnit(ms.orig, false)
 		return
 	}
 	internal.DeleteKeyValueAndUnit(dest.orig, false)
@@ -80,5 +89,5 @@ func (ms KeyValueAndUnit) SetUnitStrindex(v int32) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms KeyValueAndUnit) CopyTo(dest KeyValueAndUnit) {
 	dest.state.AssertMutable()
-	internal.CopyKeyValueAndUnit(dest.orig, ms.orig)
+	internal.CopyKeyValueAndUnit(dest.orig, ms.orig, dest.state)
 }

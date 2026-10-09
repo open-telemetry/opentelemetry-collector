@@ -31,9 +31,9 @@ func TestCopySpanLink(t *testing.T) {
 				}()
 
 				dest := NewSpanLink()
-				CopySpanLink(dest, src)
+				CopySpanLink(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopySpanLink(dest, dest)
+				CopySpanLink(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopySpanLinkSlice(t *testing.T) {
 	src := []SpanLink{}
 	dest := []SpanLink{}
 	// Test CopyTo empty
-	dest = CopySpanLinkSlice(dest, src)
+	dest = CopySpanLinkSlice(dest, src, nil)
 	assert.Equal(t, []SpanLink{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSpanLinkSlice()
-	dest = CopySpanLinkSlice(dest, src)
+	dest = CopySpanLinkSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanLinkSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySpanLinkSlice(dest, src)
+	dest = CopySpanLinkSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanLinkSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySpanLinkSlice(dest, []SpanLink{})
+	dest = CopySpanLinkSlice(dest, []SpanLink{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySpanLinkSlice(dest, src)
+	dest = CopySpanLinkSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanLinkSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopySpanLinkPtrSlice(t *testing.T) {
 	src := []*SpanLink{}
 	dest := []*SpanLink{}
 	// Test CopyTo empty
-	dest = CopySpanLinkPtrSlice(dest, src)
+	dest = CopySpanLinkPtrSlice(dest, src, nil)
 	assert.Equal(t, []*SpanLink{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSpanLinkPtrSlice()
-	dest = CopySpanLinkPtrSlice(dest, src)
+	dest = CopySpanLinkPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanLinkPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySpanLinkPtrSlice(dest, src)
+	dest = CopySpanLinkPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanLinkPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySpanLinkPtrSlice(dest, []*SpanLink{})
+	dest = CopySpanLinkPtrSlice(dest, []*SpanLink{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySpanLinkPtrSlice(dest, src)
+	dest = CopySpanLinkPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanLinkPtrSlice(), dest)
 }
 

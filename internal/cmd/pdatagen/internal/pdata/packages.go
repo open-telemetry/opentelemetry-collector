@@ -122,6 +122,22 @@ func (p *Package) GenerateInternalFiles() error {
 }
 
 // GenerateProtoMessageFiles generates files with proto messages for this Package.
+func internalProtoImports(pkgImports []string) []string {
+	out := slices.DeleteFunc(slices.Clone(pkgImports), func(s string) bool {
+		return slices.Contains(nonInternalDeps, s)
+	})
+	for _, extra := range []string{
+		`"go.opentelemetry.io/collector/pdata/internal/json"`,
+		`"go.opentelemetry.io/collector/pdata/internal/proto"`,
+		`"go.opentelemetry.io/collector/pdata/internal/metadata"`,
+	} {
+		if !slices.Contains(out, extra) {
+			out = append(out, extra)
+		}
+	}
+	return out
+}
+
 func (p *Package) GenerateProtoMessageFiles() error {
 	for _, s := range p.structs {
 		pm := s.getProtoMessage()
@@ -133,7 +149,7 @@ func (p *Package) GenerateProtoMessageFiles() error {
 			return slices.Contains(nonInternalDeps, s)
 		})
 		path := filepath.Join("pdata", "internal", "generated_proto_"+strings.ToLower(s.getOriginName())+".go")
-		if err := os.WriteFile(path, pm.GenerateMessage(p.info.imports, p.info.testImports), 0o600); err != nil {
+		if err := os.WriteFile(path, pm.GenerateMessage(internalProtoImports(p.info.imports), p.info.testImports), 0o600); err != nil {
 			return err
 		}
 		p.info.testImports = saveTestImports

@@ -10,7 +10,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -28,19 +27,8 @@ type SummaryDataPoint struct {
 	Flags             uint32
 }
 
-var (
-	protoPoolSummaryDataPoint = sync.Pool{
-		New: func() any {
-			return &SummaryDataPoint{}
-		},
-	}
-)
-
 func NewSummaryDataPoint() *SummaryDataPoint {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &SummaryDataPoint{}
-	}
-	return protoPoolSummaryDataPoint.Get().(*SummaryDataPoint)
+	return Alloc[SummaryDataPoint](nil)
 }
 
 func DeleteSummaryDataPoint(orig *SummaryDataPoint, nullable bool) {
@@ -61,12 +49,10 @@ func DeleteSummaryDataPoint(orig *SummaryDataPoint, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolSummaryDataPoint.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopySummaryDataPoint(dest, src *SummaryDataPoint) *SummaryDataPoint {
+func CopySummaryDataPoint(dest, src *SummaryDataPoint, st *State) *SummaryDataPoint {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -77,25 +63,25 @@ func CopySummaryDataPoint(dest, src *SummaryDataPoint) *SummaryDataPoint {
 	}
 
 	if dest == nil {
-		dest = NewSummaryDataPoint()
+		dest = Alloc[SummaryDataPoint](st)
 	}
-	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes)
+	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes, st)
 
 	dest.StartTimeUnixNano = src.StartTimeUnixNano
 	dest.TimeUnixNano = src.TimeUnixNano
 	dest.Count = src.Count
 	dest.Sum = src.Sum
-	dest.QuantileValues = CopySummaryDataPointValueAtQuantilePtrSlice(dest.QuantileValues, src.QuantileValues)
+	dest.QuantileValues = CopySummaryDataPointValueAtQuantilePtrSlice(dest.QuantileValues, src.QuantileValues, st)
 
 	dest.Flags = src.Flags
 
 	return dest
 }
 
-func CopySummaryDataPointSlice(dest, src []SummaryDataPoint) []SummaryDataPoint {
+func CopySummaryDataPointSlice(dest, src []SummaryDataPoint, st *State) []SummaryDataPoint {
 	var newDest []SummaryDataPoint
 	if cap(dest) < len(src) {
-		newDest = make([]SummaryDataPoint, len(src))
+		newDest = AllocSlice[SummaryDataPoint](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -105,20 +91,20 @@ func CopySummaryDataPointSlice(dest, src []SummaryDataPoint) []SummaryDataPoint 
 		}
 	}
 	for i := range src {
-		CopySummaryDataPoint(&newDest[i], &src[i])
+		CopySummaryDataPoint(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopySummaryDataPointPtrSlice(dest, src []*SummaryDataPoint) []*SummaryDataPoint {
+func CopySummaryDataPointPtrSlice(dest, src []*SummaryDataPoint, st *State) []*SummaryDataPoint {
 	var newDest []*SummaryDataPoint
 	if cap(dest) < len(src) {
-		newDest = make([]*SummaryDataPoint, len(src))
+		newDest = AllocSlice[*SummaryDataPoint](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewSummaryDataPoint()
+			newDest[i] = Alloc[SummaryDataPoint](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -131,11 +117,11 @@ func CopySummaryDataPointPtrSlice(dest, src []*SummaryDataPoint) []*SummaryDataP
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewSummaryDataPoint()
+			newDest[i] = Alloc[SummaryDataPoint](st)
 		}
 	}
 	for i := range src {
-		CopySummaryDataPoint(newDest[i], src[i])
+		CopySummaryDataPoint(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -192,29 +178,39 @@ func (orig *SummaryDataPoint) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *SummaryDataPoint) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *SummaryDataPoint) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "attributes":
 			for iter.ReadArray() {
-				orig.Attributes = append(orig.Attributes, KeyValue{})
-				orig.Attributes[len(orig.Attributes)-1].UnmarshalJSON(iter)
+				orig.Attributes = Append(st, orig.Attributes, KeyValue{})
+				orig.Attributes[len(orig.Attributes)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "startTimeUnixNano", "start_time_unix_nano":
+
 			orig.StartTimeUnixNano = iter.ReadUint64()
 		case "timeUnixNano", "time_unix_nano":
+
 			orig.TimeUnixNano = iter.ReadUint64()
 		case "count":
+
 			orig.Count = iter.ReadUint64()
 		case "sum":
+
 			orig.Sum = iter.ReadFloat64()
 		case "quantileValues", "quantile_values":
 			for iter.ReadArray() {
-				orig.QuantileValues = append(orig.QuantileValues, NewSummaryDataPointValueAtQuantile())
-				orig.QuantileValues[len(orig.QuantileValues)-1].UnmarshalJSON(iter)
+				orig.QuantileValues = Append(st, orig.QuantileValues, Alloc[SummaryDataPointValueAtQuantile](st))
+				orig.QuantileValues[len(orig.QuantileValues)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "flags":
+
 			orig.Flags = iter.ReadUint32()
 		default:
 			iter.HandleUnknownField(f)
@@ -303,6 +299,10 @@ func (orig *SummaryDataPoint) MarshalProto(buf []byte) int {
 }
 
 func (orig *SummaryDataPoint) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *SummaryDataPoint) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -327,8 +327,8 @@ func (orig *SummaryDataPoint) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Attributes = AppendEstimated(st, orig.Attributes, KeyValue{}, len(buf)-pos, length+2)
+			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -390,8 +390,8 @@ func (orig *SummaryDataPoint) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.QuantileValues = append(orig.QuantileValues, NewSummaryDataPointValueAtQuantile())
-			err = orig.QuantileValues[len(orig.QuantileValues)-1].UnmarshalProto(buf[startPos:pos])
+			orig.QuantileValues = AppendEstimated(st, orig.QuantileValues, Alloc[SummaryDataPointValueAtQuantile](st), len(buf)-pos, length+2)
+			err = orig.QuantileValues[len(orig.QuantileValues)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -417,7 +417,7 @@ func (orig *SummaryDataPoint) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestSummaryDataPoint() *SummaryDataPoint {
-	orig := NewSummaryDataPoint()
+	orig := Alloc[SummaryDataPoint](nil)
 	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
 	orig.StartTimeUnixNano = uint64(13)
 	orig.TimeUnixNano = uint64(13)
@@ -430,11 +430,11 @@ func GenTestSummaryDataPoint() *SummaryDataPoint {
 
 func GenTestSummaryDataPointPtrSlice() []*SummaryDataPoint {
 	orig := make([]*SummaryDataPoint, 5)
-	orig[0] = NewSummaryDataPoint()
+	orig[0] = Alloc[SummaryDataPoint](nil)
 	orig[1] = GenTestSummaryDataPoint()
-	orig[2] = NewSummaryDataPoint()
+	orig[2] = Alloc[SummaryDataPoint](nil)
 	orig[3] = GenTestSummaryDataPoint()
-	orig[4] = NewSummaryDataPoint()
+	orig[4] = Alloc[SummaryDataPoint](nil)
 	return orig
 }
 

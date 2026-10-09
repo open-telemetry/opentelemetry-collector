@@ -32,7 +32,8 @@ func newScopeProfiles(orig *internal.ScopeProfiles, state *internal.State) Scope
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewScopeProfiles() ScopeProfiles {
-	return newScopeProfiles(internal.NewScopeProfiles(), internal.NewState())
+	st := internal.NewState()
+	return newScopeProfiles(internal.Alloc[internal.ScopeProfiles](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -42,6 +43,14 @@ func (ms ScopeProfiles) MoveTo(dest ScopeProfiles) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteScopeProfiles(dest.orig, false)
+		ms.CopyTo(dest)
+		internal.DeleteScopeProfiles(ms.orig, false)
 		return
 	}
 	internal.DeleteScopeProfiles(dest.orig, false)
@@ -66,11 +75,11 @@ func (ms ScopeProfiles) SchemaUrl() string {
 // SetSchemaUrl replaces the schemaurl associated with this ScopeProfiles.
 func (ms ScopeProfiles) SetSchemaUrl(v string) {
 	ms.state.AssertMutable()
-	ms.orig.SchemaUrl = v
+	ms.orig.SchemaUrl = internal.CopyString(ms.state, v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ScopeProfiles) CopyTo(dest ScopeProfiles) {
 	dest.state.AssertMutable()
-	internal.CopyScopeProfiles(dest.orig, ms.orig)
+	internal.CopyScopeProfiles(dest.orig, ms.orig, dest.state)
 }

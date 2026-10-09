@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -72,43 +71,8 @@ type RequestContext struct {
 	ClientAddress  any
 }
 
-var (
-	protoPoolRequestContext = sync.Pool{
-		New: func() any {
-			return &RequestContext{}
-		},
-	}
-
-	ProtoPoolRequestContext_IP = sync.Pool{
-		New: func() any {
-			return &RequestContext_IP{}
-		},
-	}
-
-	ProtoPoolRequestContext_TCP = sync.Pool{
-		New: func() any {
-			return &RequestContext_TCP{}
-		},
-	}
-
-	ProtoPoolRequestContext_UDP = sync.Pool{
-		New: func() any {
-			return &RequestContext_UDP{}
-		},
-	}
-
-	ProtoPoolRequestContext_Unix = sync.Pool{
-		New: func() any {
-			return &RequestContext_Unix{}
-		},
-	}
-)
-
 func NewRequestContext() *RequestContext {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &RequestContext{}
-	}
-	return protoPoolRequestContext.Get().(*RequestContext)
+	return Alloc[RequestContext](nil)
 }
 
 func DeleteRequestContext(orig *RequestContext, nullable bool) {
@@ -128,27 +92,21 @@ func DeleteRequestContext(orig *RequestContext, nullable bool) {
 	case *RequestContext_IP:
 		DeleteIPAddr(ov.IP, true)
 		ov.IP = nil
-		ProtoPoolRequestContext_IP.Put(ov)
 	case *RequestContext_TCP:
 		DeleteTCPAddr(ov.TCP, true)
 		ov.TCP = nil
-		ProtoPoolRequestContext_TCP.Put(ov)
 	case *RequestContext_UDP:
 		DeleteUDPAddr(ov.UDP, true)
 		ov.UDP = nil
-		ProtoPoolRequestContext_UDP.Put(ov)
 	case *RequestContext_Unix:
 		DeleteUnixAddr(ov.Unix, true)
 		ov.Unix = nil
-		ProtoPoolRequestContext_Unix.Put(ov)
 	}
 	orig.Reset()
-	if nullable {
-		protoPoolRequestContext.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyRequestContext(dest, src *RequestContext) *RequestContext {
+func CopyRequestContext(dest, src *RequestContext, st *State) *RequestContext {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -159,55 +117,35 @@ func CopyRequestContext(dest, src *RequestContext) *RequestContext {
 	}
 
 	if dest == nil {
-		dest = NewRequestContext()
+		dest = Alloc[RequestContext](st)
 	}
-	dest.SpanContext = CopySpanContext(dest.SpanContext, src.SpanContext)
+	dest.SpanContext = CopySpanContext(dest.SpanContext, src.SpanContext, st)
 
-	dest.ClientMetadata = CopyKeyValueSlice(dest.ClientMetadata, src.ClientMetadata)
+	dest.ClientMetadata = CopyKeyValueSlice(dest.ClientMetadata, src.ClientMetadata, st)
 
 	switch t := src.ClientAddress.(type) {
 	case *RequestContext_IP:
-		var ov *RequestContext_IP
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &RequestContext_IP{}
-		} else {
-			ov = ProtoPoolRequestContext_IP.Get().(*RequestContext_IP)
-		}
-		ov.IP = NewIPAddr()
-		CopyIPAddr(ov.IP, t.IP)
+		ov := Alloc[RequestContext_IP](st)
+		ov.IP = Alloc[IPAddr](st)
+		CopyIPAddr(ov.IP, t.IP, st)
 		dest.ClientAddress = ov
 
 	case *RequestContext_TCP:
-		var ov *RequestContext_TCP
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &RequestContext_TCP{}
-		} else {
-			ov = ProtoPoolRequestContext_TCP.Get().(*RequestContext_TCP)
-		}
-		ov.TCP = NewTCPAddr()
-		CopyTCPAddr(ov.TCP, t.TCP)
+		ov := Alloc[RequestContext_TCP](st)
+		ov.TCP = Alloc[TCPAddr](st)
+		CopyTCPAddr(ov.TCP, t.TCP, st)
 		dest.ClientAddress = ov
 
 	case *RequestContext_UDP:
-		var ov *RequestContext_UDP
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &RequestContext_UDP{}
-		} else {
-			ov = ProtoPoolRequestContext_UDP.Get().(*RequestContext_UDP)
-		}
-		ov.UDP = NewUDPAddr()
-		CopyUDPAddr(ov.UDP, t.UDP)
+		ov := Alloc[RequestContext_UDP](st)
+		ov.UDP = Alloc[UDPAddr](st)
+		CopyUDPAddr(ov.UDP, t.UDP, st)
 		dest.ClientAddress = ov
 
 	case *RequestContext_Unix:
-		var ov *RequestContext_Unix
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &RequestContext_Unix{}
-		} else {
-			ov = ProtoPoolRequestContext_Unix.Get().(*RequestContext_Unix)
-		}
-		ov.Unix = NewUnixAddr()
-		CopyUnixAddr(ov.Unix, t.Unix)
+		ov := Alloc[RequestContext_Unix](st)
+		ov.Unix = Alloc[UnixAddr](st)
+		CopyUnixAddr(ov.Unix, t.Unix, st)
 		dest.ClientAddress = ov
 
 	default:
@@ -217,10 +155,10 @@ func CopyRequestContext(dest, src *RequestContext) *RequestContext {
 	return dest
 }
 
-func CopyRequestContextSlice(dest, src []RequestContext) []RequestContext {
+func CopyRequestContextSlice(dest, src []RequestContext, st *State) []RequestContext {
 	var newDest []RequestContext
 	if cap(dest) < len(src) {
-		newDest = make([]RequestContext, len(src))
+		newDest = AllocSlice[RequestContext](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -230,20 +168,20 @@ func CopyRequestContextSlice(dest, src []RequestContext) []RequestContext {
 		}
 	}
 	for i := range src {
-		CopyRequestContext(&newDest[i], &src[i])
+		CopyRequestContext(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyRequestContextPtrSlice(dest, src []*RequestContext) []*RequestContext {
+func CopyRequestContextPtrSlice(dest, src []*RequestContext, st *State) []*RequestContext {
 	var newDest []*RequestContext
 	if cap(dest) < len(src) {
-		newDest = make([]*RequestContext, len(src))
+		newDest = AllocSlice[*RequestContext](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewRequestContext()
+			newDest[i] = Alloc[RequestContext](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -256,11 +194,11 @@ func CopyRequestContextPtrSlice(dest, src []*RequestContext) []*RequestContext {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewRequestContext()
+			newDest[i] = Alloc[RequestContext](st)
 		}
 	}
 	for i := range src {
-		CopyRequestContext(newDest[i], src[i])
+		CopyRequestContext(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -313,63 +251,48 @@ func (orig *RequestContext) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *RequestContext) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *RequestContext) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "spanContext", "span_context":
-			orig.SpanContext = NewSpanContext()
-			orig.SpanContext.UnmarshalJSON(iter)
+			orig.SpanContext = Alloc[SpanContext](st)
+			orig.SpanContext.UnmarshalJSONState(iter, st)
 		case "clientMetadata", "client_metadata":
 			for iter.ReadArray() {
-				orig.ClientMetadata = append(orig.ClientMetadata, KeyValue{})
-				orig.ClientMetadata[len(orig.ClientMetadata)-1].UnmarshalJSON(iter)
+				orig.ClientMetadata = Append(st, orig.ClientMetadata, KeyValue{})
+				orig.ClientMetadata[len(orig.ClientMetadata)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "iP":
 			{
-				var ov *RequestContext_IP
-				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-					ov = &RequestContext_IP{}
-				} else {
-					ov = ProtoPoolRequestContext_IP.Get().(*RequestContext_IP)
-				}
-				ov.IP = NewIPAddr()
-				ov.IP.UnmarshalJSON(iter)
+				ov := Alloc[RequestContext_IP](st)
+				ov.IP = Alloc[IPAddr](st)
+				ov.IP.UnmarshalJSONState(iter, st)
 				orig.ClientAddress = ov
 			}
 		case "tCP":
 			{
-				var ov *RequestContext_TCP
-				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-					ov = &RequestContext_TCP{}
-				} else {
-					ov = ProtoPoolRequestContext_TCP.Get().(*RequestContext_TCP)
-				}
-				ov.TCP = NewTCPAddr()
-				ov.TCP.UnmarshalJSON(iter)
+				ov := Alloc[RequestContext_TCP](st)
+				ov.TCP = Alloc[TCPAddr](st)
+				ov.TCP.UnmarshalJSONState(iter, st)
 				orig.ClientAddress = ov
 			}
 		case "uDP":
 			{
-				var ov *RequestContext_UDP
-				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-					ov = &RequestContext_UDP{}
-				} else {
-					ov = ProtoPoolRequestContext_UDP.Get().(*RequestContext_UDP)
-				}
-				ov.UDP = NewUDPAddr()
-				ov.UDP.UnmarshalJSON(iter)
+				ov := Alloc[RequestContext_UDP](st)
+				ov.UDP = Alloc[UDPAddr](st)
+				ov.UDP.UnmarshalJSONState(iter, st)
 				orig.ClientAddress = ov
 			}
 		case "unix":
 			{
-				var ov *RequestContext_Unix
-				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-					ov = &RequestContext_Unix{}
-				} else {
-					ov = ProtoPoolRequestContext_Unix.Get().(*RequestContext_Unix)
-				}
-				ov.Unix = NewUnixAddr()
-				ov.Unix.UnmarshalJSON(iter)
+				ov := Alloc[RequestContext_Unix](st)
+				ov.Unix = Alloc[UnixAddr](st)
+				ov.Unix.UnmarshalJSONState(iter, st)
 				orig.ClientAddress = ov
 			}
 
@@ -475,6 +398,10 @@ func (orig *RequestContext) MarshalProto(buf []byte) int {
 }
 
 func (orig *RequestContext) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *RequestContext) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -500,8 +427,8 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			orig.SpanContext = NewSpanContext()
-			err = orig.SpanContext.UnmarshalProto(buf[startPos:pos])
+			orig.SpanContext = Alloc[SpanContext](st)
+			err = orig.SpanContext.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -516,8 +443,8 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ClientMetadata = append(orig.ClientMetadata, KeyValue{})
-			err = orig.ClientMetadata[len(orig.ClientMetadata)-1].UnmarshalProto(buf[startPos:pos])
+			orig.ClientMetadata = AppendEstimated(st, orig.ClientMetadata, KeyValue{}, len(buf)-pos, length+2)
+			err = orig.ClientMetadata[len(orig.ClientMetadata)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -532,14 +459,9 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			var ov *RequestContext_IP
-			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-				ov = &RequestContext_IP{}
-			} else {
-				ov = ProtoPoolRequestContext_IP.Get().(*RequestContext_IP)
-			}
-			ov.IP = NewIPAddr()
-			err = ov.IP.UnmarshalProto(buf[startPos:pos])
+			ov := Alloc[RequestContext_IP](st)
+			ov.IP = Alloc[IPAddr](st)
+			err = ov.IP.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -555,14 +477,9 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			var ov *RequestContext_TCP
-			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-				ov = &RequestContext_TCP{}
-			} else {
-				ov = ProtoPoolRequestContext_TCP.Get().(*RequestContext_TCP)
-			}
-			ov.TCP = NewTCPAddr()
-			err = ov.TCP.UnmarshalProto(buf[startPos:pos])
+			ov := Alloc[RequestContext_TCP](st)
+			ov.TCP = Alloc[TCPAddr](st)
+			err = ov.TCP.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -578,14 +495,9 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			var ov *RequestContext_UDP
-			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-				ov = &RequestContext_UDP{}
-			} else {
-				ov = ProtoPoolRequestContext_UDP.Get().(*RequestContext_UDP)
-			}
-			ov.UDP = NewUDPAddr()
-			err = ov.UDP.UnmarshalProto(buf[startPos:pos])
+			ov := Alloc[RequestContext_UDP](st)
+			ov.UDP = Alloc[UDPAddr](st)
+			err = ov.UDP.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -601,14 +513,9 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			var ov *RequestContext_Unix
-			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-				ov = &RequestContext_Unix{}
-			} else {
-				ov = ProtoPoolRequestContext_Unix.Get().(*RequestContext_Unix)
-			}
-			ov.Unix = NewUnixAddr()
-			err = ov.Unix.UnmarshalProto(buf[startPos:pos])
+			ov := Alloc[RequestContext_Unix](st)
+			ov.Unix = Alloc[UnixAddr](st)
+			err = ov.Unix.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -625,7 +532,7 @@ func (orig *RequestContext) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestRequestContext() *RequestContext {
-	orig := NewRequestContext()
+	orig := Alloc[RequestContext](nil)
 	orig.SpanContext = GenTestSpanContext()
 	orig.ClientMetadata = []KeyValue{{}, *GenTestKeyValue()}
 	orig.ClientAddress = &RequestContext_IP{IP: GenTestIPAddr()}
@@ -634,11 +541,11 @@ func GenTestRequestContext() *RequestContext {
 
 func GenTestRequestContextPtrSlice() []*RequestContext {
 	orig := make([]*RequestContext, 5)
-	orig[0] = NewRequestContext()
+	orig[0] = Alloc[RequestContext](nil)
 	orig[1] = GenTestRequestContext()
-	orig[2] = NewRequestContext()
+	orig[2] = Alloc[RequestContext](nil)
 	orig[3] = GenTestRequestContext()
-	orig[4] = NewRequestContext()
+	orig[4] = Alloc[RequestContext](nil)
 	return orig
 }
 

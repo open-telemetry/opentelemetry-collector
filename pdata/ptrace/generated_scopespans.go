@@ -32,7 +32,8 @@ func newScopeSpans(orig *internal.ScopeSpans, state *internal.State) ScopeSpans 
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewScopeSpans() ScopeSpans {
-	return newScopeSpans(internal.NewScopeSpans(), internal.NewState())
+	st := internal.NewState()
+	return newScopeSpans(internal.Alloc[internal.ScopeSpans](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -42,6 +43,14 @@ func (ms ScopeSpans) MoveTo(dest ScopeSpans) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteScopeSpans(dest.orig, false)
+		ms.CopyTo(dest)
+		internal.DeleteScopeSpans(ms.orig, false)
 		return
 	}
 	internal.DeleteScopeSpans(dest.orig, false)
@@ -66,11 +75,11 @@ func (ms ScopeSpans) SchemaUrl() string {
 // SetSchemaUrl replaces the schemaurl associated with this ScopeSpans.
 func (ms ScopeSpans) SetSchemaUrl(v string) {
 	ms.state.AssertMutable()
-	ms.orig.SchemaUrl = v
+	ms.orig.SchemaUrl = internal.CopyString(ms.state, v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ScopeSpans) CopyTo(dest ScopeSpans) {
 	dest.state.AssertMutable()
-	internal.CopyScopeSpans(dest.orig, ms.orig)
+	internal.CopyScopeSpans(dest.orig, ms.orig, dest.state)
 }

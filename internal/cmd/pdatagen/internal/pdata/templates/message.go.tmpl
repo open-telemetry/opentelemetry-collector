@@ -41,7 +41,8 @@ func new{{ .structName }}(orig *internal.{{ .originName }}, state *internal.Stat
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func New{{ .structName }}() {{ .structName }} {
-	return new{{ .structName }}(internal.New{{ .originName }}(), internal.NewState())
+	st := internal.NewState()
+	return new{{ .structName }}(internal.Alloc[internal.{{ .originName }}](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -51,6 +52,14 @@ func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
 	dest.{{ .stateAccessor }}.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.{{ .origAccessor }} == dest.{{ .origAccessor }} {
+		return
+	}
+	if internal.MoveNeedsCopy(ms.{{ .stateAccessor }}, dest.{{ .stateAccessor }}) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.Delete{{ .originName }}(dest.{{ .origAccessor }}, false)
+		ms.CopyTo(dest)
+		internal.Delete{{ .originName }}(ms.{{ .origAccessor }}, false)
 		return
 	}
 	internal.Delete{{ .originName }}(dest.{{ .origAccessor }}, false)
@@ -64,7 +73,7 @@ func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	dest.{{ .stateAccessor }}.AssertMutable()
-    internal.Copy{{ .originName }}(dest.{{ .origAccessor }}, ms.{{ .origAccessor }})
+    internal.Copy{{ .originName }}(dest.{{ .origAccessor }}, ms.{{ .origAccessor }}, dest.{{ .stateAccessor }})
 }
 
 {{ if .hasWrapper -}}

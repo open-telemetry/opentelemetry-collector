@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -22,19 +21,8 @@ type Resource struct {
 	EntityRefs             []*EntityRef
 }
 
-var (
-	protoPoolResource = sync.Pool{
-		New: func() any {
-			return &Resource{}
-		},
-	}
-)
-
 func NewResource() *Resource {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &Resource{}
-	}
-	return protoPoolResource.Get().(*Resource)
+	return Alloc[Resource](nil)
 }
 
 func DeleteResource(orig *Resource, nullable bool) {
@@ -54,12 +42,10 @@ func DeleteResource(orig *Resource, nullable bool) {
 		DeleteEntityRef(orig.EntityRefs[i], true)
 	}
 	orig.Reset()
-	if nullable {
-		protoPoolResource.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyResource(dest, src *Resource) *Resource {
+func CopyResource(dest, src *Resource, st *State) *Resource {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -70,20 +56,20 @@ func CopyResource(dest, src *Resource) *Resource {
 	}
 
 	if dest == nil {
-		dest = NewResource()
+		dest = Alloc[Resource](st)
 	}
-	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes)
+	dest.Attributes = CopyKeyValueSlice(dest.Attributes, src.Attributes, st)
 
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
-	dest.EntityRefs = CopyEntityRefPtrSlice(dest.EntityRefs, src.EntityRefs)
+	dest.EntityRefs = CopyEntityRefPtrSlice(dest.EntityRefs, src.EntityRefs, st)
 
 	return dest
 }
 
-func CopyResourceSlice(dest, src []Resource) []Resource {
+func CopyResourceSlice(dest, src []Resource, st *State) []Resource {
 	var newDest []Resource
 	if cap(dest) < len(src) {
-		newDest = make([]Resource, len(src))
+		newDest = AllocSlice[Resource](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -93,20 +79,20 @@ func CopyResourceSlice(dest, src []Resource) []Resource {
 		}
 	}
 	for i := range src {
-		CopyResource(&newDest[i], &src[i])
+		CopyResource(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyResourcePtrSlice(dest, src []*Resource) []*Resource {
+func CopyResourcePtrSlice(dest, src []*Resource, st *State) []*Resource {
 	var newDest []*Resource
 	if cap(dest) < len(src) {
-		newDest = make([]*Resource, len(src))
+		newDest = AllocSlice[*Resource](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewResource()
+			newDest[i] = Alloc[Resource](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -119,11 +105,11 @@ func CopyResourcePtrSlice(dest, src []*Resource) []*Resource {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewResource()
+			newDest[i] = Alloc[Resource](st)
 		}
 	}
 	for i := range src {
-		CopyResource(newDest[i], src[i])
+		CopyResource(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -164,20 +150,26 @@ func (orig *Resource) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *Resource) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *Resource) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "attributes":
 			for iter.ReadArray() {
-				orig.Attributes = append(orig.Attributes, KeyValue{})
-				orig.Attributes[len(orig.Attributes)-1].UnmarshalJSON(iter)
+				orig.Attributes = Append(st, orig.Attributes, KeyValue{})
+				orig.Attributes[len(orig.Attributes)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "droppedAttributesCount", "dropped_attributes_count":
+
 			orig.DroppedAttributesCount = iter.ReadUint32()
 		case "entityRefs", "entity_refs":
 			for iter.ReadArray() {
-				orig.EntityRefs = append(orig.EntityRefs, NewEntityRef())
-				orig.EntityRefs[len(orig.EntityRefs)-1].UnmarshalJSON(iter)
+				orig.EntityRefs = Append(st, orig.EntityRefs, Alloc[EntityRef](st))
+				orig.EntityRefs[len(orig.EntityRefs)-1].UnmarshalJSONState(iter, st)
 			}
 
 		default:
@@ -231,6 +223,10 @@ func (orig *Resource) MarshalProto(buf []byte) int {
 }
 
 func (orig *Resource) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *Resource) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -255,8 +251,8 @@ func (orig *Resource) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Attributes = AppendEstimated(st, orig.Attributes, KeyValue{}, len(buf)-pos, length+2)
+			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -282,8 +278,8 @@ func (orig *Resource) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.EntityRefs = append(orig.EntityRefs, NewEntityRef())
-			err = orig.EntityRefs[len(orig.EntityRefs)-1].UnmarshalProto(buf[startPos:pos])
+			orig.EntityRefs = AppendEstimated(st, orig.EntityRefs, Alloc[EntityRef](st), len(buf)-pos, length+2)
+			err = orig.EntityRefs[len(orig.EntityRefs)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -298,7 +294,7 @@ func (orig *Resource) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestResource() *Resource {
-	orig := NewResource()
+	orig := Alloc[Resource](nil)
 	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
 	orig.DroppedAttributesCount = uint32(13)
 	orig.EntityRefs = []*EntityRef{{}, GenTestEntityRef()}
@@ -307,11 +303,11 @@ func GenTestResource() *Resource {
 
 func GenTestResourcePtrSlice() []*Resource {
 	orig := make([]*Resource, 5)
-	orig[0] = NewResource()
+	orig[0] = Alloc[Resource](nil)
 	orig[1] = GenTestResource()
-	orig[2] = NewResource()
+	orig[2] = Alloc[Resource](nil)
 	orig[3] = GenTestResource()
-	orig[4] = NewResource()
+	orig[4] = Alloc[Resource](nil)
 	return orig
 }
 

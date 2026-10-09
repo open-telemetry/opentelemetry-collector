@@ -31,9 +31,9 @@ func TestCopyLogRecord(t *testing.T) {
 				}()
 
 				dest := NewLogRecord()
-				CopyLogRecord(dest, src)
+				CopyLogRecord(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyLogRecord(dest, dest)
+				CopyLogRecord(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyLogRecordSlice(t *testing.T) {
 	src := []LogRecord{}
 	dest := []LogRecord{}
 	// Test CopyTo empty
-	dest = CopyLogRecordSlice(dest, src)
+	dest = CopyLogRecordSlice(dest, src, nil)
 	assert.Equal(t, []LogRecord{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestLogRecordSlice()
-	dest = CopyLogRecordSlice(dest, src)
+	dest = CopyLogRecordSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogRecordSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyLogRecordSlice(dest, src)
+	dest = CopyLogRecordSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogRecordSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyLogRecordSlice(dest, []LogRecord{})
+	dest = CopyLogRecordSlice(dest, []LogRecord{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyLogRecordSlice(dest, src)
+	dest = CopyLogRecordSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogRecordSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyLogRecordPtrSlice(t *testing.T) {
 	src := []*LogRecord{}
 	dest := []*LogRecord{}
 	// Test CopyTo empty
-	dest = CopyLogRecordPtrSlice(dest, src)
+	dest = CopyLogRecordPtrSlice(dest, src, nil)
 	assert.Equal(t, []*LogRecord{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestLogRecordPtrSlice()
-	dest = CopyLogRecordPtrSlice(dest, src)
+	dest = CopyLogRecordPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogRecordPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyLogRecordPtrSlice(dest, src)
+	dest = CopyLogRecordPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogRecordPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyLogRecordPtrSlice(dest, []*LogRecord{})
+	dest = CopyLogRecordPtrSlice(dest, []*LogRecord{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyLogRecordPtrSlice(dest, src)
+	dest = CopyLogRecordPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogRecordPtrSlice(), dest)
 }
 

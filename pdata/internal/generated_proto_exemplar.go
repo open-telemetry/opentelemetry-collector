@@ -10,7 +10,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -58,31 +57,8 @@ type Exemplar struct {
 	SpanId             SpanID
 }
 
-var (
-	protoPoolExemplar = sync.Pool{
-		New: func() any {
-			return &Exemplar{}
-		},
-	}
-
-	ProtoPoolExemplar_AsDouble = sync.Pool{
-		New: func() any {
-			return &Exemplar_AsDouble{}
-		},
-	}
-
-	ProtoPoolExemplar_AsInt = sync.Pool{
-		New: func() any {
-			return &Exemplar_AsInt{}
-		},
-	}
-)
-
 func NewExemplar() *Exemplar {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &Exemplar{}
-	}
-	return protoPoolExemplar.Get().(*Exemplar)
+	return Alloc[Exemplar](nil)
 }
 
 func DeleteExemplar(orig *Exemplar, nullable bool) {
@@ -102,23 +78,19 @@ func DeleteExemplar(orig *Exemplar, nullable bool) {
 	case *Exemplar_AsDouble:
 		if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov.AsDouble = float64(0)
-			ProtoPoolExemplar_AsDouble.Put(ov)
 		}
 	case *Exemplar_AsInt:
 		if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 			ov.AsInt = int64(0)
-			ProtoPoolExemplar_AsInt.Put(ov)
 		}
 	}
 	DeleteTraceID(&orig.TraceId, false)
 	DeleteSpanID(&orig.SpanId, false)
 	orig.Reset()
-	if nullable {
-		protoPoolExemplar.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyExemplar(dest, src *Exemplar) *Exemplar {
+func CopyExemplar(dest, src *Exemplar, st *State) *Exemplar {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -129,46 +101,36 @@ func CopyExemplar(dest, src *Exemplar) *Exemplar {
 	}
 
 	if dest == nil {
-		dest = NewExemplar()
+		dest = Alloc[Exemplar](st)
 	}
-	dest.FilteredAttributes = CopyKeyValueSlice(dest.FilteredAttributes, src.FilteredAttributes)
+	dest.FilteredAttributes = CopyKeyValueSlice(dest.FilteredAttributes, src.FilteredAttributes, st)
 
 	dest.TimeUnixNano = src.TimeUnixNano
 	switch t := src.Value.(type) {
 	case *Exemplar_AsDouble:
-		var ov *Exemplar_AsDouble
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &Exemplar_AsDouble{}
-		} else {
-			ov = ProtoPoolExemplar_AsDouble.Get().(*Exemplar_AsDouble)
-		}
+		ov := Alloc[Exemplar_AsDouble](st)
 		ov.AsDouble = t.AsDouble
 		dest.Value = ov
 
 	case *Exemplar_AsInt:
-		var ov *Exemplar_AsInt
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &Exemplar_AsInt{}
-		} else {
-			ov = ProtoPoolExemplar_AsInt.Get().(*Exemplar_AsInt)
-		}
+		ov := Alloc[Exemplar_AsInt](st)
 		ov.AsInt = t.AsInt
 		dest.Value = ov
 
 	default:
 		dest.Value = nil
 	}
-	CopyTraceID(&dest.TraceId, &src.TraceId)
+	CopyTraceID(&dest.TraceId, &src.TraceId, st)
 
-	CopySpanID(&dest.SpanId, &src.SpanId)
+	CopySpanID(&dest.SpanId, &src.SpanId, st)
 
 	return dest
 }
 
-func CopyExemplarSlice(dest, src []Exemplar) []Exemplar {
+func CopyExemplarSlice(dest, src []Exemplar, st *State) []Exemplar {
 	var newDest []Exemplar
 	if cap(dest) < len(src) {
-		newDest = make([]Exemplar, len(src))
+		newDest = AllocSlice[Exemplar](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -178,20 +140,20 @@ func CopyExemplarSlice(dest, src []Exemplar) []Exemplar {
 		}
 	}
 	for i := range src {
-		CopyExemplar(&newDest[i], &src[i])
+		CopyExemplar(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyExemplarPtrSlice(dest, src []*Exemplar) []*Exemplar {
+func CopyExemplarPtrSlice(dest, src []*Exemplar, st *State) []*Exemplar {
 	var newDest []*Exemplar
 	if cap(dest) < len(src) {
-		newDest = make([]*Exemplar, len(src))
+		newDest = AllocSlice[*Exemplar](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewExemplar()
+			newDest[i] = Alloc[Exemplar](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -204,11 +166,11 @@ func CopyExemplarPtrSlice(dest, src []*Exemplar) []*Exemplar {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewExemplar()
+			newDest[i] = Alloc[Exemplar](st)
 		}
 	}
 	for i := range src {
-		CopyExemplar(newDest[i], src[i])
+		CopyExemplar(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -255,46 +217,42 @@ func (orig *Exemplar) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *Exemplar) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *Exemplar) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "filteredAttributes", "filtered_attributes":
 			for iter.ReadArray() {
-				orig.FilteredAttributes = append(orig.FilteredAttributes, KeyValue{})
-				orig.FilteredAttributes[len(orig.FilteredAttributes)-1].UnmarshalJSON(iter)
+				orig.FilteredAttributes = Append(st, orig.FilteredAttributes, KeyValue{})
+				orig.FilteredAttributes[len(orig.FilteredAttributes)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "timeUnixNano", "time_unix_nano":
+
 			orig.TimeUnixNano = iter.ReadUint64()
 
 		case "asDouble", "as_double":
 			{
-				var ov *Exemplar_AsDouble
-				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-					ov = &Exemplar_AsDouble{}
-				} else {
-					ov = ProtoPoolExemplar_AsDouble.Get().(*Exemplar_AsDouble)
-				}
+				ov := Alloc[Exemplar_AsDouble](st)
 				ov.AsDouble = iter.ReadFloat64()
 				orig.Value = ov
 			}
 		case "asInt", "as_int":
 			{
-				var ov *Exemplar_AsInt
-				if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-					ov = &Exemplar_AsInt{}
-				} else {
-					ov = ProtoPoolExemplar_AsInt.Get().(*Exemplar_AsInt)
-				}
+				ov := Alloc[Exemplar_AsInt](st)
 				ov.AsInt = iter.ReadInt64()
 				orig.Value = ov
 			}
 
 		case "traceId", "trace_id":
 
-			orig.TraceId.UnmarshalJSON(iter)
+			orig.TraceId.UnmarshalJSONState(iter, st)
 		case "spanId", "span_id":
 
-			orig.SpanId.UnmarshalJSON(iter)
+			orig.SpanId.UnmarshalJSONState(iter, st)
 		default:
 			iter.HandleUnknownField(f)
 		}
@@ -377,6 +335,10 @@ func (orig *Exemplar) MarshalProto(buf []byte) int {
 }
 
 func (orig *Exemplar) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *Exemplar) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -401,8 +363,8 @@ func (orig *Exemplar) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.FilteredAttributes = append(orig.FilteredAttributes, KeyValue{})
-			err = orig.FilteredAttributes[len(orig.FilteredAttributes)-1].UnmarshalProto(buf[startPos:pos])
+			orig.FilteredAttributes = AppendEstimated(st, orig.FilteredAttributes, KeyValue{}, len(buf)-pos, length+2)
+			err = orig.FilteredAttributes[len(orig.FilteredAttributes)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -428,12 +390,7 @@ func (orig *Exemplar) UnmarshalProto(buf []byte) error {
 			if err != nil {
 				return err
 			}
-			var ov *Exemplar_AsDouble
-			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-				ov = &Exemplar_AsDouble{}
-			} else {
-				ov = ProtoPoolExemplar_AsDouble.Get().(*Exemplar_AsDouble)
-			}
+			ov := Alloc[Exemplar_AsDouble](st)
 			ov.AsDouble = math.Float64frombits(num)
 			orig.Value = ov
 
@@ -446,12 +403,7 @@ func (orig *Exemplar) UnmarshalProto(buf []byte) error {
 			if err != nil {
 				return err
 			}
-			var ov *Exemplar_AsInt
-			if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-				ov = &Exemplar_AsInt{}
-			} else {
-				ov = ProtoPoolExemplar_AsInt.Get().(*Exemplar_AsInt)
-			}
+			ov := Alloc[Exemplar_AsInt](st)
 			ov.AsInt = int64(num)
 			orig.Value = ov
 
@@ -466,7 +418,7 @@ func (orig *Exemplar) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.TraceId.UnmarshalProto(buf[startPos:pos])
+			err = orig.TraceId.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -482,7 +434,7 @@ func (orig *Exemplar) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.SpanId.UnmarshalProto(buf[startPos:pos])
+			err = orig.SpanId.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -497,7 +449,7 @@ func (orig *Exemplar) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestExemplar() *Exemplar {
-	orig := NewExemplar()
+	orig := Alloc[Exemplar](nil)
 	orig.FilteredAttributes = []KeyValue{{}, *GenTestKeyValue()}
 	orig.TimeUnixNano = uint64(13)
 	orig.Value = &Exemplar_AsDouble{AsDouble: float64(3.1415926)}
@@ -508,11 +460,11 @@ func GenTestExemplar() *Exemplar {
 
 func GenTestExemplarPtrSlice() []*Exemplar {
 	orig := make([]*Exemplar, 5)
-	orig[0] = NewExemplar()
+	orig[0] = Alloc[Exemplar](nil)
 	orig[1] = GenTestExemplar()
-	orig[2] = NewExemplar()
+	orig[2] = Alloc[Exemplar](nil)
 	orig[3] = GenTestExemplar()
-	orig[4] = NewExemplar()
+	orig[4] = Alloc[Exemplar](nil)
 	return orig
 }
 

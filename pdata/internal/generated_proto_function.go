@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -23,19 +22,8 @@ type Function struct {
 	StartLine          int64
 }
 
-var (
-	protoPoolFunction = sync.Pool{
-		New: func() any {
-			return &Function{}
-		},
-	}
-)
-
 func NewFunction() *Function {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &Function{}
-	}
-	return protoPoolFunction.Get().(*Function)
+	return Alloc[Function](nil)
 }
 
 func DeleteFunction(orig *Function, nullable bool) {
@@ -49,12 +37,10 @@ func DeleteFunction(orig *Function, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolFunction.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyFunction(dest, src *Function) *Function {
+func CopyFunction(dest, src *Function, st *State) *Function {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -65,7 +51,7 @@ func CopyFunction(dest, src *Function) *Function {
 	}
 
 	if dest == nil {
-		dest = NewFunction()
+		dest = Alloc[Function](st)
 	}
 	dest.NameStrindex = src.NameStrindex
 	dest.SystemNameStrindex = src.SystemNameStrindex
@@ -75,10 +61,10 @@ func CopyFunction(dest, src *Function) *Function {
 	return dest
 }
 
-func CopyFunctionSlice(dest, src []Function) []Function {
+func CopyFunctionSlice(dest, src []Function, st *State) []Function {
 	var newDest []Function
 	if cap(dest) < len(src) {
-		newDest = make([]Function, len(src))
+		newDest = AllocSlice[Function](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -88,20 +74,20 @@ func CopyFunctionSlice(dest, src []Function) []Function {
 		}
 	}
 	for i := range src {
-		CopyFunction(&newDest[i], &src[i])
+		CopyFunction(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyFunctionPtrSlice(dest, src []*Function) []*Function {
+func CopyFunctionPtrSlice(dest, src []*Function, st *State) []*Function {
 	var newDest []*Function
 	if cap(dest) < len(src) {
-		newDest = make([]*Function, len(src))
+		newDest = AllocSlice[*Function](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewFunction()
+			newDest[i] = Alloc[Function](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -114,11 +100,11 @@ func CopyFunctionPtrSlice(dest, src []*Function) []*Function {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewFunction()
+			newDest[i] = Alloc[Function](st)
 		}
 	}
 	for i := range src {
-		CopyFunction(newDest[i], src[i])
+		CopyFunction(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -151,15 +137,24 @@ func (orig *Function) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *Function) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *Function) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "nameStrindex", "name_strindex":
+
 			orig.NameStrindex = iter.ReadInt32()
 		case "systemNameStrindex", "system_name_strindex":
+
 			orig.SystemNameStrindex = iter.ReadInt32()
 		case "filenameStrindex", "filename_strindex":
+
 			orig.FilenameStrindex = iter.ReadInt32()
 		case "startLine", "start_line":
+
 			orig.StartLine = iter.ReadInt64()
 		default:
 			iter.HandleUnknownField(f)
@@ -214,6 +209,10 @@ func (orig *Function) MarshalProto(buf []byte) int {
 }
 
 func (orig *Function) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *Function) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -282,7 +281,7 @@ func (orig *Function) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestFunction() *Function {
-	orig := NewFunction()
+	orig := Alloc[Function](nil)
 	orig.NameStrindex = int32(13)
 	orig.SystemNameStrindex = int32(13)
 	orig.FilenameStrindex = int32(13)
@@ -292,11 +291,11 @@ func GenTestFunction() *Function {
 
 func GenTestFunctionPtrSlice() []*Function {
 	orig := make([]*Function, 5)
-	orig[0] = NewFunction()
+	orig[0] = Alloc[Function](nil)
 	orig[1] = GenTestFunction()
-	orig[2] = NewFunction()
+	orig[2] = Alloc[Function](nil)
 	orig[3] = GenTestFunction()
-	orig[4] = NewFunction()
+	orig[4] = Alloc[Function](nil)
 	return orig
 }
 

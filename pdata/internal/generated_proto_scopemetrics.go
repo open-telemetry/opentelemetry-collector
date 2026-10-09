@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -22,19 +21,8 @@ type ScopeMetrics struct {
 	SchemaUrl string
 }
 
-var (
-	protoPoolScopeMetrics = sync.Pool{
-		New: func() any {
-			return &ScopeMetrics{}
-		},
-	}
-)
-
 func NewScopeMetrics() *ScopeMetrics {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &ScopeMetrics{}
-	}
-	return protoPoolScopeMetrics.Get().(*ScopeMetrics)
+	return Alloc[ScopeMetrics](nil)
 }
 
 func DeleteScopeMetrics(orig *ScopeMetrics, nullable bool) {
@@ -52,12 +40,10 @@ func DeleteScopeMetrics(orig *ScopeMetrics, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolScopeMetrics.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyScopeMetrics(dest, src *ScopeMetrics) *ScopeMetrics {
+func CopyScopeMetrics(dest, src *ScopeMetrics, st *State) *ScopeMetrics {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -68,21 +54,21 @@ func CopyScopeMetrics(dest, src *ScopeMetrics) *ScopeMetrics {
 	}
 
 	if dest == nil {
-		dest = NewScopeMetrics()
+		dest = Alloc[ScopeMetrics](st)
 	}
-	CopyInstrumentationScope(&dest.Scope, &src.Scope)
+	CopyInstrumentationScope(&dest.Scope, &src.Scope, st)
 
-	dest.Metrics = CopyMetricPtrSlice(dest.Metrics, src.Metrics)
+	dest.Metrics = CopyMetricPtrSlice(dest.Metrics, src.Metrics, st)
 
-	dest.SchemaUrl = src.SchemaUrl
+	dest.SchemaUrl = CopyString(st, src.SchemaUrl)
 
 	return dest
 }
 
-func CopyScopeMetricsSlice(dest, src []ScopeMetrics) []ScopeMetrics {
+func CopyScopeMetricsSlice(dest, src []ScopeMetrics, st *State) []ScopeMetrics {
 	var newDest []ScopeMetrics
 	if cap(dest) < len(src) {
-		newDest = make([]ScopeMetrics, len(src))
+		newDest = AllocSlice[ScopeMetrics](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -92,20 +78,20 @@ func CopyScopeMetricsSlice(dest, src []ScopeMetrics) []ScopeMetrics {
 		}
 	}
 	for i := range src {
-		CopyScopeMetrics(&newDest[i], &src[i])
+		CopyScopeMetrics(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyScopeMetricsPtrSlice(dest, src []*ScopeMetrics) []*ScopeMetrics {
+func CopyScopeMetricsPtrSlice(dest, src []*ScopeMetrics, st *State) []*ScopeMetrics {
 	var newDest []*ScopeMetrics
 	if cap(dest) < len(src) {
-		newDest = make([]*ScopeMetrics, len(src))
+		newDest = AllocSlice[*ScopeMetrics](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewScopeMetrics()
+			newDest[i] = Alloc[ScopeMetrics](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -118,11 +104,11 @@ func CopyScopeMetricsPtrSlice(dest, src []*ScopeMetrics) []*ScopeMetrics {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewScopeMetrics()
+			newDest[i] = Alloc[ScopeMetrics](st)
 		}
 	}
 	for i := range src {
-		CopyScopeMetrics(newDest[i], src[i])
+		CopyScopeMetrics(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -155,19 +141,25 @@ func (orig *ScopeMetrics) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *ScopeMetrics) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *ScopeMetrics) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "scope":
 
-			orig.Scope.UnmarshalJSON(iter)
+			orig.Scope.UnmarshalJSONState(iter, st)
 		case "metrics":
 			for iter.ReadArray() {
-				orig.Metrics = append(orig.Metrics, NewMetric())
-				orig.Metrics[len(orig.Metrics)-1].UnmarshalJSON(iter)
+				orig.Metrics = Append(st, orig.Metrics, Alloc[Metric](st))
+				orig.Metrics[len(orig.Metrics)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "schemaUrl", "schema_url":
-			orig.SchemaUrl = iter.ReadString()
+
+			orig.SchemaUrl = CopyString(st, iter.ReadString())
 		default:
 			iter.HandleUnknownField(f)
 		}
@@ -221,6 +213,10 @@ func (orig *ScopeMetrics) MarshalProto(buf []byte) int {
 }
 
 func (orig *ScopeMetrics) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *ScopeMetrics) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -246,7 +242,7 @@ func (orig *ScopeMetrics) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Scope.UnmarshalProto(buf[startPos:pos])
+			err = orig.Scope.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -261,8 +257,8 @@ func (orig *ScopeMetrics) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Metrics = append(orig.Metrics, NewMetric())
-			err = orig.Metrics[len(orig.Metrics)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Metrics = AppendEstimated(st, orig.Metrics, Alloc[Metric](st), len(buf)-pos, length+2)
+			err = orig.Metrics[len(orig.Metrics)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -277,7 +273,7 @@ func (orig *ScopeMetrics) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.SchemaUrl = string(buf[startPos:pos])
+			orig.SchemaUrl = BorrowString(st, buf, startPos, pos)
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -289,7 +285,7 @@ func (orig *ScopeMetrics) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestScopeMetrics() *ScopeMetrics {
-	orig := NewScopeMetrics()
+	orig := Alloc[ScopeMetrics](nil)
 	orig.Scope = *GenTestInstrumentationScope()
 	orig.Metrics = []*Metric{{}, GenTestMetric()}
 	orig.SchemaUrl = "test_schemaurl"
@@ -298,11 +294,11 @@ func GenTestScopeMetrics() *ScopeMetrics {
 
 func GenTestScopeMetricsPtrSlice() []*ScopeMetrics {
 	orig := make([]*ScopeMetrics, 5)
-	orig[0] = NewScopeMetrics()
+	orig[0] = Alloc[ScopeMetrics](nil)
 	orig[1] = GenTestScopeMetrics()
-	orig[2] = NewScopeMetrics()
+	orig[2] = Alloc[ScopeMetrics](nil)
 	orig[3] = GenTestScopeMetrics()
-	orig[4] = NewScopeMetrics()
+	orig[4] = Alloc[ScopeMetrics](nil)
 	return orig
 }
 

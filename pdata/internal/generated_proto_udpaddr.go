@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -21,19 +20,8 @@ type UDPAddr struct {
 	Zone string
 }
 
-var (
-	protoPoolUDPAddr = sync.Pool{
-		New: func() any {
-			return &UDPAddr{}
-		},
-	}
-)
-
 func NewUDPAddr() *UDPAddr {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &UDPAddr{}
-	}
-	return protoPoolUDPAddr.Get().(*UDPAddr)
+	return Alloc[UDPAddr](nil)
 }
 
 func DeleteUDPAddr(orig *UDPAddr, nullable bool) {
@@ -47,12 +35,10 @@ func DeleteUDPAddr(orig *UDPAddr, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolUDPAddr.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyUDPAddr(dest, src *UDPAddr) *UDPAddr {
+func CopyUDPAddr(dest, src *UDPAddr, st *State) *UDPAddr {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -63,19 +49,20 @@ func CopyUDPAddr(dest, src *UDPAddr) *UDPAddr {
 	}
 
 	if dest == nil {
-		dest = NewUDPAddr()
+		dest = Alloc[UDPAddr](st)
 	}
-	dest.IP = src.IP
+	dest.IP = CopyBytes(st, src.IP)
+
 	dest.Port = src.Port
-	dest.Zone = src.Zone
+	dest.Zone = CopyString(st, src.Zone)
 
 	return dest
 }
 
-func CopyUDPAddrSlice(dest, src []UDPAddr) []UDPAddr {
+func CopyUDPAddrSlice(dest, src []UDPAddr, st *State) []UDPAddr {
 	var newDest []UDPAddr
 	if cap(dest) < len(src) {
-		newDest = make([]UDPAddr, len(src))
+		newDest = AllocSlice[UDPAddr](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -85,20 +72,20 @@ func CopyUDPAddrSlice(dest, src []UDPAddr) []UDPAddr {
 		}
 	}
 	for i := range src {
-		CopyUDPAddr(&newDest[i], &src[i])
+		CopyUDPAddr(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyUDPAddrPtrSlice(dest, src []*UDPAddr) []*UDPAddr {
+func CopyUDPAddrPtrSlice(dest, src []*UDPAddr, st *State) []*UDPAddr {
 	var newDest []*UDPAddr
 	if cap(dest) < len(src) {
-		newDest = make([]*UDPAddr, len(src))
+		newDest = AllocSlice[*UDPAddr](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewUDPAddr()
+			newDest[i] = Alloc[UDPAddr](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -111,11 +98,11 @@ func CopyUDPAddrPtrSlice(dest, src []*UDPAddr) []*UDPAddr {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewUDPAddr()
+			newDest[i] = Alloc[UDPAddr](st)
 		}
 	}
 	for i := range src {
-		CopyUDPAddr(newDest[i], src[i])
+		CopyUDPAddr(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -145,14 +132,21 @@ func (orig *UDPAddr) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *UDPAddr) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *UDPAddr) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "iP":
-			orig.IP = iter.ReadBytes()
+			orig.IP = CopyBytes(st, iter.ReadBytes())
 		case "port":
+
 			orig.Port = iter.ReadInt64()
 		case "zone":
-			orig.Zone = iter.ReadString()
+
+			orig.Zone = CopyString(st, iter.ReadString())
 		default:
 			iter.HandleUnknownField(f)
 		}
@@ -208,6 +202,10 @@ func (orig *UDPAddr) MarshalProto(buf []byte) int {
 }
 
 func (orig *UDPAddr) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *UDPAddr) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -232,10 +230,7 @@ func (orig *UDPAddr) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			if length != 0 {
-				orig.IP = make([]byte, length)
-				copy(orig.IP, buf[startPos:pos])
-			}
+			orig.IP = BorrowBytes(st, buf, startPos, pos)
 
 		case 2:
 			if wireType != proto.WireTypeVarint {
@@ -258,7 +253,7 @@ func (orig *UDPAddr) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Zone = string(buf[startPos:pos])
+			orig.Zone = BorrowString(st, buf, startPos, pos)
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -270,7 +265,7 @@ func (orig *UDPAddr) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestUDPAddr() *UDPAddr {
-	orig := NewUDPAddr()
+	orig := Alloc[UDPAddr](nil)
 	orig.IP = []byte{1, 2, 3}
 	orig.Port = int64(13)
 	orig.Zone = "test_zone"
@@ -279,11 +274,11 @@ func GenTestUDPAddr() *UDPAddr {
 
 func GenTestUDPAddrPtrSlice() []*UDPAddr {
 	orig := make([]*UDPAddr, 5)
-	orig[0] = NewUDPAddr()
+	orig[0] = Alloc[UDPAddr](nil)
 	orig[1] = GenTestUDPAddr()
-	orig[2] = NewUDPAddr()
+	orig[2] = Alloc[UDPAddr](nil)
 	orig[3] = GenTestUDPAddr()
-	orig[4] = NewUDPAddr()
+	orig[4] = Alloc[UDPAddr](nil)
 	return orig
 }
 

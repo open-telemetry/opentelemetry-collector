@@ -8,7 +8,6 @@ package pmetric
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/metadata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -36,7 +35,8 @@ func newExemplar(orig *internal.Exemplar, state *internal.State) Exemplar {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExemplar() Exemplar {
-	return newExemplar(internal.NewExemplar(), internal.NewState())
+	st := internal.NewState()
+	return newExemplar(internal.Alloc[internal.Exemplar](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -46,6 +46,14 @@ func (ms Exemplar) MoveTo(dest Exemplar) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteExemplar(dest.orig, false)
+		ms.CopyTo(dest)
+		internal.DeleteExemplar(ms.orig, false)
 		return
 	}
 	internal.DeleteExemplar(dest.orig, false)
@@ -88,12 +96,7 @@ func (ms Exemplar) DoubleValue() float64 {
 // SetDoubleValue replaces the double associated with this Exemplar.
 func (ms Exemplar) SetDoubleValue(v float64) {
 	ms.state.AssertMutable()
-	var ov *internal.Exemplar_AsDouble
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		ov = &internal.Exemplar_AsDouble{}
-	} else {
-		ov = internal.ProtoPoolExemplar_AsDouble.Get().(*internal.Exemplar_AsDouble)
-	}
+	ov := internal.Alloc[internal.Exemplar_AsDouble](ms.state)
 	ov.AsDouble = v
 	ms.orig.Value = ov
 } // IntValue returns the int associated with this Exemplar.
@@ -104,12 +107,7 @@ func (ms Exemplar) IntValue() int64 {
 // SetIntValue replaces the int associated with this Exemplar.
 func (ms Exemplar) SetIntValue(v int64) {
 	ms.state.AssertMutable()
-	var ov *internal.Exemplar_AsInt
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		ov = &internal.Exemplar_AsInt{}
-	} else {
-		ov = internal.ProtoPoolExemplar_AsInt.Get().(*internal.Exemplar_AsInt)
-	}
+	ov := internal.Alloc[internal.Exemplar_AsInt](ms.state)
 	ov.AsInt = v
 	ms.orig.Value = ov
 }
@@ -139,5 +137,5 @@ func (ms Exemplar) SetSpanID(v pcommon.SpanID) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.state.AssertMutable()
-	internal.CopyExemplar(dest.orig, ms.orig)
+	internal.CopyExemplar(dest.orig, ms.orig, dest.state)
 }

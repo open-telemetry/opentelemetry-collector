@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -21,19 +20,8 @@ type ExportTracePartialSuccess struct {
 	ErrorMessage  string
 }
 
-var (
-	protoPoolExportTracePartialSuccess = sync.Pool{
-		New: func() any {
-			return &ExportTracePartialSuccess{}
-		},
-	}
-)
-
 func NewExportTracePartialSuccess() *ExportTracePartialSuccess {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &ExportTracePartialSuccess{}
-	}
-	return protoPoolExportTracePartialSuccess.Get().(*ExportTracePartialSuccess)
+	return Alloc[ExportTracePartialSuccess](nil)
 }
 
 func DeleteExportTracePartialSuccess(orig *ExportTracePartialSuccess, nullable bool) {
@@ -47,12 +35,10 @@ func DeleteExportTracePartialSuccess(orig *ExportTracePartialSuccess, nullable b
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolExportTracePartialSuccess.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyExportTracePartialSuccess(dest, src *ExportTracePartialSuccess) *ExportTracePartialSuccess {
+func CopyExportTracePartialSuccess(dest, src *ExportTracePartialSuccess, st *State) *ExportTracePartialSuccess {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -63,18 +49,18 @@ func CopyExportTracePartialSuccess(dest, src *ExportTracePartialSuccess) *Export
 	}
 
 	if dest == nil {
-		dest = NewExportTracePartialSuccess()
+		dest = Alloc[ExportTracePartialSuccess](st)
 	}
 	dest.RejectedSpans = src.RejectedSpans
-	dest.ErrorMessage = src.ErrorMessage
+	dest.ErrorMessage = CopyString(st, src.ErrorMessage)
 
 	return dest
 }
 
-func CopyExportTracePartialSuccessSlice(dest, src []ExportTracePartialSuccess) []ExportTracePartialSuccess {
+func CopyExportTracePartialSuccessSlice(dest, src []ExportTracePartialSuccess, st *State) []ExportTracePartialSuccess {
 	var newDest []ExportTracePartialSuccess
 	if cap(dest) < len(src) {
-		newDest = make([]ExportTracePartialSuccess, len(src))
+		newDest = AllocSlice[ExportTracePartialSuccess](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -84,20 +70,20 @@ func CopyExportTracePartialSuccessSlice(dest, src []ExportTracePartialSuccess) [
 		}
 	}
 	for i := range src {
-		CopyExportTracePartialSuccess(&newDest[i], &src[i])
+		CopyExportTracePartialSuccess(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyExportTracePartialSuccessPtrSlice(dest, src []*ExportTracePartialSuccess) []*ExportTracePartialSuccess {
+func CopyExportTracePartialSuccessPtrSlice(dest, src []*ExportTracePartialSuccess, st *State) []*ExportTracePartialSuccess {
 	var newDest []*ExportTracePartialSuccess
 	if cap(dest) < len(src) {
-		newDest = make([]*ExportTracePartialSuccess, len(src))
+		newDest = AllocSlice[*ExportTracePartialSuccess](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewExportTracePartialSuccess()
+			newDest[i] = Alloc[ExportTracePartialSuccess](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -110,11 +96,11 @@ func CopyExportTracePartialSuccessPtrSlice(dest, src []*ExportTracePartialSucces
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewExportTracePartialSuccess()
+			newDest[i] = Alloc[ExportTracePartialSuccess](st)
 		}
 	}
 	for i := range src {
-		CopyExportTracePartialSuccess(newDest[i], src[i])
+		CopyExportTracePartialSuccess(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -139,12 +125,19 @@ func (orig *ExportTracePartialSuccess) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *ExportTracePartialSuccess) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *ExportTracePartialSuccess) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "rejectedSpans", "rejected_spans":
+
 			orig.RejectedSpans = iter.ReadInt64()
 		case "errorMessage", "error_message":
-			orig.ErrorMessage = iter.ReadString()
+
+			orig.ErrorMessage = CopyString(st, iter.ReadString())
 		default:
 			iter.HandleUnknownField(f)
 		}
@@ -187,6 +180,10 @@ func (orig *ExportTracePartialSuccess) MarshalProto(buf []byte) int {
 }
 
 func (orig *ExportTracePartialSuccess) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *ExportTracePartialSuccess) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -222,7 +219,7 @@ func (orig *ExportTracePartialSuccess) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ErrorMessage = string(buf[startPos:pos])
+			orig.ErrorMessage = BorrowString(st, buf, startPos, pos)
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -234,7 +231,7 @@ func (orig *ExportTracePartialSuccess) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestExportTracePartialSuccess() *ExportTracePartialSuccess {
-	orig := NewExportTracePartialSuccess()
+	orig := Alloc[ExportTracePartialSuccess](nil)
 	orig.RejectedSpans = int64(13)
 	orig.ErrorMessage = "test_errormessage"
 	return orig
@@ -242,11 +239,11 @@ func GenTestExportTracePartialSuccess() *ExportTracePartialSuccess {
 
 func GenTestExportTracePartialSuccessPtrSlice() []*ExportTracePartialSuccess {
 	orig := make([]*ExportTracePartialSuccess, 5)
-	orig[0] = NewExportTracePartialSuccess()
+	orig[0] = Alloc[ExportTracePartialSuccess](nil)
 	orig[1] = GenTestExportTracePartialSuccess()
-	orig[2] = NewExportTracePartialSuccess()
+	orig[2] = Alloc[ExportTracePartialSuccess](nil)
 	orig[3] = GenTestExportTracePartialSuccess()
-	orig[4] = NewExportTracePartialSuccess()
+	orig[4] = Alloc[ExportTracePartialSuccess](nil)
 	return orig
 }
 

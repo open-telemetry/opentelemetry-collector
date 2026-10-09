@@ -31,9 +31,9 @@ func TestCopyExportLogsServiceResponse(t *testing.T) {
 				}()
 
 				dest := NewExportLogsServiceResponse()
-				CopyExportLogsServiceResponse(dest, src)
+				CopyExportLogsServiceResponse(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyExportLogsServiceResponse(dest, dest)
+				CopyExportLogsServiceResponse(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyExportLogsServiceResponseSlice(t *testing.T) {
 	src := []ExportLogsServiceResponse{}
 	dest := []ExportLogsServiceResponse{}
 	// Test CopyTo empty
-	dest = CopyExportLogsServiceResponseSlice(dest, src)
+	dest = CopyExportLogsServiceResponseSlice(dest, src, nil)
 	assert.Equal(t, []ExportLogsServiceResponse{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExportLogsServiceResponseSlice()
-	dest = CopyExportLogsServiceResponseSlice(dest, src)
+	dest = CopyExportLogsServiceResponseSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportLogsServiceResponseSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExportLogsServiceResponseSlice(dest, src)
+	dest = CopyExportLogsServiceResponseSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportLogsServiceResponseSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExportLogsServiceResponseSlice(dest, []ExportLogsServiceResponse{})
+	dest = CopyExportLogsServiceResponseSlice(dest, []ExportLogsServiceResponse{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExportLogsServiceResponseSlice(dest, src)
+	dest = CopyExportLogsServiceResponseSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportLogsServiceResponseSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyExportLogsServiceResponsePtrSlice(t *testing.T) {
 	src := []*ExportLogsServiceResponse{}
 	dest := []*ExportLogsServiceResponse{}
 	// Test CopyTo empty
-	dest = CopyExportLogsServiceResponsePtrSlice(dest, src)
+	dest = CopyExportLogsServiceResponsePtrSlice(dest, src, nil)
 	assert.Equal(t, []*ExportLogsServiceResponse{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExportLogsServiceResponsePtrSlice()
-	dest = CopyExportLogsServiceResponsePtrSlice(dest, src)
+	dest = CopyExportLogsServiceResponsePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportLogsServiceResponsePtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExportLogsServiceResponsePtrSlice(dest, src)
+	dest = CopyExportLogsServiceResponsePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportLogsServiceResponsePtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExportLogsServiceResponsePtrSlice(dest, []*ExportLogsServiceResponse{})
+	dest = CopyExportLogsServiceResponsePtrSlice(dest, []*ExportLogsServiceResponse{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExportLogsServiceResponsePtrSlice(dest, src)
+	dest = CopyExportLogsServiceResponsePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportLogsServiceResponsePtrSlice(), dest)
 }
 

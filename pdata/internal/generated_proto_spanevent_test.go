@@ -31,9 +31,9 @@ func TestCopySpanEvent(t *testing.T) {
 				}()
 
 				dest := NewSpanEvent()
-				CopySpanEvent(dest, src)
+				CopySpanEvent(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopySpanEvent(dest, dest)
+				CopySpanEvent(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopySpanEventSlice(t *testing.T) {
 	src := []SpanEvent{}
 	dest := []SpanEvent{}
 	// Test CopyTo empty
-	dest = CopySpanEventSlice(dest, src)
+	dest = CopySpanEventSlice(dest, src, nil)
 	assert.Equal(t, []SpanEvent{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSpanEventSlice()
-	dest = CopySpanEventSlice(dest, src)
+	dest = CopySpanEventSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanEventSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySpanEventSlice(dest, src)
+	dest = CopySpanEventSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanEventSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySpanEventSlice(dest, []SpanEvent{})
+	dest = CopySpanEventSlice(dest, []SpanEvent{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySpanEventSlice(dest, src)
+	dest = CopySpanEventSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanEventSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopySpanEventPtrSlice(t *testing.T) {
 	src := []*SpanEvent{}
 	dest := []*SpanEvent{}
 	// Test CopyTo empty
-	dest = CopySpanEventPtrSlice(dest, src)
+	dest = CopySpanEventPtrSlice(dest, src, nil)
 	assert.Equal(t, []*SpanEvent{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSpanEventPtrSlice()
-	dest = CopySpanEventPtrSlice(dest, src)
+	dest = CopySpanEventPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanEventPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySpanEventPtrSlice(dest, src)
+	dest = CopySpanEventPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanEventPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySpanEventPtrSlice(dest, []*SpanEvent{})
+	dest = CopySpanEventPtrSlice(dest, []*SpanEvent{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySpanEventPtrSlice(dest, src)
+	dest = CopySpanEventPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanEventPtrSlice(), dest)
 }
 

@@ -32,7 +32,8 @@ func newMapping(orig *internal.Mapping, state *internal.State) Mapping {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewMapping() Mapping {
-	return newMapping(internal.NewMapping(), internal.NewState())
+	st := internal.NewState()
+	return newMapping(internal.Alloc[internal.Mapping](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -42,6 +43,14 @@ func (ms Mapping) MoveTo(dest Mapping) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteMapping(dest.orig, false)
+		ms.CopyTo(dest)
+		internal.DeleteMapping(ms.orig, false)
 		return
 	}
 	internal.DeleteMapping(dest.orig, false)
@@ -100,5 +109,5 @@ func (ms Mapping) AttributeIndices() pcommon.Int32Slice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Mapping) CopyTo(dest Mapping) {
 	dest.state.AssertMutable()
-	internal.CopyMapping(dest.orig, ms.orig)
+	internal.CopyMapping(dest.orig, ms.orig, dest.state)
 }

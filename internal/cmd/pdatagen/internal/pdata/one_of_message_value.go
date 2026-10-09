@@ -31,13 +31,8 @@ func (ms {{ .structName }}) {{ .fieldName }}() {{ .returnType }} {
 // Calling this function on zero-initialized {{ .structName }} will cause a panic.
 func (ms {{ .structName }}) SetEmpty{{ .fieldName }}() {{ .returnType }} {
 	ms.state.AssertMutable()
-	var ov *internal.{{ .originStructType }}
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		ov = &internal.{{ .originStructType }}{}
-	} else {
-		ov = internal.ProtoPool{{ .oneOfName }}.Get().(*internal.{{ .originStructType }})
-	}
-	ov.{{ .fieldName }} = internal.New{{ .fieldOriginName }}()
+	ov := internal.Alloc[internal.{{ .originStructType }}](ms.state)
+	ov.{{ .fieldName }} = internal.Alloc[internal.{{ .fieldOriginName }}](ms.state)
 	ms.orig.{{ .originOneOfFieldName }} = ov
 	return new{{ .returnType }}(ov.{{ .fieldName }}, ms.state)
 }`

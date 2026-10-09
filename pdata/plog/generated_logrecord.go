@@ -32,7 +32,8 @@ func newLogRecord(orig *internal.LogRecord, state *internal.State) LogRecord {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewLogRecord() LogRecord {
-	return newLogRecord(internal.NewLogRecord(), internal.NewState())
+	st := internal.NewState()
+	return newLogRecord(internal.Alloc[internal.LogRecord](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -42,6 +43,14 @@ func (ms LogRecord) MoveTo(dest LogRecord) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteLogRecord(dest.orig, false)
+		ms.CopyTo(dest)
+		internal.DeleteLogRecord(ms.orig, false)
 		return
 	}
 	internal.DeleteLogRecord(dest.orig, false)
@@ -89,7 +98,7 @@ func (ms LogRecord) SeverityText() string {
 // SetSeverityText replaces the severitytext associated with this LogRecord.
 func (ms LogRecord) SetSeverityText(v string) {
 	ms.state.AssertMutable()
-	ms.orig.SeverityText = v
+	ms.orig.SeverityText = internal.CopyString(ms.state, v)
 }
 
 // Body returns the body associated with this LogRecord.
@@ -154,11 +163,11 @@ func (ms LogRecord) EventName() string {
 // SetEventName replaces the eventname associated with this LogRecord.
 func (ms LogRecord) SetEventName(v string) {
 	ms.state.AssertMutable()
-	ms.orig.EventName = v
+	ms.orig.EventName = internal.CopyString(ms.state, v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms LogRecord) CopyTo(dest LogRecord) {
 	dest.state.AssertMutable()
-	internal.CopyLogRecord(dest.orig, ms.orig)
+	internal.CopyLogRecord(dest.orig, ms.orig, dest.state)
 }

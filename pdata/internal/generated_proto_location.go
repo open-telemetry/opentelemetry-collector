@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -23,19 +22,8 @@ type Location struct {
 	AttributeIndices []int32
 }
 
-var (
-	protoPoolLocation = sync.Pool{
-		New: func() any {
-			return &Location{}
-		},
-	}
-)
-
 func NewLocation() *Location {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &Location{}
-	}
-	return protoPoolLocation.Get().(*Location)
+	return Alloc[Location](nil)
 }
 
 func DeleteLocation(orig *Location, nullable bool) {
@@ -53,12 +41,10 @@ func DeleteLocation(orig *Location, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolLocation.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyLocation(dest, src *Location) *Location {
+func CopyLocation(dest, src *Location, st *State) *Location {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -69,21 +55,21 @@ func CopyLocation(dest, src *Location) *Location {
 	}
 
 	if dest == nil {
-		dest = NewLocation()
+		dest = Alloc[Location](st)
 	}
 	dest.MappingIndex = src.MappingIndex
 	dest.Address = src.Address
-	dest.Lines = CopyLinePtrSlice(dest.Lines, src.Lines)
+	dest.Lines = CopyLinePtrSlice(dest.Lines, src.Lines, st)
 
-	dest.AttributeIndices = append(dest.AttributeIndices[:0], src.AttributeIndices...)
+	dest.AttributeIndices = CopySlice(st, dest.AttributeIndices, src.AttributeIndices)
 
 	return dest
 }
 
-func CopyLocationSlice(dest, src []Location) []Location {
+func CopyLocationSlice(dest, src []Location, st *State) []Location {
 	var newDest []Location
 	if cap(dest) < len(src) {
-		newDest = make([]Location, len(src))
+		newDest = AllocSlice[Location](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -93,20 +79,20 @@ func CopyLocationSlice(dest, src []Location) []Location {
 		}
 	}
 	for i := range src {
-		CopyLocation(&newDest[i], &src[i])
+		CopyLocation(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyLocationPtrSlice(dest, src []*Location) []*Location {
+func CopyLocationPtrSlice(dest, src []*Location, st *State) []*Location {
 	var newDest []*Location
 	if cap(dest) < len(src) {
-		newDest = make([]*Location, len(src))
+		newDest = AllocSlice[*Location](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewLocation()
+			newDest[i] = Alloc[Location](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -119,11 +105,11 @@ func CopyLocationPtrSlice(dest, src []*Location) []*Location {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewLocation()
+			newDest[i] = Alloc[Location](st)
 		}
 	}
 	for i := range src {
-		CopyLocation(newDest[i], src[i])
+		CopyLocation(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -169,21 +155,28 @@ func (orig *Location) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *Location) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *Location) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "mappingIndex", "mapping_index":
+
 			orig.MappingIndex = iter.ReadInt32()
 		case "address":
+
 			orig.Address = iter.ReadUint64()
 		case "lines":
 			for iter.ReadArray() {
-				orig.Lines = append(orig.Lines, NewLine())
-				orig.Lines[len(orig.Lines)-1].UnmarshalJSON(iter)
+				orig.Lines = Append(st, orig.Lines, Alloc[Line](st))
+				orig.Lines[len(orig.Lines)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "attributeIndices", "attribute_indices":
 			for iter.ReadArray() {
-				orig.AttributeIndices = append(orig.AttributeIndices, iter.ReadInt32())
+				orig.AttributeIndices = Append(st, orig.AttributeIndices, iter.ReadInt32())
 			}
 
 		default:
@@ -252,6 +245,10 @@ func (orig *Location) MarshalProto(buf []byte) int {
 }
 
 func (orig *Location) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *Location) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -298,8 +295,8 @@ func (orig *Location) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Lines = append(orig.Lines, NewLine())
-			err = orig.Lines[len(orig.Lines)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Lines = AppendEstimated(st, orig.Lines, Alloc[Line](st), len(buf)-pos, length+2)
+			err = orig.Lines[len(orig.Lines)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -318,7 +315,7 @@ func (orig *Location) UnmarshalProto(buf []byte) error {
 					if err != nil {
 						return err
 					}
-					orig.AttributeIndices = append(orig.AttributeIndices, int32(num))
+					orig.AttributeIndices = AppendEstimated(st, orig.AttributeIndices, int32(num), pos-startPos, 1)
 				}
 				if startPos != pos {
 					return fmt.Errorf("proto: invalid field len = %d for field AttributeIndices", pos-startPos)
@@ -329,7 +326,7 @@ func (orig *Location) UnmarshalProto(buf []byte) error {
 				if err != nil {
 					return err
 				}
-				orig.AttributeIndices = append(orig.AttributeIndices, int32(num))
+				orig.AttributeIndices = AppendEstimated(st, orig.AttributeIndices, int32(num), len(buf)-pos, 2)
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)
 			}
@@ -344,7 +341,7 @@ func (orig *Location) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestLocation() *Location {
-	orig := NewLocation()
+	orig := Alloc[Location](nil)
 	orig.MappingIndex = int32(13)
 	orig.Address = uint64(13)
 	orig.Lines = []*Line{{}, GenTestLine()}
@@ -354,11 +351,11 @@ func GenTestLocation() *Location {
 
 func GenTestLocationPtrSlice() []*Location {
 	orig := make([]*Location, 5)
-	orig[0] = NewLocation()
+	orig[0] = Alloc[Location](nil)
 	orig[1] = GenTestLocation()
-	orig[2] = NewLocation()
+	orig[2] = Alloc[Location](nil)
 	orig[3] = GenTestLocation()
-	orig[4] = NewLocation()
+	orig[4] = Alloc[Location](nil)
 	return orig
 }
 

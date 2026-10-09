@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -20,19 +19,8 @@ type UnixAddr struct {
 	Net  string
 }
 
-var (
-	protoPoolUnixAddr = sync.Pool{
-		New: func() any {
-			return &UnixAddr{}
-		},
-	}
-)
-
 func NewUnixAddr() *UnixAddr {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &UnixAddr{}
-	}
-	return protoPoolUnixAddr.Get().(*UnixAddr)
+	return Alloc[UnixAddr](nil)
 }
 
 func DeleteUnixAddr(orig *UnixAddr, nullable bool) {
@@ -46,12 +34,10 @@ func DeleteUnixAddr(orig *UnixAddr, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolUnixAddr.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyUnixAddr(dest, src *UnixAddr) *UnixAddr {
+func CopyUnixAddr(dest, src *UnixAddr, st *State) *UnixAddr {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -62,18 +48,19 @@ func CopyUnixAddr(dest, src *UnixAddr) *UnixAddr {
 	}
 
 	if dest == nil {
-		dest = NewUnixAddr()
+		dest = Alloc[UnixAddr](st)
 	}
-	dest.Name = src.Name
-	dest.Net = src.Net
+	dest.Name = CopyString(st, src.Name)
+
+	dest.Net = CopyString(st, src.Net)
 
 	return dest
 }
 
-func CopyUnixAddrSlice(dest, src []UnixAddr) []UnixAddr {
+func CopyUnixAddrSlice(dest, src []UnixAddr, st *State) []UnixAddr {
 	var newDest []UnixAddr
 	if cap(dest) < len(src) {
-		newDest = make([]UnixAddr, len(src))
+		newDest = AllocSlice[UnixAddr](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -83,20 +70,20 @@ func CopyUnixAddrSlice(dest, src []UnixAddr) []UnixAddr {
 		}
 	}
 	for i := range src {
-		CopyUnixAddr(&newDest[i], &src[i])
+		CopyUnixAddr(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyUnixAddrPtrSlice(dest, src []*UnixAddr) []*UnixAddr {
+func CopyUnixAddrPtrSlice(dest, src []*UnixAddr, st *State) []*UnixAddr {
 	var newDest []*UnixAddr
 	if cap(dest) < len(src) {
-		newDest = make([]*UnixAddr, len(src))
+		newDest = AllocSlice[*UnixAddr](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewUnixAddr()
+			newDest[i] = Alloc[UnixAddr](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -109,11 +96,11 @@ func CopyUnixAddrPtrSlice(dest, src []*UnixAddr) []*UnixAddr {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewUnixAddr()
+			newDest[i] = Alloc[UnixAddr](st)
 		}
 	}
 	for i := range src {
-		CopyUnixAddr(newDest[i], src[i])
+		CopyUnixAddr(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -138,12 +125,19 @@ func (orig *UnixAddr) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *UnixAddr) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *UnixAddr) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "name":
-			orig.Name = iter.ReadString()
+
+			orig.Name = CopyString(st, iter.ReadString())
 		case "net":
-			orig.Net = iter.ReadString()
+
+			orig.Net = CopyString(st, iter.ReadString())
 		default:
 			iter.HandleUnknownField(f)
 		}
@@ -191,6 +185,10 @@ func (orig *UnixAddr) MarshalProto(buf []byte) int {
 }
 
 func (orig *UnixAddr) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *UnixAddr) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -215,7 +213,7 @@ func (orig *UnixAddr) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Name = string(buf[startPos:pos])
+			orig.Name = BorrowString(st, buf, startPos, pos)
 
 		case 2:
 			if wireType != proto.WireTypeLen {
@@ -227,7 +225,7 @@ func (orig *UnixAddr) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Net = string(buf[startPos:pos])
+			orig.Net = BorrowString(st, buf, startPos, pos)
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -239,7 +237,7 @@ func (orig *UnixAddr) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestUnixAddr() *UnixAddr {
-	orig := NewUnixAddr()
+	orig := Alloc[UnixAddr](nil)
 	orig.Name = "test_name"
 	orig.Net = "test_net"
 	return orig
@@ -247,11 +245,11 @@ func GenTestUnixAddr() *UnixAddr {
 
 func GenTestUnixAddrPtrSlice() []*UnixAddr {
 	orig := make([]*UnixAddr, 5)
-	orig[0] = NewUnixAddr()
+	orig[0] = Alloc[UnixAddr](nil)
 	orig[1] = GenTestUnixAddr()
-	orig[2] = NewUnixAddr()
+	orig[2] = Alloc[UnixAddr](nil)
 	orig[3] = GenTestUnixAddr()
-	orig[4] = NewUnixAddr()
+	orig[4] = Alloc[UnixAddr](nil)
 	return orig
 }
 

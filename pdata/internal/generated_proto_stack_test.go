@@ -31,9 +31,9 @@ func TestCopyStack(t *testing.T) {
 				}()
 
 				dest := NewStack()
-				CopyStack(dest, src)
+				CopyStack(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyStack(dest, dest)
+				CopyStack(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyStackSlice(t *testing.T) {
 	src := []Stack{}
 	dest := []Stack{}
 	// Test CopyTo empty
-	dest = CopyStackSlice(dest, src)
+	dest = CopyStackSlice(dest, src, nil)
 	assert.Equal(t, []Stack{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestStackSlice()
-	dest = CopyStackSlice(dest, src)
+	dest = CopyStackSlice(dest, src, nil)
 	assert.Equal(t, GenTestStackSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyStackSlice(dest, src)
+	dest = CopyStackSlice(dest, src, nil)
 	assert.Equal(t, GenTestStackSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyStackSlice(dest, []Stack{})
+	dest = CopyStackSlice(dest, []Stack{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyStackSlice(dest, src)
+	dest = CopyStackSlice(dest, src, nil)
 	assert.Equal(t, GenTestStackSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyStackPtrSlice(t *testing.T) {
 	src := []*Stack{}
 	dest := []*Stack{}
 	// Test CopyTo empty
-	dest = CopyStackPtrSlice(dest, src)
+	dest = CopyStackPtrSlice(dest, src, nil)
 	assert.Equal(t, []*Stack{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestStackPtrSlice()
-	dest = CopyStackPtrSlice(dest, src)
+	dest = CopyStackPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestStackPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyStackPtrSlice(dest, src)
+	dest = CopyStackPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestStackPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyStackPtrSlice(dest, []*Stack{})
+	dest = CopyStackPtrSlice(dest, []*Stack{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyStackPtrSlice(dest, src)
+	dest = CopyStackPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestStackPtrSlice(), dest)
 }
 

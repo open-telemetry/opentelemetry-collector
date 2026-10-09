@@ -4,8 +4,12 @@
 package otelgrpc // import "go.opentelemetry.io/collector/pdata/internal/otelgrpc"
 
 import (
+	"sync"
+
 	"google.golang.org/grpc/encoding"
 	"google.golang.org/grpc/mem"
+
+	"go.opentelemetry.io/collector/pdata/internal"
 )
 
 var (
@@ -74,4 +78,52 @@ func (c *codecV2) Unmarshal(data mem.BufferSlice, v any) (err error) {
 
 func (c *codecV2) Name() string {
 	return Name
+}
+
+type protoStatefulUnmarshaler interface {
+	UnmarshalProtoState([]byte, *internal.State) error
+}
+
+type statefulDecoder struct {
+	msg protoStatefulUnmarshaler
+	st  *internal.State
+}
+
+func (s *statefulDecoder) SizeProto() int { return 0 }
+
+func (s *statefulDecoder) MarshalProto([]byte) int { return 0 }
+
+func (s *statefulDecoder) UnmarshalProto(buf []byte) error {
+	owned := s.st.CloneAndRetainWire(buf)
+	return s.msg.UnmarshalProtoState(owned, s.st)
+}
+
+// grpcRequestStates binds a decoded request to the State its data was allocated from. It has to
+// be a side channel because the generated gRPC handler signature has nowhere to carry the state
+// between decoding and the typed server wrapper that picks it up.
+var grpcRequestStates sync.Map
+
+func decodeExportRequest(st *internal.State, msg protoStatefulUnmarshaler, orig any, dec func(any) error) error {
+	grpcRequestStates.Store(orig, st)
+	if err := dec(&statefulDecoder{msg: msg, st: st}); err != nil {
+		grpcRequestStates.Delete(orig)
+		return err
+	}
+	return nil
+}
+
+// releaseExportRequest drops any binding left for orig. Handlers must defer this: an interceptor
+// may reject a request before the wrapper that calls TakeGRPCState runs, and without this the
+// entry would pin the State, its arenas and the cloned wire buffer for the life of the process.
+// It is a no-op once TakeGRPCState has taken the binding.
+func releaseExportRequest(orig any) {
+	grpcRequestStates.Delete(orig)
+}
+
+// TakeGRPCState returns the State bound to a gRPC-decoded export request, or a new State.
+func TakeGRPCState(orig any) *internal.State {
+	if v, ok := grpcRequestStates.LoadAndDelete(orig); ok {
+		return v.(*internal.State)
+	}
+	return internal.NewState()
 }

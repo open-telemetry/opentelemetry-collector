@@ -31,9 +31,9 @@ func TestCopyLogsData(t *testing.T) {
 				}()
 
 				dest := NewLogsData()
-				CopyLogsData(dest, src)
+				CopyLogsData(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyLogsData(dest, dest)
+				CopyLogsData(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyLogsDataSlice(t *testing.T) {
 	src := []LogsData{}
 	dest := []LogsData{}
 	// Test CopyTo empty
-	dest = CopyLogsDataSlice(dest, src)
+	dest = CopyLogsDataSlice(dest, src, nil)
 	assert.Equal(t, []LogsData{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestLogsDataSlice()
-	dest = CopyLogsDataSlice(dest, src)
+	dest = CopyLogsDataSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogsDataSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyLogsDataSlice(dest, src)
+	dest = CopyLogsDataSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogsDataSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyLogsDataSlice(dest, []LogsData{})
+	dest = CopyLogsDataSlice(dest, []LogsData{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyLogsDataSlice(dest, src)
+	dest = CopyLogsDataSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogsDataSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyLogsDataPtrSlice(t *testing.T) {
 	src := []*LogsData{}
 	dest := []*LogsData{}
 	// Test CopyTo empty
-	dest = CopyLogsDataPtrSlice(dest, src)
+	dest = CopyLogsDataPtrSlice(dest, src, nil)
 	assert.Equal(t, []*LogsData{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestLogsDataPtrSlice()
-	dest = CopyLogsDataPtrSlice(dest, src)
+	dest = CopyLogsDataPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogsDataPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyLogsDataPtrSlice(dest, src)
+	dest = CopyLogsDataPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogsDataPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyLogsDataPtrSlice(dest, []*LogsData{})
+	dest = CopyLogsDataPtrSlice(dest, []*LogsData{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyLogsDataPtrSlice(dest, src)
+	dest = CopyLogsDataPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogsDataPtrSlice(), dest)
 }
 

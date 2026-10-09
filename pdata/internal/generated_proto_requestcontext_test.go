@@ -31,9 +31,9 @@ func TestCopyRequestContext(t *testing.T) {
 				}()
 
 				dest := NewRequestContext()
-				CopyRequestContext(dest, src)
+				CopyRequestContext(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyRequestContext(dest, dest)
+				CopyRequestContext(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyRequestContextSlice(t *testing.T) {
 	src := []RequestContext{}
 	dest := []RequestContext{}
 	// Test CopyTo empty
-	dest = CopyRequestContextSlice(dest, src)
+	dest = CopyRequestContextSlice(dest, src, nil)
 	assert.Equal(t, []RequestContext{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestRequestContextSlice()
-	dest = CopyRequestContextSlice(dest, src)
+	dest = CopyRequestContextSlice(dest, src, nil)
 	assert.Equal(t, GenTestRequestContextSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyRequestContextSlice(dest, src)
+	dest = CopyRequestContextSlice(dest, src, nil)
 	assert.Equal(t, GenTestRequestContextSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyRequestContextSlice(dest, []RequestContext{})
+	dest = CopyRequestContextSlice(dest, []RequestContext{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyRequestContextSlice(dest, src)
+	dest = CopyRequestContextSlice(dest, src, nil)
 	assert.Equal(t, GenTestRequestContextSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyRequestContextPtrSlice(t *testing.T) {
 	src := []*RequestContext{}
 	dest := []*RequestContext{}
 	// Test CopyTo empty
-	dest = CopyRequestContextPtrSlice(dest, src)
+	dest = CopyRequestContextPtrSlice(dest, src, nil)
 	assert.Equal(t, []*RequestContext{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestRequestContextPtrSlice()
-	dest = CopyRequestContextPtrSlice(dest, src)
+	dest = CopyRequestContextPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestRequestContextPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyRequestContextPtrSlice(dest, src)
+	dest = CopyRequestContextPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestRequestContextPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyRequestContextPtrSlice(dest, []*RequestContext{})
+	dest = CopyRequestContextPtrSlice(dest, []*RequestContext{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyRequestContextPtrSlice(dest, src)
+	dest = CopyRequestContextPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestRequestContextPtrSlice(), dest)
 }
 
