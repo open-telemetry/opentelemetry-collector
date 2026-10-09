@@ -181,6 +181,16 @@ func (orig *ArrayValue) MarshalProto(buf []byte) int {
 }
 
 func (orig *ArrayValue) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *ArrayValue) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *ArrayValue) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -205,8 +215,9 @@ func (orig *ArrayValue) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.Values = proto.GrowRepeated(orig.Values, buf, pos, fieldNum)
 			orig.Values = append(orig.Values, AnyValue{})
-			err = orig.Values[len(orig.Values)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Values[len(orig.Values)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -222,7 +233,7 @@ func (orig *ArrayValue) UnmarshalProto(buf []byte) error {
 
 func GenTestArrayValue() *ArrayValue {
 	orig := NewArrayValue()
-	orig.Values = []AnyValue{{}, *GenTestAnyValue()}
+	orig.Values = []AnyValue{AnyValue{}, *GenTestAnyValue()}
 	return orig
 }
 

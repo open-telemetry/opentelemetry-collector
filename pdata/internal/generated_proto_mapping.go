@@ -250,6 +250,16 @@ func (orig *Mapping) MarshalProto(buf []byte) int {
 }
 
 func (orig *Mapping) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *Mapping) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *Mapping) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -317,6 +327,7 @@ func (orig *Mapping) UnmarshalProto(buf []byte) error {
 				}
 				startPos := pos - length
 				var num uint64
+				orig.AttributeIndices = proto.GrowCap(orig.AttributeIndices, length)
 				for startPos < pos {
 					num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
 					if err != nil {
@@ -333,6 +344,7 @@ func (orig *Mapping) UnmarshalProto(buf []byte) error {
 				if err != nil {
 					return err
 				}
+				orig.AttributeIndices = proto.GrowRepeated(orig.AttributeIndices, buf, pos, fieldNum)
 				orig.AttributeIndices = append(orig.AttributeIndices, int32(num))
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)

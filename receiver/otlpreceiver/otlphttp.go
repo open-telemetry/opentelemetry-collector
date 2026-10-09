@@ -26,8 +26,8 @@ var fallbackMsg = []byte(`{"code": 13, "message": "failed to marshal error messa
 
 const fallbackContentType = "application/json"
 
-func handleTraces(resp http.ResponseWriter, req *http.Request, tracesReceiver *trace.Receiver) {
-	enc, ok := readContentType(resp, req)
+func handleTraces(resp http.ResponseWriter, req *http.Request, tracesReceiver *trace.Receiver, unsafeUnmarshal bool) {
+	enc, ok := readContentType(resp, req, unsafeUnmarshal)
 	if !ok {
 		return
 	}
@@ -57,8 +57,8 @@ func handleTraces(resp http.ResponseWriter, req *http.Request, tracesReceiver *t
 	writeResponse(resp, enc.contentType(), http.StatusOK, msg)
 }
 
-func handleMetrics(resp http.ResponseWriter, req *http.Request, metricsReceiver *metrics.Receiver) {
-	enc, ok := readContentType(resp, req)
+func handleMetrics(resp http.ResponseWriter, req *http.Request, metricsReceiver *metrics.Receiver, unsafeUnmarshal bool) {
+	enc, ok := readContentType(resp, req, unsafeUnmarshal)
 	if !ok {
 		return
 	}
@@ -88,8 +88,8 @@ func handleMetrics(resp http.ResponseWriter, req *http.Request, metricsReceiver 
 	writeResponse(resp, enc.contentType(), http.StatusOK, msg)
 }
 
-func handleLogs(resp http.ResponseWriter, req *http.Request, logsReceiver *logs.Receiver) {
-	enc, ok := readContentType(resp, req)
+func handleLogs(resp http.ResponseWriter, req *http.Request, logsReceiver *logs.Receiver, unsafeUnmarshal bool) {
+	enc, ok := readContentType(resp, req, unsafeUnmarshal)
 	if !ok {
 		return
 	}
@@ -119,8 +119,8 @@ func handleLogs(resp http.ResponseWriter, req *http.Request, logsReceiver *logs.
 	writeResponse(resp, enc.contentType(), http.StatusOK, msg)
 }
 
-func handleProfiles(resp http.ResponseWriter, req *http.Request, profilesReceiver *profiles.Receiver) {
-	enc, ok := readContentType(resp, req)
+func handleProfiles(resp http.ResponseWriter, req *http.Request, profilesReceiver *profiles.Receiver, unsafeUnmarshal bool) {
+	enc, ok := readContentType(resp, req, unsafeUnmarshal)
 	if !ok {
 		return
 	}
@@ -150,7 +150,7 @@ func handleProfiles(resp http.ResponseWriter, req *http.Request, profilesReceive
 	writeResponse(resp, enc.contentType(), http.StatusOK, msg)
 }
 
-func readContentType(resp http.ResponseWriter, req *http.Request) (encoder, bool) {
+func readContentType(resp http.ResponseWriter, req *http.Request, unsafeUnmarshal bool) (encoder, bool) {
 	if req.Method != http.MethodPost {
 		handleUnmatchedMethod(resp)
 		return nil, false
@@ -158,6 +158,9 @@ func readContentType(resp http.ResponseWriter, req *http.Request) (encoder, bool
 
 	switch getMimeTypeFromContentType(req.Header.Get("Content-Type")) {
 	case pbContentType:
+		if unsafeUnmarshal {
+			return pbUnsafeEncoder, true
+		}
 		return pbEncoder, true
 	case jsonContentType:
 		return jsEncoder, true

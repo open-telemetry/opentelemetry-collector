@@ -378,6 +378,16 @@ func (orig *ProfilesDictionary) MarshalProto(buf []byte) int {
 }
 
 func (orig *ProfilesDictionary) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *ProfilesDictionary) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *ProfilesDictionary) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -402,8 +412,9 @@ func (orig *ProfilesDictionary) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.MappingTable = proto.GrowRepeated(orig.MappingTable, buf, pos, fieldNum)
 			orig.MappingTable = append(orig.MappingTable, NewMapping())
-			err = orig.MappingTable[len(orig.MappingTable)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.MappingTable[len(orig.MappingTable)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -418,8 +429,9 @@ func (orig *ProfilesDictionary) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.LocationTable = proto.GrowRepeated(orig.LocationTable, buf, pos, fieldNum)
 			orig.LocationTable = append(orig.LocationTable, NewLocation())
-			err = orig.LocationTable[len(orig.LocationTable)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.LocationTable[len(orig.LocationTable)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -434,8 +446,9 @@ func (orig *ProfilesDictionary) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.FunctionTable = proto.GrowRepeated(orig.FunctionTable, buf, pos, fieldNum)
 			orig.FunctionTable = append(orig.FunctionTable, NewFunction())
-			err = orig.FunctionTable[len(orig.FunctionTable)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.FunctionTable[len(orig.FunctionTable)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -450,8 +463,9 @@ func (orig *ProfilesDictionary) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.LinkTable = proto.GrowRepeated(orig.LinkTable, buf, pos, fieldNum)
 			orig.LinkTable = append(orig.LinkTable, NewLink())
-			err = orig.LinkTable[len(orig.LinkTable)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.LinkTable[len(orig.LinkTable)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -466,7 +480,8 @@ func (orig *ProfilesDictionary) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.StringTable = append(orig.StringTable, string(buf[startPos:pos]))
+			orig.StringTable = proto.GrowRepeated(orig.StringTable, buf, pos, fieldNum)
+			orig.StringTable = append(orig.StringTable, proto.BytesToString(buf[startPos:pos], unsafeUnmarshal))
 
 		case 6:
 			if wireType != proto.WireTypeLen {
@@ -478,8 +493,9 @@ func (orig *ProfilesDictionary) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.AttributeTable = proto.GrowRepeated(orig.AttributeTable, buf, pos, fieldNum)
 			orig.AttributeTable = append(orig.AttributeTable, NewKeyValueAndUnit())
-			err = orig.AttributeTable[len(orig.AttributeTable)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.AttributeTable[len(orig.AttributeTable)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -494,8 +510,9 @@ func (orig *ProfilesDictionary) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.StackTable = proto.GrowRepeated(orig.StackTable, buf, pos, fieldNum)
 			orig.StackTable = append(orig.StackTable, NewStack())
-			err = orig.StackTable[len(orig.StackTable)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.StackTable[len(orig.StackTable)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -511,13 +528,13 @@ func (orig *ProfilesDictionary) UnmarshalProto(buf []byte) error {
 
 func GenTestProfilesDictionary() *ProfilesDictionary {
 	orig := NewProfilesDictionary()
-	orig.MappingTable = []*Mapping{{}, GenTestMapping()}
-	orig.LocationTable = []*Location{{}, GenTestLocation()}
-	orig.FunctionTable = []*Function{{}, GenTestFunction()}
-	orig.LinkTable = []*Link{{}, GenTestLink()}
+	orig.MappingTable = []*Mapping{&Mapping{}, GenTestMapping()}
+	orig.LocationTable = []*Location{&Location{}, GenTestLocation()}
+	orig.FunctionTable = []*Function{&Function{}, GenTestFunction()}
+	orig.LinkTable = []*Link{&Link{}, GenTestLink()}
 	orig.StringTable = []string{"", "test_stringtable"}
-	orig.AttributeTable = []*KeyValueAndUnit{{}, GenTestKeyValueAndUnit()}
-	orig.StackTable = []*Stack{{}, GenTestStack()}
+	orig.AttributeTable = []*KeyValueAndUnit{&KeyValueAndUnit{}, GenTestKeyValueAndUnit()}
+	orig.StackTable = []*Stack{&Stack{}, GenTestStack()}
 	return orig
 }
 

@@ -40,6 +40,9 @@ The following settings are configurable:
   described at https://github.com/grpc/grpc/blob/master/doc/naming.md. See our
   [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks)
   to understand how to set the endpoint in different environments.
+- `unsafe_unmarshal` (default = false): enables zero-copy decoding of string
+  and byte fields for protobuf requests over gRPC and HTTP. Decoded values
+  reference the request buffer for the lifetime of the pdata request.
 
 ## Advanced Configuration
 

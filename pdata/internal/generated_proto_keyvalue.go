@@ -204,6 +204,16 @@ func (orig *KeyValue) MarshalProto(buf []byte) int {
 }
 
 func (orig *KeyValue) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *KeyValue) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *KeyValue) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -228,7 +238,7 @@ func (orig *KeyValue) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Key = string(buf[startPos:pos])
+			orig.Key = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 
 		case 2:
 			if wireType != proto.WireTypeLen {
@@ -241,7 +251,7 @@ func (orig *KeyValue) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Value.UnmarshalProto(buf[startPos:pos])
+			err = orig.Value.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}

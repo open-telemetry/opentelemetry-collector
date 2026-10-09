@@ -221,6 +221,16 @@ func (orig *ScopeSpans) MarshalProto(buf []byte) int {
 }
 
 func (orig *ScopeSpans) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *ScopeSpans) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *ScopeSpans) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -246,7 +256,7 @@ func (orig *ScopeSpans) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Scope.UnmarshalProto(buf[startPos:pos])
+			err = orig.Scope.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -261,8 +271,9 @@ func (orig *ScopeSpans) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.Spans = proto.GrowRepeated(orig.Spans, buf, pos, fieldNum)
 			orig.Spans = append(orig.Spans, NewSpan())
-			err = orig.Spans[len(orig.Spans)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Spans[len(orig.Spans)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -277,7 +288,7 @@ func (orig *ScopeSpans) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.SchemaUrl = string(buf[startPos:pos])
+			orig.SchemaUrl = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -291,7 +302,7 @@ func (orig *ScopeSpans) UnmarshalProto(buf []byte) error {
 func GenTestScopeSpans() *ScopeSpans {
 	orig := NewScopeSpans()
 	orig.Scope = *GenTestInstrumentationScope()
-	orig.Spans = []*Span{{}, GenTestSpan()}
+	orig.Spans = []*Span{&Span{}, GenTestSpan()}
 	orig.SchemaUrl = "test_schemaurl"
 	return orig
 }

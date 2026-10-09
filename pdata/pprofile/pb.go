@@ -62,3 +62,16 @@ func (d *ProtoUnmarshaler) UnmarshalProfiles(buf []byte) (Profiles, error) {
 
 	return pd, nil
 }
+
+// UnmarshalProfilesUnsafe unmarshals Profiles without copying string and byte
+// fields. The caller must keep buf immutable while the result is in use.
+func (d *ProtoUnmarshaler) UnmarshalProfilesUnsafe(buf []byte) (Profiles, error) {
+	pd := NewProfiles()
+	err := pd.getOrig().UnmarshalProtoUnsafe(buf)
+	if err != nil {
+		return Profiles{}, err
+	}
+	otlp.MigrateProfiles(pd.getOrig().ResourceProfiles)
+	resolveProfilesReferences(pd)
+	return pd, nil
+}

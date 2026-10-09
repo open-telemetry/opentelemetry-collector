@@ -15,6 +15,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
@@ -92,8 +93,14 @@ func (r *otlpReceiver) startGRPCServer(ctx context.Context, host component.Host)
 	}
 
 	grpcCfg := r.cfg.Protocols.GRPC.Get()
+	var serverOpts []configgrpc.ToServerOption
+	if r.cfg.UnsafeUnmarshal {
+		serverOpts = append(serverOpts, configgrpc.WithGrpcServerOption(
+			grpc.ForceServerCodecV2(newUnsafeGRPCCodec()),
+		))
+	}
 	var err error
-	if r.serverGRPC, err = grpcCfg.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings); err != nil {
+	if r.serverGRPC, err = grpcCfg.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, serverOpts...); err != nil {
 		return err
 	}
 
@@ -138,28 +145,28 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	if r.nextTraces != nil {
 		httpTracesReceiver := trace.New(r.nextTraces, r.obsrepHTTP)
 		httpMux.HandleFunc(string(httpCfg.TracesURLPath), func(resp http.ResponseWriter, req *http.Request) {
-			handleTraces(resp, req, httpTracesReceiver)
+			handleTraces(resp, req, httpTracesReceiver, r.cfg.UnsafeUnmarshal)
 		})
 	}
 
 	if r.nextMetrics != nil {
 		httpMetricsReceiver := metrics.New(r.nextMetrics, r.obsrepHTTP)
 		httpMux.HandleFunc(string(httpCfg.MetricsURLPath), func(resp http.ResponseWriter, req *http.Request) {
-			handleMetrics(resp, req, httpMetricsReceiver)
+			handleMetrics(resp, req, httpMetricsReceiver, r.cfg.UnsafeUnmarshal)
 		})
 	}
 
 	if r.nextLogs != nil {
 		httpLogsReceiver := logs.New(r.nextLogs, r.obsrepHTTP)
 		httpMux.HandleFunc(string(httpCfg.LogsURLPath), func(resp http.ResponseWriter, req *http.Request) {
-			handleLogs(resp, req, httpLogsReceiver)
+			handleLogs(resp, req, httpLogsReceiver, r.cfg.UnsafeUnmarshal)
 		})
 	}
 
 	if r.nextProfiles != nil {
 		httpProfilesReceiver := profiles.New(r.nextProfiles, r.obsrepHTTP)
 		httpMux.HandleFunc(defaultProfilesURLPath, func(resp http.ResponseWriter, req *http.Request) {
-			handleProfiles(resp, req, httpProfilesReceiver)
+			handleProfiles(resp, req, httpProfilesReceiver, r.cfg.UnsafeUnmarshal)
 		})
 	}
 

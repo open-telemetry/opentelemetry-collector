@@ -252,6 +252,16 @@ func (orig *EntityRef) MarshalProto(buf []byte) int {
 }
 
 func (orig *EntityRef) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *EntityRef) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *EntityRef) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -276,7 +286,7 @@ func (orig *EntityRef) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.SchemaUrl = string(buf[startPos:pos])
+			orig.SchemaUrl = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 
 		case 2:
 			if wireType != proto.WireTypeLen {
@@ -288,7 +298,7 @@ func (orig *EntityRef) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Type = string(buf[startPos:pos])
+			orig.Type = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 
 		case 3:
 			if wireType != proto.WireTypeLen {
@@ -300,7 +310,8 @@ func (orig *EntityRef) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.IdKeys = append(orig.IdKeys, string(buf[startPos:pos]))
+			orig.IdKeys = proto.GrowRepeated(orig.IdKeys, buf, pos, fieldNum)
+			orig.IdKeys = append(orig.IdKeys, proto.BytesToString(buf[startPos:pos], unsafeUnmarshal))
 
 		case 4:
 			if wireType != proto.WireTypeLen {
@@ -312,7 +323,8 @@ func (orig *EntityRef) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DescriptionKeys = append(orig.DescriptionKeys, string(buf[startPos:pos]))
+			orig.DescriptionKeys = proto.GrowRepeated(orig.DescriptionKeys, buf, pos, fieldNum)
+			orig.DescriptionKeys = append(orig.DescriptionKeys, proto.BytesToString(buf[startPos:pos], unsafeUnmarshal))
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {

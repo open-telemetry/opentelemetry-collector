@@ -581,6 +581,16 @@ func (orig *Metric) MarshalProto(buf []byte) int {
 }
 
 func (orig *Metric) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *Metric) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *Metric) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -605,7 +615,7 @@ func (orig *Metric) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Name = string(buf[startPos:pos])
+			orig.Name = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 
 		case 2:
 			if wireType != proto.WireTypeLen {
@@ -617,7 +627,7 @@ func (orig *Metric) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Description = string(buf[startPos:pos])
+			orig.Description = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 
 		case 3:
 			if wireType != proto.WireTypeLen {
@@ -629,7 +639,7 @@ func (orig *Metric) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Unit = string(buf[startPos:pos])
+			orig.Unit = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 
 		case 5:
 			if wireType != proto.WireTypeLen {
@@ -648,7 +658,7 @@ func (orig *Metric) UnmarshalProto(buf []byte) error {
 				ov = ProtoPoolMetric_Gauge.Get().(*Metric_Gauge)
 			}
 			ov.Gauge = NewGauge()
-			err = ov.Gauge.UnmarshalProto(buf[startPos:pos])
+			err = ov.Gauge.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -671,7 +681,7 @@ func (orig *Metric) UnmarshalProto(buf []byte) error {
 				ov = ProtoPoolMetric_Sum.Get().(*Metric_Sum)
 			}
 			ov.Sum = NewSum()
-			err = ov.Sum.UnmarshalProto(buf[startPos:pos])
+			err = ov.Sum.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -694,7 +704,7 @@ func (orig *Metric) UnmarshalProto(buf []byte) error {
 				ov = ProtoPoolMetric_Histogram.Get().(*Metric_Histogram)
 			}
 			ov.Histogram = NewHistogram()
-			err = ov.Histogram.UnmarshalProto(buf[startPos:pos])
+			err = ov.Histogram.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -717,7 +727,7 @@ func (orig *Metric) UnmarshalProto(buf []byte) error {
 				ov = ProtoPoolMetric_ExponentialHistogram.Get().(*Metric_ExponentialHistogram)
 			}
 			ov.ExponentialHistogram = NewExponentialHistogram()
-			err = ov.ExponentialHistogram.UnmarshalProto(buf[startPos:pos])
+			err = ov.ExponentialHistogram.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -740,7 +750,7 @@ func (orig *Metric) UnmarshalProto(buf []byte) error {
 				ov = ProtoPoolMetric_Summary.Get().(*Metric_Summary)
 			}
 			ov.Summary = NewSummary()
-			err = ov.Summary.UnmarshalProto(buf[startPos:pos])
+			err = ov.Summary.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -756,8 +766,9 @@ func (orig *Metric) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.Metadata = proto.GrowRepeated(orig.Metadata, buf, pos, fieldNum)
 			orig.Metadata = append(orig.Metadata, KeyValue{})
-			err = orig.Metadata[len(orig.Metadata)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Metadata[len(orig.Metadata)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -777,7 +788,7 @@ func GenTestMetric() *Metric {
 	orig.Description = "test_description"
 	orig.Unit = "test_unit"
 	orig.Data = &Metric_Gauge{Gauge: GenTestGauge()}
-	orig.Metadata = []KeyValue{{}, *GenTestKeyValue()}
+	orig.Metadata = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	return orig
 }
 

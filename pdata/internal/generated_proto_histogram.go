@@ -200,6 +200,16 @@ func (orig *Histogram) MarshalProto(buf []byte) int {
 }
 
 func (orig *Histogram) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *Histogram) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *Histogram) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -224,8 +234,9 @@ func (orig *Histogram) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.DataPoints = proto.GrowRepeated(orig.DataPoints, buf, pos, fieldNum)
 			orig.DataPoints = append(orig.DataPoints, NewHistogramDataPoint())
-			err = orig.DataPoints[len(orig.DataPoints)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.DataPoints[len(orig.DataPoints)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -252,7 +263,7 @@ func (orig *Histogram) UnmarshalProto(buf []byte) error {
 
 func GenTestHistogram() *Histogram {
 	orig := NewHistogram()
-	orig.DataPoints = []*HistogramDataPoint{{}, GenTestHistogramDataPoint()}
+	orig.DataPoints = []*HistogramDataPoint{&HistogramDataPoint{}, GenTestHistogramDataPoint()}
 	orig.AggregationTemporality = AggregationTemporality(13)
 	return orig
 }

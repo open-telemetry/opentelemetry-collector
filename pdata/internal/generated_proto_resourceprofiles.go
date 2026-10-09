@@ -221,6 +221,16 @@ func (orig *ResourceProfiles) MarshalProto(buf []byte) int {
 }
 
 func (orig *ResourceProfiles) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *ResourceProfiles) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *ResourceProfiles) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -246,7 +256,7 @@ func (orig *ResourceProfiles) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Resource.UnmarshalProto(buf[startPos:pos])
+			err = orig.Resource.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -261,8 +271,9 @@ func (orig *ResourceProfiles) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.ScopeProfiles = proto.GrowRepeated(orig.ScopeProfiles, buf, pos, fieldNum)
 			orig.ScopeProfiles = append(orig.ScopeProfiles, NewScopeProfiles())
-			err = orig.ScopeProfiles[len(orig.ScopeProfiles)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.ScopeProfiles[len(orig.ScopeProfiles)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -277,7 +288,7 @@ func (orig *ResourceProfiles) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.SchemaUrl = string(buf[startPos:pos])
+			orig.SchemaUrl = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -291,7 +302,7 @@ func (orig *ResourceProfiles) UnmarshalProto(buf []byte) error {
 func GenTestResourceProfiles() *ResourceProfiles {
 	orig := NewResourceProfiles()
 	orig.Resource = *GenTestResource()
-	orig.ScopeProfiles = []*ScopeProfiles{{}, GenTestScopeProfiles()}
+	orig.ScopeProfiles = []*ScopeProfiles{&ScopeProfiles{}, GenTestScopeProfiles()}
 	orig.SchemaUrl = "test_schemaurl"
 	return orig
 }
