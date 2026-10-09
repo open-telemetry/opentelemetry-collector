@@ -1,0 +1,613 @@
+{
+  "$id": "go.opentelemetry.io/collector/config/confighttp",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "auth_config": {
+      "type": "object",
+      "properties": {
+        "request_params": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Is a list of parameters that should be extracted from the request and added to the context.\nWhen a parameter is found in both the query string and the header, the value from the query string will be used.\n"
+        }
+      },
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "authenticator": {
+              "type": "string",
+              "description": "Specifies the name of the extension to use in order to authenticate the incoming data point."
+            }
+          },
+          "description": "Defines the auth settings for the receiver."
+        }
+      ]
+    },
+    "client_config": {
+      "type": "object",
+      "properties": {
+        "auth": {
+          "type": "object",
+          "properties": {
+            "authenticator": {
+              "type": "string",
+              "description": "Specifies the name of the extension to use in order to authenticate the incoming data point."
+            }
+          },
+          "description": "Is authentication configuration for outgoing HTTP calls."
+        },
+        "compression": {
+          "type": "string",
+          "description": "Is the key for the supported compression types within the collector.",
+          "enum": [
+            "gzip",
+            "zlib",
+            "deflate",
+            "snappy",
+            "x-snappy-framed",
+            "zstd",
+            "lz4",
+            "none",
+            ""
+          ]
+        },
+        "compression_params": {
+          "type": "object",
+          "properties": {
+            "level": {
+              "type": "integer"
+            }
+          },
+          "description": "Provides advanced configuration options for the configured compression type."
+        },
+        "cookies": {
+          "description": "Configures the cookie management of the HTTP client."
+        },
+        "disable_keep_alives": {
+          "type": "boolean",
+          "deprecated": true
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "Is the target URL to send data to (e.g.: http://some.url:9411/v1/traces)."
+        },
+        "force_attempt_http2": {
+          "type": "boolean",
+          "description": "Controls whether the HTTP transport is forced to use the HTTP/2 protocol.\nBy default, this is set to true.\nNOTE: HTTP/2 does not support settings such as max_conns_per_host, max_idle_conns_per_host and max_idle_conns.\n",
+          "default": true
+        },
+        "headers": {
+          "type": "object",
+          "description": "Defines additional headers attached to each HTTP request sent by the client.\nExisting header values are overwritten if collision happens.\nHeader values are opaque since they may be sensitive.\n",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "http2_ping_timeout": {
+          "type": "string",
+          "description": "Is the duration to wait for a response to a health check ping before the connection is closed.\nIf not set or set to 0, it defaults to 15s.\n",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "http2_read_idle_timeout": {
+          "type": "string",
+          "description": "Is the duration after which, if the connection has been idle, a ping frame is sent for a health check.\n0s means no health check will be performed.\n",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "idle_conn_timeout": {
+          "type": "string",
+          "deprecated": true,
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "keepalive": {
+          "type": "object",
+          "properties": {
+            "idle_conn_timeout": {
+              "type": "string",
+              "description": "Is the maximum amount of time an idle (keep-alive) connection will remain open before closing itself.\nBy default, it is set to 90 seconds.\n",
+              "default": "90s",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+            },
+            "max_idle_conns": {
+              "type": "integer",
+              "description": "Is used to set a limit to the maximum idle HTTP connections the client can keep open.\nBy default, it is set to 100. Zero means no limit.\n",
+              "default": 100
+            },
+            "max_idle_conns_per_host": {
+              "type": "integer",
+              "description": "Is used to set a limit to the maximum idle HTTP connections the host can keep open.\nIf zero, [net/http.DefaultMaxIdleConnsPerHost] is used.\n"
+            }
+          },
+          "description": "Controls HTTP client keep-alives. Unmarshal folds this section into the deprecated\nfields below, which remain the source of truth during their deprecation\nwindow, and always resets it to None. A value visible to ToClient was\ntherefore set programmatically after unmarshaling (or the config was\nnever unmarshaled) and takes precedence over the deprecated fields.\n"
+        },
+        "max_conns_per_host": {
+          "type": "integer",
+          "description": "Limits the total number of connections per host, including connections in the dialing,\nactive, and idle states. Default is 0 (unlimited).\n"
+        },
+        "max_idle_conns": {
+          "type": "integer",
+          "deprecated": true
+        },
+        "max_idle_conns_per_host": {
+          "type": "integer",
+          "deprecated": true
+        },
+        "middlewares": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Specifies the name of the extension to use."
+              }
+            },
+            "description": "Defines the extension ID for a middleware component."
+          },
+          "description": "Are used to add custom functionality to the HTTP client.\nMiddleware handlers are called in the order they appear in this list,\nwith the first middleware becoming the outermost handler.\n"
+        },
+        "proxy_url": {
+          "type": "string",
+          "description": "Is the proxy setting for the collector."
+        },
+        "read_buffer_size": {
+          "type": "integer",
+          "description": "Is the read buffer size for the HTTP client. See http.Transport.ReadBufferSize.\nDefault is 0.\n"
+        },
+        "timeout": {
+          "type": "string",
+          "description": "Is a parameter that configures `http.Client.Timeout`.\nDefault is 0 (unlimited).\n",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "tls": {
+          "type": "object",
+          "properties": {
+            "insecure": {
+              "type": "boolean",
+              "description": "In gRPC and HTTP when set to true, this is used to disable the client transport security. \nSee https://godoc.org/google.golang.org/grpc#WithInsecure for gRPC. \nPlease refer to https://godoc.org/crypto/tls#Config for more information. (optional, default false)\n"
+            },
+            "insecure_skip_verify": {
+              "type": "boolean",
+              "description": "Enables TLS but not verify the certificate."
+            },
+            "server_name_override": {
+              "type": "string",
+              "description": "Server name requested by client for virtual hosting. This sets the ServerName in the TLSConfig. \nPlease refer to https://godoc.org/crypto/tls#Config for more information. (optional)\n"
+            }
+          },
+          "description": "Exposes TLS client configuration.",
+          "allOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ca_file": {
+                  "type": "string",
+                  "description": "Path to the CA cert. For a client this verifies the server certificate. \nFor a server this verifies client certificates. If empty uses system root CA. (optional)\n"
+                },
+                "ca_pem": {
+                  "type": "string",
+                  "description": "In memory PEM encoded cert. (optional)"
+                },
+                "cert_file": {
+                  "type": "string",
+                  "description": "Path to the TLS cert to use for TLS required connections. (optional)"
+                },
+                "cert_pem": {
+                  "type": "string",
+                  "description": "In memory PEM encoded TLS cert to use for TLS required connections. (optional)"
+                },
+                "cipher_suites": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "A list of TLS cipher suites that the TLS transport can use. If left blank, a safe default list is used. \nSee https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.\n"
+                },
+                "curve_preferences": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Contains the elliptic curves that will be used in an ECDHE handshake, \nin preference order Defaults to empty list and \"crypto/tls\" defaults are used, internally.\n"
+                },
+                "include_insecure_cipher_suites": {
+                  "type": "boolean",
+                  "description": "Enables support for insecure cipher suites. When set to true, cipher suites returned by \ntls.InsecureCipherSuites() will be available for selection in addition to the secure ones. \nThis should only be used when working with legacy systems that require insecure cipher suites. \n(optional, default false)\n"
+                },
+                "include_system_ca_certs_pool": {
+                  "type": "boolean",
+                  "description": "If true, load system CA certificates pool in addition to the certificates configured in this struct."
+                },
+                "key_file": {
+                  "type": "string",
+                  "description": "Path to the TLS key to use for TLS required connections. (optional)"
+                },
+                "key_pem": {
+                  "type": "string",
+                  "description": "In memory PEM encoded TLS key to use for TLS required connections. (optional)"
+                },
+                "max_version": {
+                  "type": "string",
+                  "description": "Sets the maximum TLS version that is acceptable. If not set, refer to crypto/tls for defaults. (optional)"
+                },
+                "min_version": {
+                  "type": "string",
+                  "description": "Sets the minimum TLS version that is acceptable. If not set, TLS 1.2 will be used. (optional)"
+                },
+                "reload_interval": {
+                  "type": "string",
+                  "description": "Specifies the duration after which the certificate will be reloaded If not set, it will never be reloaded (optional)",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+                },
+                "tpm": {
+                  "type": "object",
+                  "properties": {
+                    "auth": {
+                      "type": "string"
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "owner_auth": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string",
+                      "description": "The path to the TPM device or Unix domain socket. For instance /dev/tpm0 or /dev/tpmrm0."
+                    }
+                  },
+                  "description": "Trusted platform module configuration"
+                }
+              },
+              "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn''t anything specific to a server connection. Components with server connections should use Config.\n",
+              "default": {}
+            }
+          ]
+        },
+        "write_buffer_size": {
+          "type": "integer",
+          "description": "Is the write buffer size for the HTTP client. See http.Transport.WriteBufferSize.\nDefault is 0.\n"
+        }
+      },
+      "description": "Defines settings for creating an HTTP client."
+    },
+    "cors_config": {
+      "type": "object",
+      "properties": {
+        "allowed_headers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Sets what headers will be allowed in CORS requests.\nThe Accept, Accept-Language, Content-Type, and Content-Language\nheaders are implicitly allowed. If no headers are listed,\nX-Requested-With will also be accepted by default. Include \"*\" to\nallow any request header.\n"
+        },
+        "allowed_origins": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Sets the allowed values of the Origin header for\nHTTP/JSON requests to an OTLP receiver. An origin may contain a\nwildcard (*) to replace 0 or more characters (e.g.,\n\"http://*.domain.com\", or \"*\" to allow any origin).\n"
+        },
+        "exposed_headers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Sets the value of the Access-Control-Expose-Headers response header, \nindicating which headers are safe to expose to the API of a CORS response.\n"
+        },
+        "max_age": {
+          "type": "integer",
+          "description": "Sets the value of the Access-Control-Max-Age response header.\nSet it to the number of seconds that browsers should cache a CORS\npreflight response for.\n"
+        }
+      },
+      "description": "Configures a receiver for HTTP cross-origin resource sharing (CORS).\nSee the underlying https://github.com/rs/cors package for details.\n",
+      "default": {}
+    },
+    "keepalive_client_config": {
+      "type": "object",
+      "properties": {
+        "idle_conn_timeout": {
+          "type": "string",
+          "description": "Is the maximum amount of time an idle (keep-alive) connection will remain open before closing itself.\nBy default, it is set to 90 seconds.\n",
+          "default": "90s",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "max_idle_conns": {
+          "type": "integer",
+          "description": "Is used to set a limit to the maximum idle HTTP connections the client can keep open.\nBy default, it is set to 100. Zero means no limit.\n",
+          "default": 100
+        },
+        "max_idle_conns_per_host": {
+          "type": "integer",
+          "description": "Is used to set a limit to the maximum idle HTTP connections the host can keep open.\nIf zero, [net/http.DefaultMaxIdleConnsPerHost] is used.\n"
+        }
+      },
+      "description": "Describes the keepalive configuration."
+    },
+    "keepalive_server_config": {
+      "type": "object",
+      "properties": {
+        "idle_timeout": {
+          "type": "string",
+          "description": "Is the maximum amount of time to wait for the\nnext request when keep-alives are enabled. If IdleTimeout\nis zero, the value of ReadTimeout is used. If both are\nzero, there is no timeout.\n",
+          "default": "1m",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        }
+      }
+    },
+    "server_config": {
+      "type": "object",
+      "properties": {
+        "auth": {
+          "type": "object",
+          "properties": {
+            "request_params": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Is a list of parameters that should be extracted from the request and added to the context.\nWhen a parameter is found in both the query string and the header, the value from the query string will be used.\n"
+            }
+          },
+          "description": "Is the authentication configuration for this receiver.",
+          "allOf": [
+            {
+              "type": "object",
+              "properties": {
+                "authenticator": {
+                  "type": "string",
+                  "description": "Specifies the name of the extension to use in order to authenticate the incoming data point."
+                }
+              },
+              "description": "Defines the auth settings for the receiver."
+            }
+          ]
+        },
+        "compression_algorithms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Configures the list of compression algorithms the server can accept. \nDefault: [\"\", \"gzip\", \"zstd\", \"zlib\", \"snappy\", \"deflate\"]\n"
+        },
+        "cors": {
+          "type": "object",
+          "properties": {
+            "allowed_headers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Sets what headers will be allowed in CORS requests.\nThe Accept, Accept-Language, Content-Type, and Content-Language\nheaders are implicitly allowed. If no headers are listed,\nX-Requested-With will also be accepted by default. Include \"*\" to\nallow any request header.\n"
+            },
+            "allowed_origins": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Sets the allowed values of the Origin header for\nHTTP/JSON requests to an OTLP receiver. An origin may contain a\nwildcard (*) to replace 0 or more characters (e.g.,\n\"http://*.domain.com\", or \"*\" to allow any origin).\n"
+            },
+            "exposed_headers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Sets the value of the Access-Control-Expose-Headers response header, \nindicating which headers are safe to expose to the API of a CORS response.\n"
+            },
+            "max_age": {
+              "type": "integer",
+              "description": "Sets the value of the Access-Control-Max-Age response header.\nSet it to the number of seconds that browsers should cache a CORS\npreflight response for.\n"
+            }
+          },
+          "description": "Configures the server for HTTP cross-origin resource sharing (CORS).",
+          "default": {}
+        },
+        "idle_timeout": {
+          "type": "string",
+          "default": "1m",
+          "deprecated": true,
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "include_metadata": {
+          "type": "boolean",
+          "description": "Propagates the client metadata from the incoming requests to the downstream consumers."
+        },
+        "keep_alives_enabled": {
+          "type": "boolean",
+          "default": true,
+          "deprecated": true
+        },
+        "keepalive": {
+          "type": "object",
+          "properties": {
+            "idle_timeout": {
+              "type": "string",
+              "description": "Is the maximum amount of time to wait for the\nnext request when keep-alives are enabled. If IdleTimeout\nis zero, the value of ReadTimeout is used. If both are\nzero, there is no timeout.\n",
+              "default": "1m",
+              "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+            }
+          },
+          "description": "Controls HTTP keep-alives.\nBy default, keep-alives are always enabled. Only very resource-constrained environments should disable them.\nUnmarshal folds this section into the deprecated fields below, which\nremain the source of truth during their deprecation window, and always\nresets it to None. A value visible to ToServer was therefore set\nprogrammatically after unmarshaling (or the config was never unmarshaled)\nand takes precedence over the deprecated fields.\n"
+        },
+        "max_request_body_size": {
+          "type": "integer",
+          "description": "Sets the maximum request body size in bytes. Default: 20MiB."
+        },
+        "middlewares": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Specifies the name of the extension to use."
+              }
+            },
+            "description": "Defines the extension ID for a middleware component."
+          },
+          "description": "Are used to add custom functionality to the HTTP server.\nMiddleware handlers are called in the order they appear in this list,\nwith the first middleware becoming the outermost handler.\n"
+        },
+        "read_header_timeout": {
+          "type": "string",
+          "description": "Is the amount of time allowed to read\nrequest headers. The connection's read deadline is reset\nafter reading the headers and the Handler can decide what\nis considered too slow for the body. If ReadHeaderTimeout\nis zero, the value of ReadTimeout is used. If both are\nzero, there is no timeout.\n",
+          "default": "1m",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "read_timeout": {
+          "type": "string",
+          "description": "Is the maximum duration for reading the entire\nrequest, including the body. A zero or negative value means\nthere will be no timeout.\n\nBecause ReadTimeout does not let Handlers make per-request\ndecisions on each request body's acceptable deadline or\nupload rate, most users will prefer to use\nReadHeaderTimeout. It is valid to use them both.\n",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "response_headers": {
+          "type": "object",
+          "description": "Defines additional headers attached to each HTTP response sent to the client.\nHeader values are opaque since they may be sensitive.\n",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "tls": {
+          "type": "object",
+          "properties": {
+            "client_ca_file": {
+              "type": "string",
+              "description": "Path to the TLS cert to use by the server to verify a client certificate. (optional) \nThis sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. \nPlease refer to https://godoc.org/crypto/tls#Config for more information. (optional)\n"
+            },
+            "client_ca_file_reload": {
+              "type": "boolean",
+              "description": "Reload the ClientCAs file when it is modified (optional, default false)"
+            }
+          },
+          "description": "Exposes TLS server configuration.",
+          "allOf": [
+            {
+              "type": "object",
+              "properties": {
+                "ca_file": {
+                  "type": "string",
+                  "description": "Path to the CA cert. For a client this verifies the server certificate. \nFor a server this verifies client certificates. If empty uses system root CA. (optional)\n"
+                },
+                "ca_pem": {
+                  "type": "string",
+                  "description": "In memory PEM encoded cert. (optional)"
+                },
+                "cert_file": {
+                  "type": "string",
+                  "description": "Path to the TLS cert to use for TLS required connections. (optional)"
+                },
+                "cert_pem": {
+                  "type": "string",
+                  "description": "In memory PEM encoded TLS cert to use for TLS required connections. (optional)"
+                },
+                "cipher_suites": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "A list of TLS cipher suites that the TLS transport can use. If left blank, a safe default list is used. \nSee https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.\n"
+                },
+                "curve_preferences": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Contains the elliptic curves that will be used in an ECDHE handshake, \nin preference order Defaults to empty list and \"crypto/tls\" defaults are used, internally.\n"
+                },
+                "include_insecure_cipher_suites": {
+                  "type": "boolean",
+                  "description": "Enables support for insecure cipher suites. When set to true, cipher suites returned by \ntls.InsecureCipherSuites() will be available for selection in addition to the secure ones. \nThis should only be used when working with legacy systems that require insecure cipher suites. \n(optional, default false)\n"
+                },
+                "include_system_ca_certs_pool": {
+                  "type": "boolean",
+                  "description": "If true, load system CA certificates pool in addition to the certificates configured in this struct."
+                },
+                "key_file": {
+                  "type": "string",
+                  "description": "Path to the TLS key to use for TLS required connections. (optional)"
+                },
+                "key_pem": {
+                  "type": "string",
+                  "description": "In memory PEM encoded TLS key to use for TLS required connections. (optional)"
+                },
+                "max_version": {
+                  "type": "string",
+                  "description": "Sets the maximum TLS version that is acceptable. If not set, refer to crypto/tls for defaults. (optional)"
+                },
+                "min_version": {
+                  "type": "string",
+                  "description": "Sets the minimum TLS version that is acceptable. If not set, TLS 1.2 will be used. (optional)"
+                },
+                "reload_interval": {
+                  "type": "string",
+                  "description": "Specifies the duration after which the certificate will be reloaded If not set, it will never be reloaded (optional)",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+                },
+                "tpm": {
+                  "type": "object",
+                  "properties": {
+                    "auth": {
+                      "type": "string"
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "owner_auth": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string",
+                      "description": "The path to the TPM device or Unix domain socket. For instance /dev/tpm0 or /dev/tpmrm0."
+                    }
+                  },
+                  "description": "Trusted platform module configuration"
+                }
+              },
+              "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn''t anything specific to a server connection. Components with server connections should use Config.\n",
+              "default": {}
+            }
+          ]
+        },
+        "write_timeout": {
+          "type": "string",
+          "description": "Is the maximum duration before timing out\nwrites of the response. It is reset whenever a new\nrequest's header is read. Like ReadTimeout, it does not\nlet Handlers make decisions on a per-request basis.\nA zero or negative value means there will be no timeout.\n",
+          "default": "30s",
+          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        }
+      },
+      "description": "Defines settings for creating an HTTP server.",
+      "allOf": [
+        {
+          "type": "object",
+          "properties": {
+            "dialer": {
+              "type": "object",
+              "properties": {
+                "timeout": {
+                  "type": "string",
+                  "description": "The maximum amount of time a dial will wait for a connect to complete. The default is no timeout.",
+                  "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+                }
+              },
+              "description": "Contains options for connecting to an address.",
+              "default": {}
+            },
+            "endpoint": {
+              "type": "string",
+              "description": "Configures the address for this network connection. For TCP and UDP networks, \nthe address has the form \"host:port\". The host must be a literal IP address, \nor a host name that can be resolved to IP addresses. The port must \nbe a literal port number or a service name. If the host is a literal IPv6 address \nit must be enclosed in square brackets, as in \"[2001:db8::1]:80\" or \"[fe80::1%zone]:80\". \nThe zone specifies the scope of the literal IPv6 address as defined in RFC 4007.\n"
+            },
+            "transport": {
+              "type": "string",
+              "description": "Defines the type of transport protocol used. Allowed protocols are \"tcp\", \"tcp4\" (IPv4-only), \n\"tcp6\" (IPv6-only), \"udp\", \"udp4\" (IPv4-only), \"udp6\" (IPv6-only), \"ip\", \"ip4\" (IPv4-only), \n\"ip6\" (IPv6-only), \"unix\", \"unixgram\", \"unixpacket\" and \"npipe\" (Windows named pipes, Windows-only).\n"
+            }
+          },
+          "description": "Holds configuration for the network listener.\nTransport defaults to \"tcp\" if unspecified, and only\n\"tcp\", \"tcp4\", \"tcp6\", and \"unix\" are valid options.\n",
+          "default": {
+            "transport": "tcp"
+          }
+        }
+      ]
+    }
+  },
+  "title": "pkg/confighttp"
+}

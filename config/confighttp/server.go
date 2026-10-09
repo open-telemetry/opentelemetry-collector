@@ -22,14 +22,11 @@ import (
 	"golang.org/x/net/http2"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp/internal"
 	"go.opentelemetry.io/collector/config/confighttp/internal/metadata"
-	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
@@ -37,105 +34,10 @@ import (
 const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
 
 // ServerConfig defines settings for creating an HTTP server.
-type ServerConfig struct {
-	// NetAddr holds configuration for the network listener.
-	//
-	// Transport defaults to "tcp" if unspecified, and only
-	// "tcp", "tcp4", "tcp6", and "unix" are valid options.
-	NetAddr confignet.AddrConfig `mapstructure:",squash"`
-
-	// TLS struct exposes TLS server configuration.
-	TLS configoptional.Optional[configtls.ServerConfig] `mapstructure:"tls,omitempty"`
-
-	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
-	CORS configoptional.Optional[CORSConfig] `mapstructure:"cors,omitempty"`
-
-	// Auth for this receiver
-	Auth configoptional.Optional[AuthConfig] `mapstructure:"auth,omitempty"`
-
-	// MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.
-	MaxRequestBodySize int64 `mapstructure:"max_request_body_size,omitempty"`
-
-	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
-	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
-
-	// Additional headers attached to each HTTP response sent to the client.
-	// Header values are opaque since they may be sensitive.
-	ResponseHeaders configopaque.MapList `mapstructure:"response_headers,omitempty"`
-
-	// CompressionAlgorithms configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
-	CompressionAlgorithms []string `mapstructure:"compression_algorithms,omitempty"`
-
-	// ReadTimeout is the maximum duration for reading the entire
-	// request, including the body. A zero or negative value means
-	// there will be no timeout.
-	//
-	// Because ReadTimeout does not let Handlers make per-request
-	// decisions on each request body's acceptable deadline or
-	// upload rate, most users will prefer to use
-	// ReadHeaderTimeout. It is valid to use them both.
-	ReadTimeout time.Duration `mapstructure:"read_timeout,omitempty"`
-
-	// ReadHeaderTimeout is the amount of time allowed to read
-	// request headers. The connection's read deadline is reset
-	// after reading the headers and the Handler can decide what
-	// is considered too slow for the body. If ReadHeaderTimeout
-	// is zero, the value of ReadTimeout is used. If both are
-	// zero, there is no timeout.
-	ReadHeaderTimeout time.Duration `mapstructure:"read_header_timeout"`
-
-	// WriteTimeout is the maximum duration before timing out
-	// writes of the response. It is reset whenever a new
-	// request's header is read. Like ReadTimeout, it does not
-	// let Handlers make decisions on a per-request basis.
-	// A zero or negative value means there will be no timeout.
-	WriteTimeout time.Duration `mapstructure:"write_timeout"`
-
-	// Middlewares are used to add custom functionality to the HTTP server.
-	// Middleware handlers are called in the order they appear in this list,
-	// with the first middleware becoming the outermost handler.
-	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
-
-	// Keepalive controls HTTP keep-alives.
-	// By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
-	// Unmarshal folds this section into the deprecated fields below, which
-	// remain the source of truth during their deprecation window, and always
-	// resets it to None. A value visible to ToServer was therefore set
-	// programmatically after unmarshaling (or the config was never unmarshaled)
-	// and takes precedence over the deprecated fields.
-	Keepalive configoptional.Optional[KeepaliveServerConfig] `mapstructure:"keepalive,omitempty"`
-
-	// Deprecated: [v0.160.0] use Keepalive.IdleTimeout instead.
-	IdleTimeout time.Duration `mapstructure:"idle_timeout,omitempty"`
-	// Deprecated: [v0.160.0] set 'keepalive::enabled' to false to disable keep-alives.
-	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled,omitempty"`
-
+type privateServerConfigFields struct {
 	// deprecationWarnings records use of deprecated fields observed while
 	// unmarshaling; ToServer logs them, as no logger is available here.
 	deprecationWarnings []string
-
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-type KeepaliveServerConfig struct {
-	// IdleTimeout is the maximum amount of time to wait for the
-	// next request when keep-alives are enabled. If IdleTimeout
-	// is zero, the value of ReadTimeout is used. If both are
-	// zero, there is no timeout.
-	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
-
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-// NewDefaultKeepaliveServerConfig returns a KeepaliveServerConfig with the same
-// defaults that NewDefaultServerConfig sets on the corresponding deprecated
-// fields.
-func NewDefaultKeepaliveServerConfig() KeepaliveServerConfig {
-	return KeepaliveServerConfig{
-		IdleTimeout: 1 * time.Minute,
-	}
 }
 
 // NewDefaultServerConfig returns ServerConfig type object with default values.
@@ -322,17 +224,6 @@ func (sc *ServerConfig) unmarshalPrioritizeDeprecatedFields(conf *confmap.Conf) 
 	// documentation).
 	sc.Keepalive = configoptional.None[KeepaliveServerConfig]()
 	return nil
-}
-
-type AuthConfig struct {
-	// Auth for this receiver.
-	Config configauth.Config `mapstructure:",squash"`
-
-	// RequestParameters is a list of parameters that should be extracted from the request and added to the context.
-	// When a parameter is found in both the query string and the header, the value from the query string will be used.
-	RequestParameters []string `mapstructure:"request_params,omitempty"`
-	// prevent unkeyed literal initialization
-	_ struct{}
 }
 
 // ToListener creates a net.Listener.
@@ -546,39 +437,6 @@ func responseHeadersHandler(handler http.Handler, headers configopaque.MapList) 
 
 		handler.ServeHTTP(w, r)
 	})
-}
-
-// CORSConfig configures a receiver for HTTP cross-origin resource sharing (CORS).
-// See the underlying https://github.com/rs/cors package for details.
-type CORSConfig struct {
-	// AllowedOrigins sets the allowed values of the Origin header for
-	// HTTP/JSON requests to an OTLP receiver. An origin may contain a
-	// wildcard (*) to replace 0 or more characters (e.g.,
-	// "http://*.domain.com", or "*" to allow any origin).
-	AllowedOrigins []string `mapstructure:"allowed_origins,omitempty"`
-
-	// AllowedHeaders sets what headers will be allowed in CORS requests.
-	// The Accept, Accept-Language, Content-Type, and Content-Language
-	// headers are implicitly allowed. If no headers are listed,
-	// X-Requested-With will also be accepted by default. Include "*" to
-	// allow any request header.
-	AllowedHeaders []string `mapstructure:"allowed_headers,omitempty"`
-
-	// ExposedHeaders sets the value of the Access-Control-Expose-Headers response
-	// header, indicating which headers are safe to expose to the API of a CORS response.
-	ExposedHeaders []string `mapstructure:"exposed_headers,omitempty"`
-
-	// MaxAge sets the value of the Access-Control-Max-Age response header.
-	// Set it to the number of seconds that browsers should cache a CORS
-	// preflight response for.
-	MaxAge int `mapstructure:"max_age,omitempty"`
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-// NewDefaultCORSConfig creates a default cross-origin resource sharing (CORS) configuration.
-func NewDefaultCORSConfig() CORSConfig {
-	return CORSConfig{}
 }
 
 func authInterceptor(next http.Handler, server extensionauth.Server, requestParams []string, serverOpts *internal.ToServerOptions) http.Handler {

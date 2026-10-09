@@ -8,6 +8,316 @@ status:
     beta: [metrics, traces, logs]
     alpha: [profiles]
 
+exported_configs:
+  client_config:
+    description: Defines settings for creating an HTTP client.
+    properties:
+      endpoint:
+        type: string
+        description: "Is the target URL to send data to (e.g.: http://some.url:9411/v1/traces)."
+      proxy_url:
+        type: string
+        description: Is the proxy setting for the collector.
+      tls:
+        $ref: /config/configtls.client_config
+        description: Exposes TLS client configuration.
+      read_buffer_size:
+        type: int
+        description: |
+          Is the read buffer size for the HTTP client. See http.Transport.ReadBufferSize.
+          Default is 0.
+      write_buffer_size:
+        type: int
+        description: |
+          Is the write buffer size for the HTTP client. See http.Transport.WriteBufferSize.
+          Default is 0.
+      timeout:
+        type: duration
+        description: |
+          Is a parameter that configures `http.Client.Timeout`.
+          Default is 0 (unlimited).
+      headers:
+        type: opaque_map
+        description: |
+          Defines additional headers attached to each HTTP request sent by the client.
+          Existing header values are overwritten if collision happens.
+          Header values are opaque since they may be sensitive.
+      auth:
+        $ref: /config/configauth.config
+        optional: true
+        description: Is authentication configuration for outgoing HTTP calls.
+      compression:
+        $ref: /config/configcompression.type
+        description: Is the key for the supported compression types within the collector.
+      compression_params:
+        $ref: /config/configcompression.compression_params
+        description: Provides advanced configuration options for the configured compression type.
+      max_conns_per_host:
+        type: int
+        description: |
+          Limits the total number of connections per host, including connections in the dialing,
+          active, and idle states. Default is 0 (unlimited).
+      http2_read_idle_timeout:
+        type: duration
+        description: |
+          Is the duration after which, if the connection has been idle, a ping frame is sent for a health check.
+          0s means no health check will be performed.
+        # This is needed in case you run into
+        # https://github.com/golang/go/issues/59690
+        # https://github.com/golang/go/issues/36026
+      http2_ping_timeout:
+        type: duration
+        description: |
+          Is the duration to wait for a response to a health check ping before the connection is closed.
+          If not set or set to 0, it defaults to 15s.
+      cookies:
+        $ref: cookies_config
+        optional: true
+        description: Configures the cookie management of the HTTP client.
+      force_attempt_http2:
+        type: bool
+        description: |
+          Controls whether the HTTP transport is forced to use the HTTP/2 protocol.
+          By default, this is set to true.
+          NOTE: HTTP/2 does not support settings such as max_conns_per_host, max_idle_conns_per_host and max_idle_conns.
+        default: true
+        go_struct:
+          ignore_default: true
+      middlewares:
+        type: slice
+        values:
+          $ref: /config/configmiddleware.config
+        description: |
+          Are used to add custom functionality to the HTTP client.
+          Middleware handlers are called in the order they appear in this list,
+          with the first middleware becoming the outermost handler.
+      keepalive:
+        $ref: keepalive_client_config
+        optional: true
+        description: |
+          Controls HTTP client keep-alives. Unmarshal folds this section into the deprecated
+          fields below, which remain the source of truth during their deprecation
+          window, and always resets it to None. A value visible to ToClient was
+          therefore set programmatically after unmarshaling (or the config was
+          never unmarshaled) and takes precedence over the deprecated fields.
+      idle_conn_timeout:
+        type: duration
+        deprecated:
+          since: v0.160.0
+          note: Use Keepalive.IdleConnTimeout instead.
+      max_idle_conns:
+        type: int
+        deprecated:
+          since: v0.160.0
+          note: Use Keepalive.MaxIdleConns instead.
+      max_idle_conns_per_host:
+        type: int
+        deprecated:
+          since: v0.160.0
+          note: Use Keepalive.MaxIdleConnsPerHost instead.
+      disable_keep_alives:
+        type: bool
+        deprecated:
+          since: v0.160.0
+          note: Set 'keepalive::enabled' to false to disable keep-alives.
+    go_struct:
+      private_fields: true
+      ignore_default: true
+  keepalive_client_config:
+    description: Describes the keepalive configuration.
+    properties:
+      idle_conn_timeout:
+        type: duration
+        description: |
+          Is the maximum amount of time an idle (keep-alive) connection will remain open before closing itself.
+          By default, it is set to 90 seconds.
+        default: 90s
+      max_idle_conns:
+        type: int
+        description: |
+          Is used to set a limit to the maximum idle HTTP connections the client can keep open.
+          By default, it is set to 100. Zero means no limit.
+        default: 100
+      max_idle_conns_per_host:
+        type: int
+        description: |
+          Is used to set a limit to the maximum idle HTTP connections the host can keep open.
+          If zero, [net/http.DefaultMaxIdleConnsPerHost] is used.
+    go_struct:
+      ignore_default: true
+  server_config:
+    description: Defines settings for creating an HTTP server.
+    properties:
+      net_addr:
+        $ref: /config/confignet.addr_config
+        embed: true
+        description: |
+          Holds configuration for the network listener.
+          Transport defaults to "tcp" if unspecified, and only
+          "tcp", "tcp4", "tcp6", and "unix" are valid options.
+        default:
+          transport: tcp
+      tls:
+        $ref: /config/configtls.server_config
+        optional: true
+        description: Exposes TLS server configuration.
+      cors:
+        $ref: cors_config
+        optional: true
+        description: Configures the server for HTTP cross-origin resource sharing (CORS).
+      auth:
+        $ref: auth_config
+        optional: true
+        description: Is the authentication configuration for this receiver.
+      max_request_body_size:
+        type: int64
+        description: "Sets the maximum request body size in bytes. Default: 20MiB."
+      include_metadata:
+        type: bool
+        description: Propagates the client metadata from the incoming requests to the downstream consumers.
+      response_headers:
+        type: opaque_map
+        description: |
+          Defines additional headers attached to each HTTP response sent to the client.
+          Header values are opaque since they may be sensitive.
+      compression_algorithms:
+        type: slice
+        values:
+          type: string
+        description: |
+          Configures the list of compression algorithms the server can accept. 
+          Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
+      read_timeout:
+        type: duration
+        description: |
+          Is the maximum duration for reading the entire
+          request, including the body. A zero or negative value means
+          there will be no timeout.
+
+          Because ReadTimeout does not let Handlers make per-request
+          decisions on each request body's acceptable deadline or
+          upload rate, most users will prefer to use
+          ReadHeaderTimeout. It is valid to use them both.
+      read_header_timeout:
+        type: duration
+        default: 1m
+        description: |
+          Is the amount of time allowed to read
+          request headers. The connection's read deadline is reset
+          after reading the headers and the Handler can decide what
+          is considered too slow for the body. If ReadHeaderTimeout
+          is zero, the value of ReadTimeout is used. If both are
+          zero, there is no timeout.
+      write_timeout:
+        type: duration
+        default: 30s
+        description: |
+          Is the maximum duration before timing out
+          writes of the response. It is reset whenever a new
+          request's header is read. Like ReadTimeout, it does not
+          let Handlers make decisions on a per-request basis.
+          A zero or negative value means there will be no timeout.
+      middlewares:
+        type: slice
+        values:
+          $ref: /config/configmiddleware.config
+        description: |
+          Are used to add custom functionality to the HTTP server.
+          Middleware handlers are called in the order they appear in this list,
+          with the first middleware becoming the outermost handler.
+      keepalive:
+        $ref: keepalive_server_config
+        optional: true
+        description: |
+          Controls HTTP keep-alives.
+          By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
+          Unmarshal folds this section into the deprecated fields below, which
+          remain the source of truth during their deprecation window, and always
+          resets it to None. A value visible to ToServer was therefore set
+          programmatically after unmarshaling (or the config was never unmarshaled)
+          and takes precedence over the deprecated fields.
+      idle_timeout:
+        type: duration
+        deprecated:
+          since: v0.160.0
+          note: Use Keepalive.IdleTimeout instead.
+        default: 1m
+        go_struct:
+          ignore_default: true
+      keep_alives_enabled:
+        type: bool
+        deprecated:
+          since: v0.160.0
+          note: Set 'keepalive::enabled' to false to disable keep-alives.
+        default: true
+        go_struct:
+          ignore_default: true
+    go_struct:
+      private_fields: true
+      # can be removed with PkgConfighttpPrioritizeNewKeepaliveFeatureGate feature gate
+      ignore_default: true
+  keepalive_server_config:
+    properties:
+      idle_timeout:
+        type: duration
+        default: 1m
+        description: |
+          Is the maximum amount of time to wait for the
+          next request when keep-alives are enabled. If IdleTimeout
+          is zero, the value of ReadTimeout is used. If both are
+          zero, there is no timeout.
+  auth_config:
+    properties:
+      config:
+        $ref: /config/configauth.config
+        embed: true
+      request_params:
+        type: slice
+        values:
+          type: string
+        description: |
+          Is a list of parameters that should be extracted from the request and added to the context.
+          When a parameter is found in both the query string and the header, the value from the query string will be used.
+        go_struct:
+          field_name: RequestParameters
+  cors_config:
+    description: |
+      Configures a receiver for HTTP cross-origin resource sharing (CORS).
+      See the underlying https://github.com/rs/cors package for details.
+    default: { }
+    properties:
+      allowed_origins:
+        type: slice
+        values:
+          type: string
+        description: |
+          Sets the allowed values of the Origin header for
+          HTTP/JSON requests to an OTLP receiver. An origin may contain a
+          wildcard (*) to replace 0 or more characters (e.g.,
+          "http://*.domain.com", or "*" to allow any origin).
+      allowed_headers:
+        type: slice
+        values:
+          type: string
+        description: |
+          Sets what headers will be allowed in CORS requests.
+          The Accept, Accept-Language, Content-Type, and Content-Language
+          headers are implicitly allowed. If no headers are listed,
+          X-Requested-With will also be accepted by default. Include "*" to
+          allow any request header.
+      exposed_headers:
+        type: slice
+        values:
+          type: string
+        description: |
+          Sets the value of the Access-Control-Expose-Headers response header, 
+          indicating which headers are safe to expose to the API of a CORS response.
+      max_age:
+        type: int
+        description: |
+          Sets the value of the Access-Control-Max-Age response header.
+          Set it to the number of seconds that browsers should cache a CORS
+          preflight response for.
 feature_gates:
   - id: pkg.confighttp.PrioritizeNewKeepalive
     description: When enabled, the Keepalive configuration is prioritized over the deprecated configuration fields.
