@@ -107,7 +107,6 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector v0.162.0 // indirect
 	go.opentelemetry.io/collector/client v1.68.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.68.0 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.68.0 // indirect
@@ -126,6 +125,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.68.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.162.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.162.0 // indirect
+	go.opentelemetry.io/collector/internal/statusutil v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.162.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.162.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.162.0 // indirect
@@ -193,8 +193,6 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.2 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
-
-replace go.opentelemetry.io/collector => ../..
 
 replace go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
 
@@ -335,3 +333,5 @@ replace go.opentelemetry.io/collector/exporter/exporterhelper => ../../exporter/
 replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
 
 replace go.opentelemetry.io/collector/internal/componentalias => ../componentalias
+
+replace go.opentelemetry.io/collector/internal/statusutil => ../statusutil
