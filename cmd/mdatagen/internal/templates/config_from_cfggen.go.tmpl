@@ -3,7 +3,7 @@
 package {{ .Package }}
 
 {{- $hasConfig := ne .Metadata.Config nil }}
-{{- $validators := extractValidators .Metadata.Config }}
+{{- $validators := extractValidators "config" .Metadata.Config }}
 {{ $imports := extractImports .Metadata.ConfigsMetadata }}
 {{- if or $hasConfig $imports }}
 import (
@@ -18,17 +18,24 @@ import (
         {{- if $prop.Description }}
         {{ $prop.Description | goComment }}
         {{- end }}
+        {{- if $prop.Deprecated }}
+            {{ printf "Deprecated: [%s] %s" $prop.Deprecated.Since $prop.Deprecated.Note | goComment }}
+        {{- end }}
         {{- if $prop.GoStruct.Anonymous }}
             {{ $prop.Ref | publicType }} `mapstructure:",squash"`
         {{- else }}
             {{ $prop.GoStruct.FieldName | publicVar }} {{ $prop.Ref | publicType }} `mapstructure:",squash"`
         {{- end }}
     {{ end }}
+    {{- $parent := .data }}
     {{- range $propName, $prop := .data.Properties | namedProps }}
         {{- if $prop.Description }}
             {{ printf "%s %s" ($prop.GoStruct.FieldName | publicVar) ($prop.Description | uncapitalize) | goComment }}
         {{- end }}
-        {{ $prop.GoStruct.FieldName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}{{ if shouldOmitEmpty . $propName $prop }},omitempty{{ end }}"`
+        {{- if $prop.Deprecated }}
+            {{ printf "Deprecated: [%s] %s" $prop.Deprecated.Since $prop.Deprecated.Note | goComment }}
+        {{- end }}
+        {{ $prop.GoStruct.FieldName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}{{ if shouldOmitEmpty $parent $propName $prop }},omitempty{{ end }}"`
     {{ end }}
 
     {{- if .data.GoStruct.PrivateFields }}
@@ -45,6 +52,9 @@ import (
     {{- if $def.Description }}
         {{ printf "%s %s" ($defName | publicVar) ($def.Description | uncapitalize) | goComment }}
     {{- end }}
+    {{- if $def.Deprecated }}
+        {{ printf "Deprecated: [%s] %s" $def.Deprecated.Since $def.Deprecated.Note | goComment }}
+    {{- end }}
     {{- $typeName := $defName | publicVar }}
     {{- if isExternalRef $def.Ref }}
         type {{ $typeName }} = {{ $def.Ref | publicType }}
@@ -56,9 +66,10 @@ import (
         }
     {{- end }}
 
-{{ $defValidators := extractValidators $def }}
+{{ $defValidators := extractValidators $defName $def }}
 {{- if and $defValidators (not (isExternalRef $def.Ref)) }}
     // Validate validates the {{$typeName}} fields according to schema annotations.
+    // Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
     {{- if (isPrimitiveSchema $def) }}
     func (c {{ $typeName }}) Validate() error {
     {{- else }}
@@ -95,6 +106,9 @@ import (
     {{- else }}
         // Config defines the configuration for {{ .Metadata.DisplayName }} component.
     {{- end }}
+    {{- if .Metadata.Config.Deprecated }}
+        {{ printf "Deprecated: [%s] %s" .Metadata.Config.Deprecated.Since .Metadata.Config.Deprecated.Note | goComment }}
+    {{- end }}
     type Config struct {
         {{- template "struct" entry "Config" .Metadata.Config }}
     }
@@ -103,7 +117,7 @@ import (
 {{ define "customValidator" -}}
     {{ $name := .FieldName | publicVar -}}
     {{ $value := "c" }}
-    {{- if ne .FieldName "." }}
+    {{- if not .IsType }}
         {{ $value = printf "c.%s" $name -}}
     {{ end }}
     if inner_err := {{ .CustomValidator }}({{ $value }}); inner_err != nil {
@@ -140,7 +154,7 @@ import (
 
 {{- define "fieldValue" }}
     {{- $var := "c" }}
-    {{- if not (eq .FieldName ".")}}
+    {{- if not .IsType}}
         {{- $var = printf "c.%s" (.FieldName | publicVar) }}
     {{- end }}
     {{- if .IsPointer }}*{{ $var }}
@@ -150,7 +164,7 @@ import (
 {{- end }}
 
 {{ define "enumValue" -}}
-    {{- if eq .FieldName "." -}}
+    {{- if .IsType -}}
         {{ .FieldType }}(c)
     {{- else }}{{ template "fieldValue" . }}
     {{- end }}

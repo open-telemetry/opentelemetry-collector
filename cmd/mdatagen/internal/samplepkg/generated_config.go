@@ -10,18 +10,21 @@ import (
 type PortNumber int
 
 // Validate validates the PortNumber fields according to schema annotations.
+// Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
 func (c PortNumber) Validate() error {
 	var err error
 
 	if c < 1 {
-		err = errors.Join(err, errors.New(". value must be greater than or equal to 1"))
+		err = errors.Join(err, errors.New("port_number value must be greater than or equal to 1"))
 	}
 	if c > 65535 {
-		err = errors.Join(err, errors.New(". value must be less than or equal to 65535"))
+		err = errors.Join(err, errors.New("port_number value must be less than or equal to 65535"))
 	}
 
 	return err
 }
+
+type Protocol int
 
 type SampleConfig struct {
 	// HostName the host name to connect to.
@@ -30,11 +33,15 @@ type SampleConfig struct {
 	// Port the port to connect to.
 	Port PortNumber `mapstructure:"port"`
 
+	// Proto the protocol to connect with.
+	Proto Protocol `mapstructure:"proto"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
 // Validate validates the SampleConfig fields according to schema annotations.
+// Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
 func (c *SampleConfig) Validate() error {
 	var err error
 
@@ -54,5 +61,6 @@ func NewDefaultSampleConfig() SampleConfig {
 	return SampleConfig{
 		HostName: "localhost",
 		Port:     8080,
+		Proto:    NewDefaultProtocol(),
 	}
 }

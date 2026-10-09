@@ -41,7 +41,7 @@ type ConfigMetadata struct {
 	Type             SchemaType                 `mapstructure:"type,omitempty" json:"type,omitempty" yaml:"type,omitempty"`
 	Ref              string                     `mapstructure:"$ref,omitempty" json:"-" yaml:"$ref,omitempty"`
 	Default          any                        `mapstructure:"default,omitempty" json:"default,omitempty" yaml:"default,omitempty"`
-	Deprecated       bool                       `mapstructure:"deprecated,omitempty" json:"deprecated,omitempty" yaml:"deprecated,omitempty"`
+	Deprecated       *DeprecatedConfig          `mapstructure:"deprecated,omitempty" json:"deprecated,omitempty" yaml:"deprecated,omitempty"`
 	Enum             []any                      `mapstructure:"enum,omitempty" json:"enum,omitempty" yaml:"enum,omitempty"`
 	Properties       map[string]*ConfigMetadata `mapstructure:"properties,omitempty" json:"properties,omitempty" yaml:"properties,omitempty"`
 	Values           *ConfigMetadata            `mapstructure:"values,omitempty" json:"values,omitempty" yaml:"values,omitempty"`
@@ -61,7 +61,6 @@ type ConfigMetadata struct {
 	ExclusiveMinimum *float64                   `mapstructure:"exclusiveMinimum,omitempty" json:"exclusiveMinimum,omitempty" yaml:"exclusiveMinimum,omitempty"`
 	// Additional custom fields
 	GoStruct   GoStructConfig `mapstructure:"go_struct,omitempty" json:"-" yaml:"go_struct,omitempty"`
-	GoType     string         `mapstructure:"x-customType,omitempty" json:"-" yaml:"x-customType,omitempty"`
 	IsPointer  bool           `mapstructure:"pointer,omitempty" json:"-" yaml:"pointer,omitempty"`
 	IsOptional bool           `mapstructure:"optional,omitempty" json:"-" yaml:"optional,omitempty"`
 	Embed      bool           `mapstructure:"embed,omitempty" json:"-" yaml:"embed,omitempty"`
@@ -74,13 +73,20 @@ type ConfigsMetadata struct {
 	ExportedConfigs map[string]*ConfigMetadata `mapstructure:"exported_configs,omitempty" json:"exported_configs,omitempty" yaml:"exported_configs,omitempty"`
 }
 
+type DeprecatedConfig struct {
+	Since string `mapstructure:"since,omitempty" yaml:"since,omitempty"`
+	Note  string `mapstructure:"note,omitempty" yaml:"note,omitempty"`
+}
+
 type GoStructConfig struct {
 	CustomValidator *CustomValidatorConfig `mapstructure:"custom_validator" json:"-" yaml:"custom_validator,omitempty"`
+	CustomDefault   *CustomDefaultConfig   `mapstructure:"custom_default" json:"-" yaml:"custom_default,omitempty"`
 	Anonymous       bool                   `mapstructure:"anonymous" json:"-" yaml:"anonymous,omitempty"`
 	IgnoreDefault   bool                   `mapstructure:"ignore_default" json:"-" yaml:"ignore_default,omitempty"`
 	FieldName       string                 `mapstructure:"field_name" json:"-" yaml:"field_name,omitempty"`
 	OptionalMode    string                 `mapstructure:"optional_mode" json:"-" yaml:"optional_mode,omitempty"`
 	PrivateFields   bool                   `mapstructure:"private_fields" json:"-" yaml:"private_fields,omitempty"`
+	Type            string                 `mapstructure:"type" json:"-" yaml:"type,omitempty"`
 }
 
 const (
@@ -92,20 +98,36 @@ type CustomValidatorConfig struct {
 	Name string `mapstructure:"name,omitempty" json:"-" yaml:"name,omitempty"`
 }
 
+type CustomDefaultConfig struct {
+	Name string `mapstructure:"name,omitempty" json:"-" yaml:"name,omitempty"`
+}
+
 func (g *GoStructConfig) Unmarshal(parser *confmap.Conf) error {
 	type goStructConfig GoStructConfig
 	if err := parser.Unmarshal((*goStructConfig)(g), confmap.WithIgnoreUnused()); err != nil {
 		return err
 	}
-	if !parser.IsSet("custom_validator") || g.CustomValidator != nil {
-		return nil
+	if parser.IsSet("custom_validator") && g.CustomValidator == nil {
+		sub, err := parser.Sub("custom_validator")
+		if err != nil {
+			return fmt.Errorf("invalid custom_validator: %w", err)
+		}
+		g.CustomValidator = &CustomValidatorConfig{}
+		if err := sub.Unmarshal(g.CustomValidator); err != nil {
+			return err
+		}
 	}
-	sub, err := parser.Sub("custom_validator")
-	if err != nil {
-		return fmt.Errorf("invalid custom_validator: %w", err)
+	if parser.IsSet("custom_default") && g.CustomDefault == nil {
+		sub, err := parser.Sub("custom_default")
+		if err != nil {
+			return fmt.Errorf("invalid custom_default: %w", err)
+		}
+		g.CustomDefault = &CustomDefaultConfig{}
+		if err := sub.Unmarshal(g.CustomDefault); err != nil {
+			return err
+		}
 	}
-	g.CustomValidator = &CustomValidatorConfig{}
-	return sub.Unmarshal(g.CustomValidator)
+	return nil
 }
 
 func (md *ConfigsMetadata) Validate() error {
@@ -134,6 +156,14 @@ func (md *ConfigsMetadata) Validate() error {
 // For maps (Properties, PatternProperties), missing keys are merged in individually.
 // Calling MergeFrom on a zero-value ConfigMetadata is equivalent to a deep clone of other.
 func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
+	md.mergeFrom(other, false)
+}
+
+func (md *ConfigMetadata) mergeResolvedRef(other *ConfigMetadata) {
+	md.mergeFrom(other, true)
+}
+
+func (md *ConfigMetadata) mergeFrom(other *ConfigMetadata, isRef bool) {
 	if other == nil {
 		return
 	}
@@ -154,9 +184,6 @@ func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
 	if md.Format == "" {
 		md.Format = other.Format
 	}
-	if md.GoType == "" {
-		md.GoType = other.GoType
-	}
 
 	// any
 	if md.Default == nil {
@@ -164,9 +191,6 @@ func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
 	}
 
 	// booleans — false is treated as "not set"
-	if !md.Deprecated {
-		md.Deprecated = other.Deprecated
-	}
 	if !md.UniqueItems {
 		md.UniqueItems = other.UniqueItems
 	}
@@ -244,10 +268,19 @@ func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
 		md.ExclusiveMinimum = clonePtr(other.ExclusiveMinimum)
 	}
 
+	// deprecated config
+	if md.Deprecated == nil && other.Deprecated != nil {
+		md.Deprecated = clonePtr(other.Deprecated)
+	}
+
 	// GoStructConfig — merge field by field
-	if md.GoStruct.CustomValidator == nil && other.GoStruct.CustomValidator != nil {
+	if !isRef && md.GoStruct.CustomValidator == nil && other.GoStruct.CustomValidator != nil {
 		cv := *other.GoStruct.CustomValidator
 		md.GoStruct.CustomValidator = &cv
+	}
+	if md.GoStruct.CustomDefault == nil && other.GoStruct.CustomDefault != nil {
+		cd := *other.GoStruct.CustomDefault
+		md.GoStruct.CustomDefault = &cd
 	}
 	if !md.GoStruct.Anonymous {
 		md.GoStruct.Anonymous = other.GoStruct.Anonymous
@@ -263,6 +296,9 @@ func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
 	}
 	if !md.GoStruct.PrivateFields {
 		md.GoStruct.PrivateFields = other.GoStruct.PrivateFields
+	}
+	if md.GoStruct.Type == "" {
+		md.GoStruct.Type = other.GoStruct.Type
 	}
 }
 
@@ -358,6 +394,14 @@ func (md *ConfigMetadata) Validate() error {
 	if md.Values != nil {
 		if err := md.Values.Validate(); err != nil {
 			errs = errors.Join(errs, err)
+		}
+	}
+	if md.Deprecated != nil {
+		if md.Deprecated.Since == "" {
+			errs = errors.Join(errs, errors.New("deprecated.since must be set"))
+		}
+		if md.Deprecated.Note == "" {
+			errs = errors.Join(errs, errors.New("deprecated.note must be set"))
 		}
 	}
 	return errs

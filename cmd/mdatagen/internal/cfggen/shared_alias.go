@@ -9,7 +9,9 @@ type (
 	ConfigMetadata        = schemagen.ConfigMetadata
 	ConfigsMetadata       = schemagen.ConfigsMetadata
 	GoStructConfig        = schemagen.GoStructConfig
+	DeprecatedConfig      = schemagen.DeprecatedConfig
 	CustomValidatorConfig = schemagen.CustomValidatorConfig
+	CustomDefaultConfig   = schemagen.CustomDefaultConfig
 	Loader                = schemagen.Loader
 	Ref                   = schemagen.Ref
 	RefKind               = schemagen.RefKind

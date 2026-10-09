@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCfgPropDocs_DirectProperties(t *testing.T) {
@@ -14,7 +15,7 @@ func TestCfgPropDocs_DirectProperties(t *testing.T) {
 	cfg := &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
-			"timeout":  {Type: "string", GoType: "time.Duration", Description: "request timeout", Default: "10s"},
+			"timeout":  {Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}, Description: "request timeout", Default: "10s"},
 			"endpoint": {Type: "string", Description: "endpoint URL"},
 		},
 		Required: []string{"endpoint"},
@@ -27,6 +28,22 @@ func TestCfgPropDocs_DirectProperties(t *testing.T) {
 	assert.True(t, docs[0].Required)
 	assert.Equal(t, "timeout", docs[1].Name)
 	assert.False(t, docs[1].Required)
+}
+
+func TestCfgPropDocs_Deprecated(t *testing.T) {
+	t.Parallel()
+	cfg := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"endpoint": {Type: "string"},
+			"interval": {Type: "string", Deprecated: &DeprecatedConfig{Since: "v0.160.0", Note: "will be removed"}},
+		},
+	}
+
+	docs := CfgPropDocs(cfg)
+	require.Len(t, docs, 2)
+	assert.False(t, docs[0].Deprecated, "endpoint should not be marked deprecated")
+	assert.True(t, docs[1].Deprecated, "interval should be marked deprecated")
 }
 
 func TestCfgPropDocs_FlattensAllOf(t *testing.T) {
@@ -135,9 +152,9 @@ func TestCfgDocType(t *testing.T) {
 	}{
 		{"nil", nil, "any"},
 		{"string", &ConfigMetadata{Type: "string"}, "string"},
-		{"duration via GoType", &ConfigMetadata{Type: "string", GoType: "time.Duration"}, "duration"},
+		{"duration via go_struct.type", &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}}, "duration"},
 		{"duration via Format", &ConfigMetadata{Type: "string", Format: "duration"}, "duration"},
-		{"datetime via GoType", &ConfigMetadata{Type: "string", GoType: "time.Time"}, "datetime"},
+		{"datetime via go_struct.type", &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "time.Time"}}, "datetime"},
 		{"datetime via Format", &ConfigMetadata{Type: "string", Format: "date-time"}, "datetime"},
 		{"enum string", &ConfigMetadata{Type: "string", Enum: []any{"a", "b"}}, "string (one of: a, b)"},
 		{"int", &ConfigMetadata{Type: "int"}, "int"},

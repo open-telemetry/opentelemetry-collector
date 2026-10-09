@@ -10,11 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal/metadata"
 )
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
@@ -39,7 +38,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				SamplingThereafter: 50,
 				UseInternalLogger:  false,
 				OutputPaths:        []string{"stdout"},
-				QueueConfig:        configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+				QueueConfig:        metadata.NewDefaultSendingQueueConfig(),
 			},
 		},
 		{
@@ -50,7 +49,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				SamplingThereafter: 1,
 				UseInternalLogger:  false,
 				OutputPaths:        []string{"stderr"},
-				QueueConfig:        configoptional.Default(exporterhelper.NewDefaultQueueConfig()),
+				QueueConfig:        metadata.NewDefaultSendingQueueConfig(),
 			},
 		},
 		{

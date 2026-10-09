@@ -21,7 +21,7 @@ cfg := createDefaultConfig().(*Config)
 require.NotNil(t, cfg)
 }
 
-{{ $validators := extractValidators .Metadata.Config }}
+{{ $validators := extractValidators "config" .Metadata.Config }}
 {{- if $validators }}
     {{- template "imports" $imports_addded }}
     {{- $imports_addded = true }}
@@ -33,7 +33,7 @@ require.NotNil(t, cfg)
     }
 
     {{ range $validator := $validators }}
-        {{- if $validator.Rules.Required }}
+        {{- if and $validator.Rules.Required $validator.RequiredCheckEmitted }}
             func TestConfigValidate_Required{{ $validator.FieldName | publicVar }}(t *testing.T) {
             cfg := createDefaultConfig().(*Config)
             {{- if $validator.IsPointer }}
@@ -127,7 +127,7 @@ require.NotNil(t, cfg)
 
 {{- $defs := extractDefs .Metadata.ConfigsMetadata }}
 {{ range $defName, $def := $defs }}
-    {{ $defValidators := extractValidators $def }}
+    {{ $defValidators := extractValidators $defName $def }}
     {{- if $defValidators }}
         {{- template "imports" $imports_addded }}
         {{- $imports_addded = true }}
@@ -175,20 +175,28 @@ require.NotNil(t, cfg)
                 {{ end }}
             {{- end }}
         {{- else }}
-            func Test{{ $defName | publicVar }}Validate_DefaultValid(t *testing.T) {
-            {{- if hasDefaultValue $def }}
-                cfg := NewDefault{{ $defName | publicVar }}()
+            {{- $typeName := $defName | publicVar }}
+            {{- $hasDefault := hasDefaultValue $def }}
+            {{- if $hasDefault }}
+            func Test{{ $typeName }}Validate_DefaultValid(t *testing.T) {
+                cfg := NewDefault{{ $typeName }}()
 
                 require.NoError(t, cfg.Validate())
-            {{- else }}
-                require.Fail(t, "Missing default values for {{ $defName | publicVar }} struct. Please add default values to the schema to enable this test.")
-            {{- end }}
             }
+            {{- else if not $def.GoStruct.IgnoreDefault }}
+            func Test{{ $typeName }}Validate_DefaultValid(t *testing.T) {
+                require.Fail(t, "Missing default values for {{ $typeName }} struct. Please add default values to the schema to enable this test.")
+            }
+            {{- end }}
 
             {{ range $validator := $defValidators }}
-                {{- if $validator.Rules.Required }}
+                {{- if and $validator.Rules.Required $validator.RequiredCheckEmitted }}
                     func TestConfigValidate_Required{{ $validator.FieldName | publicVar }}(t *testing.T) {
-                    cfg := NewDefault{{ $defName | publicVar }}()
+                    {{- if $hasDefault }}
+                    cfg := NewDefault{{ $typeName }}()
+                    {{- else }}
+                    cfg := {{ $typeName }}{}
+                    {{- end }}
                     {{- if $validator.IsPointer }}
                         cfg.{{ $validator.FieldName | publicVar }} = nil
                     {{- else if eq $validator.FieldType "map" }}
@@ -203,8 +211,12 @@ require.NotNil(t, cfg)
                     }
                 {{ end }}
                 {{- if $validator.Rules.Minimum }}
-                    func Test{{ $defName | publicVar }}Validate_Minimum{{ $validator.FieldName | publicVar }}(t *testing.T) {
-                    cfg := NewDefault{{ $defName | publicVar }}()
+                    func Test{{ $typeName }}Validate_Minimum{{ $validator.FieldName | publicVar }}(t *testing.T) {
+                    {{- if $hasDefault }}
+                    cfg := NewDefault{{ $typeName }}()
+                    {{- else }}
+                    cfg := {{ $typeName }}{}
+                    {{- end }}
                     {{- $fieldName := $validator.FieldName | publicVar }}
                     {{- $minimum := $validator.Rules.Minimum }}
                     {{- if $validator.IsPointer }}
@@ -219,8 +231,12 @@ require.NotNil(t, cfg)
                     }
                 {{ end }}
                 {{- if $validator.Rules.Maximum }}
-                    func Test{{ $defName | publicVar }}Validate_Maximum{{ $validator.FieldName | publicVar }}(t *testing.T) {
-                    cfg := NewDefault{{ $defName | publicVar }}()
+                    func Test{{ $typeName }}Validate_Maximum{{ $validator.FieldName | publicVar }}(t *testing.T) {
+                    {{- if $hasDefault }}
+                    cfg := NewDefault{{ $typeName }}()
+                    {{- else }}
+                    cfg := {{ $typeName }}{}
+                    {{- end }}
                     {{- $fieldName := $validator.FieldName | publicVar }}
                     {{- $maximum := $validator.Rules.Maximum }}
                     {{- if $validator.IsPointer }}
@@ -235,8 +251,12 @@ require.NotNil(t, cfg)
                     }
                 {{ end }}
                 {{- if $validator.Rules.ExclusiveMinimum }}
-                    func Test{{ $defName | publicVar }}Validate_ExclusiveMinimum{{ $validator.FieldName | publicVar }}(t *testing.T) {
-                    cfg := NewDefault{{ $defName | publicVar }}()
+                    func Test{{ $typeName }}Validate_ExclusiveMinimum{{ $validator.FieldName | publicVar }}(t *testing.T) {
+                    {{- if $hasDefault }}
+                    cfg := NewDefault{{ $typeName }}()
+                    {{- else }}
+                    cfg := {{ $typeName }}{}
+                    {{- end }}
                     {{- $fieldName := $validator.FieldName | publicVar }}
                     {{- $exclMin := $validator.Rules.ExclusiveMinimum }}
                     {{- if $validator.IsPointer }}
@@ -251,8 +271,12 @@ require.NotNil(t, cfg)
                     }
                 {{ end }}
                 {{- if $validator.Rules.ExclusiveMaximum }}
-                    func Test{{ $defName | publicVar }}Validate_ExclusiveMaximum{{ $validator.FieldName | publicVar }}(t *testing.T) {
-                    cfg := NewDefault{{ $defName | publicVar }}()
+                    func Test{{ $typeName }}Validate_ExclusiveMaximum{{ $validator.FieldName | publicVar }}(t *testing.T) {
+                    {{- if $hasDefault }}
+                    cfg := NewDefault{{ $typeName }}()
+                    {{- else }}
+                    cfg := {{ $typeName }}{}
+                    {{- end }}
                     {{- $fieldName := $validator.FieldName | publicVar }}
                     {{- $exclMax := $validator.Rules.ExclusiveMaximum }}
                     {{- if $validator.IsPointer }}
@@ -267,8 +291,12 @@ require.NotNil(t, cfg)
                     }
                 {{ end }}
                 {{- if $validator.Rules.Enum }}
-                    func Test{{ $defName | publicVar }}Validate_InvalidEnum{{ $validator.FieldName | publicVar }}(t *testing.T) {
-                    cfg := NewDefault{{ $defName | publicVar }}()
+                    func Test{{ $typeName }}Validate_InvalidEnum{{ $validator.FieldName | publicVar }}(t *testing.T) {
+                    {{- if $hasDefault }}
+                    cfg := NewDefault{{ $typeName }}()
+                    {{- else }}
+                    cfg := {{ $typeName }}{}
+                    {{- end }}
                     cfg.{{ $validator.FieldName | publicVar }} = {{ invalidTestValue $validator.FieldType }}
 
                     require.ErrorContains(t, cfg.Validate(), "{{ $validator.FieldName }} must be one of")

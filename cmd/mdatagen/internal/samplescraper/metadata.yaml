@@ -70,8 +70,12 @@ config:
               optional_mode: default
           interval:
             type: duration
+            description: Polling interval for the scraper target.
             optional: true
             default: 10s
+            deprecated:
+              since: v0.160.0
+              note: Support for this property will be dropped soon.
           labels:
             description: Static key-value labels attached to all metrics from this target.
             type: map
@@ -102,6 +106,9 @@ config:
       type: string
       enum: [debug, info, warn, error]
       default: info
+    protocol:
+      description: Protocol used when connecting to scrape targets, reused from samplepkg.
+      $ref: ../samplepkg.protocol
   required: [job_name, targets]
   go_struct:
     private_fields: true
