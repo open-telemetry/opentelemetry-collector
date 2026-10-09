@@ -20,7 +20,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.162.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.162.0
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.162.0
-	go.opentelemetry.io/collector/internal/statusutil v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/internal/statusutil v0.0.0-20261008222028-cee245c32ca5
 	go.opentelemetry.io/collector/internal/telemetry v0.162.0
 	go.opentelemetry.io/collector/internal/testutil v0.162.0
 	go.opentelemetry.io/collector/pdata v1.68.0
