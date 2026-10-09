@@ -42,6 +42,9 @@ func (ms InstrumentationScope) MoveTo(dest InstrumentationScope) {
 		return
 	}
 	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteInstrumentationScope(dest.getOrig(), false)
 		ms.CopyTo(dest)
 		internal.DeleteInstrumentationScope(ms.getOrig(), false)
 		return

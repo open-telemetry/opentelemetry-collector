@@ -43,6 +43,9 @@ func (ms Logs) MoveTo(dest Logs) {
 		return
 	}
 	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteExportLogsServiceRequest(dest.getOrig(), false)
 		ms.CopyTo(dest)
 		internal.DeleteExportLogsServiceRequest(ms.getOrig(), false)
 		return

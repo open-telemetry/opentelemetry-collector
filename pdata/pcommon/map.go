@@ -273,8 +273,10 @@ func (m Map) MoveTo(dest Map) {
 	if m.getOrig() == dest.getOrig() {
 		return
 	}
-	if m.getState() != dest.getState() {
-		m.CopyTo(dest)
+	if internal.MoveNeedsCopy(m.getState(), dest.getState()) {
+		// Copying into a nil destination rather than dest's own buffer keeps an empty
+		// source nil, which is what assigning it below would leave behind.
+		*dest.getOrig() = internal.CopyKeyValueSlice(nil, *m.getOrig(), dest.getState())
 		*m.getOrig() = nil
 		return
 	}

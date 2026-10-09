@@ -378,7 +378,7 @@ func (v Value) MoveTo(dest Value) {
 	if v.getOrig() == dest.getOrig() {
 		return
 	}
-	if v.getState() != dest.getState() {
+	if internal.MoveNeedsCopy(v.getState(), dest.getState()) {
 		v.CopyTo(dest)
 		internal.DeleteAnyValue(v.getOrig(), false)
 		return

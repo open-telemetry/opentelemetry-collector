@@ -41,6 +41,9 @@ func (ms EntityRef) MoveTo(dest EntityRef) {
 		return
 	}
 	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteEntityRef(dest.getOrig(), false)
 		ms.CopyTo(dest)
 		internal.DeleteEntityRef(ms.getOrig(), false)
 		return

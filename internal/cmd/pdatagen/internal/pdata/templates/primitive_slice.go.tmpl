@@ -35,7 +35,7 @@ func New{{ .structName }}() {{ .structName }} {
 
 // AsRaw returns a copy of the []{{ .itemType }} slice.
 func (ms {{ .structName }}) AsRaw() []{{ .itemType }} {
-	return slices.Clone(*ms.getOrig())
+	return copy{{ .elementOriginName }}Slice(nil, *ms.getOrig())
 }
 
 // FromRaw copies raw []{{ .itemType }} into the slice {{ .structName }}.
@@ -45,7 +45,10 @@ func (ms {{ .structName }}) FromRaw(val []{{ .itemType }}) {
 	ms.getState().CopyOnWriteBytes(ms.getOrig())
 	{{- end }}
 	{{- if eq .itemType "byte" }}
-	*ms.getOrig() = internal.CopyBytes(ms.getState(), val)
+	// CopyBytes would drop the existing buffer for an empty val and return nil, where this
+	// has always left the slice empty but allocated. CopyOnWriteBytes above already made the
+	// buffer safe to write into.
+	*ms.getOrig() = internal.CopySlice(ms.getState(), *ms.getOrig(), val)
 	{{- else if eq .itemType "string" }}
 	*ms.getOrig() = internal.CopyStringSlice(ms.getState(), *ms.getOrig(), val)
 	{{- else }}
@@ -130,8 +133,14 @@ func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	if ms.getState() != dest.getState() {
-		ms.CopyTo(dest)
+	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
+		// Copying into a nil destination rather than dest's own buffer keeps an empty
+		// source nil, which is what assigning it below would leave behind.
+		{{- if eq .itemType "string" }}
+		*dest.getOrig() = internal.CopyStringSlice(dest.getState(), nil, *ms.getOrig())
+		{{- else }}
+		*dest.getOrig() = internal.CopySlice(dest.getState(), nil, *ms.getOrig())
+		{{- end }}
 		*ms.getOrig() = nil
 		return
 	}
@@ -144,7 +153,7 @@ func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
 func (ms {{ .structName }}) MoveAndAppendTo(dest {{ .structName }}) {
   ms.getState().AssertMutable()
   dest.getState().AssertMutable()
-  if ms.getState() != dest.getState() {
+  if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
     dest.Append(*ms.getOrig()...)
     *ms.getOrig() = nil
     return

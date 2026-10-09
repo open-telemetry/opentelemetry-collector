@@ -46,6 +46,9 @@ func (ms ScopeProfiles) MoveTo(dest ScopeProfiles) {
 		return
 	}
 	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteScopeProfiles(dest.orig, false)
 		ms.CopyTo(dest)
 		internal.DeleteScopeProfiles(ms.orig, false)
 		return

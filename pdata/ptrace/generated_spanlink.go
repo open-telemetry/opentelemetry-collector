@@ -48,6 +48,9 @@ func (ms SpanLink) MoveTo(dest SpanLink) {
 		return
 	}
 	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteSpanLink(dest.orig, false)
 		ms.CopyTo(dest)
 		internal.DeleteSpanLink(ms.orig, false)
 		return

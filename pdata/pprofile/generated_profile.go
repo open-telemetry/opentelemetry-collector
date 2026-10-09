@@ -46,6 +46,9 @@ func (ms Profile) MoveTo(dest Profile) {
 		return
 	}
 	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteProfile(dest.orig, false)
 		ms.CopyTo(dest)
 		internal.DeleteProfile(ms.orig, false)
 		return

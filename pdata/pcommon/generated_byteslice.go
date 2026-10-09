@@ -36,14 +36,17 @@ func NewByteSlice() ByteSlice {
 
 // AsRaw returns a copy of the []byte slice.
 func (ms ByteSlice) AsRaw() []byte {
-	return slices.Clone(*ms.getOrig())
+	return copyByteSlice(nil, *ms.getOrig())
 }
 
 // FromRaw copies raw []byte into the slice ByteSlice.
 func (ms ByteSlice) FromRaw(val []byte) {
 	ms.getState().AssertMutable()
 	ms.getState().CopyOnWriteBytes(ms.getOrig())
-	*ms.getOrig() = internal.CopyBytes(ms.getState(), val)
+	// CopyBytes would drop the existing buffer for an empty val and return nil, where this
+	// has always left the slice empty but allocated. CopyOnWriteBytes above already made the
+	// buffer safe to write into.
+	*ms.getOrig() = internal.CopySlice(ms.getState(), *ms.getOrig(), val)
 }
 
 // Len returns length of the []byte slice value.
@@ -112,8 +115,10 @@ func (ms ByteSlice) MoveTo(dest ByteSlice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	if ms.getState() != dest.getState() {
-		ms.CopyTo(dest)
+	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
+		// Copying into a nil destination rather than dest's own buffer keeps an empty
+		// source nil, which is what assigning it below would leave behind.
+		*dest.getOrig() = internal.CopySlice(dest.getState(), nil, *ms.getOrig())
 		*ms.getOrig() = nil
 		return
 	}
@@ -126,7 +131,7 @@ func (ms ByteSlice) MoveTo(dest ByteSlice) {
 func (ms ByteSlice) MoveAndAppendTo(dest ByteSlice) {
 	ms.getState().AssertMutable()
 	dest.getState().AssertMutable()
-	if ms.getState() != dest.getState() {
+	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
 		dest.Append(*ms.getOrig()...)
 		*ms.getOrig() = nil
 		return

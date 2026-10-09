@@ -36,7 +36,7 @@ func NewFloat64Slice() Float64Slice {
 
 // AsRaw returns a copy of the []float64 slice.
 func (ms Float64Slice) AsRaw() []float64 {
-	return slices.Clone(*ms.getOrig())
+	return copyFloat64Slice(nil, *ms.getOrig())
 }
 
 // FromRaw copies raw []float64 into the slice Float64Slice.
@@ -109,8 +109,10 @@ func (ms Float64Slice) MoveTo(dest Float64Slice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	if ms.getState() != dest.getState() {
-		ms.CopyTo(dest)
+	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
+		// Copying into a nil destination rather than dest's own buffer keeps an empty
+		// source nil, which is what assigning it below would leave behind.
+		*dest.getOrig() = internal.CopySlice(dest.getState(), nil, *ms.getOrig())
 		*ms.getOrig() = nil
 		return
 	}
@@ -123,7 +125,7 @@ func (ms Float64Slice) MoveTo(dest Float64Slice) {
 func (ms Float64Slice) MoveAndAppendTo(dest Float64Slice) {
 	ms.getState().AssertMutable()
 	dest.getState().AssertMutable()
-	if ms.getState() != dest.getState() {
+	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
 		dest.Append(*ms.getOrig()...)
 		*ms.getOrig() = nil
 		return

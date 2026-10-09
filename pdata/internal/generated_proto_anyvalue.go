@@ -212,7 +212,7 @@ func CopyAnyValue(dest, src *AnyValue, st *State) *AnyValue {
 
 	case *AnyValue_BytesValue:
 		ov := Alloc[AnyValue_BytesValue](st)
-		ov.BytesValue = CopyBytes(st, t.BytesValue)
+		ov.BytesValue = CopySlice(st, ov.BytesValue, t.BytesValue)
 		dest.Value = ov
 
 	case *AnyValue_StringValueStrindex:

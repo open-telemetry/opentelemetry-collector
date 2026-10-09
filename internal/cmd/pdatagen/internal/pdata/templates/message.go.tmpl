@@ -55,6 +55,9 @@ func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
 		return
 	}
 	if internal.MoveNeedsCopy(ms.{{ .stateAccessor }}, dest.{{ .stateAccessor }}) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.Delete{{ .originName }}(dest.{{ .origAccessor }}, false)
 		ms.CopyTo(dest)
 		internal.Delete{{ .originName }}(ms.{{ .origAccessor }}, false)
 		return

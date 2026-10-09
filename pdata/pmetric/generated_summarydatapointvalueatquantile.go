@@ -45,6 +45,9 @@ func (ms SummaryDataPointValueAtQuantile) MoveTo(dest SummaryDataPointValueAtQua
 		return
 	}
 	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteSummaryDataPointValueAtQuantile(dest.orig, false)
 		ms.CopyTo(dest)
 		internal.DeleteSummaryDataPointValueAtQuantile(ms.orig, false)
 		return

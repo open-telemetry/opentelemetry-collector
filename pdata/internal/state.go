@@ -353,22 +353,18 @@ func copyStringArena(st *State, s string) string {
 	return internPayloadString(st, unsafe.Slice(unsafe.StringData(s), len(s)))
 }
 
-// CopyBytes clones b into dest arena unless it already aliases dest wire/arena memory.
-// Bytes are mutable, so the caller's slice is always cloned; only the destination differs.
+// CopyBytes interns b into st's arena unless it already aliases st's wire or arena memory.
+//
+// Without an arena it returns b untouched. The generated code assigned the source slice straight
+// across before the arena existed, so the result aliased the source; keeping that means turning
+// the gate off is indistinguishable from not having the feature. Callers that need the previous
+// contents of the destination preserved use CopySlice instead, which is what the generated code
+// did for those fields all along.
 func CopyBytes(st *State, b []byte) []byte {
 	if st == nil || len(st.arenas) == 0 {
-		return cloneBytes(b)
+		return b
 	}
 	return copyBytesArena(st, b)
-}
-
-func cloneBytes(b []byte) []byte {
-	if len(b) == 0 {
-		return nil
-	}
-	nb := make([]byte, len(b))
-	copy(nb, b)
-	return nb
 }
 
 func copyBytesArena(st *State, b []byte) []byte {

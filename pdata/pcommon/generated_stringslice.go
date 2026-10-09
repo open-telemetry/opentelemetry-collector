@@ -36,7 +36,7 @@ func NewStringSlice() StringSlice {
 
 // AsRaw returns a copy of the []string slice.
 func (ms StringSlice) AsRaw() []string {
-	return slices.Clone(*ms.getOrig())
+	return copyStringSlice(nil, *ms.getOrig())
 }
 
 // FromRaw copies raw []string into the slice StringSlice.
@@ -110,8 +110,10 @@ func (ms StringSlice) MoveTo(dest StringSlice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	if ms.getState() != dest.getState() {
-		ms.CopyTo(dest)
+	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
+		// Copying into a nil destination rather than dest's own buffer keeps an empty
+		// source nil, which is what assigning it below would leave behind.
+		*dest.getOrig() = internal.CopyStringSlice(dest.getState(), nil, *ms.getOrig())
 		*ms.getOrig() = nil
 		return
 	}
@@ -124,7 +126,7 @@ func (ms StringSlice) MoveTo(dest StringSlice) {
 func (ms StringSlice) MoveAndAppendTo(dest StringSlice) {
 	ms.getState().AssertMutable()
 	dest.getState().AssertMutable()
-	if ms.getState() != dest.getState() {
+	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
 		dest.Append(*ms.getOrig()...)
 		*ms.getOrig() = nil
 		return

@@ -36,7 +36,7 @@ func NewUInt64Slice() UInt64Slice {
 
 // AsRaw returns a copy of the []uint64 slice.
 func (ms UInt64Slice) AsRaw() []uint64 {
-	return slices.Clone(*ms.getOrig())
+	return copyUint64Slice(nil, *ms.getOrig())
 }
 
 // FromRaw copies raw []uint64 into the slice UInt64Slice.
@@ -109,8 +109,10 @@ func (ms UInt64Slice) MoveTo(dest UInt64Slice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	if ms.getState() != dest.getState() {
-		ms.CopyTo(dest)
+	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
+		// Copying into a nil destination rather than dest's own buffer keeps an empty
+		// source nil, which is what assigning it below would leave behind.
+		*dest.getOrig() = internal.CopySlice(dest.getState(), nil, *ms.getOrig())
 		*ms.getOrig() = nil
 		return
 	}
@@ -123,7 +125,7 @@ func (ms UInt64Slice) MoveTo(dest UInt64Slice) {
 func (ms UInt64Slice) MoveAndAppendTo(dest UInt64Slice) {
 	ms.getState().AssertMutable()
 	dest.getState().AssertMutable()
-	if ms.getState() != dest.getState() {
+	if internal.MoveNeedsCopy(ms.getState(), dest.getState()) {
 		dest.Append(*ms.getOrig()...)
 		*ms.getOrig() = nil
 		return

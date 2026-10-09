@@ -45,6 +45,9 @@ func (ms Summary) MoveTo(dest Summary) {
 		return
 	}
 	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		// Clearing dest first makes the copy land in empty fields, so it cannot leave
+		// allocated-but-empty slices where the swap below would have left nil.
+		internal.DeleteSummary(dest.orig, false)
 		ms.CopyTo(dest)
 		internal.DeleteSummary(ms.orig, false)
 		return

@@ -13,15 +13,13 @@ const copyOther = `{{ if .repeated -}}
 	for _, v := range src.{{ .fieldName }} {
 		dest.{{ .fieldName }} = Append(st, dest.{{ .fieldName }}, CopyString(st, v))
 	}
-	{{ else if .isBytes -}}
-	dest.{{ .fieldName }} = CopyBytes(st, src.{{ .fieldName }})
 	{{ else -}}
 	dest.{{ .fieldName }} = CopySlice(st, dest.{{ .fieldName }}, src.{{ .fieldName }})
 	{{ end }}
 {{ else if ne .oneOfGroup "" -}}
 	ov := Alloc[{{ .oneOfMessageName }}](st)
 	{{ if .isBytes -}}
-	ov.{{ .fieldName }} = CopyBytes(st, t.{{ .fieldName }})
+	ov.{{ .fieldName }} = CopySlice(st, ov.{{ .fieldName }}, t.{{ .fieldName }})
 	{{ else if eq .goType "string" -}}
 	ov.{{ .fieldName }} = CopyString(st, t.{{ .fieldName }})
 	{{ else -}}
