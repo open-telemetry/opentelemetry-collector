@@ -1,5 +1,5 @@
 {
-  "$id": "go.opentelemetry.io/collector/exporter/exporterhelper",
+  "$id": "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$defs": {
     "batch_config": {
@@ -57,7 +57,7 @@
       },
       "description": "Defines a configuration for batching requests based on a timeout and a minimum number of items."
     },
-    "queue_batch_config": {
+    "config": {
       "type": "object",
       "properties": {
         "batch": {
@@ -142,21 +142,34 @@
           "description": "Determines if incoming requests are blocked until the request is processed or not.\nCurrently, this option is not available when persistent queue is configured using the storage configuration.\n"
         }
       },
-      "description": "Defines configuration for queueing and batching for the exporter."
+      "description": "Defines configuration for queueing and batching incoming requests."
     },
-    "timeout_config": {
+    "partition_config": {
       "type": "object",
       "properties": {
-        "timeout": {
+        "cache_size": {
+          "type": "integer",
+          "description": "Is the maximum number of active partition batchers kept in the LRU\ncache when partitioning is enabled. When the limit is reached, the least\nrecently used partition is flushed and removed. Default is 10000. Must be positive.\n",
+          "default": 10000,
+          "exclusiveMinimum": 0
+        },
+        "idle_timeout": {
           "type": "string",
-          "description": "Defines the timeout for every attempt to send data to the backend. A zero timeout means no timeout.",
-          "default": "5s",
-          "minimum": 0,
+          "description": "Is the duration a partition may stay empty before it is removed.\nKeep it above the data arrival interval to avoid churning partitions. Default is 90s.\nMust be positive.\n",
+          "default": "90s",
+          "exclusiveMinimum": 0,
           "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+        },
+        "metadata_keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Is a list of client.Metadata keys that will be used to partition\nthe data into batches. If this setting is empty, a single batcher instance\nwill be used. When this setting is not empty, one batcher will be used per\ndistinct combination of values for the listed metadata keys.\n\nEmpty value and unset metadata are treated as distinct cases.\n\nEntries are case-insensitive. Duplicated entries will trigger a validation error.\n"
         }
       },
-      "description": "A timeout configuration. The timeout applies to individual attempts to send data to the backend."
+      "description": "Defines a configuration for partitioning requests based on metadata keys."
     }
   },
-  "title": "pkg/exporterhelper"
+  "title": "pkg/queuebatch"
 }

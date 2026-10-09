@@ -4,7 +4,20 @@ package exporterhelper
 
 import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 )
+
+// BatchConfig defines a configuration for batching requests based on a timeout and a minimum number of items.
+type BatchConfig = queuebatch.BatchConfig
+
+// NewDefaultBatchConfig returns a new BatchConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
+func NewDefaultBatchConfig() BatchConfig {
+	return queuebatch.NewDefaultBatchConfig()
+}
+
+// QueueBatchConfig defines configuration for queueing and batching for the exporter.
+type QueueBatchConfig = queuebatch.Config
 
 // TimeoutConfig a timeout configuration. The timeout applies to individual attempts to send data to the backend.
 type TimeoutConfig = internal.TimeoutConfig

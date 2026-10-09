@@ -16,6 +16,7 @@ const (
 	OpaqueStringType SchemaType = "opaque_string"
 	ComponentIDType  SchemaType = "component_id"
 	OpaqueMapType    SchemaType = "opaque_map"
+	SizerType        SchemaType = "sizer"
 )
 
 // extendedTypes is the centralized registry of first-class type aliases that can be used as the "type" field
@@ -41,6 +42,14 @@ var extendedTypes = map[SchemaType]ConfigMetadata{
 		GoStruct: GoStructConfig{Type: "go.opentelemetry.io/collector/config/configopaque.MapList"},
 		Values: &ConfigMetadata{
 			Type: StringType,
+		},
+	},
+
+	// sizer: Go uses requests.SizerType; JSON gets a string
+	SizerType: {
+		Type: StringType,
+		GoStruct: GoStructConfig{
+			Type: "go.opentelemetry.io/collector/exporter/exporterhelper/internal/request.SizerType",
 		},
 	},
 }
