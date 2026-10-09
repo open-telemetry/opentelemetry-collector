@@ -40,30 +40,42 @@ func TestDropArenaPoolsSlabs(t *testing.T) {
 		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prev))
 	})
 
-	// A 2MB buffer can trigger GC between Put and Get, and sync.Pool drops
-	// items on GC. Keep the collector off so the same buffer comes back.
+	// sync.Pool never promises that Get returns what Put stored. A GC empties it, and a slab
+	// parked in one P's private slot cannot be stolen by the P this goroutine later runs on.
+	// Keeping the collector off rules out the first; retrying rules out the second.
 	prevGC := debug.SetGCPercent(-1)
 	t.Cleanup(func() { debug.SetGCPercent(prevGC) })
 
 	type poolSlot struct{ n int }
-	st := NewState()
-	first := Alloc[poolSlot](st)
-	first.n = 11
-	require.NotNil(t, CopyString(st, "payload"))
-	raw := st.arenas[0].buf
-	st.RetainWire([]byte("wire"))
-	st.DropArena()
-	assert.Empty(t, st.arenas)
+	var pooled bool
+	for range 10 {
+		st := NewState()
+		first := Alloc[poolSlot](st)
+		first.n = 11
+		require.NotNil(t, CopyString(st, "payload"))
+		raw := &st.arenas[0].buf[0]
+		st.RetainWire([]byte("wire"))
 
-	next := NewState()
-	assert.Nil(t, next.wire)
-	again := Alloc[poolSlot](next)
-	assert.Same(t, first, again)
-	assert.Equal(t, 0, again.n)
-	require.Len(t, next.arenas, 1)
-	assert.Equal(t, &raw[0], &next.arenas[0].buf[0])
+		st.DropArena()
+		require.Empty(t, st.arenas)
+		require.Nil(t, st.wire)
 
-	next.DropArena()
+		next := NewState()
+		require.Len(t, next.arenas, 1)
+		require.Nil(t, next.wire)
+		again := Alloc[poolSlot](next)
+		// Only the round trips the pool actually served say anything about Release.
+		if &next.arenas[0].buf[0] == raw {
+			pooled = true
+			assert.Same(t, first, again)
+			assert.Equal(t, 0, again.n)
+		}
+		next.DropArena()
+		if pooled {
+			break
+		}
+	}
+	assert.True(t, pooled, "DropArena should return the slab to arenaPool for the next request")
 }
 
 func TestPayloadChunksAndAppend(t *testing.T) {
