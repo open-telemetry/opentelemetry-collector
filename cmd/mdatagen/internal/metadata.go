@@ -222,8 +222,31 @@ func (md *Metadata) validateResourceAttributes() error {
 		if attr.EnabledPtr == nil {
 			errs = errors.Join(errs, fmt.Errorf("enabled field is required for resource attribute: %v", name))
 		}
+		if attr.Type.Template && attr.Enum != nil {
+			errs = errors.Join(errs, fmt.Errorf("enum is not supported for template resource attribute: %v", name))
+		}
 	}
 	return errs
+}
+
+// HasTemplateResourceAttributes returns true if any resource attribute has a template type.
+func (md Metadata) HasTemplateResourceAttributes() bool {
+	for _, attr := range md.ResourceAttributes {
+		if attr.Type.Template {
+			return true
+		}
+	}
+	return false
+}
+
+// HasNonTemplateResourceAttributes returns true if any resource attribute has a non-template type.
+func (md Metadata) HasNonTemplateResourceAttributes() bool {
+	for _, attr := range md.ResourceAttributes {
+		if !attr.Type.Template {
+			return true
+		}
+	}
+	return false
 }
 
 // validateMigrations verifies that any metric-level migration references valid
@@ -305,6 +328,13 @@ func (md *Metadata) validateEntities() error {
 				errs = errors.Join(errs, fmt.Errorf(`entity "%v": extra_attributes refers to undefined resource attribute: %v`, entity.Type, ref.Ref))
 			}
 		}
+		for _, refs := range [][]EntityAttributeRef{entity.Identity, entity.Description, entity.ExtraAttributes} {
+			for _, ref := range refs {
+				if attr, ok := md.ResourceAttributes[ref.Ref]; ok && attr.Type.Template {
+					errs = errors.Join(errs, fmt.Errorf(`entity "%v": template resource attribute %v cannot be used in entities`, entity.Type, ref.Ref))
+				}
+			}
+		}
 	}
 
 	// Second pass: validate relationships
@@ -359,6 +389,9 @@ func (md *Metadata) validateAttributes(usedAttrs map[AttributeName]bool) error {
 		}
 		if attr.EnabledPtr != nil {
 			errs = errors.Join(errs, fmt.Errorf("enabled field is not allowed for regular attribute: %v", attrName))
+		}
+		if attr.Type.Template {
+			errs = errors.Join(errs, fmt.Errorf("template type is only supported for resource attributes: %v", attrName))
 		}
 		if !usedAttrs[attrName] {
 			unusedAttrs = append(unusedAttrs, attrName)
@@ -600,11 +633,26 @@ func (an AttributeName) RenderUnexported() (string, error) {
 type ValueType struct {
 	// ValueType is type of the attribute value.
 	ValueType pcommon.ValueType
+	// Template is true for semantic convention template types (e.g. "template[string]").
+	// The attribute name is then a prefix, and the full name is "<prefix>.<key>".
+	Template bool
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (mvt *ValueType) UnmarshalText(text []byte) error {
-	switch vtStr := string(text); vtStr {
+	vtStr := string(text)
+	if inner, ok := strings.CutPrefix(vtStr, "template["); ok {
+		inner, ok = strings.CutSuffix(inner, "]")
+		if !ok || strings.HasPrefix(inner, "template[") {
+			return fmt.Errorf("invalid type: %q", vtStr)
+		}
+		if err := mvt.UnmarshalText([]byte(inner)); err != nil {
+			return fmt.Errorf("invalid type: %q", vtStr)
+		}
+		mvt.Template = true
+		return nil
+	}
+	switch vtStr {
 	case "string":
 		mvt.ValueType = pcommon.ValueTypeStr
 	case "int":
@@ -748,6 +796,30 @@ func (a Attribute) Name() AttributeName {
 		return AttributeName(a.NameOverride)
 	}
 	return a.FullName
+}
+
+// templateTestKey is the key used by generated tests for template resource attributes.
+const templateTestKey = "test_key"
+
+// TestName returns the attribute name that generated tests expect on the resource.
+func (a Attribute) TestName() string {
+	if a.Type.Template {
+		return string(a.FullName) + "." + templateTestKey
+	}
+	return string(a.FullName)
+}
+
+// TestKey returns the key used by generated tests for template resource attributes.
+func (Attribute) TestKey() string {
+	return templateTestKey
+}
+
+// TestSetterArgs returns the arguments generated tests pass to the resource attribute setter.
+func (a Attribute) TestSetterArgs() string {
+	if a.Type.Template {
+		return fmt.Sprintf("%q, %s", templateTestKey, a.TestValue())
+	}
+	return a.TestValue()
 }
 
 func (a Attribute) TestValue() string {

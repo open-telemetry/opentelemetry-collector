@@ -23,9 +23,12 @@ all_set:
   {{- end }}
   {{- if .ResourceAttributes }}
   resource_attributes:
-    {{- range $name, $_ := .ResourceAttributes }}
+    {{- range $name, $attr := .ResourceAttributes }}
     {{ $name }}:
       enabled: true
+      {{- if $attr.Type.Template }}
+      keys: ["{{ $attr.TestKey }}"]
+      {{- end }}
     {{- end }}
   {{- end }}
 {{- if $hasReagMetrics }}
@@ -50,9 +53,12 @@ reaggregate_set:
   {{- end }}
   {{- if .ResourceAttributes }}
   resource_attributes:
-    {{- range $name, $_ := .ResourceAttributes }}
+    {{- range $name, $attr := .ResourceAttributes }}
     {{ $name }}:
       enabled: true
+      {{- if $attr.Type.Template }}
+      keys: ["{{ $attr.TestKey }}"]
+      {{- end }}
     {{- end }}
   {{- end }}
 {{- end }}
@@ -88,7 +94,8 @@ override_set:
     {{- range $name, $attr := .ResourceAttributes }}
     {{ $name }}:
       enabled: true
-      {{- if $attr.Enum }}
+      {{- if $attr.Type.Template }}
+      {{- else if $attr.Enum }}
       override_value: "{{ index $attr.Enum 0 }}"
       {{- else if eq $attr.Type.String "Str" }}
       override_value: "override-{{ $name }}"
@@ -112,6 +119,7 @@ filter_set_include:
     {{- range $name, $attr := .ResourceAttributes }}
     {{ $name }}:
       enabled: true
+      {{- if not $attr.Type.Template }}
       {{- if $.Metrics }}
       metrics_include:
         - regexp: ".*"
@@ -120,12 +128,14 @@ filter_set_include:
       events_include:
         - regexp: ".*"
       {{- end }}
+      {{- end }}
     {{- end }}
 filter_set_exclude:
   resource_attributes:
     {{- range $name, $attr := .ResourceAttributes }}
     {{ $name }}:
       enabled: true
+      {{- if not $attr.Type.Template }}
       {{- if $.Metrics }}
       metrics_exclude:
         {{- if eq $attr.Type.String "Str" }}
@@ -141,6 +151,7 @@ filter_set_exclude:
         {{- else }}
         - regexp: ".*"
         {{- end }}
+      {{- end }}
       {{- end }}
     {{- end }}
 {{- end }}

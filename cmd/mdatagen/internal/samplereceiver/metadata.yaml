@@ -134,6 +134,12 @@ resource_attributes:
     warnings:
       if_enabled: This resource_attribute is deprecated and will be removed soon.
 
+  template.resource.attr:
+    description: Resource attribute with a template name, suffixed with a configured key.
+    type: template[string]
+    enabled: true
+    stability: development
+
 attributes:
   boolean_attr:
     description: Attribute with a boolean value.

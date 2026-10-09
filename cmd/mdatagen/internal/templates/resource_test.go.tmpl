@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	{{- if .OverrideValueEnabled }}
+	{{- if and .OverrideValueEnabled .HasNonTemplateResourceAttributes }}
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
@@ -15,7 +15,7 @@ import (
 
 {{- $enabledAttrCount := 0 }}
 {{- range $_, $attr := .ResourceAttributes }}
-{{- if $attr.Enabled }}
+{{- if and $attr.Enabled (not $attr.Type.Template) }}
 {{- $enabledAttrCount = inc $enabledAttrCount }}
 {{- end }}
 {{- end }}
@@ -29,7 +29,7 @@ func TestResourceBuilder(t *testing.T) {
 			{{- if $attr.Enum }}
 			rb.Set{{ $name.Render }}{{ index $attr.Enum 0 | publicVar }}()
 			{{- else }}
-			rb.Set{{ $name.Render }}({{ $attr.TestValue }})
+			rb.Set{{ $name.Render }}({{ $attr.TestSetterArgs }})
 			{{- end }}
 			{{- end }}
 
@@ -49,8 +49,8 @@ func TestResourceBuilder(t *testing.T) {
 			}
 
 			{{- range $name, $attr := .ResourceAttributes }}
-			{{ $name.RenderUnexported }}AttrVal, ok := res.Attributes().Get("{{ $name }}")
-			{{- if $attr.Enabled }}
+			{{ $name.RenderUnexported }}AttrVal, ok := res.Attributes().Get("{{ $attr.TestName }}")
+			{{- if and $attr.Enabled (not $attr.Type.Template) }}
 			assert.True(t, ok)
 			{{- else }}
 			assert.Equal(t, tt == "all_set", ok)
@@ -63,7 +63,7 @@ func TestResourceBuilder(t *testing.T) {
 	}
 }
 
-{{- if .OverrideValueEnabled }}
+{{- if and .OverrideValueEnabled .HasNonTemplateResourceAttributes }}
 
 func TestResourceBuilderOverrideValue(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
@@ -73,12 +73,13 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 	{{- if $attr.Enum }}
 	rb.Set{{ $name.Render }}{{ index $attr.Enum 0 | publicVar }}()
 	{{- else }}
-	rb.Set{{ $name.Render }}({{ $attr.TestValue }})
+	rb.Set{{ $name.Render }}({{ $attr.TestSetterArgs }})
 	{{- end }}
 	{{- end }}
 
 	res := rb.Emit()
 	{{- range $name, $attr := .ResourceAttributes }}
+	{{- if not $attr.Type.Template }}
 	{
 		val, ok := res.Attributes().Get("{{ $name }}")
 		assert.True(t, ok, "{{ $name }} should be present")
@@ -101,6 +102,7 @@ func TestResourceBuilderOverrideValue(t *testing.T) {
 		}
 	}
 	{{- end }}
+	{{- end }}
 }
 
 // TestResourceBuilderOverrideWithoutSet does not call any Set* methods, but override should still apply via Emit().
@@ -111,6 +113,7 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 
 	res := rb.Emit()
 	{{- range $name, $attr := .ResourceAttributes }}
+	{{- if not $attr.Type.Template }}
 	{
 		val, ok := res.Attributes().Get("{{ $name }}")
 		assert.True(t, ok, "{{ $name }} should be present even without calling Set")
@@ -133,6 +136,7 @@ func TestResourceBuilderOverrideWithoutSet(t *testing.T) {
 		}
 	}
 	{{- end }}
+	{{- end }}
 }
 
 // TestResourceBuilderOverrideDisabled disables all attributes, so override should not apply.
@@ -152,22 +156,24 @@ func TestResourceBuilderOverrideDisabled(t *testing.T) {
 func TestResourceBuilderNoOverride(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "all_set")
 	require.NoError(t, confmap.Validate(cfg))
-	{{- range $name, $_ := .ResourceAttributes }}
+	{{- range $name, $attr := .ResourceAttributes }}
+	{{- if not $attr.Type.Template }}
 	assert.Nil(t, cfg.{{ $name.Render }}.OverrideValue, "OverrideValue should be nil for {{ $name }}")
+	{{- end }}
 	{{- end }}
 	rb := NewResourceBuilder(cfg)
 	{{- range $name, $attr := .ResourceAttributes }}
 	{{- if $attr.Enum }}
 	rb.Set{{ $name.Render }}{{ index $attr.Enum 0 | publicVar }}()
 	{{- else }}
-	rb.Set{{ $name.Render }}({{ $attr.TestValue }})
+	rb.Set{{ $name.Render }}({{ $attr.TestSetterArgs }})
 	{{- end }}
 	{{- end }}
 
 	res := rb.Emit()
 	assert.Equal(t, {{ len .ResourceAttributes }}, res.Attributes().Len())
 	{{- range $name, $attr := .ResourceAttributes }}
-	{{ $name.RenderUnexported }}AttrVal, ok := res.Attributes().Get("{{ $name }}")
+	{{ $name.RenderUnexported }}AttrVal, ok := res.Attributes().Get("{{ $attr.TestName }}")
 	assert.True(t, ok)
 	if ok {
 		{{- template "assertResourceAttributeValue" $attr }}

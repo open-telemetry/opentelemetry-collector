@@ -67,7 +67,7 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetNone,
 			expectEmpty: true,
 		},
-		{{- if .ResourceAttributes }}
+		{{- if .HasNonTemplateResourceAttributes }}
 		{
 			name:        "filter_set_include",
 			resAttrsSet: testDataSetAll,
@@ -290,7 +290,7 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- if $attr.Enum }}
 			rb.Set{{ $attr.Name.Render }}{{ index $attr.Enum 0 | publicVar }}()
 			{{- else }}
-			rb.Set{{ $attr.Name.Render }}({{ $attr.TestValue }})
+			rb.Set{{ $attr.Name.Render }}({{ $attr.TestSetterArgs }})
 			{{- end }}
 			{{- end }}
 			res := rb.Emit()
