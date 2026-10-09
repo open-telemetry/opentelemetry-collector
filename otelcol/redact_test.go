@@ -204,11 +204,12 @@ func TestRedactWithPreExpansion(t *testing.T) {
 				"exporters": map[string]any{
 					"foo": map[string]any{
 						"headers": map[string]any{ // #nosec G101
-							"non-map":       "unchanged",
-							"123":           "unchanged",
-							"missing-value": "unchanged",
-							"extra-field":   "unchanged",
-							"valid":         "secret",
+							"non-map":         "unchanged",
+							"123":             "unchanged",
+							"missing-value":   "unchanged",
+							"extra-field":     "unchanged",
+							"wrong-value-key": "unchanged",
+							"valid":           "secret",
 						},
 					},
 				},
@@ -221,6 +222,7 @@ func TestRedactWithPreExpansion(t *testing.T) {
 							map[string]any{nameKey: 123, valueKey: redactedMask},
 							map[string]any{nameKey: "missing-value"},
 							map[string]any{nameKey: "extra-field", valueKey: redactedMask, "extra": true},
+							map[string]any{nameKey: "wrong-value-key", "value-name": redactedMask},
 							map[string]any{nameKey: "valid", valueKey: redactedMask},
 						},
 					},
@@ -230,11 +232,12 @@ func TestRedactWithPreExpansion(t *testing.T) {
 				"exporters": map[string]any{
 					"foo": map[string]any{
 						"headers": map[string]any{ // #nosec G101
-							"non-map":       "unchanged",
-							"123":           "unchanged",
-							"missing-value": "unchanged",
-							"extra-field":   "unchanged",
-							"valid":         redactedMask,
+							"non-map":         "unchanged",
+							"123":             "unchanged",
+							"missing-value":   "unchanged",
+							"extra-field":     "unchanged",
+							"wrong-value-key": "unchanged",
+							"valid":           redactedMask,
 						},
 					},
 				},
