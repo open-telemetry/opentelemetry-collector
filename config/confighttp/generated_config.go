@@ -31,10 +31,10 @@ type ClientConfig struct {
 	// Auth is authentication configuration for outgoing HTTP calls.
 	Auth configoptional.Optional[configauth.Config] `mapstructure:"auth,omitempty"`
 
-	// Compression the compression key for supported compression types within collector.
+	// Compression is the key for the supported compression types within the collector.
 	Compression configcompression.Type `mapstructure:"compression,omitempty"`
 
-	// CompressionParams advanced configuration options for the Compression
+	// CompressionParams provides advanced configuration options for the configured compression type.
 	CompressionParams configcompression.CompressionParams `mapstructure:"compression_params,omitempty"`
 
 	// Cookies configures the cookie management of the HTTP client.
@@ -43,31 +43,31 @@ type ClientConfig struct {
 	// Deprecated: [v0.160.0] Set 'keepalive::enabled' to false to disable keep-alives.
 	DisableKeepAlives bool `mapstructure:"disable_keep_alives,omitempty"`
 
-	// Endpoint the target URL to send data to (e.g.: http://some.url:9411/v1/traces).
+	// Endpoint is the target URL to send data to (e.g.: http://some.url:9411/v1/traces).
 	Endpoint string `mapstructure:"endpoint,omitempty"`
 
-	// ForceAttemptHTTP2 enabling is forces the HTTP transport to use the HTTP/2 protocol.
+	// ForceAttemptHTTP2 controls whether the HTTP transport is forced to use the HTTP/2 protocol.
 	// By default, this is set to true.
 	// NOTE: HTTP/2 does not support settings such as max_conns_per_host, max_idle_conns_per_host and max_idle_conns.
 	ForceAttemptHTTP2 bool `mapstructure:"force_attempt_http2,omitempty"`
 
-	// Headers additional headers attached to each HTTP request sent by the client.
+	// Headers defines additional headers attached to each HTTP request sent by the client.
 	// Existing header values are overwritten if collision happens.
 	// Header values are opaque since they may be sensitive.
 	Headers configopaque.MapList `mapstructure:"headers,omitempty"`
 
-	// HTTP2PingTimeout is timeout if there's no response to the ping within the configured value, the connection will be closed.
+	// HTTP2PingTimeout is the duration to wait for a response to a health check ping before the connection is closed.
 	// If not set or set to 0, it defaults to 15s.
 	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout,omitempty"`
 
-	// HTTP2ReadIdleTimeout is timeout if the connection has been idle for the configured value send a ping frame for health check
+	// HTTP2ReadIdleTimeout is the duration after which, if the connection has been idle, a ping frame is sent for a health check.
 	// 0s means no health check will be performed.
 	HTTP2ReadIdleTimeout time.Duration `mapstructure:"http2_read_idle_timeout,omitempty"`
 
 	// Deprecated: [v0.160.0] Use Keepalive.IdleConnTimeout instead.
 	IdleConnTimeout time.Duration `mapstructure:"idle_conn_timeout,omitempty"`
 
-	// Keepalive is keepalive configuration. Unmarshal folds this section into the deprecated
+	// Keepalive controls HTTP client keep-alives. Unmarshal folds this section into the deprecated
 	// fields below, which remain the source of truth during their deprecation
 	// window, and always resets it to None. A value visible to ToClient was
 	// therefore set programmatically after unmarshaling (or the config was
@@ -84,26 +84,26 @@ type ClientConfig struct {
 	// Deprecated: [v0.160.0] Use Keepalive.MaxIdleConnsPerHost instead.
 	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host,omitempty"`
 
-	// Middlewares the middlewares are used to add custom functionality to the HTTP client.
+	// Middlewares are used to add custom functionality to the HTTP client.
 	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 
-	// ProxyURL proxy setting for the collector.
+	// ProxyURL is the proxy setting for the collector.
 	ProxyURL string `mapstructure:"proxy_url,omitempty"`
 
-	// ReadBufferSize is read buffer size for HTTP client. See http.Transport.ReadBufferSize.
+	// ReadBufferSize is the read buffer size for the HTTP client. See http.Transport.ReadBufferSize.
 	// Default is 0.
 	ReadBufferSize int `mapstructure:"read_buffer_size,omitempty"`
 
-	// Timeout is parameter that configures `http.Client.Timeout`.
+	// Timeout is a parameter that configures `http.Client.Timeout`.
 	// Default is 0 (unlimited).
 	Timeout time.Duration `mapstructure:"timeout,omitempty"`
 
 	// TLS exposes TLS client configuration.
 	TLS configtls.ClientConfig `mapstructure:"tls,omitempty"`
 
-	// WriteBufferSize is write buffer size for HTTP client. See http.Transport.WriteBufferSize.
+	// WriteBufferSize is the write buffer size for the HTTP client. See http.Transport.WriteBufferSize.
 	// Default is 0.
 	WriteBufferSize int `mapstructure:"write_buffer_size,omitempty"`
 
@@ -191,7 +191,7 @@ type ServerConfig struct {
 	// "tcp", "tcp4", "tcp6", and "unix" are valid options.
 	NetAddr confignet.AddrConfig `mapstructure:",squash"`
 
-	// Auth authentication settings for this receiver.
+	// Auth is the authentication configuration for this receiver.
 	Auth configoptional.Optional[AuthConfig] `mapstructure:"auth,omitempty"`
 
 	// CompressionAlgorithms configures the list of compression algorithms the server can accept.
@@ -235,7 +235,7 @@ type ServerConfig struct {
 	// zero, there is no timeout.
 	ReadHeaderTimeout time.Duration `mapstructure:"read_header_timeout"`
 
-	// ReadTimeout readTimeout is the maximum duration for reading the entire
+	// ReadTimeout is the maximum duration for reading the entire
 	// request, including the body. A zero or negative value means
 	// there will be no timeout.
 	//
@@ -245,7 +245,7 @@ type ServerConfig struct {
 	// ReadHeaderTimeout. It is valid to use them both.
 	ReadTimeout time.Duration `mapstructure:"read_timeout,omitempty"`
 
-	// ResponseHeaders additional headers attached to each HTTP response sent to the client.
+	// ResponseHeaders defines additional headers attached to each HTTP response sent to the client.
 	// Header values are opaque since they may be sensitive.
 	ResponseHeaders configopaque.MapList `mapstructure:"response_headers,omitempty"`
 

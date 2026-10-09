@@ -14,32 +14,32 @@ exported_configs:
     properties:
       endpoint:
         type: string
-        description: "The target URL to send data to (e.g.: http://some.url:9411/v1/traces)."
+        description: "Is the target URL to send data to (e.g.: http://some.url:9411/v1/traces)."
       proxy_url:
         type: string
-        description: Proxy setting for the collector.
+        description: Is the proxy setting for the collector.
       tls:
         $ref: /config/configtls.client_config
         description: Exposes TLS client configuration.
       read_buffer_size:
         type: int
         description: |
-          Is read buffer size for HTTP client. See http.Transport.ReadBufferSize.
+          Is the read buffer size for the HTTP client. See http.Transport.ReadBufferSize.
           Default is 0.
       write_buffer_size:
         type: int
         description: |
-          Is write buffer size for HTTP client. See http.Transport.WriteBufferSize.
+          Is the write buffer size for the HTTP client. See http.Transport.WriteBufferSize.
           Default is 0.
       timeout:
         type: duration
         description: |
-          Is parameter that configures `http.Client.Timeout`.
+          Is a parameter that configures `http.Client.Timeout`.
           Default is 0 (unlimited).
       headers:
         type: opaque_map
         description: |
-          Additional headers attached to each HTTP request sent by the client.
+          Defines additional headers attached to each HTTP request sent by the client.
           Existing header values are overwritten if collision happens.
           Header values are opaque since they may be sensitive.
       auth:
@@ -48,10 +48,10 @@ exported_configs:
         description: Is authentication configuration for outgoing HTTP calls.
       compression:
         $ref: /config/configcompression.type
-        description: The compression key for supported compression types within collector.
+        description: Is the key for the supported compression types within the collector.
       compression_params:
         $ref: /config/configcompression.compression_params
-        description: Advanced configuration options for the Compression
+        description: Provides advanced configuration options for the configured compression type.
       max_conns_per_host:
         type: int
         description: |
@@ -60,7 +60,7 @@ exported_configs:
       http2_read_idle_timeout:
         type: duration
         description: |
-          Is timeout if the connection has been idle for the configured value send a ping frame for health check
+          Is the duration after which, if the connection has been idle, a ping frame is sent for a health check.
           0s means no health check will be performed.
         # This is needed in case you run into
         # https://github.com/golang/go/issues/59690
@@ -68,7 +68,7 @@ exported_configs:
       http2_ping_timeout:
         type: duration
         description: |
-          Is timeout if there's no response to the ping within the configured value, the connection will be closed.
+          Is the duration to wait for a response to a health check ping before the connection is closed.
           If not set or set to 0, it defaults to 15s.
       cookies:
         $ref: cookies_config
@@ -77,7 +77,7 @@ exported_configs:
       force_attempt_http2:
         type: bool
         description: |
-          Enabling is forces the HTTP transport to use the HTTP/2 protocol.
+          Controls whether the HTTP transport is forced to use the HTTP/2 protocol.
           By default, this is set to true.
           NOTE: HTTP/2 does not support settings such as max_conns_per_host, max_idle_conns_per_host and max_idle_conns.
         default: true
@@ -88,14 +88,14 @@ exported_configs:
         values:
           $ref: /config/configmiddleware.config
         description: |
-          The middlewares are used to add custom functionality to the HTTP client.
+          Are used to add custom functionality to the HTTP client.
           Middleware handlers are called in the order they appear in this list,
           with the first middleware becoming the outermost handler.
       keepalive:
         $ref: keepalive_client_config
         optional: true
         description: |
-          Is keepalive configuration. Unmarshal folds this section into the deprecated
+          Controls HTTP client keep-alives. Unmarshal folds this section into the deprecated
           fields below, which remain the source of truth during their deprecation
           window, and always resets it to None. A value visible to ToClient was
           therefore set programmatically after unmarshaling (or the config was
@@ -168,7 +168,7 @@ exported_configs:
       auth:
         $ref: auth_config
         optional: true
-        description: Authentication settings for this receiver.
+        description: Is the authentication configuration for this receiver.
       max_request_body_size:
         type: int64
         description: "Sets the maximum request body size in bytes. Default: 20MiB."
@@ -178,7 +178,7 @@ exported_configs:
       response_headers:
         type: opaque_map
         description: |
-          Additional headers attached to each HTTP response sent to the client.
+          Defines additional headers attached to each HTTP response sent to the client.
           Header values are opaque since they may be sensitive.
       compression_algorithms:
         type: slice
@@ -190,7 +190,7 @@ exported_configs:
       read_timeout:
         type: duration
         description: |
-          ReadTimeout is the maximum duration for reading the entire
+          Is the maximum duration for reading the entire
           request, including the body. A zero or negative value means
           there will be no timeout.
 

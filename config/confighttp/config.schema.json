@@ -41,7 +41,7 @@
         },
         "compression": {
           "type": "string",
-          "description": "The compression key for supported compression types within collector.",
+          "description": "Is the key for the supported compression types within the collector.",
           "enum": [
             "gzip",
             "zlib",
@@ -61,7 +61,7 @@
               "type": "integer"
             }
           },
-          "description": "Advanced configuration options for the Compression"
+          "description": "Provides advanced configuration options for the configured compression type."
         },
         "cookies": {
           "description": "Configures the cookie management of the HTTP client."
@@ -72,28 +72,28 @@
         },
         "endpoint": {
           "type": "string",
-          "description": "The target URL to send data to (e.g.: http://some.url:9411/v1/traces)."
+          "description": "Is the target URL to send data to (e.g.: http://some.url:9411/v1/traces)."
         },
         "force_attempt_http2": {
           "type": "boolean",
-          "description": "Enabling is forces the HTTP transport to use the HTTP/2 protocol.\nBy default, this is set to true.\nNOTE: HTTP/2 does not support settings such as max_conns_per_host, max_idle_conns_per_host and max_idle_conns.\n",
+          "description": "Controls whether the HTTP transport is forced to use the HTTP/2 protocol.\nBy default, this is set to true.\nNOTE: HTTP/2 does not support settings such as max_conns_per_host, max_idle_conns_per_host and max_idle_conns.\n",
           "default": true
         },
         "headers": {
           "type": "object",
-          "description": "Additional headers attached to each HTTP request sent by the client.\nExisting header values are overwritten if collision happens.\nHeader values are opaque since they may be sensitive.\n",
+          "description": "Defines additional headers attached to each HTTP request sent by the client.\nExisting header values are overwritten if collision happens.\nHeader values are opaque since they may be sensitive.\n",
           "additionalProperties": {
             "type": "string"
           }
         },
         "http2_ping_timeout": {
           "type": "string",
-          "description": "Is timeout if there's no response to the ping within the configured value, the connection will be closed.\nIf not set or set to 0, it defaults to 15s.\n",
+          "description": "Is the duration to wait for a response to a health check ping before the connection is closed.\nIf not set or set to 0, it defaults to 15s.\n",
           "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
         },
         "http2_read_idle_timeout": {
           "type": "string",
-          "description": "Is timeout if the connection has been idle for the configured value send a ping frame for health check\n0s means no health check will be performed.\n",
+          "description": "Is the duration after which, if the connection has been idle, a ping frame is sent for a health check.\n0s means no health check will be performed.\n",
           "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
         },
         "idle_conn_timeout": {
@@ -120,7 +120,7 @@
               "description": "Is used to set a limit to the maximum idle HTTP connections the host can keep open.\nIf zero, [net/http.DefaultMaxIdleConnsPerHost] is used.\n"
             }
           },
-          "description": "Is keepalive configuration. Unmarshal folds this section into the deprecated\nfields below, which remain the source of truth during their deprecation\nwindow, and always resets it to None. A value visible to ToClient was\ntherefore set programmatically after unmarshaling (or the config was\nnever unmarshaled) and takes precedence over the deprecated fields.\n"
+          "description": "Controls HTTP client keep-alives. Unmarshal folds this section into the deprecated\nfields below, which remain the source of truth during their deprecation\nwindow, and always resets it to None. A value visible to ToClient was\ntherefore set programmatically after unmarshaling (or the config was\nnever unmarshaled) and takes precedence over the deprecated fields.\n"
         },
         "max_conns_per_host": {
           "type": "integer",
@@ -146,19 +146,19 @@
             },
             "description": "Defines the extension ID for a middleware component."
           },
-          "description": "The middlewares are used to add custom functionality to the HTTP client.\nMiddleware handlers are called in the order they appear in this list,\nwith the first middleware becoming the outermost handler.\n"
+          "description": "Are used to add custom functionality to the HTTP client.\nMiddleware handlers are called in the order they appear in this list,\nwith the first middleware becoming the outermost handler.\n"
         },
         "proxy_url": {
           "type": "string",
-          "description": "Proxy setting for the collector."
+          "description": "Is the proxy setting for the collector."
         },
         "read_buffer_size": {
           "type": "integer",
-          "description": "Is read buffer size for HTTP client. See http.Transport.ReadBufferSize.\nDefault is 0.\n"
+          "description": "Is the read buffer size for the HTTP client. See http.Transport.ReadBufferSize.\nDefault is 0.\n"
         },
         "timeout": {
           "type": "string",
-          "description": "Is parameter that configures `http.Client.Timeout`.\nDefault is 0 (unlimited).\n",
+          "description": "Is a parameter that configures `http.Client.Timeout`.\nDefault is 0 (unlimited).\n",
           "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
         },
         "tls": {
@@ -268,7 +268,7 @@
         },
         "write_buffer_size": {
           "type": "integer",
-          "description": "Is write buffer size for HTTP client. See http.Transport.WriteBufferSize.\nDefault is 0.\n"
+          "description": "Is the write buffer size for the HTTP client. See http.Transport.WriteBufferSize.\nDefault is 0.\n"
         }
       },
       "description": "Defines settings for creating an HTTP client."
@@ -351,7 +351,7 @@
               "description": "Is a list of parameters that should be extracted from the request and added to the context.\nWhen a parameter is found in both the query string and the header, the value from the query string will be used.\n"
             }
           },
-          "description": "Authentication settings for this receiver.",
+          "description": "Is the authentication configuration for this receiver.",
           "allOf": [
             {
               "type": "object",
@@ -457,12 +457,12 @@
         },
         "read_timeout": {
           "type": "string",
-          "description": "ReadTimeout is the maximum duration for reading the entire\nrequest, including the body. A zero or negative value means\nthere will be no timeout.\n\nBecause ReadTimeout does not let Handlers make per-request\ndecisions on each request body's acceptable deadline or\nupload rate, most users will prefer to use\nReadHeaderTimeout. It is valid to use them both.\n",
+          "description": "Is the maximum duration for reading the entire\nrequest, including the body. A zero or negative value means\nthere will be no timeout.\n\nBecause ReadTimeout does not let Handlers make per-request\ndecisions on each request body's acceptable deadline or\nupload rate, most users will prefer to use\nReadHeaderTimeout. It is valid to use them both.\n",
           "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
         },
         "response_headers": {
           "type": "object",
-          "description": "Additional headers attached to each HTTP response sent to the client.\nHeader values are opaque since they may be sensitive.\n",
+          "description": "Defines additional headers attached to each HTTP response sent to the client.\nHeader values are opaque since they may be sensitive.\n",
           "additionalProperties": {
             "type": "string"
           }
