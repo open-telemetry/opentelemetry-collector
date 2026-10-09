@@ -29,7 +29,8 @@ type AddrConfig struct {
 	_ struct{}
 }
 
-// NewDefaultAddrConfig returns a new AddrConfig with default values consistent with the annotations in the schema.
+// NewDefaultAddrConfig returns a new AddrConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultAddrConfig() AddrConfig {
 	return AddrConfig{
 		DialerConfig: NewDefaultDialerConfig(),
@@ -45,7 +46,8 @@ type DialerConfig struct {
 	_ struct{}
 }
 
-// NewDefaultDialerConfig returns a new DialerConfig with default values consistent with the annotations in the schema.
+// NewDefaultDialerConfig returns a new DialerConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultDialerConfig() DialerConfig {
 	return DialerConfig{}
 }
@@ -66,7 +68,8 @@ type TCPAddrConfig struct {
 	_ struct{}
 }
 
-// NewDefaultTCPAddrConfig returns a new TCPAddrConfig with default values consistent with the annotations in the schema.
+// NewDefaultTCPAddrConfig returns a new TCPAddrConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultTCPAddrConfig() TCPAddrConfig {
 	return TCPAddrConfig{
 		DialerConfig: NewDefaultDialerConfig(),
