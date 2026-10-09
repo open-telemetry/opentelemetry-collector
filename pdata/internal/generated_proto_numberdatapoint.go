@@ -486,11 +486,11 @@ func (orig *NumberDataPoint) UnmarshalProtoState(buf []byte, st *State) error {
 
 func GenTestNumberDataPoint() *NumberDataPoint {
 	orig := Alloc[NumberDataPoint](nil)
-	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
 	orig.StartTimeUnixNano = uint64(13)
 	orig.TimeUnixNano = uint64(13)
 	orig.Value = &NumberDataPoint_AsDouble{AsDouble: float64(3.1415926)}
-	orig.Exemplars = []Exemplar{Exemplar{}, *GenTestExemplar()}
+	orig.Exemplars = []Exemplar{{}, *GenTestExemplar()}
 	orig.Flags = uint32(13)
 	return orig
 }

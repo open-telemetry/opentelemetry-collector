@@ -668,7 +668,7 @@ func GenTestMetric() *Metric {
 	orig.Description = "test_description"
 	orig.Unit = "test_unit"
 	orig.Data = &Metric_Gauge{Gauge: GenTestGauge()}
-	orig.Metadata = []KeyValue{KeyValue{}, *GenTestKeyValue()}
+	orig.Metadata = []KeyValue{{}, *GenTestKeyValue()}
 	return orig
 }
 

@@ -674,14 +674,14 @@ func (m *HistogramDataPoint) HasMax() bool {
 
 func GenTestHistogramDataPoint() *HistogramDataPoint {
 	orig := Alloc[HistogramDataPoint](nil)
-	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
 	orig.StartTimeUnixNano = uint64(13)
 	orig.TimeUnixNano = uint64(13)
 	orig.Count = uint64(13)
 	orig.SetSum(float64(3.1415926))
 	orig.BucketCounts = []uint64{uint64(0), uint64(13)}
 	orig.ExplicitBounds = []float64{float64(0), float64(3.1415926)}
-	orig.Exemplars = []Exemplar{Exemplar{}, *GenTestExemplar()}
+	orig.Exemplars = []Exemplar{{}, *GenTestExemplar()}
 	orig.Flags = uint32(13)
 	orig.SetMin(float64(3.1415926))
 	orig.SetMax(float64(3.1415926))

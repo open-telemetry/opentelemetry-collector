@@ -219,7 +219,7 @@ func (orig *TracesData) UnmarshalProtoState(buf []byte, st *State) error {
 
 func GenTestTracesData() *TracesData {
 	orig := Alloc[TracesData](nil)
-	orig.ResourceSpans = []*ResourceSpans{&ResourceSpans{}, GenTestResourceSpans()}
+	orig.ResourceSpans = []*ResourceSpans{{}, GenTestResourceSpans()}
 	return orig
 }
 

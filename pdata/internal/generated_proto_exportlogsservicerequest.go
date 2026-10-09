@@ -218,7 +218,7 @@ func (orig *ExportLogsServiceRequest) UnmarshalProtoState(buf []byte, st *State)
 
 func GenTestExportLogsServiceRequest() *ExportLogsServiceRequest {
 	orig := Alloc[ExportLogsServiceRequest](nil)
-	orig.ResourceLogs = []*ResourceLogs{&ResourceLogs{}, GenTestResourceLogs()}
+	orig.ResourceLogs = []*ResourceLogs{{}, GenTestResourceLogs()}
 	return orig
 }
 

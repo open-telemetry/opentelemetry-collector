@@ -287,7 +287,7 @@ func (orig *ScopeMetrics) UnmarshalProtoState(buf []byte, st *State) error {
 func GenTestScopeMetrics() *ScopeMetrics {
 	orig := Alloc[ScopeMetrics](nil)
 	orig.Scope = *GenTestInstrumentationScope()
-	orig.Metrics = []*Metric{&Metric{}, GenTestMetric()}
+	orig.Metrics = []*Metric{{}, GenTestMetric()}
 	orig.SchemaUrl = "test_schemaurl"
 	return orig
 }

@@ -190,19 +190,19 @@ func TestMarshalAndUnmarshalProtoViaProtobufSum(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesSum() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                          {0x02},
-		"DataPoints/wrong_wire_type":             []byte{0xc},
-		"DataPoints/missing_value":               []byte{0xa},
-		"AggregationTemporality/wrong_wire_type": []byte{0x14},
-		"AggregationTemporality/missing_value":   []byte{0x10},
-		"IsMonotonic/wrong_wire_type":            []byte{0x1c},
-		"IsMonotonic/missing_value":              []byte{0x18},
+		"DataPoints/wrong_wire_type":             {0xc},
+		"DataPoints/missing_value":               {0xa},
+		"AggregationTemporality/wrong_wire_type": {0x14},
+		"AggregationTemporality/missing_value":   {0x10},
+		"IsMonotonic/wrong_wire_type":            {0x1c},
+		"IsMonotonic/missing_value":              {0x18},
 	}
 }
 
 func genTestEncodingValuesSum() map[string]*Sum {
 	return map[string]*Sum{
 		"empty":                       NewSum(),
-		"DataPoints/test":             {DataPoints: []*NumberDataPoint{&NumberDataPoint{}, GenTestNumberDataPoint()}},
+		"DataPoints/test":             {DataPoints: []*NumberDataPoint{{}, GenTestNumberDataPoint()}},
 		"AggregationTemporality/test": {AggregationTemporality: AggregationTemporality(13)},
 		"IsMonotonic/test":            {IsMonotonic: true},
 	}

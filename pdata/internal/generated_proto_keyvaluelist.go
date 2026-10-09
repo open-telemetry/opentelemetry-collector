@@ -217,7 +217,7 @@ func (orig *KeyValueList) UnmarshalProtoState(buf []byte, st *State) error {
 
 func GenTestKeyValueList() *KeyValueList {
 	orig := Alloc[KeyValueList](nil)
-	orig.Values = []KeyValue{KeyValue{}, *GenTestKeyValue()}
+	orig.Values = []KeyValue{{}, *GenTestKeyValue()}
 	return orig
 }
 

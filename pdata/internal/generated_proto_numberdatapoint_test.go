@@ -190,34 +190,34 @@ func TestMarshalAndUnmarshalProtoViaProtobufNumberDataPoint(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesNumberDataPoint() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                     {0x02},
-		"Attributes/wrong_wire_type":        []byte{0x3c},
-		"Attributes/missing_value":          []byte{0x3a},
-		"StartTimeUnixNano/wrong_wire_type": []byte{0x14},
-		"StartTimeUnixNano/missing_value":   []byte{0x11},
-		"TimeUnixNano/wrong_wire_type":      []byte{0x1c},
-		"TimeUnixNano/missing_value":        []byte{0x19},
+		"Attributes/wrong_wire_type":        {0x3c},
+		"Attributes/missing_value":          {0x3a},
+		"StartTimeUnixNano/wrong_wire_type": {0x14},
+		"StartTimeUnixNano/missing_value":   {0x11},
+		"TimeUnixNano/wrong_wire_type":      {0x1c},
+		"TimeUnixNano/missing_value":        {0x19},
 
-		"AsDouble/wrong_wire_type":  []byte{0x24},
-		"AsDouble/missing_value":    []byte{0x21},
-		"AsInt/wrong_wire_type":     []byte{0x34},
-		"AsInt/missing_value":       []byte{0x31},
-		"Exemplars/wrong_wire_type": []byte{0x2c},
-		"Exemplars/missing_value":   []byte{0x2a},
-		"Flags/wrong_wire_type":     []byte{0x44},
-		"Flags/missing_value":       []byte{0x40},
+		"AsDouble/wrong_wire_type":  {0x24},
+		"AsDouble/missing_value":    {0x21},
+		"AsInt/wrong_wire_type":     {0x34},
+		"AsInt/missing_value":       {0x31},
+		"Exemplars/wrong_wire_type": {0x2c},
+		"Exemplars/missing_value":   {0x2a},
+		"Flags/wrong_wire_type":     {0x44},
+		"Flags/missing_value":       {0x40},
 	}
 }
 
 func genTestEncodingValuesNumberDataPoint() map[string]*NumberDataPoint {
 	return map[string]*NumberDataPoint{
 		"empty":                  NewNumberDataPoint(),
-		"Attributes/test":        {Attributes: []KeyValue{KeyValue{}, *GenTestKeyValue()}},
+		"Attributes/test":        {Attributes: []KeyValue{{}, *GenTestKeyValue()}},
 		"StartTimeUnixNano/test": {StartTimeUnixNano: uint64(13)},
 		"TimeUnixNano/test":      {TimeUnixNano: uint64(13)},
 		"AsDouble/default":       {Value: &NumberDataPoint_AsDouble{AsDouble: float64(0)}},
 		"AsDouble/test":          {Value: &NumberDataPoint_AsDouble{AsDouble: float64(3.1415926)}}, "AsInt/default": {Value: &NumberDataPoint_AsInt{AsInt: int64(0)}},
 		"AsInt/test":     {Value: &NumberDataPoint_AsInt{AsInt: int64(13)}},
-		"Exemplars/test": {Exemplars: []Exemplar{Exemplar{}, *GenTestExemplar()}},
+		"Exemplars/test": {Exemplars: []Exemplar{{}, *GenTestExemplar()}},
 		"Flags/test":     {Flags: uint32(13)},
 	}
 }

@@ -190,25 +190,25 @@ func TestMarshalAndUnmarshalProtoViaProtobufMetric(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesMetric() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":               {0x02},
-		"Name/wrong_wire_type":        []byte{0xc},
-		"Name/missing_value":          []byte{0xa},
-		"Description/wrong_wire_type": []byte{0x14},
-		"Description/missing_value":   []byte{0x12},
-		"Unit/wrong_wire_type":        []byte{0x1c},
-		"Unit/missing_value":          []byte{0x1a},
+		"Name/wrong_wire_type":        {0xc},
+		"Name/missing_value":          {0xa},
+		"Description/wrong_wire_type": {0x14},
+		"Description/missing_value":   {0x12},
+		"Unit/wrong_wire_type":        {0x1c},
+		"Unit/missing_value":          {0x1a},
 
-		"Gauge/wrong_wire_type":                []byte{0x2c},
-		"Gauge/missing_value":                  []byte{0x2a},
-		"Sum/wrong_wire_type":                  []byte{0x3c},
-		"Sum/missing_value":                    []byte{0x3a},
-		"Histogram/wrong_wire_type":            []byte{0x4c},
-		"Histogram/missing_value":              []byte{0x4a},
-		"ExponentialHistogram/wrong_wire_type": []byte{0x54},
-		"ExponentialHistogram/missing_value":   []byte{0x52},
-		"Summary/wrong_wire_type":              []byte{0x5c},
-		"Summary/missing_value":                []byte{0x5a},
-		"Metadata/wrong_wire_type":             []byte{0x64},
-		"Metadata/missing_value":               []byte{0x62},
+		"Gauge/wrong_wire_type":                {0x2c},
+		"Gauge/missing_value":                  {0x2a},
+		"Sum/wrong_wire_type":                  {0x3c},
+		"Sum/missing_value":                    {0x3a},
+		"Histogram/wrong_wire_type":            {0x4c},
+		"Histogram/missing_value":              {0x4a},
+		"ExponentialHistogram/wrong_wire_type": {0x54},
+		"ExponentialHistogram/missing_value":   {0x52},
+		"Summary/wrong_wire_type":              {0x5c},
+		"Summary/missing_value":                {0x5a},
+		"Metadata/wrong_wire_type":             {0x64},
+		"Metadata/missing_value":               {0x62},
 	}
 }
 
@@ -224,6 +224,6 @@ func genTestEncodingValuesMetric() map[string]*Metric {
 		"Histogram/test": {Data: &Metric_Histogram{Histogram: GenTestHistogram()}}, "ExponentialHistogram/default": {Data: &Metric_ExponentialHistogram{ExponentialHistogram: &ExponentialHistogram{}}},
 		"ExponentialHistogram/test": {Data: &Metric_ExponentialHistogram{ExponentialHistogram: GenTestExponentialHistogram()}}, "Summary/default": {Data: &Metric_Summary{Summary: &Summary{}}},
 		"Summary/test":  {Data: &Metric_Summary{Summary: GenTestSummary()}},
-		"Metadata/test": {Metadata: []KeyValue{KeyValue{}, *GenTestKeyValue()}},
+		"Metadata/test": {Metadata: []KeyValue{{}, *GenTestKeyValue()}},
 	}
 }

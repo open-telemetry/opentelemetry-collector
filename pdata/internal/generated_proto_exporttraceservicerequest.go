@@ -218,7 +218,7 @@ func (orig *ExportTraceServiceRequest) UnmarshalProtoState(buf []byte, st *State
 
 func GenTestExportTraceServiceRequest() *ExportTraceServiceRequest {
 	orig := Alloc[ExportTraceServiceRequest](nil)
-	orig.ResourceSpans = []*ResourceSpans{&ResourceSpans{}, GenTestResourceSpans()}
+	orig.ResourceSpans = []*ResourceSpans{{}, GenTestResourceSpans()}
 	return orig
 }
 

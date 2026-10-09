@@ -217,7 +217,7 @@ func (orig *Gauge) UnmarshalProtoState(buf []byte, st *State) error {
 
 func GenTestGauge() *Gauge {
 	orig := Alloc[Gauge](nil)
-	orig.DataPoints = []*NumberDataPoint{&NumberDataPoint{}, GenTestNumberDataPoint()}
+	orig.DataPoints = []*NumberDataPoint{{}, GenTestNumberDataPoint()}
 	return orig
 }
 

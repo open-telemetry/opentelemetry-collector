@@ -190,17 +190,17 @@ func TestMarshalAndUnmarshalProtoViaProtobufHistogram(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesHistogram() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                          {0x02},
-		"DataPoints/wrong_wire_type":             []byte{0xc},
-		"DataPoints/missing_value":               []byte{0xa},
-		"AggregationTemporality/wrong_wire_type": []byte{0x14},
-		"AggregationTemporality/missing_value":   []byte{0x10},
+		"DataPoints/wrong_wire_type":             {0xc},
+		"DataPoints/missing_value":               {0xa},
+		"AggregationTemporality/wrong_wire_type": {0x14},
+		"AggregationTemporality/missing_value":   {0x10},
 	}
 }
 
 func genTestEncodingValuesHistogram() map[string]*Histogram {
 	return map[string]*Histogram{
 		"empty":                       NewHistogram(),
-		"DataPoints/test":             {DataPoints: []*HistogramDataPoint{&HistogramDataPoint{}, GenTestHistogramDataPoint()}},
+		"DataPoints/test":             {DataPoints: []*HistogramDataPoint{{}, GenTestHistogramDataPoint()}},
 		"AggregationTemporality/test": {AggregationTemporality: AggregationTemporality(13)},
 	}
 }

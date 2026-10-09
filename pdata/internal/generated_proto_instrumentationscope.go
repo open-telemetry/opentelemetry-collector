@@ -320,7 +320,7 @@ func GenTestInstrumentationScope() *InstrumentationScope {
 	orig := Alloc[InstrumentationScope](nil)
 	orig.Name = "test_name"
 	orig.Version = "test_version"
-	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
 	orig.DroppedAttributesCount = uint32(13)
 	return orig
 }

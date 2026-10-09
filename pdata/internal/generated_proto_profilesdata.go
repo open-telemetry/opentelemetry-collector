@@ -252,7 +252,7 @@ func (orig *ProfilesData) UnmarshalProtoState(buf []byte, st *State) error {
 
 func GenTestProfilesData() *ProfilesData {
 	orig := Alloc[ProfilesData](nil)
-	orig.ResourceProfiles = []*ResourceProfiles{&ResourceProfiles{}, GenTestResourceProfiles()}
+	orig.ResourceProfiles = []*ResourceProfiles{{}, GenTestResourceProfiles()}
 	orig.Dictionary = *GenTestProfilesDictionary()
 	return orig
 }

@@ -190,10 +190,10 @@ func TestMarshalAndUnmarshalProtoViaProtobufSummaryDataPointValueAtQuantile(t *t
 func genTestFailingUnmarshalProtoValuesSummaryDataPointValueAtQuantile() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":            {0x02},
-		"Quantile/wrong_wire_type": []byte{0xc},
-		"Quantile/missing_value":   []byte{0x9},
-		"Value/wrong_wire_type":    []byte{0x14},
-		"Value/missing_value":      []byte{0x11},
+		"Quantile/wrong_wire_type": {0xc},
+		"Quantile/missing_value":   {0x9},
+		"Value/wrong_wire_type":    {0x14},
+		"Value/missing_value":      {0x11},
 	}
 }
 

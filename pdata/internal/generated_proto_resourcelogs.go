@@ -338,9 +338,9 @@ func (orig *ResourceLogs) UnmarshalProtoState(buf []byte, st *State) error {
 func GenTestResourceLogs() *ResourceLogs {
 	orig := Alloc[ResourceLogs](nil)
 	orig.Resource = *GenTestResource()
-	orig.ScopeLogs = []*ScopeLogs{&ScopeLogs{}, GenTestScopeLogs()}
+	orig.ScopeLogs = []*ScopeLogs{{}, GenTestScopeLogs()}
 	orig.SchemaUrl = "test_schemaurl"
-	orig.DeprecatedScopeLogs = []*ScopeLogs{&ScopeLogs{}, GenTestScopeLogs()}
+	orig.DeprecatedScopeLogs = []*ScopeLogs{{}, GenTestScopeLogs()}
 	return orig
 }
 

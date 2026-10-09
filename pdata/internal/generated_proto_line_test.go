@@ -190,12 +190,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufLine(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesLine() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                 {0x02},
-		"FunctionIndex/wrong_wire_type": []byte{0xc},
-		"FunctionIndex/missing_value":   []byte{0x8},
-		"Line/wrong_wire_type":          []byte{0x14},
-		"Line/missing_value":            []byte{0x10},
-		"Column/wrong_wire_type":        []byte{0x1c},
-		"Column/missing_value":          []byte{0x18},
+		"FunctionIndex/wrong_wire_type": {0xc},
+		"FunctionIndex/missing_value":   {0x8},
+		"Line/wrong_wire_type":          {0x14},
+		"Line/missing_value":            {0x10},
+		"Column/wrong_wire_type":        {0x1c},
+		"Column/missing_value":          {0x18},
 	}
 }
 

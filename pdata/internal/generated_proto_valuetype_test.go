@@ -190,10 +190,10 @@ func TestMarshalAndUnmarshalProtoViaProtobufValueType(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesValueType() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                {0x02},
-		"TypeStrindex/wrong_wire_type": []byte{0xc},
-		"TypeStrindex/missing_value":   []byte{0x8},
-		"UnitStrindex/wrong_wire_type": []byte{0x14},
-		"UnitStrindex/missing_value":   []byte{0x10},
+		"TypeStrindex/wrong_wire_type": {0xc},
+		"TypeStrindex/missing_value":   {0x8},
+		"UnitStrindex/wrong_wire_type": {0x14},
+		"UnitStrindex/missing_value":   {0x10},
 	}
 }
 

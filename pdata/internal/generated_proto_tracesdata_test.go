@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufTracesData(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesTracesData() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                 {0x02},
-		"ResourceSpans/wrong_wire_type": []byte{0xc},
-		"ResourceSpans/missing_value":   []byte{0xa},
+		"ResourceSpans/wrong_wire_type": {0xc},
+		"ResourceSpans/missing_value":   {0xa},
 	}
 }
 
 func genTestEncodingValuesTracesData() map[string]*TracesData {
 	return map[string]*TracesData{
 		"empty":              NewTracesData(),
-		"ResourceSpans/test": {ResourceSpans: []*ResourceSpans{&ResourceSpans{}, GenTestResourceSpans()}},
+		"ResourceSpans/test": {ResourceSpans: []*ResourceSpans{{}, GenTestResourceSpans()}},
 	}
 }

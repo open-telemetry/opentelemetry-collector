@@ -219,7 +219,7 @@ func (orig *LogsData) UnmarshalProtoState(buf []byte, st *State) error {
 
 func GenTestLogsData() *LogsData {
 	orig := Alloc[LogsData](nil)
-	orig.ResourceLogs = []*ResourceLogs{&ResourceLogs{}, GenTestResourceLogs()}
+	orig.ResourceLogs = []*ResourceLogs{{}, GenTestResourceLogs()}
 	return orig
 }
 

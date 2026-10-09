@@ -418,12 +418,12 @@ func (orig *SummaryDataPoint) UnmarshalProtoState(buf []byte, st *State) error {
 
 func GenTestSummaryDataPoint() *SummaryDataPoint {
 	orig := Alloc[SummaryDataPoint](nil)
-	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
 	orig.StartTimeUnixNano = uint64(13)
 	orig.TimeUnixNano = uint64(13)
 	orig.Count = uint64(13)
 	orig.Sum = float64(3.1415926)
-	orig.QuantileValues = []*SummaryDataPointValueAtQuantile{&SummaryDataPointValueAtQuantile{}, GenTestSummaryDataPointValueAtQuantile()}
+	orig.QuantileValues = []*SummaryDataPointValueAtQuantile{{}, GenTestSummaryDataPointValueAtQuantile()}
 	orig.Flags = uint32(13)
 	return orig
 }

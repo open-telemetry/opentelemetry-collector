@@ -295,9 +295,9 @@ func (orig *Resource) UnmarshalProtoState(buf []byte, st *State) error {
 
 func GenTestResource() *Resource {
 	orig := Alloc[Resource](nil)
-	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
 	orig.DroppedAttributesCount = uint32(13)
-	orig.EntityRefs = []*EntityRef{&EntityRef{}, GenTestEntityRef()}
+	orig.EntityRefs = []*EntityRef{{}, GenTestEntityRef()}
 	return orig
 }
 

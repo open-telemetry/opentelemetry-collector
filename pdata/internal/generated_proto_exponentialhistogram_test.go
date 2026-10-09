@@ -190,17 +190,17 @@ func TestMarshalAndUnmarshalProtoViaProtobufExponentialHistogram(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesExponentialHistogram() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                          {0x02},
-		"DataPoints/wrong_wire_type":             []byte{0xc},
-		"DataPoints/missing_value":               []byte{0xa},
-		"AggregationTemporality/wrong_wire_type": []byte{0x14},
-		"AggregationTemporality/missing_value":   []byte{0x10},
+		"DataPoints/wrong_wire_type":             {0xc},
+		"DataPoints/missing_value":               {0xa},
+		"AggregationTemporality/wrong_wire_type": {0x14},
+		"AggregationTemporality/missing_value":   {0x10},
 	}
 }
 
 func genTestEncodingValuesExponentialHistogram() map[string]*ExponentialHistogram {
 	return map[string]*ExponentialHistogram{
 		"empty":                       NewExponentialHistogram(),
-		"DataPoints/test":             {DataPoints: []*ExponentialHistogramDataPoint{&ExponentialHistogramDataPoint{}, GenTestExponentialHistogramDataPoint()}},
+		"DataPoints/test":             {DataPoints: []*ExponentialHistogramDataPoint{{}, GenTestExponentialHistogramDataPoint()}},
 		"AggregationTemporality/test": {AggregationTemporality: AggregationTemporality(13)},
 	}
 }

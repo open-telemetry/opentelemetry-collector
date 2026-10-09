@@ -190,17 +190,17 @@ func TestMarshalAndUnmarshalProtoViaProtobufProfilesData(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesProfilesData() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                    {0x02},
-		"ResourceProfiles/wrong_wire_type": []byte{0xc},
-		"ResourceProfiles/missing_value":   []byte{0xa},
-		"Dictionary/wrong_wire_type":       []byte{0x14},
-		"Dictionary/missing_value":         []byte{0x12},
+		"ResourceProfiles/wrong_wire_type": {0xc},
+		"ResourceProfiles/missing_value":   {0xa},
+		"Dictionary/wrong_wire_type":       {0x14},
+		"Dictionary/missing_value":         {0x12},
 	}
 }
 
 func genTestEncodingValuesProfilesData() map[string]*ProfilesData {
 	return map[string]*ProfilesData{
 		"empty":                 NewProfilesData(),
-		"ResourceProfiles/test": {ResourceProfiles: []*ResourceProfiles{&ResourceProfiles{}, GenTestResourceProfiles()}},
+		"ResourceProfiles/test": {ResourceProfiles: []*ResourceProfiles{{}, GenTestResourceProfiles()}},
 		"Dictionary/test":       {Dictionary: *GenTestProfilesDictionary()},
 	}
 }

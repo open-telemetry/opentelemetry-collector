@@ -743,11 +743,11 @@ func GenTestSpan() *Span {
 	orig.Kind = SpanKind(13)
 	orig.StartTimeUnixNano = uint64(13)
 	orig.EndTimeUnixNano = uint64(13)
-	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
 	orig.DroppedAttributesCount = uint32(13)
-	orig.Events = []*SpanEvent{&SpanEvent{}, GenTestSpanEvent()}
+	orig.Events = []*SpanEvent{{}, GenTestSpanEvent()}
 	orig.DroppedEventsCount = uint32(13)
-	orig.Links = []*SpanLink{&SpanLink{}, GenTestSpanLink()}
+	orig.Links = []*SpanLink{{}, GenTestSpanLink()}
 	orig.DroppedLinksCount = uint32(13)
 	orig.Status = *GenTestStatus()
 	return orig

@@ -338,9 +338,9 @@ func (orig *ResourceSpans) UnmarshalProtoState(buf []byte, st *State) error {
 func GenTestResourceSpans() *ResourceSpans {
 	orig := Alloc[ResourceSpans](nil)
 	orig.Resource = *GenTestResource()
-	orig.ScopeSpans = []*ScopeSpans{&ScopeSpans{}, GenTestScopeSpans()}
+	orig.ScopeSpans = []*ScopeSpans{{}, GenTestScopeSpans()}
 	orig.SchemaUrl = "test_schemaurl"
-	orig.DeprecatedScopeSpans = []*ScopeSpans{&ScopeSpans{}, GenTestScopeSpans()}
+	orig.DeprecatedScopeSpans = []*ScopeSpans{{}, GenTestScopeSpans()}
 	return orig
 }
 

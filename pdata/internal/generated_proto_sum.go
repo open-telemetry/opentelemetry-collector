@@ -280,7 +280,7 @@ func (orig *Sum) UnmarshalProtoState(buf []byte, st *State) error {
 
 func GenTestSum() *Sum {
 	orig := Alloc[Sum](nil)
-	orig.DataPoints = []*NumberDataPoint{&NumberDataPoint{}, GenTestNumberDataPoint()}
+	orig.DataPoints = []*NumberDataPoint{{}, GenTestNumberDataPoint()}
 	orig.AggregationTemporality = AggregationTemporality(13)
 	orig.IsMonotonic = true
 	return orig

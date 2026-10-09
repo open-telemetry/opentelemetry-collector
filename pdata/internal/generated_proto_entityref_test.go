@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufEntityRef(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesEntityRef() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                   {0x02},
-		"SchemaUrl/wrong_wire_type":       []byte{0xc},
-		"SchemaUrl/missing_value":         []byte{0xa},
-		"Type/wrong_wire_type":            []byte{0x14},
-		"Type/missing_value":              []byte{0x12},
-		"IdKeys/wrong_wire_type":          []byte{0x1c},
-		"IdKeys/missing_value":            []byte{0x1a},
-		"DescriptionKeys/wrong_wire_type": []byte{0x24},
-		"DescriptionKeys/missing_value":   []byte{0x22},
+		"SchemaUrl/wrong_wire_type":       {0xc},
+		"SchemaUrl/missing_value":         {0xa},
+		"Type/wrong_wire_type":            {0x14},
+		"Type/missing_value":              {0x12},
+		"IdKeys/wrong_wire_type":          {0x1c},
+		"IdKeys/missing_value":            {0x1a},
+		"DescriptionKeys/wrong_wire_type": {0x24},
+		"DescriptionKeys/missing_value":   {0x22},
 	}
 }
 

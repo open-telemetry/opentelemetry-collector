@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufLogsData(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesLogsData() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                {0x02},
-		"ResourceLogs/wrong_wire_type": []byte{0xc},
-		"ResourceLogs/missing_value":   []byte{0xa},
+		"ResourceLogs/wrong_wire_type": {0xc},
+		"ResourceLogs/missing_value":   {0xa},
 	}
 }
 
 func genTestEncodingValuesLogsData() map[string]*LogsData {
 	return map[string]*LogsData{
 		"empty":             NewLogsData(),
-		"ResourceLogs/test": {ResourceLogs: []*ResourceLogs{&ResourceLogs{}, GenTestResourceLogs()}},
+		"ResourceLogs/test": {ResourceLogs: []*ResourceLogs{{}, GenTestResourceLogs()}},
 	}
 }

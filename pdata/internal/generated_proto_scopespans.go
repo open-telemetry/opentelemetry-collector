@@ -287,7 +287,7 @@ func (orig *ScopeSpans) UnmarshalProtoState(buf []byte, st *State) error {
 func GenTestScopeSpans() *ScopeSpans {
 	orig := Alloc[ScopeSpans](nil)
 	orig.Scope = *GenTestInstrumentationScope()
-	orig.Spans = []*Span{&Span{}, GenTestSpan()}
+	orig.Spans = []*Span{{}, GenTestSpan()}
 	orig.SchemaUrl = "test_schemaurl"
 	return orig
 }

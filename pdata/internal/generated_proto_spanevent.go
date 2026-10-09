@@ -317,7 +317,7 @@ func GenTestSpanEvent() *SpanEvent {
 	orig := Alloc[SpanEvent](nil)
 	orig.TimeUnixNano = uint64(13)
 	orig.Name = "test_name"
-	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
 	orig.DroppedAttributesCount = uint32(13)
 	return orig
 }

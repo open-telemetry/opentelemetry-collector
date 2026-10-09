@@ -546,7 +546,7 @@ func GenTestLogRecord() *LogRecord {
 	orig.SeverityNumber = SeverityNumber(13)
 	orig.SeverityText = "test_severitytext"
 	orig.Body = *GenTestAnyValue()
-	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
 	orig.DroppedAttributesCount = uint32(13)
 	orig.Flags = uint32(13)
 	orig.TraceId = *GenTestTraceID()

@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportMetricsServiceRequest(t *testi
 func genTestFailingUnmarshalProtoValuesExportMetricsServiceRequest() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                   {0x02},
-		"ResourceMetrics/wrong_wire_type": []byte{0xc},
-		"ResourceMetrics/missing_value":   []byte{0xa},
+		"ResourceMetrics/wrong_wire_type": {0xc},
+		"ResourceMetrics/missing_value":   {0xa},
 	}
 }
 
 func genTestEncodingValuesExportMetricsServiceRequest() map[string]*ExportMetricsServiceRequest {
 	return map[string]*ExportMetricsServiceRequest{
 		"empty":                NewExportMetricsServiceRequest(),
-		"ResourceMetrics/test": {ResourceMetrics: []*ResourceMetrics{&ResourceMetrics{}, GenTestResourceMetrics()}},
+		"ResourceMetrics/test": {ResourceMetrics: []*ResourceMetrics{{}, GenTestResourceMetrics()}},
 	}
 }

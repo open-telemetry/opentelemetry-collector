@@ -190,12 +190,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeProfiles(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesScopeProfiles() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":             {0x02},
-		"Scope/wrong_wire_type":     []byte{0xc},
-		"Scope/missing_value":       []byte{0xa},
-		"Profiles/wrong_wire_type":  []byte{0x14},
-		"Profiles/missing_value":    []byte{0x12},
-		"SchemaUrl/wrong_wire_type": []byte{0x1c},
-		"SchemaUrl/missing_value":   []byte{0x1a},
+		"Scope/wrong_wire_type":     {0xc},
+		"Scope/missing_value":       {0xa},
+		"Profiles/wrong_wire_type":  {0x14},
+		"Profiles/missing_value":    {0x12},
+		"SchemaUrl/wrong_wire_type": {0x1c},
+		"SchemaUrl/missing_value":   {0x1a},
 	}
 }
 
@@ -203,7 +203,7 @@ func genTestEncodingValuesScopeProfiles() map[string]*ScopeProfiles {
 	return map[string]*ScopeProfiles{
 		"empty":          NewScopeProfiles(),
 		"Scope/test":     {Scope: *GenTestInstrumentationScope()},
-		"Profiles/test":  {Profiles: []*Profile{&Profile{}, GenTestProfile()}},
+		"Profiles/test":  {Profiles: []*Profile{{}, GenTestProfile()}},
 		"SchemaUrl/test": {SchemaUrl: "test_schemaurl"},
 	}
 }

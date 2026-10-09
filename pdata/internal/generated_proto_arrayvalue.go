@@ -217,7 +217,7 @@ func (orig *ArrayValue) UnmarshalProtoState(buf []byte, st *State) error {
 
 func GenTestArrayValue() *ArrayValue {
 	orig := Alloc[ArrayValue](nil)
-	orig.Values = []AnyValue{AnyValue{}, *GenTestAnyValue()}
+	orig.Values = []AnyValue{{}, *GenTestAnyValue()}
 	return orig
 }
 

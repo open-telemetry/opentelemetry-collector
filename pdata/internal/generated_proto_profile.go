@@ -575,7 +575,7 @@ func (orig *Profile) UnmarshalProtoState(buf []byte, st *State) error {
 func GenTestProfile() *Profile {
 	orig := Alloc[Profile](nil)
 	orig.SampleType = *GenTestValueType()
-	orig.Samples = []*Sample{&Sample{}, GenTestSample()}
+	orig.Samples = []*Sample{{}, GenTestSample()}
 	orig.TimeUnixNano = uint64(13)
 	orig.DurationNano = uint64(13)
 	orig.PeriodType = *GenTestValueType()

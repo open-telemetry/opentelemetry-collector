@@ -190,12 +190,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeMetrics(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesScopeMetrics() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":             {0x02},
-		"Scope/wrong_wire_type":     []byte{0xc},
-		"Scope/missing_value":       []byte{0xa},
-		"Metrics/wrong_wire_type":   []byte{0x14},
-		"Metrics/missing_value":     []byte{0x12},
-		"SchemaUrl/wrong_wire_type": []byte{0x1c},
-		"SchemaUrl/missing_value":   []byte{0x1a},
+		"Scope/wrong_wire_type":     {0xc},
+		"Scope/missing_value":       {0xa},
+		"Metrics/wrong_wire_type":   {0x14},
+		"Metrics/missing_value":     {0x12},
+		"SchemaUrl/wrong_wire_type": {0x1c},
+		"SchemaUrl/missing_value":   {0x1a},
 	}
 }
 
@@ -203,7 +203,7 @@ func genTestEncodingValuesScopeMetrics() map[string]*ScopeMetrics {
 	return map[string]*ScopeMetrics{
 		"empty":          NewScopeMetrics(),
 		"Scope/test":     {Scope: *GenTestInstrumentationScope()},
-		"Metrics/test":   {Metrics: []*Metric{&Metric{}, GenTestMetric()}},
+		"Metrics/test":   {Metrics: []*Metric{{}, GenTestMetric()}},
 		"SchemaUrl/test": {SchemaUrl: "test_schemaurl"},
 	}
 }

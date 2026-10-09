@@ -251,7 +251,7 @@ func (orig *ExportProfilesServiceRequest) UnmarshalProtoState(buf []byte, st *St
 
 func GenTestExportProfilesServiceRequest() *ExportProfilesServiceRequest {
 	orig := Alloc[ExportProfilesServiceRequest](nil)
-	orig.ResourceProfiles = []*ResourceProfiles{&ResourceProfiles{}, GenTestResourceProfiles()}
+	orig.ResourceProfiles = []*ResourceProfiles{{}, GenTestResourceProfiles()}
 	orig.Dictionary = *GenTestProfilesDictionary()
 	return orig
 }

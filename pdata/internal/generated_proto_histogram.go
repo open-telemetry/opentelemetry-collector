@@ -247,7 +247,7 @@ func (orig *Histogram) UnmarshalProtoState(buf []byte, st *State) error {
 
 func GenTestHistogram() *Histogram {
 	orig := Alloc[Histogram](nil)
-	orig.DataPoints = []*HistogramDataPoint{&HistogramDataPoint{}, GenTestHistogramDataPoint()}
+	orig.DataPoints = []*HistogramDataPoint{{}, GenTestHistogramDataPoint()}
 	orig.AggregationTemporality = AggregationTemporality(13)
 	return orig
 }

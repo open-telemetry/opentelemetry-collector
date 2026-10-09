@@ -217,7 +217,7 @@ func (orig *Summary) UnmarshalProtoState(buf []byte, st *State) error {
 
 func GenTestSummary() *Summary {
 	orig := Alloc[Summary](nil)
-	orig.DataPoints = []*SummaryDataPoint{&SummaryDataPoint{}, GenTestSummaryDataPoint()}
+	orig.DataPoints = []*SummaryDataPoint{{}, GenTestSummaryDataPoint()}
 	return orig
 }
 

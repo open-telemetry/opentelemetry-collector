@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufInstrumentationScope(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesInstrumentationScope() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                          {0x02},
-		"Name/wrong_wire_type":                   []byte{0xc},
-		"Name/missing_value":                     []byte{0xa},
-		"Version/wrong_wire_type":                []byte{0x14},
-		"Version/missing_value":                  []byte{0x12},
-		"Attributes/wrong_wire_type":             []byte{0x1c},
-		"Attributes/missing_value":               []byte{0x1a},
-		"DroppedAttributesCount/wrong_wire_type": []byte{0x24},
-		"DroppedAttributesCount/missing_value":   []byte{0x20},
+		"Name/wrong_wire_type":                   {0xc},
+		"Name/missing_value":                     {0xa},
+		"Version/wrong_wire_type":                {0x14},
+		"Version/missing_value":                  {0x12},
+		"Attributes/wrong_wire_type":             {0x1c},
+		"Attributes/missing_value":               {0x1a},
+		"DroppedAttributesCount/wrong_wire_type": {0x24},
+		"DroppedAttributesCount/missing_value":   {0x20},
 	}
 }
 
@@ -206,7 +206,7 @@ func genTestEncodingValuesInstrumentationScope() map[string]*InstrumentationScop
 		"empty":                       NewInstrumentationScope(),
 		"Name/test":                   {Name: "test_name"},
 		"Version/test":                {Version: "test_version"},
-		"Attributes/test":             {Attributes: []KeyValue{KeyValue{}, *GenTestKeyValue()}},
+		"Attributes/test":             {Attributes: []KeyValue{{}, *GenTestKeyValue()}},
 		"DroppedAttributesCount/test": {DroppedAttributesCount: uint32(13)},
 	}
 }

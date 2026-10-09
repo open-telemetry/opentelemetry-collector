@@ -248,7 +248,7 @@ func (orig *ExponentialHistogram) UnmarshalProtoState(buf []byte, st *State) err
 
 func GenTestExponentialHistogram() *ExponentialHistogram {
 	orig := Alloc[ExponentialHistogram](nil)
-	orig.DataPoints = []*ExponentialHistogramDataPoint{&ExponentialHistogramDataPoint{}, GenTestExponentialHistogramDataPoint()}
+	orig.DataPoints = []*ExponentialHistogramDataPoint{{}, GenTestExponentialHistogramDataPoint()}
 	orig.AggregationTemporality = AggregationTemporality(13)
 	return orig
 }

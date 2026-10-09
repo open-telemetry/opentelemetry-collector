@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufResourceLogs(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesResourceLogs() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                       {0x02},
-		"Resource/wrong_wire_type":            []byte{0xc},
-		"Resource/missing_value":              []byte{0xa},
-		"ScopeLogs/wrong_wire_type":           []byte{0x14},
-		"ScopeLogs/missing_value":             []byte{0x12},
-		"SchemaUrl/wrong_wire_type":           []byte{0x1c},
-		"SchemaUrl/missing_value":             []byte{0x1a},
-		"DeprecatedScopeLogs/wrong_wire_type": []byte{0xc4, 0x3e},
-		"DeprecatedScopeLogs/missing_value":   []byte{0xc2, 0x3e},
+		"Resource/wrong_wire_type":            {0xc},
+		"Resource/missing_value":              {0xa},
+		"ScopeLogs/wrong_wire_type":           {0x14},
+		"ScopeLogs/missing_value":             {0x12},
+		"SchemaUrl/wrong_wire_type":           {0x1c},
+		"SchemaUrl/missing_value":             {0x1a},
+		"DeprecatedScopeLogs/wrong_wire_type": {0xc4, 0x3e},
+		"DeprecatedScopeLogs/missing_value":   {0xc2, 0x3e},
 	}
 }
 
@@ -205,8 +205,8 @@ func genTestEncodingValuesResourceLogs() map[string]*ResourceLogs {
 	return map[string]*ResourceLogs{
 		"empty":                    NewResourceLogs(),
 		"Resource/test":            {Resource: *GenTestResource()},
-		"ScopeLogs/test":           {ScopeLogs: []*ScopeLogs{&ScopeLogs{}, GenTestScopeLogs()}},
+		"ScopeLogs/test":           {ScopeLogs: []*ScopeLogs{{}, GenTestScopeLogs()}},
 		"SchemaUrl/test":           {SchemaUrl: "test_schemaurl"},
-		"DeprecatedScopeLogs/test": {DeprecatedScopeLogs: []*ScopeLogs{&ScopeLogs{}, GenTestScopeLogs()}},
+		"DeprecatedScopeLogs/test": {DeprecatedScopeLogs: []*ScopeLogs{{}, GenTestScopeLogs()}},
 	}
 }

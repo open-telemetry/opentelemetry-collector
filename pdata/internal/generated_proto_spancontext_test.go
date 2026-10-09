@@ -190,16 +190,16 @@ func TestMarshalAndUnmarshalProtoViaProtobufSpanContext(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesSpanContext() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":              {0x02},
-		"TraceID/wrong_wire_type":    []byte{0xc},
-		"TraceID/missing_value":      []byte{0xa},
-		"SpanID/wrong_wire_type":     []byte{0x14},
-		"SpanID/missing_value":       []byte{0x12},
-		"TraceFlags/wrong_wire_type": []byte{0x1c},
-		"TraceFlags/missing_value":   []byte{0x1d},
-		"TraceState/wrong_wire_type": []byte{0x24},
-		"TraceState/missing_value":   []byte{0x22},
-		"Remote/wrong_wire_type":     []byte{0x2c},
-		"Remote/missing_value":       []byte{0x28},
+		"TraceID/wrong_wire_type":    {0xc},
+		"TraceID/missing_value":      {0xa},
+		"SpanID/wrong_wire_type":     {0x14},
+		"SpanID/missing_value":       {0x12},
+		"TraceFlags/wrong_wire_type": {0x1c},
+		"TraceFlags/missing_value":   {0x1d},
+		"TraceState/wrong_wire_type": {0x24},
+		"TraceState/missing_value":   {0x22},
+		"Remote/wrong_wire_type":     {0x2c},
+		"Remote/missing_value":       {0x28},
 	}
 }
 

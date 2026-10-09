@@ -450,7 +450,7 @@ func (orig *Exemplar) UnmarshalProtoState(buf []byte, st *State) error {
 
 func GenTestExemplar() *Exemplar {
 	orig := Alloc[Exemplar](nil)
-	orig.FilteredAttributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
+	orig.FilteredAttributes = []KeyValue{{}, *GenTestKeyValue()}
 	orig.TimeUnixNano = uint64(13)
 	orig.Value = &Exemplar_AsDouble{AsDouble: float64(3.1415926)}
 	orig.TraceId = *GenTestTraceID()
