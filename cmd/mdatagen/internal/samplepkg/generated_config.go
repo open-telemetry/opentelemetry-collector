@@ -56,7 +56,8 @@ func (c *SampleConfig) Validate() error {
 	return err
 }
 
-// NewDefaultSampleConfig returns a new SampleConfig with default values consistent with the annotations in the schema.
+// NewDefaultSampleConfig returns a new SampleConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultSampleConfig() SampleConfig {
 	return SampleConfig{
 		HostName: "localhost",
