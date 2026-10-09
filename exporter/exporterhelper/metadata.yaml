@@ -21,6 +21,12 @@ feature_gates:
 exported_configs:
   timeout_config:
     $ref: ./internal.timeout_config
+  queue_batch_config:
+    $ref: ./internal/queuebatch.config
+    description: Defines configuration for queueing and batching for the exporter.
+  batch_config:
+    $ref: ./internal/queuebatch.batch_config
+    description: Defines a configuration for batching requests based on a timeout and a minimum number of items.
 
 telemetry:
   metrics:
