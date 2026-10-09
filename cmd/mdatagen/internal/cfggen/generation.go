@@ -557,6 +557,7 @@ type Validator struct {
 	Rules           ValidationRules
 	CustomValidator string
 	IsType          bool
+	HasDefault      bool
 }
 
 func (v Validator) RequiredCheckEmitted() bool {
@@ -597,6 +598,7 @@ func createValidator(validators *[]Validator, fieldName string, md *ConfigMetada
 			IsOptional: md.IsOptional,
 			Rules:      rules,
 			IsType:     isType,
+			HasDefault: hasDefaultValue(md),
 		})
 	}
 	if md.GoStruct.CustomValidator != nil {
@@ -637,6 +639,7 @@ func collectValidators(name string, md *ConfigMetadata, validators *[]Validator)
 					IsPointer:  prop.IsPointer,
 					IsOptional: prop.IsOptional,
 					Rules:      ValidationRules{Required: required},
+					HasDefault: hasDefaultValue(prop),
 				})
 			}
 			if prop.GoStruct.CustomValidator != nil {
