@@ -48,6 +48,10 @@ func (e *ProtoMarshaler) ProfileSize(pd Profile) int {
 
 type ProtoUnmarshaler struct{}
 
+// UnmarshalProfiles decodes buf into Profiles.
+//
+// With the pdata.useProtoPooling feature gate enabled the result borrows its string and bytes
+// fields straight from buf, so the caller must not modify or reuse buf while the result is in use.
 func (d *ProtoUnmarshaler) UnmarshalProfiles(buf []byte) (Profiles, error) {
 	pd := NewProfiles()
 	pd.getState().RetainWire(buf)

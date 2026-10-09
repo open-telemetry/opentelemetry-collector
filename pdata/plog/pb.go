@@ -34,6 +34,10 @@ var _ Unmarshaler = (*ProtoUnmarshaler)(nil)
 
 type ProtoUnmarshaler struct{}
 
+// UnmarshalLogs decodes buf into Logs.
+//
+// With the pdata.useProtoPooling feature gate enabled the result borrows its string and bytes
+// fields straight from buf, so the caller must not modify or reuse buf while the result is in use.
 func (d *ProtoUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
 	ld := NewLogs()
 	ld.getState().RetainWire(buf)

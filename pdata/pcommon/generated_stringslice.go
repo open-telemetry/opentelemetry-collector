@@ -72,6 +72,7 @@ func (ms StringSlice) All() iter.Seq2[int, string] {
 // Equivalent of stringSlice[i] = val
 func (ms StringSlice) SetAt(i int, val string) {
 	ms.getState().AssertMutable()
+	val = internal.CopyString(ms.getState(), val)
 	(*ms.getOrig())[i] = val
 }
 
@@ -97,7 +98,7 @@ func (ms StringSlice) EnsureCapacity(newCap int) {
 // Equivalent of stringSlice = append(stringSlice, elms...)
 func (ms StringSlice) Append(elms ...string) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = internal.AppendSeq(ms.getState(), *ms.getOrig(), elms)
+	*ms.getOrig() = internal.AppendStringSeq(ms.getState(), *ms.getOrig(), elms)
 }
 
 // MoveTo moves all elements from the current slice overriding the destination and

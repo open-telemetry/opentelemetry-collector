@@ -62,6 +62,7 @@ func profilesServiceExportHandler(srv any, ctx context.Context, dec func(any) er
 	if err := decodeExportRequest(st, in, in, dec); err != nil {
 		return nil, err
 	}
+	defer releaseExportRequest(in)
 	if interceptor == nil {
 		return srv.(ProfilesServiceServer).Export(ctx, in)
 	}

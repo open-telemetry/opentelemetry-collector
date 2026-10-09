@@ -83,6 +83,9 @@ func (ms {{ .structName }}) SetAt(i int, val {{ .itemType }}) {
 	{{- if eq .itemType "byte" }}
 	ms.getState().CopyOnWriteBytes(ms.getOrig())
 	{{- end }}
+	{{- if eq .itemType "string" }}
+	val = internal.CopyString(ms.getState(), val)
+	{{- end }}
 	(*ms.getOrig())[i] = val
 }
 
@@ -111,7 +114,11 @@ func (ms {{ .structName }}) Append(elms ...{{ .itemType }}) {
 	{{- if eq .itemType "byte" }}
 	ms.getState().CopyOnWriteBytes(ms.getOrig())
 	{{- end }}
+	{{- if eq .itemType "string" }}
+	*ms.getOrig() = internal.AppendStringSeq(ms.getState(), *ms.getOrig(), elms)
+	{{- else }}
 	*ms.getOrig() = internal.AppendSeq(ms.getState(), *ms.getOrig(), elms)
+	{{- end }}
 }
 
 // MoveTo moves all elements from the current slice overriding the destination and

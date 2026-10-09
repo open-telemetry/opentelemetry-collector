@@ -32,6 +32,10 @@ func (e *ProtoMarshaler) SpanSize(td Span) int {
 
 type ProtoUnmarshaler struct{}
 
+// UnmarshalTraces decodes buf into Traces.
+//
+// With the pdata.useProtoPooling feature gate enabled the result borrows its string and bytes
+// fields straight from buf, so the caller must not modify or reuse buf while the result is in use.
 func (d *ProtoUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
 	td := NewTraces()
 	td.getState().RetainWire(buf)

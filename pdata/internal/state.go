@@ -105,12 +105,21 @@ func (st *State) allocBytes(n int) []byte {
 	return b
 }
 
-// MoveNeedsCopy reports whether moving data owned by src into dest has to copy it. Data carved
-// out of an arena must be copied, because src returns that arena to the pool once it is dropped
-// and the next request writes over it. Anything else is ordinary heap data kept alive by the
-// garbage collector for as long as dest refers to it, so dest can take the pointers as they are.
+// MoveNeedsCopy reports whether moving data owned by src into dest has to copy it. Either side
+// owning an arena forces a copy, for different reasons:
+//
+//   - src carved the data out of an arena that returns to the pool once src is dropped, and the
+//     next request writes over it.
+//   - dest stores the pointers inside an arena, which is a []byte and so is never scanned by the
+//     garbage collector. Heap memory reachable only from there would be freed under dest's feet.
+//
+// When neither side has an arena this is ordinary heap data the collector keeps alive for as long
+// as dest refers to it, so dest can take the pointers as they are.
 func MoveNeedsCopy(src, dest *State) bool {
-	return src != dest && src != nil && len(src.arenas) > 0
+	if src == dest {
+		return false
+	}
+	return (src != nil && len(src.arenas) > 0) || (dest != nil && len(dest.arenas) > 0)
 }
 
 // RetainWire keeps the protobuf input buffer alive so string/[]byte fields may alias it.
@@ -222,6 +231,24 @@ func AppendSeq[T any](st *State, dst, src []T) []T {
 	copy(ns, dst)
 	copy(ns[len(dst):], src)
 	return ns
+}
+
+// AppendStringSeq appends src onto dst, interning each appended string into st's arena.
+// AppendSeq on its own would leave the caller's string headers in arena memory, which the
+// garbage collector never scans, so the bytes behind them could be freed while dst still
+// points at them.
+func AppendStringSeq(st *State, dst, src []string) []string {
+	if len(src) == 0 {
+		return dst
+	}
+	if !st.hasArena() {
+		return append(dst, src...)
+	}
+	out := AppendSeq(st, dst, src)
+	for i := len(out) - len(src); i < len(out); i++ {
+		out[i] = copyStringArena(st, out[i])
+	}
+	return out
 }
 
 // CopyStringSlice copies src strings into dest arena storage.

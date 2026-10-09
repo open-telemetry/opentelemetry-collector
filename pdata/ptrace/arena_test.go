@@ -52,6 +52,29 @@ func TestMoveAndAppendToStealsWithoutArena(t *testing.T) {
 	assert.Same(t, moved, dest.ResourceSpans().At(0).orig)
 }
 
+// An arena is a []byte the garbage collector never scans for pointers, so a destination that
+// owns one cannot take pointers to heap data: nothing would keep that data alive. The copy is
+// required even though the source has no arena of its own to recycle.
+func TestMoveAndAppendToCopiesHeapDataIntoArena(t *testing.T) {
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), false))
+	})
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), false))
+	src := NewTraces()
+	src.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("src")
+	moved := src.ResourceSpans().At(0).orig
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), true))
+	dest := NewTraces()
+	src.ResourceSpans().MoveAndAppendTo(dest.ResourceSpans())
+
+	require.Equal(t, 1, dest.ResourceSpans().Len())
+	assert.Equal(t, "src", dest.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
+	assert.NotSame(t, moved, dest.ResourceSpans().At(0).orig,
+		"dest took a pointer to heap data its arena cannot keep alive")
+}
+
 func TestUnmarshalProtoBorrowsWireBuffer(t *testing.T) {
 	prev := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), true))

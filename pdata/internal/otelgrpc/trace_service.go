@@ -62,6 +62,7 @@ func traceServiceExportHandler(srv any, ctx context.Context, dec func(any) error
 	if err := decodeExportRequest(st, in, in, dec); err != nil {
 		return nil, err
 	}
+	defer releaseExportRequest(in)
 	if interceptor == nil {
 		return srv.(TraceServiceServer).Export(ctx, in)
 	}

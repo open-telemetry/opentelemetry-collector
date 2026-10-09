@@ -42,6 +42,9 @@ func (ms ExportRequest) MarshalProto() ([]byte, error) {
 }
 
 // UnmarshalProto unmarshalls ExportRequest from proto bytes.
+//
+// With the pdata.useProtoPooling feature gate enabled the result borrows its string and bytes
+// fields straight from data, so the caller must not modify or reuse data while the result is in use.
 // Delegates to pprofile.ProtoUnmarshaler so string-table references are resolved.
 func (ms ExportRequest) UnmarshalProto(data []byte) error {
 	pd, err := (&pprofile.ProtoUnmarshaler{}).UnmarshalProfiles(data)

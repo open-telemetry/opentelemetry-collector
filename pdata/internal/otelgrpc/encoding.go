@@ -98,6 +98,9 @@ func (s *statefulDecoder) UnmarshalProto(buf []byte) error {
 	return s.msg.UnmarshalProtoState(owned, s.st)
 }
 
+// grpcRequestStates binds a decoded request to the State its data was allocated from. It has to
+// be a side channel because the generated gRPC handler signature has nowhere to carry the state
+// between decoding and the typed server wrapper that picks it up.
 var grpcRequestStates sync.Map
 
 func decodeExportRequest(st *internal.State, msg protoStatefulUnmarshaler, orig any, dec func(any) error) error {
@@ -107,6 +110,14 @@ func decodeExportRequest(st *internal.State, msg protoStatefulUnmarshaler, orig 
 		return err
 	}
 	return nil
+}
+
+// releaseExportRequest drops any binding left for orig. Handlers must defer this: an interceptor
+// may reject a request before the wrapper that calls TakeGRPCState runs, and without this the
+// entry would pin the State, its arenas and the cloned wire buffer for the life of the process.
+// It is a no-op once TakeGRPCState has taken the binding.
+func releaseExportRequest(orig any) {
+	grpcRequestStates.Delete(orig)
 }
 
 // TakeGRPCState returns the State bound to a gRPC-decoded export request, or a new State.

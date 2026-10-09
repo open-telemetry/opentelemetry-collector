@@ -48,6 +48,10 @@ func (e *ProtoMarshaler) ExponentialHistogramDataPointSize(md ExponentialHistogr
 
 type ProtoUnmarshaler struct{}
 
+// UnmarshalMetrics decodes buf into Metrics.
+//
+// With the pdata.useProtoPooling feature gate enabled the result borrows its string and bytes
+// fields straight from buf, so the caller must not modify or reuse buf while the result is in use.
 func (d *ProtoUnmarshaler) UnmarshalMetrics(buf []byte) (Metrics, error) {
 	md := NewMetrics()
 	md.getState().RetainWire(buf)

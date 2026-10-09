@@ -62,6 +62,7 @@ func metricsServiceExportHandler(srv any, ctx context.Context, dec func(any) err
 	if err := decodeExportRequest(st, in, in, dec); err != nil {
 		return nil, err
 	}
+	defer releaseExportRequest(in)
 	if interceptor == nil {
 		return srv.(MetricsServiceServer).Export(ctx, in)
 	}
