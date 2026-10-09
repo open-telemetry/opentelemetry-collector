@@ -4,7 +4,6 @@ go 1.26.0
 
 require (
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector v0.162.0
 	go.opentelemetry.io/collector/component v1.68.0
 	go.opentelemetry.io/collector/component/componenttest v0.162.0
 	go.opentelemetry.io/collector/config/configauth v1.68.0
@@ -23,6 +22,7 @@ require (
 	go.opentelemetry.io/collector/exporter/exportertest v0.162.0
 	go.opentelemetry.io/collector/exporter/xexporter v0.162.0
 	go.opentelemetry.io/collector/featuregate v1.68.0
+	go.opentelemetry.io/collector/internal/statusutil v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/internal/testutil v0.162.0
 	go.opentelemetry.io/collector/pdata v1.68.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.162.0
@@ -84,10 +84,10 @@ require (
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/crypto v0.55.0 // indirect
-	golang.org/x/net v0.58.0 // indirect
+	golang.org/x/crypto v0.57.0 // indirect
+	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/text v0.41.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 )
 
 replace go.opentelemetry.io/collector/component => ../../component
@@ -140,8 +140,6 @@ replace go.opentelemetry.io/collector/exporter/xexporter => ../xexporter
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
-replace go.opentelemetry.io/collector => ../..
-
 replace go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper => ../exporterhelper/xexporterhelper
 
 replace go.opentelemetry.io/collector/consumer/consumererror/xconsumererror => ../../consumer/consumererror/xconsumererror
@@ -180,3 +178,5 @@ replace go.opentelemetry.io/collector/exporter/exporterhelper => ../exporterhelp
 replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
 
 replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
+
+replace go.opentelemetry.io/collector/internal/statusutil => ../../internal/statusutil
