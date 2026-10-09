@@ -34,7 +34,8 @@ func (c *ControllerConfig) Validate() error {
 	return err
 }
 
-// NewDefaultControllerConfig returns a new ControllerConfig with default values consistent with the annotations in the schema.
+// NewDefaultControllerConfig returns a new ControllerConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultControllerConfig() ControllerConfig {
 	return ControllerConfig{
 		CollectionInterval: 1 * time.Minute,
