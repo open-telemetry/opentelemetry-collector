@@ -10,11 +10,15 @@ import (
 	"net/http"
 	"sync"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/stats"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
@@ -25,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/profiles"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
@@ -45,6 +50,10 @@ type otlpReceiver struct {
 
 	obsrepGRPC *receiverhelper.ObsReport
 	obsrepHTTP *receiverhelper.ObsReport
+
+	telemetryBuilder    *metadata.TelemetryBuilder
+	activeConnsAttrGRPC metric.AddOption
+	activeConnsAttrHTTP metric.AddOption
 
 	settings *receiver.Settings
 }
@@ -82,7 +91,42 @@ func newOtlpReceiver(cfg *Config, set *receiver.Settings) (*otlpReceiver, error)
 		return nil, err
 	}
 
+	r.telemetryBuilder, err = metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+	r.activeConnsAttrGRPC = metric.WithAttributes(attribute.String("transport", "grpc"))
+	r.activeConnsAttrHTTP = metric.WithAttributes(attribute.String("transport", "http"))
+
 	return r, nil
+}
+
+// connCounterStatsHandler is a grpc/stats.Handler that tracks the number of
+// currently open gRPC connections via HandleConn's ConnBegin/ConnEnd events.
+// It is registered alongside the otelgrpc stats handler; grpc-go combines
+// multiple registered stats handlers rather than overwriting them.
+type connCounterStatsHandler struct {
+	counter metric.Int64UpDownCounter
+	attrs   metric.AddOption
+}
+
+func (connCounterStatsHandler) TagRPC(ctx context.Context, _ *stats.RPCTagInfo) context.Context {
+	return ctx
+}
+
+func (connCounterStatsHandler) HandleRPC(context.Context, stats.RPCStats) {}
+
+func (connCounterStatsHandler) TagConn(ctx context.Context, _ *stats.ConnTagInfo) context.Context {
+	return ctx
+}
+
+func (h connCounterStatsHandler) HandleConn(ctx context.Context, s stats.ConnStats) {
+	switch s.(type) {
+	case *stats.ConnBegin:
+		h.counter.Add(ctx, 1, h.attrs)
+	case *stats.ConnEnd:
+		h.counter.Add(ctx, -1, h.attrs)
+	}
 }
 
 func (r *otlpReceiver) startGRPCServer(ctx context.Context, host component.Host) error {
@@ -92,8 +136,9 @@ func (r *otlpReceiver) startGRPCServer(ctx context.Context, host component.Host)
 	}
 
 	grpcCfg := r.cfg.Protocols.GRPC.Get()
+	connCounter := connCounterStatsHandler{counter: r.telemetryBuilder.ReceiverOtlpActiveConnections, attrs: r.activeConnsAttrGRPC}
 	var err error
-	if r.serverGRPC, err = grpcCfg.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings); err != nil {
+	if r.serverGRPC, err = grpcCfg.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, configgrpc.WithGrpcServerOption(grpc.StatsHandler(connCounter))); err != nil {
 		return err
 	}
 
@@ -163,8 +208,17 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 		})
 	}
 
+	connStateCallback := func(_ net.Conn, state http.ConnState) {
+		switch state {
+		case http.StateNew:
+			r.telemetryBuilder.ReceiverOtlpActiveConnections.Add(context.Background(), 1, r.activeConnsAttrHTTP)
+		case http.StateClosed, http.StateHijacked:
+			r.telemetryBuilder.ReceiverOtlpActiveConnections.Add(context.Background(), -1, r.activeConnsAttrHTTP)
+		}
+	}
+
 	var err error
-	if r.serverHTTP, err = httpCfg.ServerConfig.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
+	if r.serverHTTP, err = httpCfg.ServerConfig.ToServer(ctx, host.GetExtensions(), r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler), confighttp.WithConnStateCallback(connStateCallback)); err != nil {
 		return err
 	}
 

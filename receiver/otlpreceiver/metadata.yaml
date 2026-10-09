@@ -9,3 +9,21 @@ status:
     stable: [traces, metrics, logs]
     alpha: [profiles]
   distributions: [core, contrib, k8s, otlp]
+
+attributes:
+  transport:
+    description: Transport protocol used by the connection.
+    type: string
+    enum: [grpc, http]
+
+telemetry:
+  metrics:
+    receiver_otlp_active_connections:
+      enabled: true
+      stability: development
+      description: Number of currently open client connections to the OTLP receiver.
+      unit: "{connection}"
+      sum:
+        value_type: int
+        monotonic: false
+      attributes: [transport]
