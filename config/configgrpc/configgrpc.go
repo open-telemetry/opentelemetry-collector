@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/snappy"
 	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/zstd"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
@@ -45,6 +46,14 @@ var (
 	_ confmap.Validator = (*ClientConfig)(nil)
 	_ confmap.Validator = (*ServerConfig)(nil)
 )
+
+// validateDSCP checks that the DSCP value is valid.
+func validateDSCP(dscp int) error {
+	if dscp < 0 || dscp > 63 {
+		return fmt.Errorf("invalid DSCP value %d: must be between 0 and 63", dscp)
+	}
+	return nil
+}
 
 func validateClientConfig(cc *ClientConfig) error {
 	if after, ok := strings.CutPrefix(cc.Endpoint, "unix://"); ok {
@@ -294,6 +303,16 @@ func (cc *ClientConfig) getGrpcDialOptions(
 
 	if cc.UserAgent != "" {
 		opts = append(opts, grpc.WithUserAgent(cc.UserAgent))
+	}
+
+	// Set DSCP marking on outgoing connections if configured.
+	if cc.DSCP > 0 {
+		opts = append(opts, grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			d := &net.Dialer{
+				Control: confignet.DSCPDialControl(cc.DSCP),
+			}
+			return d.DialContext(ctx, "tcp", addr)
+		}))
 	}
 
 	return opts, nil
