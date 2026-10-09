@@ -32,6 +32,9 @@ type ClientConfig struct {
 	// Compression the compression key for supported compression types within collector.
 	Compression configcompression.Type `mapstructure:"compression,omitempty"`
 
+	// DialerMiddleware dialer middleware is a handler customizing how the client will dial connections over TCP.
+	DialerMiddleware configoptional.Optional[configmiddleware.Config] `mapstructure:"dialer_middleware,omitempty"`
+
 	// Endpoint the target to which the exporter is going to send traces or metrics, using the gRPC protocol.
 	// The valid syntax is described at https://github.com/grpc/grpc/blob/master/doc/naming.md.
 	Endpoint string `mapstructure:"endpoint,omitempty"`
@@ -85,10 +88,11 @@ func (c *ClientConfig) Validate() error {
 // NewDefaultClientConfig returns a new ClientConfig with default values consistent with the annotations in the schema.
 func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
-		Auth:         configoptional.None[configauth.Config](),
-		BalancerName: "round_robin",
-		Keepalive:    configoptional.Some(NewDefaultKeepaliveClientConfig()),
-		TLS:          configtls.NewDefaultClientConfig(),
+		Auth:             configoptional.None[configauth.Config](),
+		BalancerName:     "round_robin",
+		DialerMiddleware: configoptional.None[configmiddleware.Config](),
+		Keepalive:        configoptional.Some(NewDefaultKeepaliveClientConfig()),
+		TLS:              configtls.NewDefaultClientConfig(),
 	}
 }
 
