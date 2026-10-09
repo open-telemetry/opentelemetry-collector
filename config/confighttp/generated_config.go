@@ -143,7 +143,8 @@ type CORSConfig struct {
 	_ struct{}
 }
 
-// NewDefaultCORSConfig returns a new CORSConfig with default values consistent with the annotations in the schema.
+// NewDefaultCORSConfig returns a new CORSConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultCORSConfig() CORSConfig {
 	return CORSConfig{}
 }
@@ -177,7 +178,8 @@ type KeepaliveServerConfig struct {
 	_ struct{}
 }
 
-// NewDefaultKeepaliveServerConfig returns a new KeepaliveServerConfig with default values consistent with the annotations in the schema.
+// NewDefaultKeepaliveServerConfig returns a new KeepaliveServerConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultKeepaliveServerConfig() KeepaliveServerConfig {
 	return KeepaliveServerConfig{
 		IdleTimeout: 1 * time.Minute,
