@@ -41,6 +41,13 @@ func useProtoArena() bool {
 	return metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
 }
 
+// hasArena reports whether st has arena memory to allocate from. When it does not, the
+// helpers below fall back to the language's own allocation, which the compiler optimizes
+// far better than anything this package can offer.
+func (st *State) hasArena() bool {
+	return st != nil && len(st.arenas) > 0
+}
+
 func (st *State) arena() *Arena {
 	return st.arenas[len(st.arenas)-1]
 }
@@ -55,7 +62,7 @@ func (st *State) newArena(size int) *Arena {
 // Alloc returns a zero T from st's current arena, or a heap allocation when no arena is attached.
 // When the arena is full, st takes a new arena and allocates again.
 func Alloc[T any](st *State) *T {
-	if st == nil || len(st.arenas) == 0 {
+	if !st.hasArena() {
 		return new(T)
 	}
 	out, err := arenaAlloc[T](st.arena())
@@ -77,7 +84,7 @@ func AllocSlice[T any](st *State, length, capacity int) []T {
 		return nil
 	}
 	var zero T
-	if st == nil || len(st.arenas) == 0 || unsafe.Sizeof(zero) == 0 {
+	if !st.hasArena() || unsafe.Sizeof(zero) == 0 {
 		return make([]T, length, capacity)
 	}
 	s, err := arenaAllocSlice[T](st.arena(), length, capacity)
@@ -108,7 +115,7 @@ func MoveNeedsCopy(src, dest *State) bool {
 
 // RetainWire keeps the protobuf input buffer alive so string/[]byte fields may alias it.
 func (st *State) RetainWire(buf []byte) {
-	if st == nil || len(st.arenas) == 0 {
+	if !st.hasArena() {
 		return
 	}
 	st.wire = buf
@@ -116,7 +123,7 @@ func (st *State) RetainWire(buf []byte) {
 
 // CloneAndRetainWire copies buf and retains the copy when arenas are attached.
 func (st *State) CloneAndRetainWire(buf []byte) []byte {
-	if st == nil || len(st.arenas) == 0 {
+	if !st.hasArena() {
 		return buf
 	}
 	owned := append([]byte(nil), buf...)
@@ -162,6 +169,13 @@ const appendEstimateBudget = 8 << 10
 // the elements exactly. Doubling is the floor, which keeps the copies amortized when the
 // estimate falls short.
 func AppendEstimated[T any](st *State, s []T, v T, remaining, elemBytes int) []T {
+	// With no arena this must behave exactly as the generated code did before the arena
+	// existed, so that turning the gate off is indistinguishable from not having the feature.
+	// The estimate would in fact help here too, but it changes allocation sizes, and the gate
+	// is not the place to smuggle in an unrelated improvement.
+	if !st.hasArena() {
+		return append(s, v)
+	}
 	if cap(s) > len(s) {
 		s = s[:len(s)+1]
 		s[len(s)-1] = v
@@ -182,6 +196,9 @@ func AppendEstimated[T any](st *State, s []T, v T, remaining, elemBytes int) []T
 
 // Append appends v to s using arena backing when an arena is attached.
 func Append[T any](st *State, s []T, v T) []T {
+	if !st.hasArena() {
+		return append(s, v)
+	}
 	if cap(s) > len(s) {
 		s = s[:len(s)+1]
 		s[len(s)-1] = v
@@ -198,7 +215,7 @@ func AppendSeq[T any](st *State, dst, src []T) []T {
 	if len(src) == 0 {
 		return dst
 	}
-	if cap(dst)-len(dst) >= len(src) {
+	if !st.hasArena() || cap(dst)-len(dst) >= len(src) {
 		return append(dst, src...)
 	}
 	ns := AllocSlice[T](st, len(dst)+len(src), growCap(len(dst)+len(src)))
@@ -239,8 +256,9 @@ func BorrowString(st *State, buf []byte, start, end int) string {
 	if start == end {
 		return ""
 	}
-	if st == nil || len(st.arenas) == 0 || st.wire == nil {
-		return internPayloadString(st, buf[start:end])
+	// Without an arena this is the plain conversion the generated code did before the arena.
+	if !st.hasArena() || st.wire == nil {
+		return string(buf[start:end])
 	}
 	return unsafe.String(&buf[start], end-start)
 }
@@ -250,8 +268,10 @@ func BorrowBytes(st *State, buf []byte, start, end int) []byte {
 	if start == end {
 		return nil
 	}
-	if st == nil || len(st.arenas) == 0 || st.wire == nil {
-		return internPayloadBytes(st, buf[start:end])
+	if !st.hasArena() || st.wire == nil {
+		nb := make([]byte, end-start)
+		copy(nb, buf[start:end])
+		return nb
 	}
 	return buf[start:end]
 }
@@ -260,7 +280,7 @@ func internPayloadString(st *State, src []byte) string {
 	if len(src) == 0 {
 		return ""
 	}
-	if st == nil || len(st.arenas) == 0 {
+	if !st.hasArena() {
 		return string(src)
 	}
 	dst := st.allocBytes(len(src))
@@ -272,7 +292,7 @@ func internPayloadBytes(st *State, src []byte) []byte {
 	if len(src) == 0 {
 		return nil
 	}
-	if st == nil || len(st.arenas) == 0 {
+	if !st.hasArena() {
 		nb := make([]byte, len(src))
 		copy(nb, src)
 		return nb
@@ -283,30 +303,52 @@ func internPayloadBytes(st *State, src []byte) []byte {
 }
 
 // CopyString clones s into dest arena unless it already aliases dest wire/arena memory.
+//
+// Without an arena there is nowhere to intern into, and strings are immutable, so the caller's
+// string is stored as is, exactly as the plain assignment this replaced. That case is kept here
+// rather than in copyStringArena so the whole function stays under the inlining budget: string
+// setters are hot enough that a call instruction on the gate-off path shows up in benchmarks.
 func CopyString(st *State, s string) string {
+	if st == nil || len(st.arenas) == 0 {
+		return s
+	}
+	return copyStringArena(st, s)
+}
+
+func copyStringArena(st *State, s string) string {
+	// unsafe.StringData is only meaningful for a non-empty string.
 	if s == "" {
 		return s
 	}
-	if !useProtoArena() {
-		return s
-	}
-	if st != nil && st.aliases(unsafe.Pointer(unsafe.StringData(s)), len(s)) {
+	if st.aliases(unsafe.Pointer(unsafe.StringData(s)), len(s)) {
 		return s
 	}
 	return internPayloadString(st, unsafe.Slice(unsafe.StringData(s), len(s)))
 }
 
 // CopyBytes clones b into dest arena unless it already aliases dest wire/arena memory.
+// Bytes are mutable, so the caller's slice is always cloned; only the destination differs.
 func CopyBytes(st *State, b []byte) []byte {
+	if st == nil || len(st.arenas) == 0 {
+		return cloneBytes(b)
+	}
+	return copyBytesArena(st, b)
+}
+
+func cloneBytes(b []byte) []byte {
 	if len(b) == 0 {
 		return nil
 	}
-	if !useProtoArena() {
-		nb := make([]byte, len(b))
-		copy(nb, b)
-		return nb
+	nb := make([]byte, len(b))
+	copy(nb, b)
+	return nb
+}
+
+func copyBytesArena(st *State, b []byte) []byte {
+	if len(b) == 0 {
+		return nil
 	}
-	if st != nil && st.aliases(unsafe.Pointer(unsafe.SliceData(b)), len(b)) {
+	if st.aliases(unsafe.Pointer(unsafe.SliceData(b)), len(b)) {
 		return b
 	}
 	return internPayloadBytes(st, b)
