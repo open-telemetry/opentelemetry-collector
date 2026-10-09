@@ -58,7 +58,8 @@ func (c *BatchConfig) Validate() error {
 	return err
 }
 
-// NewDefaultBatchConfig returns a new BatchConfig with default values consistent with the annotations in the schema.
+// NewDefaultBatchConfig returns a new BatchConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultBatchConfig() BatchConfig {
 	return BatchConfig{
 		FlushTimeout: 200 * time.Millisecond,
@@ -167,7 +168,8 @@ func (c *PartitionConfig) Validate() error {
 	return err
 }
 
-// NewDefaultPartitionConfig returns a new PartitionConfig with default values consistent with the annotations in the schema.
+// NewDefaultPartitionConfig returns a new PartitionConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultPartitionConfig() PartitionConfig {
 	return PartitionConfig{
 		CacheSize:   10000,

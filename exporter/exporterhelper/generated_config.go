@@ -10,7 +10,8 @@ import (
 // BatchConfig defines a configuration for batching requests based on a timeout and a minimum number of items.
 type BatchConfig = queuebatch.BatchConfig
 
-// NewDefaultBatchConfig returns a new BatchConfig with default values consistent with the annotations in the schema.
+// NewDefaultBatchConfig returns a new BatchConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultBatchConfig() BatchConfig {
 	return queuebatch.NewDefaultBatchConfig()
 }
