@@ -10,6 +10,7 @@ import (
 type PortNumber int
 
 // Validate validates the PortNumber fields according to schema annotations.
+// Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
 func (c PortNumber) Validate() error {
 	var err error
 
@@ -40,6 +41,7 @@ type SampleConfig struct {
 }
 
 // Validate validates the SampleConfig fields according to schema annotations.
+// Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
 func (c *SampleConfig) Validate() error {
 	var err error
 
@@ -54,7 +56,8 @@ func (c *SampleConfig) Validate() error {
 	return err
 }
 
-// NewDefaultSampleConfig returns a new SampleConfig with default values consistent with the annotations in the schema.
+// NewDefaultSampleConfig returns a new SampleConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultSampleConfig() SampleConfig {
 	return SampleConfig{
 		HostName: "localhost",

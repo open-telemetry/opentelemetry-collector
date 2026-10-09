@@ -214,6 +214,33 @@ also accepted and flow into `config.schema.json` (so IDEs and other JSON-Schema-
 enforce them), but mdatagen does not yet generate a corresponding check in the Go `Validate()`
 method — only the constraints listed above do.
 
+## Deprecating a property
+
+Mark a property, a named definition (`exported_configs` entry), or the whole `config:` block as
+deprecated with a `deprecated:` block giving both `since` and `note` — both are required:
+
+```yaml
+config:
+  properties:
+    interval:
+      type: duration
+      default: 10s
+      deprecated:
+        since: v0.160.0
+        note: Support for this property will be dropped soon.
+```
+
+This flows into every generated artifact:
+
+- a `// Deprecated: [<since>] <note>` Go doc comment above the field (or struct/type, if set at
+  the `config:` or `exported_configs` level);
+- `"deprecated": true` in `config.schema.json`;
+- "(**deprecated**)" next to the property's description in the generated README table.
+
+`mdatagen` rejects a `deprecated:` block that's missing `since` or `note` — both are required so
+that generated comments and release notes always say when a property was deprecated and what
+users should do about it.
+
 ## References and reuse (`$ref`, `exported_configs`)
 
 Instead of inlining a schema, point at another one with `$ref`. Three flavors:
@@ -712,7 +739,8 @@ Once the markers are in place, the generated table, for every run of `mdatagen m
 - recurses into nested `object` properties, including a plain, non-embedded `$ref`, as their own
   `### <a id="...">` sub-section linked from the parent row — this is how `samplereceiver`'s
   README ends up with `## Configuration`, `### metrics`, `### metrics.default.metric`, and so on;
-- marks properties with `deprecated: true` with "(**deprecated**)" next to their description.
+- marks deprecated properties (see [Deprecating a property](#deprecating-a-property)) with
+  "(**deprecated**)" next to their description.
 
 There's no separate flag or command for the docs step beyond the usual `mdatagen metadata.yaml` —
 it runs as part of the same pass that writes `generated_config.go` and `config.schema.json`.
