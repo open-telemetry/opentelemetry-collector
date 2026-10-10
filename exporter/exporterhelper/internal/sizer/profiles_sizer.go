@@ -24,6 +24,15 @@ type ProfilesBytesSizer struct {
 var _ ProfilesSizer = (*ProfilesBytesSizer)(nil)
 
 // ProfilesCountSizer returns the number of profiles in the profiles.
+//
+// Note that the per-element methods below do not report the same unit as
+// ProfilesSize. ProfilesSize returns the number of samples, while
+// ResourceProfilesSize, ScopeProfilesSize, and ProfileSize count profiles.
+// Neither unit reliably bounds the size of a profiles signal: a sample is a set
+// of indices into the ProfilesDictionary, so a profile can hold many samples
+// that reference shared dictionary entries without adding much to the
+// serialized size. There is no way to tell from the counts alone whether an
+// index is reused or unique.
 type ProfilesCountSizer struct{}
 
 var _ ProfilesSizer = (*ProfilesCountSizer)(nil)
