@@ -75,6 +75,51 @@ func TestResolver_ResolveSchema_InternalReference(t *testing.T) {
 	require.Equal(t, "Target type description", result.Config.Properties["config"].Description)
 }
 
+func TestResolver_ResolveSchema_RefGoStructOptions(t *testing.T) {
+	resolver := &Resolver{loader: NewLoader("")}
+	typeValidator := &CustomValidatorConfig{Name: "validateTarget"}
+	refValidator := &CustomValidatorConfig{Name: "validateRef"}
+	typeDefault := &CustomDefaultConfig{Name: "NewDefaultTarget"}
+	src := &ConfigsMetadata{
+		Config: &ConfigMetadata{
+			Type: ObjectType,
+			Properties: map[string]*ConfigMetadata{
+				"inherited": {Ref: "target_type"},
+				"overridden": {
+					Ref: "target_type",
+					GoStruct: GoStructConfig{
+						CustomValidator: refValidator,
+					},
+				},
+			},
+		},
+		ExportedConfigs: map[string]*ConfigMetadata{
+			"target_type": {
+				Type:         ObjectType,
+				InternalOnly: true,
+				GoStruct: GoStructConfig{
+					CustomValidator: typeValidator,
+					CustomDefault:   typeDefault,
+				},
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+
+	inherited := result.Config.Properties["inherited"].GoStruct
+	assert.Nil(t, inherited.CustomValidator, "definition validator must not become a property validator")
+	assert.Equal(t, typeDefault, inherited.CustomDefault, "custom default should carry over from the definition")
+
+	overridden := result.Config.Properties["overridden"].GoStruct
+	assert.Equal(t, refValidator, overridden.CustomValidator, "an explicit ref-site validator should be retained")
+	assert.Equal(t, typeDefault, overridden.CustomDefault, "custom default should carry over from the definition")
+
+	assert.Equal(t, typeValidator, result.ExportedConfigs["target_type"].GoStruct.CustomValidator,
+		"the definition should retain its own validator")
+}
+
 func TestResolver_ResolveSchema_UnknownInternalReference(t *testing.T) {
 	resolver := &Resolver{
 		loader: NewLoader(""),
