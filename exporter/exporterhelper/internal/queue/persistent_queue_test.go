@@ -1183,3 +1183,105 @@ func itemIndexArrayToBytes(arr []uint64) []byte {
 	}
 	return buf
 }
+
+func newSettingsWithFastTrack(sizerType request.SizerType, capacity int64) Settings[intRequest] {
+	set := newSettingsWithStorage(sizerType, capacity)
+	set.FastTrack = true
+	return set
+}
+
+func TestPersistentQueue_FastTrack_ConsumerIdle(t *testing.T) {
+	consumed := &atomic.Int64{}
+	pq := newPersistentQueue[intRequest](newSettingsWithFastTrack(request.SizerTypeRequests, 1000))
+	aq := newAsyncQueue[intRequest](pq, 2, func(_ context.Context, val intRequest, done Done) {
+		consumed.Add(int64(val))
+		done.OnDone(nil)
+	}, nil)
+	require.NoError(t, aq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{
+		{}: storagetest.NewMockStorageExtension(nil),
+	})))
+
+	// Give consumers time to reach the idle state (waiting on hasMoreElements).
+	time.Sleep(20 * time.Millisecond)
+
+	// Send requests — consumers are idle so these should go through the fast track.
+	require.NoError(t, aq.Offer(context.Background(), intRequest(10)))
+	require.NoError(t, aq.Offer(context.Background(), intRequest(20)))
+
+	// Fast track is synchronous (wait-for-result), so consumed should be immediate.
+	assert.Equal(t, int64(30), consumed.Load())
+
+	// Nothing should be in the persistent queue because requests bypassed disk.
+	assert.Equal(t, int64(0), pq.Size())
+
+	require.NoError(t, aq.Shutdown(context.Background()))
+}
+
+func TestPersistentQueue_FastTrack_ConsumerBusy(t *testing.T) {
+	consumed := &atomic.Int64{}
+	pq := newPersistentQueue[intRequest](newSettingsWithFastTrack(request.SizerTypeRequests, 1000))
+	aq := newAsyncQueue[intRequest](pq, 1, func(_ context.Context, val intRequest, done Done) {
+		consumed.Add(int64(val))
+		done.OnDone(nil)
+	}, nil)
+	require.NoError(t, aq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{
+		{}: storagetest.NewMockStorageExtension(nil),
+	})))
+
+	// Give consumer time to reach idle state.
+	time.Sleep(20 * time.Millisecond)
+
+	// First request takes the fast track (consumer is idle and blocks on it).
+	// Second request should fall through to the persistent queue because the consumer
+	// is now busy processing the first one.
+	wg := sync.WaitGroup{}
+	wg.Go(func() {
+		assert.NoError(t, aq.Offer(context.Background(), intRequest(10)))
+	})
+	// Small delay so first offer acquires the consumer.
+	time.Sleep(10 * time.Millisecond)
+
+	// This one goes to disk since the consumer is busy with the fast-track request.
+	require.NoError(t, aq.Offer(context.Background(), intRequest(20)))
+	wg.Wait()
+
+	// Both should eventually be consumed.
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, int64(30), consumed.Load())
+	}, 1*time.Second, 10*time.Millisecond)
+
+	require.NoError(t, aq.Shutdown(context.Background()))
+}
+
+func TestPersistentQueue_FastTrack_Mixed(t *testing.T) {
+	consumed := &atomic.Int64{}
+	numMessages := 100
+	pq := newPersistentQueue[intRequest](newSettingsWithFastTrack(request.SizerTypeRequests, int64(numMessages)))
+	aq := newAsyncQueue[intRequest](pq, 4, func(_ context.Context, val intRequest, done Done) {
+		consumed.Add(int64(val))
+		done.OnDone(nil)
+	}, nil)
+	require.NoError(t, aq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{
+		{}: storagetest.NewMockStorageExtension(nil),
+	})))
+
+	// Give consumers time to reach idle state.
+	time.Sleep(20 * time.Millisecond)
+
+	// Send many requests concurrently — some will go through fast track, some through disk.
+	wg := sync.WaitGroup{}
+	for i := range numMessages {
+		wg.Go(func() {
+			assert.NoError(t, aq.Offer(context.Background(), intRequest(i+1)))
+		})
+	}
+	wg.Wait()
+
+	// All requests should eventually be consumed.
+	expectedTotal := int64(numMessages * (numMessages + 1) / 2) // sum 1..100
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, expectedTotal, consumed.Load())
+	}, 5*time.Second, 10*time.Millisecond)
+
+	require.NoError(t, aq.Shutdown(context.Background()))
+}
