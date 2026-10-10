@@ -1,0 +1,17 @@
+change_type: bug_fix
+
+component: pkg/exporterhelper
+
+note: Keep persistent queue items that fail while the collector is shutting down, instead of deleting them
+
+issues: [15677]
+
+subtext: |
+  The persistent queue kept an item across restart only when the send failed with a
+  shutdown error, which just one code path produces: the retry sender's backoff wait.
+  An exporter without retry_on_failure, or one whose send failed on a cancelled
+  context, reported an ordinary error, so the shutdown drain deleted the backlog that
+  had accumulated during the outage. A hard kill preserved that data, while a clean
+  shutdown lost it.
+
+change_logs: [user]

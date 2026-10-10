@@ -402,9 +402,18 @@ func (pq *persistentQueue[T]) onDone(index uint64, itemsSize, bytesSize int64, c
 		pq.mu.Unlock()
 	}()
 
-	if experr.IsShutdownErr(consumeErr) {
-		// The queue is shutting down, don't mark the item as dispatched, so it's picked up again after restart.
-		// TODO: Handle partially delivered requests by updating their values in the storage.
+	// Keep the item when it failed while the queue was shutting down, so it is
+	// picked up again after restart.
+	//
+	// pq.stopped is the reliable signal here. experr.IsShutdownErr only matches
+	// errors from retry_sender's backoff wait, so an exporter without
+	// retry_on_failure, or one whose send fails on a cancelled context, produced
+	// an ordinary error and had its item deleted by the shutdown drain (#15677).
+	//
+	// consumeErr != nil matters: a request that succeeded during shutdown must
+	// still be removed, or restart would send it a second time.
+	// TODO: Handle partially delivered requests by updating their values in the storage.
+	if consumeErr != nil && (experr.IsShutdownErr(consumeErr) || pq.stopped) {
 		return
 	}
 
