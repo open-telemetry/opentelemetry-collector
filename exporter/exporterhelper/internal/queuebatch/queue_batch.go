@@ -59,7 +59,12 @@ func NewQueueBatch(
 		cfg.NumConsumers = 1
 	}
 
+	var onFull func()
+	if fb, ok := b.(interface{ requestFlush() }); ok {
+		onFull = fb.requestFlush
+	}
 	q, err := queue.NewQueue(queue.Settings[request.Request]{
+		OnFull:           onFull,
 		SizerType:        cfg.Sizer,
 		Capacity:         cfg.QueueSize,
 		NumConsumers:     cfg.NumConsumers,
