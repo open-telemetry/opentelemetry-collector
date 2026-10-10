@@ -75,7 +75,11 @@ status:
   codeowners:
     active: [string]
     emeritus: [string]
-  unsupported_platforms: [<linux|windows>]
+  # Optional: A list of platforms supported by this component.
+  supported_platforms: [string]
+
+  # Optional: A list of platforms not supported by this component.
+  unsupported_platforms: [string]
 
 # Optional: OTel Semantic Conventions version that will be associated with the scraped metrics.
 # This attribute should be set for metrics compliant with OTel Semantic Conventions.
