@@ -31,9 +31,9 @@ func TestCopyProfilesRequest(t *testing.T) {
 				}()
 
 				dest := NewProfilesRequest()
-				CopyProfilesRequest(dest, src)
+				CopyProfilesRequest(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyProfilesRequest(dest, dest)
+				CopyProfilesRequest(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyProfilesRequestSlice(t *testing.T) {
 	src := []ProfilesRequest{}
 	dest := []ProfilesRequest{}
 	// Test CopyTo empty
-	dest = CopyProfilesRequestSlice(dest, src)
+	dest = CopyProfilesRequestSlice(dest, src, nil)
 	assert.Equal(t, []ProfilesRequest{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestProfilesRequestSlice()
-	dest = CopyProfilesRequestSlice(dest, src)
+	dest = CopyProfilesRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilesRequestSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyProfilesRequestSlice(dest, src)
+	dest = CopyProfilesRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilesRequestSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyProfilesRequestSlice(dest, []ProfilesRequest{})
+	dest = CopyProfilesRequestSlice(dest, []ProfilesRequest{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyProfilesRequestSlice(dest, src)
+	dest = CopyProfilesRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilesRequestSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyProfilesRequestPtrSlice(t *testing.T) {
 	src := []*ProfilesRequest{}
 	dest := []*ProfilesRequest{}
 	// Test CopyTo empty
-	dest = CopyProfilesRequestPtrSlice(dest, src)
+	dest = CopyProfilesRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, []*ProfilesRequest{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestProfilesRequestPtrSlice()
-	dest = CopyProfilesRequestPtrSlice(dest, src)
+	dest = CopyProfilesRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilesRequestPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyProfilesRequestPtrSlice(dest, src)
+	dest = CopyProfilesRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilesRequestPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyProfilesRequestPtrSlice(dest, []*ProfilesRequest{})
+	dest = CopyProfilesRequestPtrSlice(dest, []*ProfilesRequest{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyProfilesRequestPtrSlice(dest, src)
+	dest = CopyProfilesRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilesRequestPtrSlice(), dest)
 }
 
@@ -190,12 +190,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufProfilesRequest(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesProfilesRequest() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                  {0x02},
-		"RequestContext/wrong_wire_type": {0x14},
-		"RequestContext/missing_value":   {0x12},
-		"ProfilesData/wrong_wire_type":   {0x1c},
-		"ProfilesData/missing_value":     {0x1a},
-		"FormatVersion/wrong_wire_type":  {0xc},
-		"FormatVersion/missing_value":    {0xd},
+		"RequestContext/wrong_wire_type": []byte{0x14},
+		"RequestContext/missing_value":   []byte{0x12},
+		"ProfilesData/wrong_wire_type":   []byte{0x1c},
+		"ProfilesData/missing_value":     []byte{0x1a},
+		"FormatVersion/wrong_wire_type":  []byte{0xc},
+		"FormatVersion/missing_value":    []byte{0xd},
 	}
 }
 

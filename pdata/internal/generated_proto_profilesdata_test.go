@@ -31,9 +31,9 @@ func TestCopyProfilesData(t *testing.T) {
 				}()
 
 				dest := NewProfilesData()
-				CopyProfilesData(dest, src)
+				CopyProfilesData(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyProfilesData(dest, dest)
+				CopyProfilesData(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyProfilesDataSlice(t *testing.T) {
 	src := []ProfilesData{}
 	dest := []ProfilesData{}
 	// Test CopyTo empty
-	dest = CopyProfilesDataSlice(dest, src)
+	dest = CopyProfilesDataSlice(dest, src, nil)
 	assert.Equal(t, []ProfilesData{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestProfilesDataSlice()
-	dest = CopyProfilesDataSlice(dest, src)
+	dest = CopyProfilesDataSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilesDataSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyProfilesDataSlice(dest, src)
+	dest = CopyProfilesDataSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilesDataSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyProfilesDataSlice(dest, []ProfilesData{})
+	dest = CopyProfilesDataSlice(dest, []ProfilesData{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyProfilesDataSlice(dest, src)
+	dest = CopyProfilesDataSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilesDataSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyProfilesDataPtrSlice(t *testing.T) {
 	src := []*ProfilesData{}
 	dest := []*ProfilesData{}
 	// Test CopyTo empty
-	dest = CopyProfilesDataPtrSlice(dest, src)
+	dest = CopyProfilesDataPtrSlice(dest, src, nil)
 	assert.Equal(t, []*ProfilesData{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestProfilesDataPtrSlice()
-	dest = CopyProfilesDataPtrSlice(dest, src)
+	dest = CopyProfilesDataPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilesDataPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyProfilesDataPtrSlice(dest, src)
+	dest = CopyProfilesDataPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilesDataPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyProfilesDataPtrSlice(dest, []*ProfilesData{})
+	dest = CopyProfilesDataPtrSlice(dest, []*ProfilesData{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyProfilesDataPtrSlice(dest, src)
+	dest = CopyProfilesDataPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilesDataPtrSlice(), dest)
 }
 
@@ -190,17 +190,17 @@ func TestMarshalAndUnmarshalProtoViaProtobufProfilesData(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesProfilesData() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                    {0x02},
-		"ResourceProfiles/wrong_wire_type": {0xc},
-		"ResourceProfiles/missing_value":   {0xa},
-		"Dictionary/wrong_wire_type":       {0x14},
-		"Dictionary/missing_value":         {0x12},
+		"ResourceProfiles/wrong_wire_type": []byte{0xc},
+		"ResourceProfiles/missing_value":   []byte{0xa},
+		"Dictionary/wrong_wire_type":       []byte{0x14},
+		"Dictionary/missing_value":         []byte{0x12},
 	}
 }
 
 func genTestEncodingValuesProfilesData() map[string]*ProfilesData {
 	return map[string]*ProfilesData{
 		"empty":                 NewProfilesData(),
-		"ResourceProfiles/test": {ResourceProfiles: []*ResourceProfiles{{}, GenTestResourceProfiles()}},
+		"ResourceProfiles/test": {ResourceProfiles: []*ResourceProfiles{&ResourceProfiles{}, GenTestResourceProfiles()}},
 		"Dictionary/test":       {Dictionary: *GenTestProfilesDictionary()},
 	}
 }

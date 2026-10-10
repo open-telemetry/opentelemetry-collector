@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -21,19 +20,8 @@ type TCPAddr struct {
 	Zone string
 }
 
-var (
-	protoPoolTCPAddr = sync.Pool{
-		New: func() any {
-			return &TCPAddr{}
-		},
-	}
-)
-
 func NewTCPAddr() *TCPAddr {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &TCPAddr{}
-	}
-	return protoPoolTCPAddr.Get().(*TCPAddr)
+	return Alloc[TCPAddr](nil)
 }
 
 func DeleteTCPAddr(orig *TCPAddr, nullable bool) {
@@ -47,12 +35,10 @@ func DeleteTCPAddr(orig *TCPAddr, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolTCPAddr.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyTCPAddr(dest, src *TCPAddr) *TCPAddr {
+func CopyTCPAddr(dest, src *TCPAddr, st *State) *TCPAddr {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -63,19 +49,20 @@ func CopyTCPAddr(dest, src *TCPAddr) *TCPAddr {
 	}
 
 	if dest == nil {
-		dest = NewTCPAddr()
+		dest = Alloc[TCPAddr](st)
 	}
-	dest.IP = src.IP
+	dest.IP = CopyBytes(st, src.IP)
+
 	dest.Port = src.Port
-	dest.Zone = src.Zone
+	dest.Zone = CopyString(st, src.Zone)
 
 	return dest
 }
 
-func CopyTCPAddrSlice(dest, src []TCPAddr) []TCPAddr {
+func CopyTCPAddrSlice(dest, src []TCPAddr, st *State) []TCPAddr {
 	var newDest []TCPAddr
 	if cap(dest) < len(src) {
-		newDest = make([]TCPAddr, len(src))
+		newDest = AllocSlice[TCPAddr](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -85,20 +72,20 @@ func CopyTCPAddrSlice(dest, src []TCPAddr) []TCPAddr {
 		}
 	}
 	for i := range src {
-		CopyTCPAddr(&newDest[i], &src[i])
+		CopyTCPAddr(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyTCPAddrPtrSlice(dest, src []*TCPAddr) []*TCPAddr {
+func CopyTCPAddrPtrSlice(dest, src []*TCPAddr, st *State) []*TCPAddr {
 	var newDest []*TCPAddr
 	if cap(dest) < len(src) {
-		newDest = make([]*TCPAddr, len(src))
+		newDest = AllocSlice[*TCPAddr](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewTCPAddr()
+			newDest[i] = Alloc[TCPAddr](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -111,11 +98,11 @@ func CopyTCPAddrPtrSlice(dest, src []*TCPAddr) []*TCPAddr {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewTCPAddr()
+			newDest[i] = Alloc[TCPAddr](st)
 		}
 	}
 	for i := range src {
-		CopyTCPAddr(newDest[i], src[i])
+		CopyTCPAddr(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -145,14 +132,21 @@ func (orig *TCPAddr) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *TCPAddr) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *TCPAddr) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "iP":
-			orig.IP = iter.ReadBytes()
+			orig.IP = CopyBytes(st, iter.ReadBytes())
 		case "port":
+
 			orig.Port = iter.ReadInt64()
 		case "zone":
-			orig.Zone = iter.ReadString()
+
+			orig.Zone = CopyString(st, iter.ReadString())
 		default:
 			iter.HandleUnknownField(f)
 		}
@@ -208,6 +202,10 @@ func (orig *TCPAddr) MarshalProto(buf []byte) int {
 }
 
 func (orig *TCPAddr) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *TCPAddr) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -232,10 +230,7 @@ func (orig *TCPAddr) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			if length != 0 {
-				orig.IP = make([]byte, length)
-				copy(orig.IP, buf[startPos:pos])
-			}
+			orig.IP = BorrowBytes(st, buf, startPos, pos)
 
 		case 2:
 			if wireType != proto.WireTypeVarint {
@@ -258,7 +253,7 @@ func (orig *TCPAddr) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Zone = string(buf[startPos:pos])
+			orig.Zone = BorrowString(st, buf, startPos, pos)
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -270,7 +265,7 @@ func (orig *TCPAddr) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestTCPAddr() *TCPAddr {
-	orig := NewTCPAddr()
+	orig := Alloc[TCPAddr](nil)
 	orig.IP = []byte{1, 2, 3}
 	orig.Port = int64(13)
 	orig.Zone = "test_zone"
@@ -279,11 +274,11 @@ func GenTestTCPAddr() *TCPAddr {
 
 func GenTestTCPAddrPtrSlice() []*TCPAddr {
 	orig := make([]*TCPAddr, 5)
-	orig[0] = NewTCPAddr()
+	orig[0] = Alloc[TCPAddr](nil)
 	orig[1] = GenTestTCPAddr()
-	orig[2] = NewTCPAddr()
+	orig[2] = Alloc[TCPAddr](nil)
 	orig[3] = GenTestTCPAddr()
-	orig[4] = NewTCPAddr()
+	orig[4] = Alloc[TCPAddr](nil)
 	return orig
 }
 

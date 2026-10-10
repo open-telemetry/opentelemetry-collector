@@ -31,9 +31,9 @@ func TestCopyExponentialHistogramDataPoint(t *testing.T) {
 				}()
 
 				dest := NewExponentialHistogramDataPoint()
-				CopyExponentialHistogramDataPoint(dest, src)
+				CopyExponentialHistogramDataPoint(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyExponentialHistogramDataPoint(dest, dest)
+				CopyExponentialHistogramDataPoint(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyExponentialHistogramDataPointSlice(t *testing.T) {
 	src := []ExponentialHistogramDataPoint{}
 	dest := []ExponentialHistogramDataPoint{}
 	// Test CopyTo empty
-	dest = CopyExponentialHistogramDataPointSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointSlice(dest, src, nil)
 	assert.Equal(t, []ExponentialHistogramDataPoint{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExponentialHistogramDataPointSlice()
-	dest = CopyExponentialHistogramDataPointSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramDataPointSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExponentialHistogramDataPointSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramDataPointSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExponentialHistogramDataPointSlice(dest, []ExponentialHistogramDataPoint{})
+	dest = CopyExponentialHistogramDataPointSlice(dest, []ExponentialHistogramDataPoint{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExponentialHistogramDataPointSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramDataPointSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyExponentialHistogramDataPointPtrSlice(t *testing.T) {
 	src := []*ExponentialHistogramDataPoint{}
 	dest := []*ExponentialHistogramDataPoint{}
 	// Test CopyTo empty
-	dest = CopyExponentialHistogramDataPointPtrSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, []*ExponentialHistogramDataPoint{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExponentialHistogramDataPointPtrSlice()
-	dest = CopyExponentialHistogramDataPointPtrSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramDataPointPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExponentialHistogramDataPointPtrSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramDataPointPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExponentialHistogramDataPointPtrSlice(dest, []*ExponentialHistogramDataPoint{})
+	dest = CopyExponentialHistogramDataPointPtrSlice(dest, []*ExponentialHistogramDataPoint{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExponentialHistogramDataPointPtrSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramDataPointPtrSlice(), dest)
 }
 
@@ -190,41 +190,41 @@ func TestMarshalAndUnmarshalProtoViaProtobufExponentialHistogramDataPoint(t *tes
 func genTestFailingUnmarshalProtoValuesExponentialHistogramDataPoint() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                     {0x02},
-		"Attributes/wrong_wire_type":        {0xc},
-		"Attributes/missing_value":          {0xa},
-		"StartTimeUnixNano/wrong_wire_type": {0x14},
-		"StartTimeUnixNano/missing_value":   {0x11},
-		"TimeUnixNano/wrong_wire_type":      {0x1c},
-		"TimeUnixNano/missing_value":        {0x19},
-		"Count/wrong_wire_type":             {0x24},
-		"Count/missing_value":               {0x21},
-		"Sum/wrong_wire_type":               {0x2c},
-		"Sum/missing_value":                 {0x29},
-		"Scale/wrong_wire_type":             {0x34},
-		"Scale/missing_value":               {0x30},
-		"ZeroCount/wrong_wire_type":         {0x3c},
-		"ZeroCount/missing_value":           {0x39},
-		"Positive/wrong_wire_type":          {0x44},
-		"Positive/missing_value":            {0x42},
-		"Negative/wrong_wire_type":          {0x4c},
-		"Negative/missing_value":            {0x4a},
-		"Flags/wrong_wire_type":             {0x54},
-		"Flags/missing_value":               {0x50},
-		"Exemplars/wrong_wire_type":         {0x5c},
-		"Exemplars/missing_value":           {0x5a},
-		"Min/wrong_wire_type":               {0x64},
-		"Min/missing_value":                 {0x61},
-		"Max/wrong_wire_type":               {0x6c},
-		"Max/missing_value":                 {0x69},
-		"ZeroThreshold/wrong_wire_type":     {0x74},
-		"ZeroThreshold/missing_value":       {0x71},
+		"Attributes/wrong_wire_type":        []byte{0xc},
+		"Attributes/missing_value":          []byte{0xa},
+		"StartTimeUnixNano/wrong_wire_type": []byte{0x14},
+		"StartTimeUnixNano/missing_value":   []byte{0x11},
+		"TimeUnixNano/wrong_wire_type":      []byte{0x1c},
+		"TimeUnixNano/missing_value":        []byte{0x19},
+		"Count/wrong_wire_type":             []byte{0x24},
+		"Count/missing_value":               []byte{0x21},
+		"Sum/wrong_wire_type":               []byte{0x2c},
+		"Sum/missing_value":                 []byte{0x29},
+		"Scale/wrong_wire_type":             []byte{0x34},
+		"Scale/missing_value":               []byte{0x30},
+		"ZeroCount/wrong_wire_type":         []byte{0x3c},
+		"ZeroCount/missing_value":           []byte{0x39},
+		"Positive/wrong_wire_type":          []byte{0x44},
+		"Positive/missing_value":            []byte{0x42},
+		"Negative/wrong_wire_type":          []byte{0x4c},
+		"Negative/missing_value":            []byte{0x4a},
+		"Flags/wrong_wire_type":             []byte{0x54},
+		"Flags/missing_value":               []byte{0x50},
+		"Exemplars/wrong_wire_type":         []byte{0x5c},
+		"Exemplars/missing_value":           []byte{0x5a},
+		"Min/wrong_wire_type":               []byte{0x64},
+		"Min/missing_value":                 []byte{0x61},
+		"Max/wrong_wire_type":               []byte{0x6c},
+		"Max/missing_value":                 []byte{0x69},
+		"ZeroThreshold/wrong_wire_type":     []byte{0x74},
+		"ZeroThreshold/missing_value":       []byte{0x71},
 	}
 }
 
 func genTestEncodingValuesExponentialHistogramDataPoint() map[string]*ExponentialHistogramDataPoint {
 	return map[string]*ExponentialHistogramDataPoint{
 		"empty":                  NewExponentialHistogramDataPoint(),
-		"Attributes/test":        {Attributes: []KeyValue{{}, *GenTestKeyValue()}},
+		"Attributes/test":        {Attributes: []KeyValue{KeyValue{}, *GenTestKeyValue()}},
 		"StartTimeUnixNano/test": {StartTimeUnixNano: uint64(13)},
 		"TimeUnixNano/test":      {TimeUnixNano: uint64(13)},
 		"Count/test":             {Count: uint64(13)},
@@ -238,7 +238,7 @@ func genTestEncodingValuesExponentialHistogramDataPoint() map[string]*Exponentia
 		"Positive/test":  {Positive: *GenTestExponentialHistogramDataPointBuckets()},
 		"Negative/test":  {Negative: *GenTestExponentialHistogramDataPointBuckets()},
 		"Flags/test":     {Flags: uint32(13)},
-		"Exemplars/test": {Exemplars: []Exemplar{{}, *GenTestExemplar()}},
+		"Exemplars/test": {Exemplars: []Exemplar{Exemplar{}, *GenTestExemplar()}},
 		"Min/test": func() *ExponentialHistogramDataPoint {
 			ms := NewExponentialHistogramDataPoint()
 			ms.SetMin(float64(3.1415926))

@@ -8,7 +8,6 @@ package pmetric
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/metadata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -34,7 +33,8 @@ func newMetric(orig *internal.Metric, state *internal.State) Metric {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewMetric() Metric {
-	return newMetric(internal.NewMetric(), internal.NewState())
+	st := internal.NewState()
+	return newMetric(internal.Alloc[internal.Metric](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -44,6 +44,11 @@ func (ms Metric) MoveTo(dest Metric) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		ms.CopyTo(dest)
+		internal.DeleteMetric(ms.orig, false)
 		return
 	}
 	internal.DeleteMetric(dest.orig, false)
@@ -58,7 +63,7 @@ func (ms Metric) Name() string {
 // SetName replaces the name associated with this Metric.
 func (ms Metric) SetName(v string) {
 	ms.state.AssertMutable()
-	ms.orig.Name = v
+	ms.orig.Name = internal.CopyString(ms.state, v)
 }
 
 // Description returns the description associated with this Metric.
@@ -69,7 +74,7 @@ func (ms Metric) Description() string {
 // SetDescription replaces the description associated with this Metric.
 func (ms Metric) SetDescription(v string) {
 	ms.state.AssertMutable()
-	ms.orig.Description = v
+	ms.orig.Description = internal.CopyString(ms.state, v)
 }
 
 // Unit returns the unit associated with this Metric.
@@ -80,7 +85,7 @@ func (ms Metric) Unit() string {
 // SetUnit replaces the unit associated with this Metric.
 func (ms Metric) SetUnit(v string) {
 	ms.state.AssertMutable()
-	ms.orig.Unit = v
+	ms.orig.Unit = internal.CopyString(ms.state, v)
 }
 
 // Type returns the type of the data for this Metric.
@@ -122,13 +127,8 @@ func (ms Metric) Gauge() Gauge {
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptyGauge() Gauge {
 	ms.state.AssertMutable()
-	var ov *internal.Metric_Gauge
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		ov = &internal.Metric_Gauge{}
-	} else {
-		ov = internal.ProtoPoolMetric_Gauge.Get().(*internal.Metric_Gauge)
-	}
-	ov.Gauge = internal.NewGauge()
+	ov := internal.Alloc[internal.Metric_Gauge](ms.state)
+	ov.Gauge = internal.Alloc[internal.Gauge](ms.state)
 	ms.orig.Data = ov
 	return newGauge(ov.Gauge, ms.state)
 } // Sum returns the sum associated with this Metric.
@@ -151,13 +151,8 @@ func (ms Metric) Sum() Sum {
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptySum() Sum {
 	ms.state.AssertMutable()
-	var ov *internal.Metric_Sum
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		ov = &internal.Metric_Sum{}
-	} else {
-		ov = internal.ProtoPoolMetric_Sum.Get().(*internal.Metric_Sum)
-	}
-	ov.Sum = internal.NewSum()
+	ov := internal.Alloc[internal.Metric_Sum](ms.state)
+	ov.Sum = internal.Alloc[internal.Sum](ms.state)
 	ms.orig.Data = ov
 	return newSum(ov.Sum, ms.state)
 } // Histogram returns the histogram associated with this Metric.
@@ -180,13 +175,8 @@ func (ms Metric) Histogram() Histogram {
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptyHistogram() Histogram {
 	ms.state.AssertMutable()
-	var ov *internal.Metric_Histogram
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		ov = &internal.Metric_Histogram{}
-	} else {
-		ov = internal.ProtoPoolMetric_Histogram.Get().(*internal.Metric_Histogram)
-	}
-	ov.Histogram = internal.NewHistogram()
+	ov := internal.Alloc[internal.Metric_Histogram](ms.state)
+	ov.Histogram = internal.Alloc[internal.Histogram](ms.state)
 	ms.orig.Data = ov
 	return newHistogram(ov.Histogram, ms.state)
 } // ExponentialHistogram returns the exponentialhistogram associated with this Metric.
@@ -209,13 +199,8 @@ func (ms Metric) ExponentialHistogram() ExponentialHistogram {
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptyExponentialHistogram() ExponentialHistogram {
 	ms.state.AssertMutable()
-	var ov *internal.Metric_ExponentialHistogram
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		ov = &internal.Metric_ExponentialHistogram{}
-	} else {
-		ov = internal.ProtoPoolMetric_ExponentialHistogram.Get().(*internal.Metric_ExponentialHistogram)
-	}
-	ov.ExponentialHistogram = internal.NewExponentialHistogram()
+	ov := internal.Alloc[internal.Metric_ExponentialHistogram](ms.state)
+	ov.ExponentialHistogram = internal.Alloc[internal.ExponentialHistogram](ms.state)
 	ms.orig.Data = ov
 	return newExponentialHistogram(ov.ExponentialHistogram, ms.state)
 } // Summary returns the summary associated with this Metric.
@@ -238,13 +223,8 @@ func (ms Metric) Summary() Summary {
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) SetEmptySummary() Summary {
 	ms.state.AssertMutable()
-	var ov *internal.Metric_Summary
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		ov = &internal.Metric_Summary{}
-	} else {
-		ov = internal.ProtoPoolMetric_Summary.Get().(*internal.Metric_Summary)
-	}
-	ov.Summary = internal.NewSummary()
+	ov := internal.Alloc[internal.Metric_Summary](ms.state)
+	ov.Summary = internal.Alloc[internal.Summary](ms.state)
 	ms.orig.Data = ov
 	return newSummary(ov.Summary, ms.state)
 }
@@ -257,5 +237,5 @@ func (ms Metric) Metadata() pcommon.Map {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Metric) CopyTo(dest Metric) {
 	dest.state.AssertMutable()
-	internal.CopyMetric(dest.orig, ms.orig)
+	internal.CopyMetric(dest.orig, ms.orig, dest.state)
 }

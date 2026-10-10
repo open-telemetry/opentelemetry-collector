@@ -31,9 +31,9 @@ func TestCopyTracesData(t *testing.T) {
 				}()
 
 				dest := NewTracesData()
-				CopyTracesData(dest, src)
+				CopyTracesData(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyTracesData(dest, dest)
+				CopyTracesData(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyTracesDataSlice(t *testing.T) {
 	src := []TracesData{}
 	dest := []TracesData{}
 	// Test CopyTo empty
-	dest = CopyTracesDataSlice(dest, src)
+	dest = CopyTracesDataSlice(dest, src, nil)
 	assert.Equal(t, []TracesData{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestTracesDataSlice()
-	dest = CopyTracesDataSlice(dest, src)
+	dest = CopyTracesDataSlice(dest, src, nil)
 	assert.Equal(t, GenTestTracesDataSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyTracesDataSlice(dest, src)
+	dest = CopyTracesDataSlice(dest, src, nil)
 	assert.Equal(t, GenTestTracesDataSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyTracesDataSlice(dest, []TracesData{})
+	dest = CopyTracesDataSlice(dest, []TracesData{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyTracesDataSlice(dest, src)
+	dest = CopyTracesDataSlice(dest, src, nil)
 	assert.Equal(t, GenTestTracesDataSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyTracesDataPtrSlice(t *testing.T) {
 	src := []*TracesData{}
 	dest := []*TracesData{}
 	// Test CopyTo empty
-	dest = CopyTracesDataPtrSlice(dest, src)
+	dest = CopyTracesDataPtrSlice(dest, src, nil)
 	assert.Equal(t, []*TracesData{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestTracesDataPtrSlice()
-	dest = CopyTracesDataPtrSlice(dest, src)
+	dest = CopyTracesDataPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestTracesDataPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyTracesDataPtrSlice(dest, src)
+	dest = CopyTracesDataPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestTracesDataPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyTracesDataPtrSlice(dest, []*TracesData{})
+	dest = CopyTracesDataPtrSlice(dest, []*TracesData{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyTracesDataPtrSlice(dest, src)
+	dest = CopyTracesDataPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestTracesDataPtrSlice(), dest)
 }
 
@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufTracesData(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesTracesData() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                 {0x02},
-		"ResourceSpans/wrong_wire_type": {0xc},
-		"ResourceSpans/missing_value":   {0xa},
+		"ResourceSpans/wrong_wire_type": []byte{0xc},
+		"ResourceSpans/missing_value":   []byte{0xa},
 	}
 }
 
 func genTestEncodingValuesTracesData() map[string]*TracesData {
 	return map[string]*TracesData{
 		"empty":              NewTracesData(),
-		"ResourceSpans/test": {ResourceSpans: []*ResourceSpans{{}, GenTestResourceSpans()}},
+		"ResourceSpans/test": {ResourceSpans: []*ResourceSpans{&ResourceSpans{}, GenTestResourceSpans()}},
 	}
 }

@@ -26,21 +26,8 @@ type {{ .messageName }} struct {
 {{ end -}}
 }
 
-var (
-	protoPool{{ .messageName }} = sync.Pool{
-	    New: func() any {
-		    return &{{ .messageName }}{}
-	    },
-    }
-    {{- range .fields }}{{ .GenPool }}{{- end }}
-)
-
-
 func New{{ .messageName }}() *{{ .messageName }} {
-    if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-        return &{{ .messageName }}{}
-    }
-    return protoPool{{ .messageName }}.Get().(*{{ .messageName }})
+    return Alloc[{{ .messageName }}](nil)
 }
 
 func Delete{{ .messageName }}(orig *{{ .messageName }}, nullable bool) {
@@ -57,12 +44,10 @@ func Delete{{ .messageName }}(orig *{{ .messageName }}, nullable bool) {
         {{ .GenDelete }}
     {{- end }}
     orig.Reset()
-    if nullable {
-        protoPool{{ .messageName }}.Put(orig)
-    }
+    _ = nullable
 }
 
-func Copy{{ .messageName }}(dest, src *{{ .messageName }}) *{{ .messageName }}{
+func Copy{{ .messageName }}(dest, src *{{ .messageName }}, st *State) *{{ .messageName }}{
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -73,7 +58,7 @@ func Copy{{ .messageName }}(dest, src *{{ .messageName }}) *{{ .messageName }}{
     }
 
     if dest == nil {
-        dest = New{{ .messageName }}();
+        dest = Alloc[{{ .messageName }}](st);
     }
 
     {{- range .fields }}
@@ -83,10 +68,10 @@ func Copy{{ .messageName }}(dest, src *{{ .messageName }}) *{{ .messageName }}{
 	return dest
 }
 
-func Copy{{ .messageName }}Slice(dest, src []{{ .messageName }}) []{{ .messageName }} {
+func Copy{{ .messageName }}Slice(dest, src []{{ .messageName }}, st *State) []{{ .messageName }} {
     var newDest []{{ .messageName }}
     if cap(dest) < len(src) {
-        newDest = make([]{{ .messageName }}, len(src))
+        newDest = AllocSlice[{{ .messageName }}](st, len(src), len(src))
     } else {
         newDest = dest[:len(src)]
         // Cleanup the rest of the elements so GC can free the memory.
@@ -96,20 +81,20 @@ func Copy{{ .messageName }}Slice(dest, src []{{ .messageName }}) []{{ .messageNa
         }
     }
     for i := range src {
-        Copy{{ .messageName }}(&newDest[i], &src[i])
+        Copy{{ .messageName }}(&newDest[i], &src[i], st)
     }
     return newDest
 }
 
-func Copy{{ .messageName }}PtrSlice(dest, src []*{{ .messageName }}) []*{{ .messageName }} {
+func Copy{{ .messageName }}PtrSlice(dest, src []*{{ .messageName }}, st *State) []*{{ .messageName }} {
     var newDest []*{{ .messageName }}
     if cap(dest) < len(src) {
-        newDest = make([]*{{ .messageName }}, len(src))
+        newDest = AllocSlice[*{{ .messageName }}](st, len(src), len(src))
         // Copy old pointers to re-use.
         copy(newDest, dest)
         // Add new pointers for missing elements from len(dest) to len(srt).
         for i := len(dest); i < len(src); i++ {
-            newDest[i] = New{{ .messageName }}()
+            newDest[i] = Alloc[{{ .messageName }}](st)
         }
 	} else {
         newDest = dest[:len(src)]
@@ -122,11 +107,11 @@ func Copy{{ .messageName }}PtrSlice(dest, src []*{{ .messageName }}) []*{{ .mess
         // Add new pointers for missing elements.
         // This can happen when len(dest) < len(src) < cap(dest).
         for i := len(dest); i < len(src); i++ {
-            newDest[i] = New{{ .messageName }}()
+            newDest[i] = Alloc[{{ .messageName }}](st)
         }
     }
     for i := range src {
-        Copy{{ .messageName }}(newDest[i], src[i])
+        Copy{{ .messageName }}(newDest[i], src[i], st)
     }
     return newDest
 }
@@ -147,6 +132,11 @@ func (orig *{{ .messageName }}) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *{{ .messageName }}) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *{{ .messageName }}) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		{{ range .fields -}}
@@ -179,6 +169,10 @@ func (orig *{{ .messageName }}) MarshalProto(buf []byte) int {
 }
 
 func (orig *{{ .messageName }}) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *{{ .messageName }}) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -210,7 +204,7 @@ func (orig *{{ .messageName }}) UnmarshalProto(buf []byte) error {
 {{ end -}}
 
 func GenTest{{ .messageName }}() *{{ .messageName }} {
-    orig := New{{ .messageName }}()
+    orig := Alloc[{{ .messageName }}](nil)
     {{- range .fields }}
     {{ .GenTest }}
     {{- end }}
@@ -219,11 +213,11 @@ func GenTest{{ .messageName }}() *{{ .messageName }} {
 
 func GenTest{{ .messageName }}PtrSlice() []*{{ .messageName }} {
     orig := make([]*{{ .messageName }}, 5)
-    orig[0] = New{{ .messageName }}()
+    orig[0] = Alloc[{{ .messageName }}](nil)
     orig[1] = GenTest{{ .messageName }}()
-    orig[2] = New{{ .messageName }}()
+    orig[2] = Alloc[{{ .messageName }}](nil)
     orig[3] = GenTest{{ .messageName }}()
-    orig[4] = New{{ .messageName }}()
+    orig[4] = Alloc[{{ .messageName }}](nil)
     return orig
 }
 

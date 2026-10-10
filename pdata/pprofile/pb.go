@@ -50,7 +50,8 @@ type ProtoUnmarshaler struct{}
 
 func (d *ProtoUnmarshaler) UnmarshalProfiles(buf []byte) (Profiles, error) {
 	pd := NewProfiles()
-	err := pd.getOrig().UnmarshalProto(buf)
+	pd.getState().RetainWire(buf)
+	err := pd.getOrig().UnmarshalProtoState(buf, pd.getState())
 	if err != nil {
 		return Profiles{}, err
 	}

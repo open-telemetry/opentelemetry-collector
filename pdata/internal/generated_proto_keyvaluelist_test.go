@@ -31,9 +31,9 @@ func TestCopyKeyValueList(t *testing.T) {
 				}()
 
 				dest := NewKeyValueList()
-				CopyKeyValueList(dest, src)
+				CopyKeyValueList(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyKeyValueList(dest, dest)
+				CopyKeyValueList(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyKeyValueListSlice(t *testing.T) {
 	src := []KeyValueList{}
 	dest := []KeyValueList{}
 	// Test CopyTo empty
-	dest = CopyKeyValueListSlice(dest, src)
+	dest = CopyKeyValueListSlice(dest, src, nil)
 	assert.Equal(t, []KeyValueList{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestKeyValueListSlice()
-	dest = CopyKeyValueListSlice(dest, src)
+	dest = CopyKeyValueListSlice(dest, src, nil)
 	assert.Equal(t, GenTestKeyValueListSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyKeyValueListSlice(dest, src)
+	dest = CopyKeyValueListSlice(dest, src, nil)
 	assert.Equal(t, GenTestKeyValueListSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyKeyValueListSlice(dest, []KeyValueList{})
+	dest = CopyKeyValueListSlice(dest, []KeyValueList{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyKeyValueListSlice(dest, src)
+	dest = CopyKeyValueListSlice(dest, src, nil)
 	assert.Equal(t, GenTestKeyValueListSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyKeyValueListPtrSlice(t *testing.T) {
 	src := []*KeyValueList{}
 	dest := []*KeyValueList{}
 	// Test CopyTo empty
-	dest = CopyKeyValueListPtrSlice(dest, src)
+	dest = CopyKeyValueListPtrSlice(dest, src, nil)
 	assert.Equal(t, []*KeyValueList{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestKeyValueListPtrSlice()
-	dest = CopyKeyValueListPtrSlice(dest, src)
+	dest = CopyKeyValueListPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestKeyValueListPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyKeyValueListPtrSlice(dest, src)
+	dest = CopyKeyValueListPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestKeyValueListPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyKeyValueListPtrSlice(dest, []*KeyValueList{})
+	dest = CopyKeyValueListPtrSlice(dest, []*KeyValueList{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyKeyValueListPtrSlice(dest, src)
+	dest = CopyKeyValueListPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestKeyValueListPtrSlice(), dest)
 }
 
@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufKeyValueList(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesKeyValueList() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":          {0x02},
-		"Values/wrong_wire_type": {0xc},
-		"Values/missing_value":   {0xa},
+		"Values/wrong_wire_type": []byte{0xc},
+		"Values/missing_value":   []byte{0xa},
 	}
 }
 
 func genTestEncodingValuesKeyValueList() map[string]*KeyValueList {
 	return map[string]*KeyValueList{
 		"empty":       NewKeyValueList(),
-		"Values/test": {Values: []KeyValue{{}, *GenTestKeyValue()}},
+		"Values/test": {Values: []KeyValue{KeyValue{}, *GenTestKeyValue()}},
 	}
 }

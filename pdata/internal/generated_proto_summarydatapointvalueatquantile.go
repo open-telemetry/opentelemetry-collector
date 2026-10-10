@@ -10,7 +10,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -23,19 +22,8 @@ type SummaryDataPointValueAtQuantile struct {
 	Value    float64
 }
 
-var (
-	protoPoolSummaryDataPointValueAtQuantile = sync.Pool{
-		New: func() any {
-			return &SummaryDataPointValueAtQuantile{}
-		},
-	}
-)
-
 func NewSummaryDataPointValueAtQuantile() *SummaryDataPointValueAtQuantile {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &SummaryDataPointValueAtQuantile{}
-	}
-	return protoPoolSummaryDataPointValueAtQuantile.Get().(*SummaryDataPointValueAtQuantile)
+	return Alloc[SummaryDataPointValueAtQuantile](nil)
 }
 
 func DeleteSummaryDataPointValueAtQuantile(orig *SummaryDataPointValueAtQuantile, nullable bool) {
@@ -49,12 +37,10 @@ func DeleteSummaryDataPointValueAtQuantile(orig *SummaryDataPointValueAtQuantile
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolSummaryDataPointValueAtQuantile.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopySummaryDataPointValueAtQuantile(dest, src *SummaryDataPointValueAtQuantile) *SummaryDataPointValueAtQuantile {
+func CopySummaryDataPointValueAtQuantile(dest, src *SummaryDataPointValueAtQuantile, st *State) *SummaryDataPointValueAtQuantile {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -65,7 +51,7 @@ func CopySummaryDataPointValueAtQuantile(dest, src *SummaryDataPointValueAtQuant
 	}
 
 	if dest == nil {
-		dest = NewSummaryDataPointValueAtQuantile()
+		dest = Alloc[SummaryDataPointValueAtQuantile](st)
 	}
 	dest.Quantile = src.Quantile
 	dest.Value = src.Value
@@ -73,10 +59,10 @@ func CopySummaryDataPointValueAtQuantile(dest, src *SummaryDataPointValueAtQuant
 	return dest
 }
 
-func CopySummaryDataPointValueAtQuantileSlice(dest, src []SummaryDataPointValueAtQuantile) []SummaryDataPointValueAtQuantile {
+func CopySummaryDataPointValueAtQuantileSlice(dest, src []SummaryDataPointValueAtQuantile, st *State) []SummaryDataPointValueAtQuantile {
 	var newDest []SummaryDataPointValueAtQuantile
 	if cap(dest) < len(src) {
-		newDest = make([]SummaryDataPointValueAtQuantile, len(src))
+		newDest = AllocSlice[SummaryDataPointValueAtQuantile](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -86,20 +72,20 @@ func CopySummaryDataPointValueAtQuantileSlice(dest, src []SummaryDataPointValueA
 		}
 	}
 	for i := range src {
-		CopySummaryDataPointValueAtQuantile(&newDest[i], &src[i])
+		CopySummaryDataPointValueAtQuantile(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopySummaryDataPointValueAtQuantilePtrSlice(dest, src []*SummaryDataPointValueAtQuantile) []*SummaryDataPointValueAtQuantile {
+func CopySummaryDataPointValueAtQuantilePtrSlice(dest, src []*SummaryDataPointValueAtQuantile, st *State) []*SummaryDataPointValueAtQuantile {
 	var newDest []*SummaryDataPointValueAtQuantile
 	if cap(dest) < len(src) {
-		newDest = make([]*SummaryDataPointValueAtQuantile, len(src))
+		newDest = AllocSlice[*SummaryDataPointValueAtQuantile](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewSummaryDataPointValueAtQuantile()
+			newDest[i] = Alloc[SummaryDataPointValueAtQuantile](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -112,11 +98,11 @@ func CopySummaryDataPointValueAtQuantilePtrSlice(dest, src []*SummaryDataPointVa
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewSummaryDataPointValueAtQuantile()
+			newDest[i] = Alloc[SummaryDataPointValueAtQuantile](st)
 		}
 	}
 	for i := range src {
-		CopySummaryDataPointValueAtQuantile(newDest[i], src[i])
+		CopySummaryDataPointValueAtQuantile(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -141,11 +127,18 @@ func (orig *SummaryDataPointValueAtQuantile) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *SummaryDataPointValueAtQuantile) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *SummaryDataPointValueAtQuantile) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "quantile":
+
 			orig.Quantile = iter.ReadFloat64()
 		case "value":
+
 			orig.Value = iter.ReadFloat64()
 		default:
 			iter.HandleUnknownField(f)
@@ -186,6 +179,10 @@ func (orig *SummaryDataPointValueAtQuantile) MarshalProto(buf []byte) int {
 }
 
 func (orig *SummaryDataPointValueAtQuantile) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *SummaryDataPointValueAtQuantile) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -232,7 +229,7 @@ func (orig *SummaryDataPointValueAtQuantile) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestSummaryDataPointValueAtQuantile() *SummaryDataPointValueAtQuantile {
-	orig := NewSummaryDataPointValueAtQuantile()
+	orig := Alloc[SummaryDataPointValueAtQuantile](nil)
 	orig.Quantile = float64(3.1415926)
 	orig.Value = float64(3.1415926)
 	return orig
@@ -240,11 +237,11 @@ func GenTestSummaryDataPointValueAtQuantile() *SummaryDataPointValueAtQuantile {
 
 func GenTestSummaryDataPointValueAtQuantilePtrSlice() []*SummaryDataPointValueAtQuantile {
 	orig := make([]*SummaryDataPointValueAtQuantile, 5)
-	orig[0] = NewSummaryDataPointValueAtQuantile()
+	orig[0] = Alloc[SummaryDataPointValueAtQuantile](nil)
 	orig[1] = GenTestSummaryDataPointValueAtQuantile()
-	orig[2] = NewSummaryDataPointValueAtQuantile()
+	orig[2] = Alloc[SummaryDataPointValueAtQuantile](nil)
 	orig[3] = GenTestSummaryDataPointValueAtQuantile()
-	orig[4] = NewSummaryDataPointValueAtQuantile()
+	orig[4] = Alloc[SummaryDataPointValueAtQuantile](nil)
 	return orig
 }
 

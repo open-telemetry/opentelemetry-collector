@@ -31,9 +31,9 @@ func TestCopyLogRecord(t *testing.T) {
 				}()
 
 				dest := NewLogRecord()
-				CopyLogRecord(dest, src)
+				CopyLogRecord(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyLogRecord(dest, dest)
+				CopyLogRecord(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyLogRecordSlice(t *testing.T) {
 	src := []LogRecord{}
 	dest := []LogRecord{}
 	// Test CopyTo empty
-	dest = CopyLogRecordSlice(dest, src)
+	dest = CopyLogRecordSlice(dest, src, nil)
 	assert.Equal(t, []LogRecord{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestLogRecordSlice()
-	dest = CopyLogRecordSlice(dest, src)
+	dest = CopyLogRecordSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogRecordSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyLogRecordSlice(dest, src)
+	dest = CopyLogRecordSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogRecordSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyLogRecordSlice(dest, []LogRecord{})
+	dest = CopyLogRecordSlice(dest, []LogRecord{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyLogRecordSlice(dest, src)
+	dest = CopyLogRecordSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogRecordSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyLogRecordPtrSlice(t *testing.T) {
 	src := []*LogRecord{}
 	dest := []*LogRecord{}
 	// Test CopyTo empty
-	dest = CopyLogRecordPtrSlice(dest, src)
+	dest = CopyLogRecordPtrSlice(dest, src, nil)
 	assert.Equal(t, []*LogRecord{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestLogRecordPtrSlice()
-	dest = CopyLogRecordPtrSlice(dest, src)
+	dest = CopyLogRecordPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogRecordPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyLogRecordPtrSlice(dest, src)
+	dest = CopyLogRecordPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogRecordPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyLogRecordPtrSlice(dest, []*LogRecord{})
+	dest = CopyLogRecordPtrSlice(dest, []*LogRecord{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyLogRecordPtrSlice(dest, src)
+	dest = CopyLogRecordPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogRecordPtrSlice(), dest)
 }
 
@@ -190,28 +190,28 @@ func TestMarshalAndUnmarshalProtoViaProtobufLogRecord(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesLogRecord() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                          {0x02},
-		"TimeUnixNano/wrong_wire_type":           {0xc},
-		"TimeUnixNano/missing_value":             {0x9},
-		"ObservedTimeUnixNano/wrong_wire_type":   {0x5c},
-		"ObservedTimeUnixNano/missing_value":     {0x59},
-		"SeverityNumber/wrong_wire_type":         {0x14},
-		"SeverityNumber/missing_value":           {0x10},
-		"SeverityText/wrong_wire_type":           {0x1c},
-		"SeverityText/missing_value":             {0x1a},
-		"Body/wrong_wire_type":                   {0x2c},
-		"Body/missing_value":                     {0x2a},
-		"Attributes/wrong_wire_type":             {0x34},
-		"Attributes/missing_value":               {0x32},
-		"DroppedAttributesCount/wrong_wire_type": {0x3c},
-		"DroppedAttributesCount/missing_value":   {0x38},
-		"Flags/wrong_wire_type":                  {0x44},
-		"Flags/missing_value":                    {0x45},
-		"TraceId/wrong_wire_type":                {0x4c},
-		"TraceId/missing_value":                  {0x4a},
-		"SpanId/wrong_wire_type":                 {0x54},
-		"SpanId/missing_value":                   {0x52},
-		"EventName/wrong_wire_type":              {0x64},
-		"EventName/missing_value":                {0x62},
+		"TimeUnixNano/wrong_wire_type":           []byte{0xc},
+		"TimeUnixNano/missing_value":             []byte{0x9},
+		"ObservedTimeUnixNano/wrong_wire_type":   []byte{0x5c},
+		"ObservedTimeUnixNano/missing_value":     []byte{0x59},
+		"SeverityNumber/wrong_wire_type":         []byte{0x14},
+		"SeverityNumber/missing_value":           []byte{0x10},
+		"SeverityText/wrong_wire_type":           []byte{0x1c},
+		"SeverityText/missing_value":             []byte{0x1a},
+		"Body/wrong_wire_type":                   []byte{0x2c},
+		"Body/missing_value":                     []byte{0x2a},
+		"Attributes/wrong_wire_type":             []byte{0x34},
+		"Attributes/missing_value":               []byte{0x32},
+		"DroppedAttributesCount/wrong_wire_type": []byte{0x3c},
+		"DroppedAttributesCount/missing_value":   []byte{0x38},
+		"Flags/wrong_wire_type":                  []byte{0x44},
+		"Flags/missing_value":                    []byte{0x45},
+		"TraceId/wrong_wire_type":                []byte{0x4c},
+		"TraceId/missing_value":                  []byte{0x4a},
+		"SpanId/wrong_wire_type":                 []byte{0x54},
+		"SpanId/missing_value":                   []byte{0x52},
+		"EventName/wrong_wire_type":              []byte{0x64},
+		"EventName/missing_value":                []byte{0x62},
 	}
 }
 
@@ -223,7 +223,7 @@ func genTestEncodingValuesLogRecord() map[string]*LogRecord {
 		"SeverityNumber/test":         {SeverityNumber: SeverityNumber(13)},
 		"SeverityText/test":           {SeverityText: "test_severitytext"},
 		"Body/test":                   {Body: *GenTestAnyValue()},
-		"Attributes/test":             {Attributes: []KeyValue{{}, *GenTestKeyValue()}},
+		"Attributes/test":             {Attributes: []KeyValue{KeyValue{}, *GenTestKeyValue()}},
 		"DroppedAttributesCount/test": {DroppedAttributesCount: uint32(13)},
 		"Flags/test":                  {Flags: uint32(13)},
 		"TraceId/test":                {TraceId: *GenTestTraceID()},

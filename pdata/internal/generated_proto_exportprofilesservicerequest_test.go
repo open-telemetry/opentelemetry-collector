@@ -31,9 +31,9 @@ func TestCopyExportProfilesServiceRequest(t *testing.T) {
 				}()
 
 				dest := NewExportProfilesServiceRequest()
-				CopyExportProfilesServiceRequest(dest, src)
+				CopyExportProfilesServiceRequest(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyExportProfilesServiceRequest(dest, dest)
+				CopyExportProfilesServiceRequest(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyExportProfilesServiceRequestSlice(t *testing.T) {
 	src := []ExportProfilesServiceRequest{}
 	dest := []ExportProfilesServiceRequest{}
 	// Test CopyTo empty
-	dest = CopyExportProfilesServiceRequestSlice(dest, src)
+	dest = CopyExportProfilesServiceRequestSlice(dest, src, nil)
 	assert.Equal(t, []ExportProfilesServiceRequest{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExportProfilesServiceRequestSlice()
-	dest = CopyExportProfilesServiceRequestSlice(dest, src)
+	dest = CopyExportProfilesServiceRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportProfilesServiceRequestSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExportProfilesServiceRequestSlice(dest, src)
+	dest = CopyExportProfilesServiceRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportProfilesServiceRequestSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExportProfilesServiceRequestSlice(dest, []ExportProfilesServiceRequest{})
+	dest = CopyExportProfilesServiceRequestSlice(dest, []ExportProfilesServiceRequest{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExportProfilesServiceRequestSlice(dest, src)
+	dest = CopyExportProfilesServiceRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportProfilesServiceRequestSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyExportProfilesServiceRequestPtrSlice(t *testing.T) {
 	src := []*ExportProfilesServiceRequest{}
 	dest := []*ExportProfilesServiceRequest{}
 	// Test CopyTo empty
-	dest = CopyExportProfilesServiceRequestPtrSlice(dest, src)
+	dest = CopyExportProfilesServiceRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, []*ExportProfilesServiceRequest{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExportProfilesServiceRequestPtrSlice()
-	dest = CopyExportProfilesServiceRequestPtrSlice(dest, src)
+	dest = CopyExportProfilesServiceRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportProfilesServiceRequestPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExportProfilesServiceRequestPtrSlice(dest, src)
+	dest = CopyExportProfilesServiceRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportProfilesServiceRequestPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExportProfilesServiceRequestPtrSlice(dest, []*ExportProfilesServiceRequest{})
+	dest = CopyExportProfilesServiceRequestPtrSlice(dest, []*ExportProfilesServiceRequest{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExportProfilesServiceRequestPtrSlice(dest, src)
+	dest = CopyExportProfilesServiceRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportProfilesServiceRequestPtrSlice(), dest)
 }
 
@@ -190,17 +190,17 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportProfilesServiceRequest(t *test
 func genTestFailingUnmarshalProtoValuesExportProfilesServiceRequest() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                    {0x02},
-		"ResourceProfiles/wrong_wire_type": {0xc},
-		"ResourceProfiles/missing_value":   {0xa},
-		"Dictionary/wrong_wire_type":       {0x14},
-		"Dictionary/missing_value":         {0x12},
+		"ResourceProfiles/wrong_wire_type": []byte{0xc},
+		"ResourceProfiles/missing_value":   []byte{0xa},
+		"Dictionary/wrong_wire_type":       []byte{0x14},
+		"Dictionary/missing_value":         []byte{0x12},
 	}
 }
 
 func genTestEncodingValuesExportProfilesServiceRequest() map[string]*ExportProfilesServiceRequest {
 	return map[string]*ExportProfilesServiceRequest{
 		"empty":                 NewExportProfilesServiceRequest(),
-		"ResourceProfiles/test": {ResourceProfiles: []*ResourceProfiles{{}, GenTestResourceProfiles()}},
+		"ResourceProfiles/test": {ResourceProfiles: []*ResourceProfiles{&ResourceProfiles{}, GenTestResourceProfiles()}},
 		"Dictionary/test":       {Dictionary: *GenTestProfilesDictionary()},
 	}
 }

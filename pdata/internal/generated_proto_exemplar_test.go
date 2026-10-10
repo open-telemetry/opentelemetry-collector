@@ -31,9 +31,9 @@ func TestCopyExemplar(t *testing.T) {
 				}()
 
 				dest := NewExemplar()
-				CopyExemplar(dest, src)
+				CopyExemplar(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyExemplar(dest, dest)
+				CopyExemplar(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyExemplarSlice(t *testing.T) {
 	src := []Exemplar{}
 	dest := []Exemplar{}
 	// Test CopyTo empty
-	dest = CopyExemplarSlice(dest, src)
+	dest = CopyExemplarSlice(dest, src, nil)
 	assert.Equal(t, []Exemplar{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExemplarSlice()
-	dest = CopyExemplarSlice(dest, src)
+	dest = CopyExemplarSlice(dest, src, nil)
 	assert.Equal(t, GenTestExemplarSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExemplarSlice(dest, src)
+	dest = CopyExemplarSlice(dest, src, nil)
 	assert.Equal(t, GenTestExemplarSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExemplarSlice(dest, []Exemplar{})
+	dest = CopyExemplarSlice(dest, []Exemplar{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExemplarSlice(dest, src)
+	dest = CopyExemplarSlice(dest, src, nil)
 	assert.Equal(t, GenTestExemplarSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyExemplarPtrSlice(t *testing.T) {
 	src := []*Exemplar{}
 	dest := []*Exemplar{}
 	// Test CopyTo empty
-	dest = CopyExemplarPtrSlice(dest, src)
+	dest = CopyExemplarPtrSlice(dest, src, nil)
 	assert.Equal(t, []*Exemplar{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExemplarPtrSlice()
-	dest = CopyExemplarPtrSlice(dest, src)
+	dest = CopyExemplarPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExemplarPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExemplarPtrSlice(dest, src)
+	dest = CopyExemplarPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExemplarPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExemplarPtrSlice(dest, []*Exemplar{})
+	dest = CopyExemplarPtrSlice(dest, []*Exemplar{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExemplarPtrSlice(dest, src)
+	dest = CopyExemplarPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExemplarPtrSlice(), dest)
 }
 
@@ -190,26 +190,26 @@ func TestMarshalAndUnmarshalProtoViaProtobufExemplar(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesExemplar() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                      {0x02},
-		"FilteredAttributes/wrong_wire_type": {0x3c},
-		"FilteredAttributes/missing_value":   {0x3a},
-		"TimeUnixNano/wrong_wire_type":       {0x14},
-		"TimeUnixNano/missing_value":         {0x11},
+		"FilteredAttributes/wrong_wire_type": []byte{0x3c},
+		"FilteredAttributes/missing_value":   []byte{0x3a},
+		"TimeUnixNano/wrong_wire_type":       []byte{0x14},
+		"TimeUnixNano/missing_value":         []byte{0x11},
 
-		"AsDouble/wrong_wire_type": {0x1c},
-		"AsDouble/missing_value":   {0x19},
-		"AsInt/wrong_wire_type":    {0x34},
-		"AsInt/missing_value":      {0x31},
-		"TraceId/wrong_wire_type":  {0x2c},
-		"TraceId/missing_value":    {0x2a},
-		"SpanId/wrong_wire_type":   {0x24},
-		"SpanId/missing_value":     {0x22},
+		"AsDouble/wrong_wire_type": []byte{0x1c},
+		"AsDouble/missing_value":   []byte{0x19},
+		"AsInt/wrong_wire_type":    []byte{0x34},
+		"AsInt/missing_value":      []byte{0x31},
+		"TraceId/wrong_wire_type":  []byte{0x2c},
+		"TraceId/missing_value":    []byte{0x2a},
+		"SpanId/wrong_wire_type":   []byte{0x24},
+		"SpanId/missing_value":     []byte{0x22},
 	}
 }
 
 func genTestEncodingValuesExemplar() map[string]*Exemplar {
 	return map[string]*Exemplar{
 		"empty":                   NewExemplar(),
-		"FilteredAttributes/test": {FilteredAttributes: []KeyValue{{}, *GenTestKeyValue()}},
+		"FilteredAttributes/test": {FilteredAttributes: []KeyValue{KeyValue{}, *GenTestKeyValue()}},
 		"TimeUnixNano/test":       {TimeUnixNano: uint64(13)},
 		"AsDouble/default":        {Value: &Exemplar_AsDouble{AsDouble: float64(0)}},
 		"AsDouble/test":           {Value: &Exemplar_AsDouble{AsDouble: float64(3.1415926)}}, "AsInt/default": {Value: &Exemplar_AsInt{AsInt: int64(0)}},

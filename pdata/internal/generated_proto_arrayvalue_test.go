@@ -31,9 +31,9 @@ func TestCopyArrayValue(t *testing.T) {
 				}()
 
 				dest := NewArrayValue()
-				CopyArrayValue(dest, src)
+				CopyArrayValue(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyArrayValue(dest, dest)
+				CopyArrayValue(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyArrayValueSlice(t *testing.T) {
 	src := []ArrayValue{}
 	dest := []ArrayValue{}
 	// Test CopyTo empty
-	dest = CopyArrayValueSlice(dest, src)
+	dest = CopyArrayValueSlice(dest, src, nil)
 	assert.Equal(t, []ArrayValue{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestArrayValueSlice()
-	dest = CopyArrayValueSlice(dest, src)
+	dest = CopyArrayValueSlice(dest, src, nil)
 	assert.Equal(t, GenTestArrayValueSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyArrayValueSlice(dest, src)
+	dest = CopyArrayValueSlice(dest, src, nil)
 	assert.Equal(t, GenTestArrayValueSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyArrayValueSlice(dest, []ArrayValue{})
+	dest = CopyArrayValueSlice(dest, []ArrayValue{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyArrayValueSlice(dest, src)
+	dest = CopyArrayValueSlice(dest, src, nil)
 	assert.Equal(t, GenTestArrayValueSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyArrayValuePtrSlice(t *testing.T) {
 	src := []*ArrayValue{}
 	dest := []*ArrayValue{}
 	// Test CopyTo empty
-	dest = CopyArrayValuePtrSlice(dest, src)
+	dest = CopyArrayValuePtrSlice(dest, src, nil)
 	assert.Equal(t, []*ArrayValue{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestArrayValuePtrSlice()
-	dest = CopyArrayValuePtrSlice(dest, src)
+	dest = CopyArrayValuePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestArrayValuePtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyArrayValuePtrSlice(dest, src)
+	dest = CopyArrayValuePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestArrayValuePtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyArrayValuePtrSlice(dest, []*ArrayValue{})
+	dest = CopyArrayValuePtrSlice(dest, []*ArrayValue{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyArrayValuePtrSlice(dest, src)
+	dest = CopyArrayValuePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestArrayValuePtrSlice(), dest)
 }
 
@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufArrayValue(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesArrayValue() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":          {0x02},
-		"Values/wrong_wire_type": {0xc},
-		"Values/missing_value":   {0xa},
+		"Values/wrong_wire_type": []byte{0xc},
+		"Values/missing_value":   []byte{0xa},
 	}
 }
 
 func genTestEncodingValuesArrayValue() map[string]*ArrayValue {
 	return map[string]*ArrayValue{
 		"empty":       NewArrayValue(),
-		"Values/test": {Values: []AnyValue{{}, *GenTestAnyValue()}},
+		"Values/test": {Values: []AnyValue{AnyValue{}, *GenTestAnyValue()}},
 	}
 }

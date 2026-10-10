@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -21,19 +20,8 @@ type ValueType struct {
 	UnitStrindex int32
 }
 
-var (
-	protoPoolValueType = sync.Pool{
-		New: func() any {
-			return &ValueType{}
-		},
-	}
-)
-
 func NewValueType() *ValueType {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &ValueType{}
-	}
-	return protoPoolValueType.Get().(*ValueType)
+	return Alloc[ValueType](nil)
 }
 
 func DeleteValueType(orig *ValueType, nullable bool) {
@@ -47,12 +35,10 @@ func DeleteValueType(orig *ValueType, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolValueType.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyValueType(dest, src *ValueType) *ValueType {
+func CopyValueType(dest, src *ValueType, st *State) *ValueType {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -63,7 +49,7 @@ func CopyValueType(dest, src *ValueType) *ValueType {
 	}
 
 	if dest == nil {
-		dest = NewValueType()
+		dest = Alloc[ValueType](st)
 	}
 	dest.TypeStrindex = src.TypeStrindex
 	dest.UnitStrindex = src.UnitStrindex
@@ -71,10 +57,10 @@ func CopyValueType(dest, src *ValueType) *ValueType {
 	return dest
 }
 
-func CopyValueTypeSlice(dest, src []ValueType) []ValueType {
+func CopyValueTypeSlice(dest, src []ValueType, st *State) []ValueType {
 	var newDest []ValueType
 	if cap(dest) < len(src) {
-		newDest = make([]ValueType, len(src))
+		newDest = AllocSlice[ValueType](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -84,20 +70,20 @@ func CopyValueTypeSlice(dest, src []ValueType) []ValueType {
 		}
 	}
 	for i := range src {
-		CopyValueType(&newDest[i], &src[i])
+		CopyValueType(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyValueTypePtrSlice(dest, src []*ValueType) []*ValueType {
+func CopyValueTypePtrSlice(dest, src []*ValueType, st *State) []*ValueType {
 	var newDest []*ValueType
 	if cap(dest) < len(src) {
-		newDest = make([]*ValueType, len(src))
+		newDest = AllocSlice[*ValueType](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewValueType()
+			newDest[i] = Alloc[ValueType](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -110,11 +96,11 @@ func CopyValueTypePtrSlice(dest, src []*ValueType) []*ValueType {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewValueType()
+			newDest[i] = Alloc[ValueType](st)
 		}
 	}
 	for i := range src {
-		CopyValueType(newDest[i], src[i])
+		CopyValueType(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -139,11 +125,18 @@ func (orig *ValueType) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *ValueType) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *ValueType) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "typeStrindex", "type_strindex":
+
 			orig.TypeStrindex = iter.ReadInt32()
 		case "unitStrindex", "unit_strindex":
+
 			orig.UnitStrindex = iter.ReadInt32()
 		default:
 			iter.HandleUnknownField(f)
@@ -182,6 +175,10 @@ func (orig *ValueType) MarshalProto(buf []byte) int {
 }
 
 func (orig *ValueType) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *ValueType) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -228,7 +225,7 @@ func (orig *ValueType) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestValueType() *ValueType {
-	orig := NewValueType()
+	orig := Alloc[ValueType](nil)
 	orig.TypeStrindex = int32(13)
 	orig.UnitStrindex = int32(13)
 	return orig
@@ -236,11 +233,11 @@ func GenTestValueType() *ValueType {
 
 func GenTestValueTypePtrSlice() []*ValueType {
 	orig := make([]*ValueType, 5)
-	orig[0] = NewValueType()
+	orig[0] = Alloc[ValueType](nil)
 	orig[1] = GenTestValueType()
-	orig[2] = NewValueType()
+	orig[2] = Alloc[ValueType](nil)
 	orig[3] = GenTestValueType()
-	orig[4] = NewValueType()
+	orig[4] = Alloc[ValueType](nil)
 	return orig
 }
 

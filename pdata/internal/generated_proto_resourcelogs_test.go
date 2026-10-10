@@ -31,9 +31,9 @@ func TestCopyResourceLogs(t *testing.T) {
 				}()
 
 				dest := NewResourceLogs()
-				CopyResourceLogs(dest, src)
+				CopyResourceLogs(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyResourceLogs(dest, dest)
+				CopyResourceLogs(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyResourceLogsSlice(t *testing.T) {
 	src := []ResourceLogs{}
 	dest := []ResourceLogs{}
 	// Test CopyTo empty
-	dest = CopyResourceLogsSlice(dest, src)
+	dest = CopyResourceLogsSlice(dest, src, nil)
 	assert.Equal(t, []ResourceLogs{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestResourceLogsSlice()
-	dest = CopyResourceLogsSlice(dest, src)
+	dest = CopyResourceLogsSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceLogsSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyResourceLogsSlice(dest, src)
+	dest = CopyResourceLogsSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceLogsSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyResourceLogsSlice(dest, []ResourceLogs{})
+	dest = CopyResourceLogsSlice(dest, []ResourceLogs{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyResourceLogsSlice(dest, src)
+	dest = CopyResourceLogsSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceLogsSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyResourceLogsPtrSlice(t *testing.T) {
 	src := []*ResourceLogs{}
 	dest := []*ResourceLogs{}
 	// Test CopyTo empty
-	dest = CopyResourceLogsPtrSlice(dest, src)
+	dest = CopyResourceLogsPtrSlice(dest, src, nil)
 	assert.Equal(t, []*ResourceLogs{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestResourceLogsPtrSlice()
-	dest = CopyResourceLogsPtrSlice(dest, src)
+	dest = CopyResourceLogsPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceLogsPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyResourceLogsPtrSlice(dest, src)
+	dest = CopyResourceLogsPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceLogsPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyResourceLogsPtrSlice(dest, []*ResourceLogs{})
+	dest = CopyResourceLogsPtrSlice(dest, []*ResourceLogs{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyResourceLogsPtrSlice(dest, src)
+	dest = CopyResourceLogsPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceLogsPtrSlice(), dest)
 }
 
@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufResourceLogs(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesResourceLogs() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                       {0x02},
-		"Resource/wrong_wire_type":            {0xc},
-		"Resource/missing_value":              {0xa},
-		"ScopeLogs/wrong_wire_type":           {0x14},
-		"ScopeLogs/missing_value":             {0x12},
-		"SchemaUrl/wrong_wire_type":           {0x1c},
-		"SchemaUrl/missing_value":             {0x1a},
-		"DeprecatedScopeLogs/wrong_wire_type": {0xc4, 0x3e},
-		"DeprecatedScopeLogs/missing_value":   {0xc2, 0x3e},
+		"Resource/wrong_wire_type":            []byte{0xc},
+		"Resource/missing_value":              []byte{0xa},
+		"ScopeLogs/wrong_wire_type":           []byte{0x14},
+		"ScopeLogs/missing_value":             []byte{0x12},
+		"SchemaUrl/wrong_wire_type":           []byte{0x1c},
+		"SchemaUrl/missing_value":             []byte{0x1a},
+		"DeprecatedScopeLogs/wrong_wire_type": []byte{0xc4, 0x3e},
+		"DeprecatedScopeLogs/missing_value":   []byte{0xc2, 0x3e},
 	}
 }
 
@@ -205,8 +205,8 @@ func genTestEncodingValuesResourceLogs() map[string]*ResourceLogs {
 	return map[string]*ResourceLogs{
 		"empty":                    NewResourceLogs(),
 		"Resource/test":            {Resource: *GenTestResource()},
-		"ScopeLogs/test":           {ScopeLogs: []*ScopeLogs{{}, GenTestScopeLogs()}},
+		"ScopeLogs/test":           {ScopeLogs: []*ScopeLogs{&ScopeLogs{}, GenTestScopeLogs()}},
 		"SchemaUrl/test":           {SchemaUrl: "test_schemaurl"},
-		"DeprecatedScopeLogs/test": {DeprecatedScopeLogs: []*ScopeLogs{{}, GenTestScopeLogs()}},
+		"DeprecatedScopeLogs/test": {DeprecatedScopeLogs: []*ScopeLogs{&ScopeLogs{}, GenTestScopeLogs()}},
 	}
 }

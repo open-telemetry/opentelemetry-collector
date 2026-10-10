@@ -36,13 +36,13 @@ func NewStringSlice() StringSlice {
 
 // AsRaw returns a copy of the []string slice.
 func (ms StringSlice) AsRaw() []string {
-	return copyStringSlice(nil, *ms.getOrig())
+	return slices.Clone(*ms.getOrig())
 }
 
 // FromRaw copies raw []string into the slice StringSlice.
 func (ms StringSlice) FromRaw(val []string) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = copyStringSlice(*ms.getOrig(), val)
+	*ms.getOrig() = internal.CopyStringSlice(ms.getState(), *ms.getOrig(), val)
 }
 
 // Len returns length of the []string slice value.
@@ -88,7 +88,7 @@ func (ms StringSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]string, len(*ms.getOrig()), newCap)
+	newOrig := internal.AllocSlice[string](ms.getState(), len(*ms.getOrig()), newCap)
 	copy(newOrig, *ms.getOrig())
 	*ms.getOrig() = newOrig
 }
@@ -97,7 +97,7 @@ func (ms StringSlice) EnsureCapacity(newCap int) {
 // Equivalent of stringSlice = append(stringSlice, elms...)
 func (ms StringSlice) Append(elms ...string) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = append(*ms.getOrig(), elms...)
+	*ms.getOrig() = internal.AppendSeq(ms.getState(), *ms.getOrig(), elms)
 }
 
 // MoveTo moves all elements from the current slice overriding the destination and
@@ -109,6 +109,11 @@ func (ms StringSlice) MoveTo(dest StringSlice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
+	if ms.getState() != dest.getState() {
+		ms.CopyTo(dest)
+		*ms.getOrig() = nil
+		return
+	}
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = nil
 }
@@ -118,11 +123,16 @@ func (ms StringSlice) MoveTo(dest StringSlice) {
 func (ms StringSlice) MoveAndAppendTo(dest StringSlice) {
 	ms.getState().AssertMutable()
 	dest.getState().AssertMutable()
+	if ms.getState() != dest.getState() {
+		dest.Append(*ms.getOrig()...)
+		*ms.getOrig() = nil
+		return
+	}
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *ms.getOrig()
 	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *ms.getOrig()...)
+		*dest.getOrig() = internal.AppendSeq(dest.getState(), *dest.getOrig(), *ms.getOrig())
 	}
 	*ms.getOrig() = nil
 }
@@ -155,7 +165,7 @@ func (ms StringSlice) CopyTo(dest StringSlice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = copyStringSlice(*dest.getOrig(), *ms.getOrig())
+	*dest.getOrig() = internal.CopyStringSlice(dest.getState(), *dest.getOrig(), *ms.getOrig())
 }
 
 // Equal checks equality with another StringSlice

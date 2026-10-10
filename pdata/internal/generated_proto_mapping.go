@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -24,19 +23,8 @@ type Mapping struct {
 	AttributeIndices []int32
 }
 
-var (
-	protoPoolMapping = sync.Pool{
-		New: func() any {
-			return &Mapping{}
-		},
-	}
-)
-
 func NewMapping() *Mapping {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &Mapping{}
-	}
-	return protoPoolMapping.Get().(*Mapping)
+	return Alloc[Mapping](nil)
 }
 
 func DeleteMapping(orig *Mapping, nullable bool) {
@@ -50,12 +38,10 @@ func DeleteMapping(orig *Mapping, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolMapping.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyMapping(dest, src *Mapping) *Mapping {
+func CopyMapping(dest, src *Mapping, st *State) *Mapping {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -66,21 +52,21 @@ func CopyMapping(dest, src *Mapping) *Mapping {
 	}
 
 	if dest == nil {
-		dest = NewMapping()
+		dest = Alloc[Mapping](st)
 	}
 	dest.MemoryStart = src.MemoryStart
 	dest.MemoryLimit = src.MemoryLimit
 	dest.FileOffset = src.FileOffset
 	dest.FilenameStrindex = src.FilenameStrindex
-	dest.AttributeIndices = append(dest.AttributeIndices[:0], src.AttributeIndices...)
+	dest.AttributeIndices = CopySlice(st, dest.AttributeIndices, src.AttributeIndices)
 
 	return dest
 }
 
-func CopyMappingSlice(dest, src []Mapping) []Mapping {
+func CopyMappingSlice(dest, src []Mapping, st *State) []Mapping {
 	var newDest []Mapping
 	if cap(dest) < len(src) {
-		newDest = make([]Mapping, len(src))
+		newDest = AllocSlice[Mapping](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -90,20 +76,20 @@ func CopyMappingSlice(dest, src []Mapping) []Mapping {
 		}
 	}
 	for i := range src {
-		CopyMapping(&newDest[i], &src[i])
+		CopyMapping(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyMappingPtrSlice(dest, src []*Mapping) []*Mapping {
+func CopyMappingPtrSlice(dest, src []*Mapping, st *State) []*Mapping {
 	var newDest []*Mapping
 	if cap(dest) < len(src) {
-		newDest = make([]*Mapping, len(src))
+		newDest = AllocSlice[*Mapping](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewMapping()
+			newDest[i] = Alloc[Mapping](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -116,11 +102,11 @@ func CopyMappingPtrSlice(dest, src []*Mapping) []*Mapping {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewMapping()
+			newDest[i] = Alloc[Mapping](st)
 		}
 	}
 	for i := range src {
-		CopyMapping(newDest[i], src[i])
+		CopyMapping(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -164,19 +150,28 @@ func (orig *Mapping) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *Mapping) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *Mapping) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "memoryStart", "memory_start":
+
 			orig.MemoryStart = iter.ReadUint64()
 		case "memoryLimit", "memory_limit":
+
 			orig.MemoryLimit = iter.ReadUint64()
 		case "fileOffset", "file_offset":
+
 			orig.FileOffset = iter.ReadUint64()
 		case "filenameStrindex", "filename_strindex":
+
 			orig.FilenameStrindex = iter.ReadInt32()
 		case "attributeIndices", "attribute_indices":
 			for iter.ReadArray() {
-				orig.AttributeIndices = append(orig.AttributeIndices, iter.ReadInt32())
+				orig.AttributeIndices = Append(st, orig.AttributeIndices, iter.ReadInt32())
 			}
 
 		default:
@@ -250,6 +245,10 @@ func (orig *Mapping) MarshalProto(buf []byte) int {
 }
 
 func (orig *Mapping) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *Mapping) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -322,7 +321,7 @@ func (orig *Mapping) UnmarshalProto(buf []byte) error {
 					if err != nil {
 						return err
 					}
-					orig.AttributeIndices = append(orig.AttributeIndices, int32(num))
+					orig.AttributeIndices = AppendEstimated(st, orig.AttributeIndices, int32(num), pos-startPos, 1)
 				}
 				if startPos != pos {
 					return fmt.Errorf("proto: invalid field len = %d for field AttributeIndices", pos-startPos)
@@ -333,7 +332,7 @@ func (orig *Mapping) UnmarshalProto(buf []byte) error {
 				if err != nil {
 					return err
 				}
-				orig.AttributeIndices = append(orig.AttributeIndices, int32(num))
+				orig.AttributeIndices = AppendEstimated(st, orig.AttributeIndices, int32(num), len(buf)-pos, 2)
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)
 			}
@@ -348,7 +347,7 @@ func (orig *Mapping) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestMapping() *Mapping {
-	orig := NewMapping()
+	orig := Alloc[Mapping](nil)
 	orig.MemoryStart = uint64(13)
 	orig.MemoryLimit = uint64(13)
 	orig.FileOffset = uint64(13)
@@ -359,11 +358,11 @@ func GenTestMapping() *Mapping {
 
 func GenTestMappingPtrSlice() []*Mapping {
 	orig := make([]*Mapping, 5)
-	orig[0] = NewMapping()
+	orig[0] = Alloc[Mapping](nil)
 	orig[1] = GenTestMapping()
-	orig[2] = NewMapping()
+	orig[2] = Alloc[Mapping](nil)
 	orig[3] = GenTestMapping()
-	orig[4] = NewMapping()
+	orig[4] = Alloc[Mapping](nil)
 	return orig
 }
 

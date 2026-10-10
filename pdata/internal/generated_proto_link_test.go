@@ -31,9 +31,9 @@ func TestCopyLink(t *testing.T) {
 				}()
 
 				dest := NewLink()
-				CopyLink(dest, src)
+				CopyLink(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyLink(dest, dest)
+				CopyLink(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyLinkSlice(t *testing.T) {
 	src := []Link{}
 	dest := []Link{}
 	// Test CopyTo empty
-	dest = CopyLinkSlice(dest, src)
+	dest = CopyLinkSlice(dest, src, nil)
 	assert.Equal(t, []Link{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestLinkSlice()
-	dest = CopyLinkSlice(dest, src)
+	dest = CopyLinkSlice(dest, src, nil)
 	assert.Equal(t, GenTestLinkSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyLinkSlice(dest, src)
+	dest = CopyLinkSlice(dest, src, nil)
 	assert.Equal(t, GenTestLinkSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyLinkSlice(dest, []Link{})
+	dest = CopyLinkSlice(dest, []Link{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyLinkSlice(dest, src)
+	dest = CopyLinkSlice(dest, src, nil)
 	assert.Equal(t, GenTestLinkSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyLinkPtrSlice(t *testing.T) {
 	src := []*Link{}
 	dest := []*Link{}
 	// Test CopyTo empty
-	dest = CopyLinkPtrSlice(dest, src)
+	dest = CopyLinkPtrSlice(dest, src, nil)
 	assert.Equal(t, []*Link{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestLinkPtrSlice()
-	dest = CopyLinkPtrSlice(dest, src)
+	dest = CopyLinkPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLinkPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyLinkPtrSlice(dest, src)
+	dest = CopyLinkPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLinkPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyLinkPtrSlice(dest, []*Link{})
+	dest = CopyLinkPtrSlice(dest, []*Link{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyLinkPtrSlice(dest, src)
+	dest = CopyLinkPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLinkPtrSlice(), dest)
 }
 
@@ -190,10 +190,10 @@ func TestMarshalAndUnmarshalProtoViaProtobufLink(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesLink() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":           {0x02},
-		"TraceId/wrong_wire_type": {0xc},
-		"TraceId/missing_value":   {0xa},
-		"SpanId/wrong_wire_type":  {0x14},
-		"SpanId/missing_value":    {0x12},
+		"TraceId/wrong_wire_type": []byte{0xc},
+		"TraceId/missing_value":   []byte{0xa},
+		"SpanId/wrong_wire_type":  []byte{0x14},
+		"SpanId/missing_value":    []byte{0x12},
 	}
 }
 

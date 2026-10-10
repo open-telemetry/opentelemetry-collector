@@ -31,7 +31,8 @@ func newLine(orig *internal.Line, state *internal.State) Line {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewLine() Line {
-	return newLine(internal.NewLine(), internal.NewState())
+	st := internal.NewState()
+	return newLine(internal.Alloc[internal.Line](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -41,6 +42,11 @@ func (ms Line) MoveTo(dest Line) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		ms.CopyTo(dest)
+		internal.DeleteLine(ms.orig, false)
 		return
 	}
 	internal.DeleteLine(dest.orig, false)
@@ -83,5 +89,5 @@ func (ms Line) SetColumn(v int64) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Line) CopyTo(dest Line) {
 	dest.state.AssertMutable()
-	internal.CopyLine(dest.orig, ms.orig)
+	internal.CopyLine(dest.orig, ms.orig, dest.state)
 }

@@ -9,7 +9,6 @@ package internal
 import (
 	"encoding/binary"
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -32,19 +31,8 @@ type Profile struct {
 	AttributeIndices       []int32
 }
 
-var (
-	protoPoolProfile = sync.Pool{
-		New: func() any {
-			return &Profile{}
-		},
-	}
-)
-
 func NewProfile() *Profile {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &Profile{}
-	}
-	return protoPoolProfile.Get().(*Profile)
+	return Alloc[Profile](nil)
 }
 
 func DeleteProfile(orig *Profile, nullable bool) {
@@ -66,12 +54,10 @@ func DeleteProfile(orig *Profile, nullable bool) {
 	DeleteProfileID(&orig.ProfileId, false)
 
 	orig.Reset()
-	if nullable {
-		protoPoolProfile.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyProfile(dest, src *Profile) *Profile {
+func CopyProfile(dest, src *Profile, st *State) *Profile {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -82,31 +68,33 @@ func CopyProfile(dest, src *Profile) *Profile {
 	}
 
 	if dest == nil {
-		dest = NewProfile()
+		dest = Alloc[Profile](st)
 	}
-	CopyValueType(&dest.SampleType, &src.SampleType)
+	CopyValueType(&dest.SampleType, &src.SampleType, st)
 
-	dest.Samples = CopySamplePtrSlice(dest.Samples, src.Samples)
+	dest.Samples = CopySamplePtrSlice(dest.Samples, src.Samples, st)
 
 	dest.TimeUnixNano = src.TimeUnixNano
 	dest.DurationNano = src.DurationNano
-	CopyValueType(&dest.PeriodType, &src.PeriodType)
+	CopyValueType(&dest.PeriodType, &src.PeriodType, st)
 
 	dest.Period = src.Period
-	CopyProfileID(&dest.ProfileId, &src.ProfileId)
+	CopyProfileID(&dest.ProfileId, &src.ProfileId, st)
 
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
-	dest.OriginalPayloadFormat = src.OriginalPayloadFormat
-	dest.OriginalPayload = src.OriginalPayload
-	dest.AttributeIndices = append(dest.AttributeIndices[:0], src.AttributeIndices...)
+	dest.OriginalPayloadFormat = CopyString(st, src.OriginalPayloadFormat)
+
+	dest.OriginalPayload = CopyBytes(st, src.OriginalPayload)
+
+	dest.AttributeIndices = CopySlice(st, dest.AttributeIndices, src.AttributeIndices)
 
 	return dest
 }
 
-func CopyProfileSlice(dest, src []Profile) []Profile {
+func CopyProfileSlice(dest, src []Profile, st *State) []Profile {
 	var newDest []Profile
 	if cap(dest) < len(src) {
-		newDest = make([]Profile, len(src))
+		newDest = AllocSlice[Profile](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -116,20 +104,20 @@ func CopyProfileSlice(dest, src []Profile) []Profile {
 		}
 	}
 	for i := range src {
-		CopyProfile(&newDest[i], &src[i])
+		CopyProfile(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyProfilePtrSlice(dest, src []*Profile) []*Profile {
+func CopyProfilePtrSlice(dest, src []*Profile, st *State) []*Profile {
 	var newDest []*Profile
 	if cap(dest) < len(src) {
-		newDest = make([]*Profile, len(src))
+		newDest = AllocSlice[*Profile](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewProfile()
+			newDest[i] = Alloc[Profile](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -142,11 +130,11 @@ func CopyProfilePtrSlice(dest, src []*Profile) []*Profile {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewProfile()
+			newDest[i] = Alloc[Profile](st)
 		}
 	}
 	for i := range src {
-		CopyProfile(newDest[i], src[i])
+		CopyProfile(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -217,38 +205,48 @@ func (orig *Profile) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *Profile) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *Profile) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "sampleType", "sample_type":
 
-			orig.SampleType.UnmarshalJSON(iter)
+			orig.SampleType.UnmarshalJSONState(iter, st)
 		case "samples":
 			for iter.ReadArray() {
-				orig.Samples = append(orig.Samples, NewSample())
-				orig.Samples[len(orig.Samples)-1].UnmarshalJSON(iter)
+				orig.Samples = Append(st, orig.Samples, Alloc[Sample](st))
+				orig.Samples[len(orig.Samples)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "timeUnixNano", "time_unix_nano":
+
 			orig.TimeUnixNano = iter.ReadUint64()
 		case "durationNano", "duration_nano":
+
 			orig.DurationNano = iter.ReadUint64()
 		case "periodType", "period_type":
 
-			orig.PeriodType.UnmarshalJSON(iter)
+			orig.PeriodType.UnmarshalJSONState(iter, st)
 		case "period":
+
 			orig.Period = iter.ReadInt64()
 		case "profileId", "profile_id":
 
-			orig.ProfileId.UnmarshalJSON(iter)
+			orig.ProfileId.UnmarshalJSONState(iter, st)
 		case "droppedAttributesCount", "dropped_attributes_count":
+
 			orig.DroppedAttributesCount = iter.ReadUint32()
 		case "originalPayloadFormat", "original_payload_format":
-			orig.OriginalPayloadFormat = iter.ReadString()
+
+			orig.OriginalPayloadFormat = CopyString(st, iter.ReadString())
 		case "originalPayload", "original_payload":
-			orig.OriginalPayload = iter.ReadBytes()
+			orig.OriginalPayload = CopyBytes(st, iter.ReadBytes())
 		case "attributeIndices", "attribute_indices":
 			for iter.ReadArray() {
-				orig.AttributeIndices = append(orig.AttributeIndices, iter.ReadInt32())
+				orig.AttributeIndices = Append(st, orig.AttributeIndices, iter.ReadInt32())
 			}
 
 		default:
@@ -384,6 +382,10 @@ func (orig *Profile) MarshalProto(buf []byte) int {
 }
 
 func (orig *Profile) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *Profile) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -409,7 +411,7 @@ func (orig *Profile) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.SampleType.UnmarshalProto(buf[startPos:pos])
+			err = orig.SampleType.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -424,8 +426,8 @@ func (orig *Profile) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Samples = append(orig.Samples, NewSample())
-			err = orig.Samples[len(orig.Samples)-1].UnmarshalProto(buf[startPos:pos])
+			orig.Samples = AppendEstimated(st, orig.Samples, Alloc[Sample](st), len(buf)-pos, length+2)
+			err = orig.Samples[len(orig.Samples)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -464,7 +466,7 @@ func (orig *Profile) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.PeriodType.UnmarshalProto(buf[startPos:pos])
+			err = orig.PeriodType.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -491,7 +493,7 @@ func (orig *Profile) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.ProfileId.UnmarshalProto(buf[startPos:pos])
+			err = orig.ProfileId.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -517,7 +519,7 @@ func (orig *Profile) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.OriginalPayloadFormat = string(buf[startPos:pos])
+			orig.OriginalPayloadFormat = BorrowString(st, buf, startPos, pos)
 
 		case 10:
 			if wireType != proto.WireTypeLen {
@@ -529,10 +531,7 @@ func (orig *Profile) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			if length != 0 {
-				orig.OriginalPayload = make([]byte, length)
-				copy(orig.OriginalPayload, buf[startPos:pos])
-			}
+			orig.OriginalPayload = BorrowBytes(st, buf, startPos, pos)
 		case 11:
 			switch wireType {
 			case proto.WireTypeLen:
@@ -548,7 +547,7 @@ func (orig *Profile) UnmarshalProto(buf []byte) error {
 					if err != nil {
 						return err
 					}
-					orig.AttributeIndices = append(orig.AttributeIndices, int32(num))
+					orig.AttributeIndices = AppendEstimated(st, orig.AttributeIndices, int32(num), pos-startPos, 1)
 				}
 				if startPos != pos {
 					return fmt.Errorf("proto: invalid field len = %d for field AttributeIndices", pos-startPos)
@@ -559,7 +558,7 @@ func (orig *Profile) UnmarshalProto(buf []byte) error {
 				if err != nil {
 					return err
 				}
-				orig.AttributeIndices = append(orig.AttributeIndices, int32(num))
+				orig.AttributeIndices = AppendEstimated(st, orig.AttributeIndices, int32(num), len(buf)-pos, 2)
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)
 			}
@@ -574,9 +573,9 @@ func (orig *Profile) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestProfile() *Profile {
-	orig := NewProfile()
+	orig := Alloc[Profile](nil)
 	orig.SampleType = *GenTestValueType()
-	orig.Samples = []*Sample{{}, GenTestSample()}
+	orig.Samples = []*Sample{&Sample{}, GenTestSample()}
 	orig.TimeUnixNano = uint64(13)
 	orig.DurationNano = uint64(13)
 	orig.PeriodType = *GenTestValueType()
@@ -591,11 +590,11 @@ func GenTestProfile() *Profile {
 
 func GenTestProfilePtrSlice() []*Profile {
 	orig := make([]*Profile, 5)
-	orig[0] = NewProfile()
+	orig[0] = Alloc[Profile](nil)
 	orig[1] = GenTestProfile()
-	orig[2] = NewProfile()
+	orig[2] = Alloc[Profile](nil)
 	orig[3] = GenTestProfile()
-	orig[4] = NewProfile()
+	orig[4] = Alloc[Profile](nil)
 	return orig
 }
 

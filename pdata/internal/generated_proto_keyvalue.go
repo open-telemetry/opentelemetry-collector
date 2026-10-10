@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -21,19 +20,8 @@ type KeyValue struct {
 	KeyStrindex int32
 }
 
-var (
-	protoPoolKeyValue = sync.Pool{
-		New: func() any {
-			return &KeyValue{}
-		},
-	}
-)
-
 func NewKeyValue() *KeyValue {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &KeyValue{}
-	}
-	return protoPoolKeyValue.Get().(*KeyValue)
+	return Alloc[KeyValue](nil)
 }
 
 func DeleteKeyValue(orig *KeyValue, nullable bool) {
@@ -49,12 +37,10 @@ func DeleteKeyValue(orig *KeyValue, nullable bool) {
 	DeleteAnyValue(&orig.Value, false)
 
 	orig.Reset()
-	if nullable {
-		protoPoolKeyValue.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyKeyValue(dest, src *KeyValue) *KeyValue {
+func CopyKeyValue(dest, src *KeyValue, st *State) *KeyValue {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -65,20 +51,21 @@ func CopyKeyValue(dest, src *KeyValue) *KeyValue {
 	}
 
 	if dest == nil {
-		dest = NewKeyValue()
+		dest = Alloc[KeyValue](st)
 	}
-	dest.Key = src.Key
-	CopyAnyValue(&dest.Value, &src.Value)
+	dest.Key = CopyString(st, src.Key)
+
+	CopyAnyValue(&dest.Value, &src.Value, st)
 
 	dest.KeyStrindex = src.KeyStrindex
 
 	return dest
 }
 
-func CopyKeyValueSlice(dest, src []KeyValue) []KeyValue {
+func CopyKeyValueSlice(dest, src []KeyValue, st *State) []KeyValue {
 	var newDest []KeyValue
 	if cap(dest) < len(src) {
-		newDest = make([]KeyValue, len(src))
+		newDest = AllocSlice[KeyValue](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -88,20 +75,20 @@ func CopyKeyValueSlice(dest, src []KeyValue) []KeyValue {
 		}
 	}
 	for i := range src {
-		CopyKeyValue(&newDest[i], &src[i])
+		CopyKeyValue(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyKeyValuePtrSlice(dest, src []*KeyValue) []*KeyValue {
+func CopyKeyValuePtrSlice(dest, src []*KeyValue, st *State) []*KeyValue {
 	var newDest []*KeyValue
 	if cap(dest) < len(src) {
-		newDest = make([]*KeyValue, len(src))
+		newDest = AllocSlice[*KeyValue](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewKeyValue()
+			newDest[i] = Alloc[KeyValue](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -114,11 +101,11 @@ func CopyKeyValuePtrSlice(dest, src []*KeyValue) []*KeyValue {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewKeyValue()
+			newDest[i] = Alloc[KeyValue](st)
 		}
 	}
 	for i := range src {
-		CopyKeyValue(newDest[i], src[i])
+		CopyKeyValue(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -145,14 +132,21 @@ func (orig *KeyValue) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *KeyValue) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *KeyValue) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "key":
-			orig.Key = iter.ReadString()
+
+			orig.Key = CopyString(st, iter.ReadString())
 		case "value":
 
-			orig.Value.UnmarshalJSON(iter)
+			orig.Value.UnmarshalJSONState(iter, st)
 		case "keyStrindex", "key_strindex":
+
 			orig.KeyStrindex = iter.ReadInt32()
 		default:
 			iter.HandleUnknownField(f)
@@ -204,6 +198,10 @@ func (orig *KeyValue) MarshalProto(buf []byte) int {
 }
 
 func (orig *KeyValue) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *KeyValue) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -228,7 +226,7 @@ func (orig *KeyValue) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Key = string(buf[startPos:pos])
+			orig.Key = BorrowString(st, buf, startPos, pos)
 
 		case 2:
 			if wireType != proto.WireTypeLen {
@@ -241,7 +239,7 @@ func (orig *KeyValue) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Value.UnmarshalProto(buf[startPos:pos])
+			err = orig.Value.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -267,7 +265,7 @@ func (orig *KeyValue) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestKeyValue() *KeyValue {
-	orig := NewKeyValue()
+	orig := Alloc[KeyValue](nil)
 	orig.Key = "test_key"
 	orig.Value = *GenTestAnyValue()
 	orig.KeyStrindex = int32(13)
@@ -276,11 +274,11 @@ func GenTestKeyValue() *KeyValue {
 
 func GenTestKeyValuePtrSlice() []*KeyValue {
 	orig := make([]*KeyValue, 5)
-	orig[0] = NewKeyValue()
+	orig[0] = Alloc[KeyValue](nil)
 	orig[1] = GenTestKeyValue()
-	orig[2] = NewKeyValue()
+	orig[2] = Alloc[KeyValue](nil)
 	orig[3] = GenTestKeyValue()
-	orig[4] = NewKeyValue()
+	orig[4] = Alloc[KeyValue](nil)
 	return orig
 }
 

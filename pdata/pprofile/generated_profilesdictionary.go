@@ -32,7 +32,8 @@ func newProfilesDictionary(orig *internal.ProfilesDictionary, state *internal.St
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewProfilesDictionary() ProfilesDictionary {
-	return newProfilesDictionary(internal.NewProfilesDictionary(), internal.NewState())
+	st := internal.NewState()
+	return newProfilesDictionary(internal.Alloc[internal.ProfilesDictionary](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -42,6 +43,11 @@ func (ms ProfilesDictionary) MoveTo(dest ProfilesDictionary) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		ms.CopyTo(dest)
+		internal.DeleteProfilesDictionary(ms.orig, false)
 		return
 	}
 	internal.DeleteProfilesDictionary(dest.orig, false)
@@ -86,5 +92,5 @@ func (ms ProfilesDictionary) StackTable() StackSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ProfilesDictionary) CopyTo(dest ProfilesDictionary) {
 	dest.state.AssertMutable()
-	internal.CopyProfilesDictionary(dest.orig, ms.orig)
+	internal.CopyProfilesDictionary(dest.orig, ms.orig, dest.state)
 }

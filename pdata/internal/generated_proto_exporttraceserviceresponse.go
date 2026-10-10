@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -20,19 +19,8 @@ type ExportTraceServiceResponse struct {
 	PartialSuccess ExportTracePartialSuccess
 }
 
-var (
-	protoPoolExportTraceServiceResponse = sync.Pool{
-		New: func() any {
-			return &ExportTraceServiceResponse{}
-		},
-	}
-)
-
 func NewExportTraceServiceResponse() *ExportTraceServiceResponse {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &ExportTraceServiceResponse{}
-	}
-	return protoPoolExportTraceServiceResponse.Get().(*ExportTraceServiceResponse)
+	return Alloc[ExportTraceServiceResponse](nil)
 }
 
 func DeleteExportTraceServiceResponse(orig *ExportTraceServiceResponse, nullable bool) {
@@ -46,12 +34,10 @@ func DeleteExportTraceServiceResponse(orig *ExportTraceServiceResponse, nullable
 	}
 	DeleteExportTracePartialSuccess(&orig.PartialSuccess, false)
 	orig.Reset()
-	if nullable {
-		protoPoolExportTraceServiceResponse.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyExportTraceServiceResponse(dest, src *ExportTraceServiceResponse) *ExportTraceServiceResponse {
+func CopyExportTraceServiceResponse(dest, src *ExportTraceServiceResponse, st *State) *ExportTraceServiceResponse {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -62,17 +48,17 @@ func CopyExportTraceServiceResponse(dest, src *ExportTraceServiceResponse) *Expo
 	}
 
 	if dest == nil {
-		dest = NewExportTraceServiceResponse()
+		dest = Alloc[ExportTraceServiceResponse](st)
 	}
-	CopyExportTracePartialSuccess(&dest.PartialSuccess, &src.PartialSuccess)
+	CopyExportTracePartialSuccess(&dest.PartialSuccess, &src.PartialSuccess, st)
 
 	return dest
 }
 
-func CopyExportTraceServiceResponseSlice(dest, src []ExportTraceServiceResponse) []ExportTraceServiceResponse {
+func CopyExportTraceServiceResponseSlice(dest, src []ExportTraceServiceResponse, st *State) []ExportTraceServiceResponse {
 	var newDest []ExportTraceServiceResponse
 	if cap(dest) < len(src) {
-		newDest = make([]ExportTraceServiceResponse, len(src))
+		newDest = AllocSlice[ExportTraceServiceResponse](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -82,20 +68,20 @@ func CopyExportTraceServiceResponseSlice(dest, src []ExportTraceServiceResponse)
 		}
 	}
 	for i := range src {
-		CopyExportTraceServiceResponse(&newDest[i], &src[i])
+		CopyExportTraceServiceResponse(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyExportTraceServiceResponsePtrSlice(dest, src []*ExportTraceServiceResponse) []*ExportTraceServiceResponse {
+func CopyExportTraceServiceResponsePtrSlice(dest, src []*ExportTraceServiceResponse, st *State) []*ExportTraceServiceResponse {
 	var newDest []*ExportTraceServiceResponse
 	if cap(dest) < len(src) {
-		newDest = make([]*ExportTraceServiceResponse, len(src))
+		newDest = AllocSlice[*ExportTraceServiceResponse](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewExportTraceServiceResponse()
+			newDest[i] = Alloc[ExportTraceServiceResponse](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -108,11 +94,11 @@ func CopyExportTraceServiceResponsePtrSlice(dest, src []*ExportTraceServiceRespo
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewExportTraceServiceResponse()
+			newDest[i] = Alloc[ExportTraceServiceResponse](st)
 		}
 	}
 	for i := range src {
-		CopyExportTraceServiceResponse(newDest[i], src[i])
+		CopyExportTraceServiceResponse(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -131,11 +117,16 @@ func (orig *ExportTraceServiceResponse) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *ExportTraceServiceResponse) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *ExportTraceServiceResponse) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "partialSuccess", "partial_success":
 
-			orig.PartialSuccess.UnmarshalJSON(iter)
+			orig.PartialSuccess.UnmarshalJSONState(iter, st)
 		default:
 			iter.HandleUnknownField(f)
 		}
@@ -165,6 +156,10 @@ func (orig *ExportTraceServiceResponse) MarshalProto(buf []byte) int {
 }
 
 func (orig *ExportTraceServiceResponse) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *ExportTraceServiceResponse) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -190,7 +185,7 @@ func (orig *ExportTraceServiceResponse) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.PartialSuccess.UnmarshalProto(buf[startPos:pos])
+			err = orig.PartialSuccess.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -205,18 +200,18 @@ func (orig *ExportTraceServiceResponse) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestExportTraceServiceResponse() *ExportTraceServiceResponse {
-	orig := NewExportTraceServiceResponse()
+	orig := Alloc[ExportTraceServiceResponse](nil)
 	orig.PartialSuccess = *GenTestExportTracePartialSuccess()
 	return orig
 }
 
 func GenTestExportTraceServiceResponsePtrSlice() []*ExportTraceServiceResponse {
 	orig := make([]*ExportTraceServiceResponse, 5)
-	orig[0] = NewExportTraceServiceResponse()
+	orig[0] = Alloc[ExportTraceServiceResponse](nil)
 	orig[1] = GenTestExportTraceServiceResponse()
-	orig[2] = NewExportTraceServiceResponse()
+	orig[2] = Alloc[ExportTraceServiceResponse](nil)
 	orig[3] = GenTestExportTraceServiceResponse()
-	orig[4] = NewExportTraceServiceResponse()
+	orig[4] = Alloc[ExportTraceServiceResponse](nil)
 	return orig
 }
 

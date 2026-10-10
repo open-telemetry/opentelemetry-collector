@@ -31,9 +31,9 @@ func TestCopyLine(t *testing.T) {
 				}()
 
 				dest := NewLine()
-				CopyLine(dest, src)
+				CopyLine(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyLine(dest, dest)
+				CopyLine(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyLineSlice(t *testing.T) {
 	src := []Line{}
 	dest := []Line{}
 	// Test CopyTo empty
-	dest = CopyLineSlice(dest, src)
+	dest = CopyLineSlice(dest, src, nil)
 	assert.Equal(t, []Line{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestLineSlice()
-	dest = CopyLineSlice(dest, src)
+	dest = CopyLineSlice(dest, src, nil)
 	assert.Equal(t, GenTestLineSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyLineSlice(dest, src)
+	dest = CopyLineSlice(dest, src, nil)
 	assert.Equal(t, GenTestLineSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyLineSlice(dest, []Line{})
+	dest = CopyLineSlice(dest, []Line{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyLineSlice(dest, src)
+	dest = CopyLineSlice(dest, src, nil)
 	assert.Equal(t, GenTestLineSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyLinePtrSlice(t *testing.T) {
 	src := []*Line{}
 	dest := []*Line{}
 	// Test CopyTo empty
-	dest = CopyLinePtrSlice(dest, src)
+	dest = CopyLinePtrSlice(dest, src, nil)
 	assert.Equal(t, []*Line{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestLinePtrSlice()
-	dest = CopyLinePtrSlice(dest, src)
+	dest = CopyLinePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLinePtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyLinePtrSlice(dest, src)
+	dest = CopyLinePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLinePtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyLinePtrSlice(dest, []*Line{})
+	dest = CopyLinePtrSlice(dest, []*Line{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyLinePtrSlice(dest, src)
+	dest = CopyLinePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLinePtrSlice(), dest)
 }
 
@@ -190,12 +190,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufLine(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesLine() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                 {0x02},
-		"FunctionIndex/wrong_wire_type": {0xc},
-		"FunctionIndex/missing_value":   {0x8},
-		"Line/wrong_wire_type":          {0x14},
-		"Line/missing_value":            {0x10},
-		"Column/wrong_wire_type":        {0x1c},
-		"Column/missing_value":          {0x18},
+		"FunctionIndex/wrong_wire_type": []byte{0xc},
+		"FunctionIndex/missing_value":   []byte{0x8},
+		"Line/wrong_wire_type":          []byte{0x14},
+		"Line/missing_value":            []byte{0x10},
+		"Column/wrong_wire_type":        []byte{0x1c},
+		"Column/missing_value":          []byte{0x18},
 	}
 }
 

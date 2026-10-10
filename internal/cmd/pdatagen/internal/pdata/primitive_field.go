@@ -18,7 +18,11 @@ func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType 
 // Set{{ .fieldName }} replaces the {{ .lowerFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) Set{{ .fieldName }}(v {{ .returnType }}) {
 	ms.{{ .stateAccessor }}.AssertMutable()
+	{{- if eq .returnType "string" }}
+	ms.{{ .origAccessor }}.{{ .originFieldName }} = internal.CopyString(ms.{{ .stateAccessor }}, v)
+	{{- else }}
 	ms.{{ .origAccessor }}.{{ .originFieldName }} = v
+	{{- end }}
 }`
 
 const primitiveAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(t *testing.T) {

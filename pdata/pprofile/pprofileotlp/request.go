@@ -17,9 +17,10 @@ type ExportRequest struct {
 
 // NewExportRequest returns an empty ExportRequest.
 func NewExportRequest() ExportRequest {
+	st := internal.NewState()
 	return ExportRequest{
-		orig:  &internal.ExportProfilesServiceRequest{},
-		state: internal.NewState(),
+		orig:  internal.Alloc[internal.ExportProfilesServiceRequest](st),
+		state: st,
 	}
 }
 

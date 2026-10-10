@@ -9,7 +9,6 @@ package internal
 import (
 	"encoding/binary"
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -22,19 +21,8 @@ type TracesRequest struct {
 	FormatVersion  uint32
 }
 
-var (
-	protoPoolTracesRequest = sync.Pool{
-		New: func() any {
-			return &TracesRequest{}
-		},
-	}
-)
-
 func NewTracesRequest() *TracesRequest {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &TracesRequest{}
-	}
-	return protoPoolTracesRequest.Get().(*TracesRequest)
+	return Alloc[TracesRequest](nil)
 }
 
 func DeleteTracesRequest(orig *TracesRequest, nullable bool) {
@@ -50,12 +38,10 @@ func DeleteTracesRequest(orig *TracesRequest, nullable bool) {
 	DeleteTracesData(&orig.TracesData, false)
 
 	orig.Reset()
-	if nullable {
-		protoPoolTracesRequest.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyTracesRequest(dest, src *TracesRequest) *TracesRequest {
+func CopyTracesRequest(dest, src *TracesRequest, st *State) *TracesRequest {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -66,21 +52,21 @@ func CopyTracesRequest(dest, src *TracesRequest) *TracesRequest {
 	}
 
 	if dest == nil {
-		dest = NewTracesRequest()
+		dest = Alloc[TracesRequest](st)
 	}
-	dest.RequestContext = CopyRequestContext(dest.RequestContext, src.RequestContext)
+	dest.RequestContext = CopyRequestContext(dest.RequestContext, src.RequestContext, st)
 
-	CopyTracesData(&dest.TracesData, &src.TracesData)
+	CopyTracesData(&dest.TracesData, &src.TracesData, st)
 
 	dest.FormatVersion = src.FormatVersion
 
 	return dest
 }
 
-func CopyTracesRequestSlice(dest, src []TracesRequest) []TracesRequest {
+func CopyTracesRequestSlice(dest, src []TracesRequest, st *State) []TracesRequest {
 	var newDest []TracesRequest
 	if cap(dest) < len(src) {
-		newDest = make([]TracesRequest, len(src))
+		newDest = AllocSlice[TracesRequest](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -90,20 +76,20 @@ func CopyTracesRequestSlice(dest, src []TracesRequest) []TracesRequest {
 		}
 	}
 	for i := range src {
-		CopyTracesRequest(&newDest[i], &src[i])
+		CopyTracesRequest(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyTracesRequestPtrSlice(dest, src []*TracesRequest) []*TracesRequest {
+func CopyTracesRequestPtrSlice(dest, src []*TracesRequest, st *State) []*TracesRequest {
 	var newDest []*TracesRequest
 	if cap(dest) < len(src) {
-		newDest = make([]*TracesRequest, len(src))
+		newDest = AllocSlice[*TracesRequest](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewTracesRequest()
+			newDest[i] = Alloc[TracesRequest](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -116,11 +102,11 @@ func CopyTracesRequestPtrSlice(dest, src []*TracesRequest) []*TracesRequest {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewTracesRequest()
+			newDest[i] = Alloc[TracesRequest](st)
 		}
 	}
 	for i := range src {
-		CopyTracesRequest(newDest[i], src[i])
+		CopyTracesRequest(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -147,15 +133,21 @@ func (orig *TracesRequest) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *TracesRequest) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *TracesRequest) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "requestContext", "request_context":
-			orig.RequestContext = NewRequestContext()
-			orig.RequestContext.UnmarshalJSON(iter)
+			orig.RequestContext = Alloc[RequestContext](st)
+			orig.RequestContext.UnmarshalJSONState(iter, st)
 		case "tracesData", "traces_data":
 
-			orig.TracesData.UnmarshalJSON(iter)
+			orig.TracesData.UnmarshalJSONState(iter, st)
 		case "formatVersion", "format_version":
+
 			orig.FormatVersion = iter.ReadUint32()
 		default:
 			iter.HandleUnknownField(f)
@@ -206,6 +198,10 @@ func (orig *TracesRequest) MarshalProto(buf []byte) int {
 }
 
 func (orig *TracesRequest) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *TracesRequest) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -231,8 +227,8 @@ func (orig *TracesRequest) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			orig.RequestContext = NewRequestContext()
-			err = orig.RequestContext.UnmarshalProto(buf[startPos:pos])
+			orig.RequestContext = Alloc[RequestContext](st)
+			err = orig.RequestContext.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -248,7 +244,7 @@ func (orig *TracesRequest) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.TracesData.UnmarshalProto(buf[startPos:pos])
+			err = orig.TracesData.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -275,7 +271,7 @@ func (orig *TracesRequest) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestTracesRequest() *TracesRequest {
-	orig := NewTracesRequest()
+	orig := Alloc[TracesRequest](nil)
 	orig.RequestContext = GenTestRequestContext()
 	orig.TracesData = *GenTestTracesData()
 	orig.FormatVersion = uint32(13)
@@ -284,11 +280,11 @@ func GenTestTracesRequest() *TracesRequest {
 
 func GenTestTracesRequestPtrSlice() []*TracesRequest {
 	orig := make([]*TracesRequest, 5)
-	orig[0] = NewTracesRequest()
+	orig[0] = Alloc[TracesRequest](nil)
 	orig[1] = GenTestTracesRequest()
-	orig[2] = NewTracesRequest()
+	orig[2] = Alloc[TracesRequest](nil)
 	orig[3] = GenTestTracesRequest()
-	orig[4] = NewTracesRequest()
+	orig[4] = Alloc[TracesRequest](nil)
 	return orig
 }
 
