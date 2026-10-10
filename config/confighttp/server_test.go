@@ -21,6 +21,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -276,6 +279,120 @@ func TestHTTPServerTLS(t *testing.T) {
 				assert.Equal(t, "tt", string(body))
 				assert.Equal(t, expectedProto, resp.Proto)
 			}
+		})
+	}
+}
+
+func TestHTTPServerTLSHandshakeEOFLogging(t *testing.T) {
+	core, logs := observer.New(zapcore.DebugLevel)
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.Logger = zap.New(
+		core,
+		zap.AddCaller(),
+		zap.AddStacktrace(zapcore.DebugLevel),
+	)
+
+	sc := &ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "127.0.0.1:0",
+			Transport: confignet.TransportTypeTCP,
+		},
+		TLS: configoptional.Some(configtls.ServerConfig{
+			Config: configtls.Config{
+				CertFile: filepath.Join("testdata", "server.crt"),
+				KeyFile:  filepath.Join("testdata", "server.key"),
+			},
+		}),
+	}
+
+	srv, err := sc.ToServer(
+		context.Background(),
+		nil,
+		settings,
+		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+			t.Error("a connect-only probe unexpectedly reached the HTTP handler")
+		}),
+	)
+	require.NoError(t, err)
+
+	ln, err := sc.ToListener(context.Background())
+	require.NoError(t, err)
+
+	done := make(chan error, 1)
+	go func() {
+		done <- srv.Serve(ln)
+	}()
+
+	t.Cleanup(func() {
+		require.NoError(t, srv.Close())
+		require.ErrorIs(t, <-done, http.ErrServerClosed)
+	})
+
+	conn, err := net.DialTimeout("tcp", ln.Addr().String(), time.Second)
+	require.NoError(t, err)
+	require.NoError(t, conn.Close())
+
+	require.Eventually(t, func() bool {
+		return logs.Len() == 1
+	}, time.Second, 10*time.Millisecond)
+
+	entries := logs.All()
+	require.Len(t, entries, 1)
+	require.Contains(t, entries[0].Message, "http: TLS handshake error from ")
+	require.True(t, strings.HasSuffix(entries[0].Message, ": EOF"))
+	assert.Equal(t, zapcore.DebugLevel, entries[0].Level)
+	assert.Equal(t, "server.go", filepath.Base(entries[0].Caller.File))
+	assert.Equal(t, "net/http.(*Server).logf", strings.Split(entries[0].Stack, "\n")[0])
+	assert.NotContains(t, entries[0].Stack, "httpErrorLogWriter.Write")
+}
+
+func TestHTTPErrorLogWriter(t *testing.T) {
+	tests := []struct {
+		name          string
+		message       string
+		expectedLevel zapcore.Level
+	}{
+		{
+			name:          "TLS handshake EOF is debug",
+			message:       "http: TLS handshake error from 127.0.0.1:12345: EOF",
+			expectedLevel: zapcore.DebugLevel,
+		},
+		{
+			name:          "TLS certificate error is error",
+			message:       "http: TLS handshake error from 127.0.0.1:12345: tls: bad certificate",
+			expectedLevel: zapcore.ErrorLevel,
+		},
+		{
+			name:          "unrelated EOF is error",
+			message:       "some other error: EOF",
+			expectedLevel: zapcore.ErrorLevel,
+		},
+		{
+			name:          "other server error is error",
+			message:       "http: panic serving 127.0.0.1:12345: something went wrong",
+			expectedLevel: zapcore.ErrorLevel,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			core, logs := observer.New(zapcore.DebugLevel)
+			logger := zap.New(core)
+
+			writer := &httpErrorLogWriter{
+				logger: logger,
+			}
+
+			message := tt.message + "\n"
+
+			n, err := writer.Write([]byte(message))
+			require.NoError(t, err)
+			require.Equal(t, len(message), n)
+
+			entries := logs.All()
+			require.Len(t, entries, 1)
+			assert.Equal(t, tt.expectedLevel, entries[0].Level)
+			assert.Equal(t, tt.message, entries[0].Message)
 		})
 	}
 }
