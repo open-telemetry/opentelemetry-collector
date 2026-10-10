@@ -116,7 +116,14 @@ type Collector struct {
 	// signalsChannel is used to receive termination signals from the OS.
 	signalsChannel chan os.Signal
 	// asyncErrorChannel is used to signal a fatal error from any component.
-	asyncErrorChannel          chan error
+	// It is drained continuously by a background goroutine for the entire
+	// duration of Run, so that a component reporting a fatal error never
+	// blocks indefinitely, even while the control loop below is not actively
+	// selecting on it (e.g. during startup, a configuration reload, or shutdown).
+	asyncErrorChannel chan error
+	// fatalErrChan receives the first fatal error forwarded from
+	// asyncErrorChannel, for the control loop to act on.
+	fatalErrChan               chan error
 	bc                         *bufferedCore
 	updateConfigProviderLogger func(core zapcore.Core)
 
@@ -150,6 +157,7 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 		// the number of signals getting notified on is recommended.
 		signalsChannel:             make(chan os.Signal, 3),
 		asyncErrorChannel:          make(chan error),
+		fatalErrChan:               make(chan error, 1),
 		configProvider:             configProvider,
 		bc:                         bc,
 		updateConfigProviderLogger: cc.SetCore,
@@ -314,6 +322,13 @@ func (col *Collector) reloadConfiguration(ctx context.Context) error {
 		return fmt.Errorf("failed to shutdown the retiring config: %w", err)
 	}
 
+	// Drain any fatal error left over from the retiring components so it
+	// doesn't immediately terminate the replacement we're about to start.
+	select {
+	case <-col.fatalErrChan:
+	default:
+	}
+
 	if err := col.setupConfigurationComponents(ctx); err != nil {
 		return fmt.Errorf("failed to setup configuration components: %w", err)
 	}
@@ -426,6 +441,43 @@ func (col *Collector) Run(ctx context.Context) error {
 	default:
 	}
 
+	// Drain asyncErrorChannel for the entire lifetime of Run, independently of
+	// the control loop below, so components can always report a fatal error
+	// without blocking. Only the first reported error is forwarded to the
+	// control loop via fatalErrChan; a single fatal error is enough to trigger
+	// shutdown, so subsequent ones are dropped rather than risking a blocked
+	// reporting goroutine.
+	pumpDone := make(chan struct{})
+	defer close(pumpDone)
+	go func() {
+		for {
+			select {
+			case err := <-col.asyncErrorChannel:
+				select {
+				case col.fatalErrChan <- err:
+				default:
+				}
+			case <-pumpDone:
+				// Drain any sender still blocked on asyncErrorChannel before
+				// returning, since select does not guarantee this case runs
+				// first even if asyncErrorChannel is also ready, which would
+				// otherwise leave that sender blocked forever.
+				for {
+					select {
+					case <-col.asyncErrorChannel:
+					default:
+						return
+					}
+				}
+			}
+		}
+	}()
+
+	select {
+	case <-col.fatalErrChan:
+	default:
+	}
+
 	// setupConfigurationComponents is the "main" function responsible for startup
 	if err := col.setupConfigurationComponents(ctx); err != nil {
 		col.setCollectorState(StateClosed)
@@ -467,9 +519,16 @@ LOOP:
 				break LOOP
 			}
 			if err := col.reloadConfiguration(ctx); err != nil {
+				// A component may have reported a fatal error concurrently with
+				// the reload failing; surface it instead of dropping it silently.
+				select {
+				case fatalErr := <-col.fatalErrChan:
+					err = errors.Join(err, fatalErr)
+				default:
+				}
 				return err
 			}
-		case err := <-col.asyncErrorChannel:
+		case err := <-col.fatalErrChan:
 			col.service.Logger().Error("Asynchronous error received, terminating process", zap.Error(err))
 			break LOOP
 		case s := <-col.signalsChannel:
@@ -478,6 +537,13 @@ LOOP:
 				break LOOP
 			}
 			if err := col.reloadConfiguration(ctx); err != nil {
+				// A component may have reported a fatal error concurrently with
+				// the reload failing; surface it instead of dropping it silently.
+				select {
+				case fatalErr := <-col.fatalErrChan:
+					err = errors.Join(err, fatalErr)
+				default:
+				}
 				return err
 			}
 		case <-col.shutdownChan:
