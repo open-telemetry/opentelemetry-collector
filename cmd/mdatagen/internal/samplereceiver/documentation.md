@@ -128,6 +128,14 @@ Bytes of memory in use.
 | ---- | ----------- | ------ | ----------------- | ------------------- |
 | state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` | Recommended | [state](https://github.com/open-telemetry/semantic-conventions/blob/v1.40.0/docs/registry/attributes/system.md#system-memory-state) |
 
+### test.histogram
+
+Test histogram metric
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Stability |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Histogram | Double | Unspecified | Development |
+
 ## Optional Metrics
 
 The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:

@@ -365,6 +365,15 @@ metrics:
       monotonic: false
     attributes: [state]
 
+  test.histogram:
+    enabled: true
+    description: Test histogram metric
+    stability: development
+    unit: s
+    histogram:
+      value_type: double
+      bucket_boundaries: [1, 10, 100]
+
 telemetry:
   metrics:
     batch_size_trigger_send:

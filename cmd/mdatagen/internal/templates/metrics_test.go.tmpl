@@ -357,11 +357,18 @@ func TestMetricsBuilder(t *testing.T) {
 						dp := mi.{{ $metric.Data.Type }}().DataPoints().At(0)
 						assert.Equal(t, start, dp.StartTimestamp())
 						assert.Equal(t, ts, dp.Timestamp())
+						{{- if eq $metric.Data.Type "Histogram" }}
+						assert.Equal(t, uint64(1), dp.Count())
+						assert.InDelta(t, float64(1), dp.Sum(), 0.01)
+						assert.Equal(t, []float64{1, 10, 100}, dp.ExplicitBounds().AsRaw())
+						assert.Equal(t, []uint64{1, 0, 0, 0}, dp.BucketCounts().AsRaw())
+						{{- else }}
 						assert.Equal(t, pmetric.NumberDataPointValueType{{ $metric.Data.MetricValueType }}, dp.ValueType())
 						{{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
 						assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
 						{{- else }}
 						assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
+						{{- end }}
 						{{- end }}
 						{{- range $i, $attr := $metric.Attributes }}
 						{{- if ne (attributeInfo $attr).RequirementLevel.String "Opt-In" }}
@@ -453,11 +460,18 @@ func TestMetricsBuilder(t *testing.T) {
 					dp := mi.{{ $metric.Data.Type }}().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
+					{{- if eq $metric.Data.Type "Histogram" }}
+					assert.Equal(t, uint64(1), dp.Count())
+					assert.InDelta(t, float64(1), dp.Sum(), 0.01)
+					assert.Equal(t, []float64{1, 10, 100}, dp.ExplicitBounds().AsRaw())
+					assert.Equal(t, []uint64{1, 0, 0, 0}, dp.BucketCounts().AsRaw())
+					{{- else }}
 					assert.Equal(t, pmetric.NumberDataPointValueType{{ $metric.Data.MetricValueType }}, dp.ValueType())
 					{{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
-					assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value(), 0.01)
+					assert.InDelta(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{$metric.Data.MetricValueType }}Value(), 0.01)
 					{{- else }}
 					assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
+					{{- end }}
 					{{- end }}
 
 					{{- range $i, $attr := $metric.Attributes }}
@@ -473,6 +487,62 @@ func TestMetricsBuilder(t *testing.T) {
 		})
 	}
 }
+
+{{- range $name, $metric := .Metrics }}
+{{- if eq $metric.Data.Type "Histogram" }}
+
+func Test{{ $name.Render }}BucketCounts(t *testing.T) {
+        tests := []struct {
+                name         string
+                value        float64
+                bucketCounts []uint64
+        }{
+                {
+                        name:         "first bucket",
+                        value:        1,
+                        bucketCounts: []uint64{1, 0, 0, 0},
+                },
+                {
+                        name:         "second bucket",
+                        value:        10,
+                        bucketCounts: []uint64{0, 1, 0, 0},
+                },
+                {
+                        name:         "third bucket",
+                        value:        100,
+                        bucketCounts: []uint64{0, 0, 1, 0},
+                },
+                {
+                        name:         "overflow bucket",
+                        value:        101,
+                        bucketCounts: []uint64{0, 0, 0, 1},
+                },
+        }
+
+        for _, tt := range tests {
+                t.Run(tt.name, func(t *testing.T) {
+                        start := pcommon.Timestamp(1_000_000_000)
+                        ts := pcommon.Timestamp(1_000_001_000)
+
+                        settings := receivertest.NewNopSettings(receivertest.NopType)
+                        settings.Logger = zap.NewNop()
+                        mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "default"), settings, WithStartTime(start))
+
+                        mb.Record{{ $name.Render }}DataPoint(ts, tt.value)
+
+                        metrics := mb.Emit()
+                        dp := metrics.ResourceMetrics().At(0).
+                                ScopeMetrics().At(0).
+                                Metrics().At(0).
+                                Histogram().DataPoints().At(0)
+
+                        assert.Equal(t, []float64{1, 10, 100}, dp.ExplicitBounds().AsRaw())
+                        assert.Equal(t, tt.bucketCounts, dp.BucketCounts().AsRaw())
+                })
+        }
+}
+{{- end }}
+{{- end }}
 
 {{- $hasEntityMetrics := false }}
 {{- range $name, $metric := .Metrics }}{{- if $metric.Entity }}{{- $hasEntityMetrics = true }}{{- end }}{{- end }}

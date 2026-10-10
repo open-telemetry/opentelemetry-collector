@@ -27,6 +27,8 @@ all_set:
     system.memory.usage:
       enabled: true
       attributes: ["state"]
+    test.histogram:
+      enabled: true
   events:
     default.event:
       enabled: true
@@ -83,6 +85,8 @@ reaggregate_set:
     system.memory.usage:
       enabled: true
       attributes: []
+    test.histogram:
+      enabled: true
   events:
     default.event:
       enabled: true
@@ -139,6 +143,8 @@ none_set:
     system.memory.usage:
       enabled: false
       attributes: ["state"]
+    test.histogram:
+      enabled: false
   events:
     default.event:
       enabled: false
