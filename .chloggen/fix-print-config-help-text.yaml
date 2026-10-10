@@ -1,0 +1,8 @@
+change_type: bug_fix
+component: otelcol
+note: Remove the stale feature-gate requirement from the `print-config` command help text
+issues: [16143]
+subtext: |
+  The `otelcol.printInitialConfig` feature gate was removed in #15425, but the command's help text
+  still instructed users to pass it. Passing the gate now fails as an unknown gate.
+change_logs: [user]
