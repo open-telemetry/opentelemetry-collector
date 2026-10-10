@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: cmd/schemagen
+note: "Handle file-not-found errors when loading schemas"
+issues: [15925]
+subtext:
+change_logs: [user]
