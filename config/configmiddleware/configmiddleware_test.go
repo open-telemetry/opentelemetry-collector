@@ -5,6 +5,8 @@ package configmiddleware
 
 import (
 	"context"
+	"errors"
+	"net"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -253,4 +255,99 @@ func TestConfig_GetGRPCClientOptions(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConfig_GetDialer(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name       string
+		middleware Config
+		extensions map[component.ID]component.Component
+		wantErr    error
+	}{
+		{
+			name: "found_and_valid",
+			middleware: Config{
+				ID: testID,
+			},
+			extensions: map[component.ID]component.Component{
+				testID: struct {
+					extension.Extension
+					extensionmiddleware.GetDialerFunc
+				}{
+					Extension: extensionmiddlewaretest.NewNop(),
+					GetDialerFunc: func(_ context.Context) (extensionmiddleware.DialContextFunc, error) {
+						return func(_ context.Context, _, _ string) (net.Conn, error) {
+							return nil, nil
+						}, nil
+					},
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "middleware_not_found",
+			middleware: Config{
+				ID: testID,
+			},
+			extensions: map[component.ID]component.Component{},
+			wantErr:    errMiddlewareNotFound,
+		},
+		{
+			name: "middleware_wrong_type",
+			middleware: Config{
+				ID: testID,
+			},
+			extensions: map[component.ID]component.Component{
+				testID: mockWrongType{},
+			},
+			wantErr: errNotDialer,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			value, err := tt.middleware.GetDialer(ctx, tt.extensions)
+
+			if tt.wantErr != nil {
+				require.ErrorIs(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, value)
+			}
+		})
+	}
+}
+
+func TestConfig_GetListener(t *testing.T) {
+	ctx := context.Background()
+	config := Config{ID: testID}
+
+	_, err := config.GetListener(ctx, nil)
+	require.ErrorIs(t, err, errMiddlewareNotFound)
+
+	_, err = config.GetListener(ctx, map[component.ID]component.Component{testID: mockWrongType{}})
+	require.ErrorIs(t, err, errNotListener)
+
+	wantErr := errors.New("listener failure")
+	listener := func(fn extensionmiddleware.GetListenerFunc) map[component.ID]component.Component {
+		return map[component.ID]component.Component{testID: struct {
+			extension.Extension
+			extensionmiddleware.GetListenerFunc
+		}{extensionmiddlewaretest.NewNop(), fn}}
+	}
+	_, err = config.GetListener(ctx, listener(func(context.Context) (extensionmiddleware.ListenContextFunc, error) {
+		return nil, wantErr
+	}))
+	require.ErrorIs(t, err, wantErr)
+
+	_, err = config.GetListener(ctx, listener(nil))
+	require.ErrorContains(t, err, "nil listen function")
+
+	listen, err := config.GetListener(ctx, listener(func(context.Context) (extensionmiddleware.ListenContextFunc, error) {
+		return func(context.Context, string, string) (net.Listener, error) { return nil, nil }, nil
+	}))
+	require.NoError(t, err)
+	require.NotNil(t, listen)
 }

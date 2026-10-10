@@ -32,6 +32,9 @@ type ClientConfig struct {
 	// Compression the compression key for supported compression types within collector.
 	Compression configcompression.Type `mapstructure:"compression,omitempty"`
 
+	// Dialer dialer is a middleware handler customizing how the client will dial connections over TCP.
+	Dialer configoptional.Optional[configmiddleware.Config] `mapstructure:"dialer,omitempty"`
+
 	// Endpoint the target to which the exporter is going to send traces or metrics, using the gRPC protocol.
 	// The valid syntax is described at https://github.com/grpc/grpc/blob/master/doc/naming.md.
 	Endpoint string `mapstructure:"endpoint,omitempty"`
@@ -88,6 +91,7 @@ func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
 		Auth:         configoptional.None[configauth.Config](),
 		BalancerName: "round_robin",
+		Dialer:       configoptional.None[configmiddleware.Config](),
 		Keepalive:    configoptional.Some(NewDefaultKeepaliveClientConfig()),
 		TLS:          configtls.NewDefaultClientConfig(),
 	}
@@ -197,6 +201,9 @@ type ServerConfig struct {
 	// Keepalive anchor for all the settings related to keepalive.
 	Keepalive configoptional.Optional[KeepaliveServerConfig] `mapstructure:"keepalive,omitempty"`
 
+	// Listener selects a middleware extension that creates the network listener.
+	Listener configoptional.Optional[configmiddleware.Config] `mapstructure:"listener,omitempty"`
+
 	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
 	// It has effect only for streaming RPCs.
 	MaxConcurrentStreams uint32 `mapstructure:"max_concurrent_streams,omitempty"`
@@ -251,6 +258,7 @@ func NewDefaultServerConfig() ServerConfig {
 		NetAddr:   addrConfig,
 		Auth:      configoptional.None[configauth.Config](),
 		Keepalive: configoptional.Some(NewDefaultKeepaliveServerConfig()),
+		Listener:  configoptional.None[configmiddleware.Config](),
 		TLS:       configoptional.None[configtls.ServerConfig](),
 	}
 }

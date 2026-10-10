@@ -114,7 +114,7 @@ func (r *otlpReceiver) startGRPCServer(ctx context.Context, host component.Host)
 	}
 
 	var gln net.Listener
-	if gln, err = grpcCfg.NetAddr.Listen(ctx); err != nil {
+	if gln, err = grpcCfg.ToListener(ctx, host.GetExtensions()); err != nil {
 		return err
 	}
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", gln.Addr().String()))
@@ -169,7 +169,7 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	}
 
 	var hln net.Listener
-	if hln, err = httpCfg.ServerConfig.ToListener(ctx); err != nil {
+	if hln, err = httpCfg.ServerConfig.ToListener(ctx, host.GetExtensions()); err != nil {
 		return err
 	}
 	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", hln.Addr().String()))
