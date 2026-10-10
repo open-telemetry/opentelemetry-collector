@@ -1028,3 +1028,122 @@ func assertNoDuplicateDictEntries(t *testing.T, d ProfilesDictionary) {
 		}
 	}
 }
+
+// TestProfilesMergeTo_ReservesDictionaryZeroValues checks that merging into an
+// empty destination leaves index 0 of every dictionary table holding the zero
+// value for that table, which ProfilesDictionary in profiles.proto requires.
+// Without that, the first entry the merge appends lands at index 0 and every
+// unset index in the merged data resolves to it.
+// See https://github.com/open-telemetry/opentelemetry-collector/issues/15661.
+func TestProfilesMergeTo_ReservesDictionaryZeroValues(t *testing.T) {
+	src := NewProfiles()
+	srcDic := src.Dictionary()
+	srcDic.StringTable().Append("", "inuse_space", "bytes", "main.go")
+	srcDic.AttributeTable().AppendEmpty()
+	srcDic.StackTable().AppendEmpty()
+	srcDic.LocationTable().AppendEmpty()
+	srcDic.FunctionTable().AppendEmpty()
+	srcDic.MappingTable().AppendEmpty()
+	srcDic.LinkTable().AppendEmpty()
+
+	srcDic.FunctionTable().AppendEmpty().SetFilenameStrindex(3)
+	srcDic.LocationTable().AppendEmpty().Lines().AppendEmpty().SetFunctionIndex(1)
+	srcDic.StackTable().AppendEmpty().LocationIndices().Append(1)
+
+	srcProf := src.ResourceProfiles().AppendEmpty().
+		ScopeProfiles().AppendEmpty().
+		Profiles().AppendEmpty()
+	srcProf.SampleType().SetTypeStrindex(1)
+	srcProf.SampleType().SetUnitStrindex(2)
+	srcProf.Samples().AppendEmpty().SetStackIndex(1)
+	// PeriodType is left unset, so both of its indices stay at 0 and must still
+	// resolve to the empty string once the merge is done.
+
+	dest := NewProfiles()
+	require.NoError(t, src.MergeTo(dest))
+
+	dic := dest.Dictionary()
+	assert.Empty(t, dic.StringTable().At(0))
+	assert.True(t, dic.AttributeTable().At(0).Equal(NewKeyValueAndUnit()))
+	assert.True(t, dic.StackTable().At(0).Equal(NewStack()))
+	assert.True(t, dic.LocationTable().At(0).Equal(NewLocation()))
+	assert.True(t, dic.MappingTable().At(0).Equal(NewMapping()))
+	assert.True(t, dic.LinkTable().At(0).Equal(NewLink()))
+	assert.Equal(t, NewFunction().FilenameStrindex(), dic.FunctionTable().At(0).FilenameStrindex())
+
+	prof := dest.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+	assert.Equal(t, "inuse_space", dic.StringTable().At(int(prof.SampleType().TypeStrindex())))
+	assert.Equal(t, "bytes", dic.StringTable().At(int(prof.SampleType().UnitStrindex())))
+	assert.Empty(t, dic.StringTable().At(int(prof.PeriodType().TypeStrindex())))
+	assert.Empty(t, dic.StringTable().At(int(prof.PeriodType().UnitStrindex())))
+
+	// The sample still points at the stack it came from, not at the zero value.
+	stackIdx := prof.Samples().At(0).StackIndex()
+	assert.Positive(t, stackIdx)
+	locIdx := dic.StackTable().At(int(stackIdx)).LocationIndices().At(0)
+	fnIdx := dic.LocationTable().At(int(locIdx)).Lines().At(0).FunctionIndex()
+	assert.Equal(t, "main.go", dic.StringTable().At(int(dic.FunctionTable().At(int(fnIdx)).FilenameStrindex())))
+}
+
+// TestProfilesMergeTo_KeepsExistingDictionaryEntries checks that a destination
+// that already holds entries is left alone. Its tables may not start with the
+// zero value, and moving them to make room would break every index already
+// pointing into them.
+func TestProfilesMergeTo_KeepsExistingDictionaryEntries(t *testing.T) {
+	dest := NewProfiles()
+	destDic := dest.Dictionary()
+	destDic.StringTable().Append("cpu", "nanoseconds")
+	destProf := dest.ResourceProfiles().AppendEmpty().
+		ScopeProfiles().AppendEmpty().
+		Profiles().AppendEmpty()
+	destProf.SampleType().SetTypeStrindex(0)
+	destProf.SampleType().SetUnitStrindex(1)
+
+	src := NewProfiles()
+	src.Dictionary().StringTable().Append("", "alloc_space")
+	srcProf := src.ResourceProfiles().AppendEmpty().
+		ScopeProfiles().AppendEmpty().
+		Profiles().AppendEmpty()
+	srcProf.SampleType().SetTypeStrindex(1)
+
+	require.NoError(t, src.MergeTo(dest))
+
+	assert.Equal(t, "cpu", destDic.StringTable().At(0))
+	assert.Equal(t, "nanoseconds", destDic.StringTable().At(1))
+	assert.Equal(t, "cpu", destDic.StringTable().At(int(destProf.SampleType().TypeStrindex())))
+	assert.Equal(t, "nanoseconds", destDic.StringTable().At(int(destProf.SampleType().UnitStrindex())))
+
+	mergedProf := dest.ResourceProfiles().At(1).ScopeProfiles().At(0).Profiles().At(0)
+	assert.Equal(t, "alloc_space", destDic.StringTable().At(int(mergedProf.SampleType().TypeStrindex())))
+}
+
+func TestReserveDictionaryZeroValues(t *testing.T) {
+	dic := NewProfilesDictionary()
+	dic.StringTable().Append("cpu")
+	dic.LinkTable().AppendEmpty().SetSpanID(pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+
+	reserveDictionaryZeroValues(dic)
+
+	// Tables that already hold entries are untouched.
+	assert.Equal(t, 1, dic.StringTable().Len())
+	assert.Equal(t, "cpu", dic.StringTable().At(0))
+	assert.Equal(t, 1, dic.LinkTable().Len())
+	assert.Equal(t, pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}), dic.LinkTable().At(0).SpanID())
+
+	// Empty ones get the zero value at index 0.
+	assert.Equal(t, 1, dic.AttributeTable().Len())
+	assert.Equal(t, 1, dic.StackTable().Len())
+	assert.Equal(t, 1, dic.LocationTable().Len())
+	assert.Equal(t, 1, dic.FunctionTable().Len())
+	assert.Equal(t, 1, dic.MappingTable().Len())
+
+	// Calling it again adds nothing.
+	reserveDictionaryZeroValues(dic)
+	assert.Equal(t, 1, dic.StringTable().Len())
+	assert.Equal(t, 1, dic.AttributeTable().Len())
+	assert.Equal(t, 1, dic.StackTable().Len())
+	assert.Equal(t, 1, dic.LocationTable().Len())
+	assert.Equal(t, 1, dic.FunctionTable().Len())
+	assert.Equal(t, 1, dic.MappingTable().Len())
+	assert.Equal(t, 1, dic.LinkTable().Len())
+}
