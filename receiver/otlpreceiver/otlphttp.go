@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/internal/statusutil"
+	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
@@ -122,6 +123,11 @@ func handleLogs(resp http.ResponseWriter, req *http.Request, logsReceiver *logs.
 func handleProfiles(resp http.ResponseWriter, req *http.Request, profilesReceiver *profiles.Receiver) {
 	enc, ok := readContentType(resp, req)
 	if !ok {
+		return
+	}
+
+	if err := pprofileotlp.ValidateDevelopmentVersion(req.Header.Values(pprofileotlp.DevelopmentVersionHeader)); err != nil {
+		writeError(resp, enc, err, http.StatusBadRequest)
 		return
 	}
 
