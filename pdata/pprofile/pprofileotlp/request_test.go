@@ -149,3 +149,84 @@ func requireProfilesEqualIgnoringAppendedStrings(t *testing.T, want, got pprofil
 	gotStrings.FromRaw(gotStrings.AsRaw()[:wantStrings.Len()])
 	require.Equal(t, w, g)
 }
+
+func TestRejectInvalidUTF8(t *testing.T) {
+	t.Run("invalid dictionary", func(t *testing.T) {
+		pd := pprofile.NewProfiles()
+		pd.Dictionary().StringTable().Append(string([]byte{0xff}))
+		profiles := pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles()
+		profiles.AppendEmpty().Samples().AppendEmpty()
+
+		assert.False(t, NewExportRequestFromProfiles(pd).ValidateUTF8())
+		assert.Equal(t, 1, NewExportRequestFromProfiles(pd).RejectInvalidUTF8())
+		assert.Equal(t, 0, pd.SampleCount())
+	})
+
+	t.Run("invalid resource", func(t *testing.T) {
+		pd := pprofile.NewProfiles()
+		rp := pd.ResourceProfiles().AppendEmpty()
+		rp.Resource().Attributes().PutStr("bad", string([]byte{0xff}))
+		rp.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Samples().AppendEmpty()
+
+		assert.Equal(t, 1, NewExportRequestFromProfiles(pd).RejectInvalidUTF8())
+		assert.Equal(t, 0, pd.SampleCount())
+	})
+
+	t.Run("invalid scope", func(t *testing.T) {
+		pd := pprofile.NewProfiles()
+		sp := pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
+		sp.Scope().SetName(string([]byte{0xff}))
+		sp.Profiles().AppendEmpty().Samples().AppendEmpty()
+
+		assert.Equal(t, 1, NewExportRequestFromProfiles(pd).RejectInvalidUTF8())
+		assert.Equal(t, 0, pd.SampleCount())
+	})
+
+	t.Run("invalid profile", func(t *testing.T) {
+		pd := pprofile.NewProfiles()
+		profiles := pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles()
+		profiles.AppendEmpty().Samples().AppendEmpty()
+		bad := profiles.AppendEmpty()
+		bad.SetOriginalPayloadFormat(string([]byte{0xff}))
+		bad.Samples().AppendEmpty()
+		bad.Samples().AppendEmpty()
+		bad.Samples().AppendEmpty()
+
+		assert.Equal(t, 1, NewExportRequestFromProfiles(pd).RejectInvalidUTF8())
+		assert.Equal(t, 1, pd.ProfileCount())
+		assert.Equal(t, 1, pd.SampleCount())
+	})
+
+	t.Run("invalid scope with multi-sample profiles", func(t *testing.T) {
+		pd := pprofile.NewProfiles()
+		sp := pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
+		sp.Scope().SetName(string([]byte{0xff}))
+		for range 2 {
+			p := sp.Profiles().AppendEmpty()
+			p.Samples().AppendEmpty()
+			p.Samples().AppendEmpty()
+		}
+
+		assert.Equal(t, 2, NewExportRequestFromProfiles(pd).RejectInvalidUTF8())
+		assert.Equal(t, 0, pd.ProfileCount())
+	})
+
+	t.Run("empty containers are kept", func(t *testing.T) {
+		pd := pprofile.NewProfiles()
+		pd.ResourceProfiles().AppendEmpty()
+		pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
+
+		assert.Equal(t, 0, NewExportRequestFromProfiles(pd).RejectInvalidUTF8())
+		assert.Equal(t, 2, pd.ResourceProfiles().Len())
+		assert.Equal(t, 1, pd.ResourceProfiles().At(1).ScopeProfiles().Len())
+	})
+
+	t.Run("emptied containers are dropped", func(t *testing.T) {
+		pd := pprofile.NewProfiles()
+		bad := pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+		bad.SetOriginalPayloadFormat(string([]byte{0xff}))
+
+		assert.Equal(t, 1, NewExportRequestFromProfiles(pd).RejectInvalidUTF8())
+		assert.Equal(t, 0, pd.ResourceProfiles().Len())
+	})
+}
