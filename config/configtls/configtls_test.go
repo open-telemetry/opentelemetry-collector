@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
@@ -1196,4 +1197,323 @@ func TestInsecureCipherSuites(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCRLValidation(t *testing.T) {
+	tests := []struct {
+		name      string
+		tlsConfig Config
+		errorTxt  string
+	}{
+		{
+			name:      "valid CRL file config",
+			tlsConfig: Config{CRLFile: filepath.Join("testdata", "test-crl.pem")},
+		},
+		{
+			name:      "valid CRL file with reload interval",
+			tlsConfig: Config{CRLFile: filepath.Join("testdata", "test-crl.pem"), CRLReloadInterval: 5 * time.Minute},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := test.tlsConfig.Validate()
+			if test.errorTxt == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, test.errorTxt)
+			}
+		})
+	}
+}
+
+func TestCRLLoadTLSConfig(t *testing.T) {
+	tests := []struct {
+		name        string
+		options     Config
+		expectError string
+	}{
+		{
+			name: "should load CRL from file",
+			options: Config{
+				CRLFile: filepath.Join("testdata", "test-crl.pem"),
+			},
+		},
+		{
+			name: "should load empty CRL from file",
+			options: Config{
+				CRLFile: filepath.Join("testdata", "test-crl-empty.pem"),
+			},
+		},
+		{
+			name: "should load CRL with reload interval",
+			options: Config{
+				CRLFile:           filepath.Join("testdata", "test-crl.pem"),
+				CRLReloadInterval: 10 * time.Minute,
+			},
+		},
+		{
+			name: "should fail with non-existent CRL file",
+			options: Config{
+				CRLFile: filepath.Join("testdata", "non-existent-crl.pem"),
+			},
+			expectError: "failed to load CRL file",
+		},
+		{
+			name: "should fail with invalid CRL file content",
+			options: Config{
+				CRLFile: filepath.Join("testdata", "testCA-bad.txt"),
+			},
+			expectError: "failed to decode CRL PEM block",
+		},
+		{
+			name: "should fail with wrong PEM block type in CRL file",
+			options: Config{
+				CRLFile: filepath.Join("testdata", "ca-1.crt"),
+			},
+			expectError: "unexpected PEM block type for CRL",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg, err := test.options.loadTLSConfig()
+			if test.expectError != "" {
+				assert.ErrorContains(t, err, test.expectError)
+			} else {
+				require.NoError(t, err)
+				assert.NotNil(t, cfg)
+				assert.NotNil(t, cfg.VerifyPeerCertificate)
+			}
+		})
+	}
+}
+
+func TestCRLVerifyPeerCertificate(t *testing.T) {
+	// Load the revoked certificate raw bytes for testing
+	revokedCertPEM, err := os.ReadFile(filepath.Join("testdata", "crl-revoked-server.crt"))
+	require.NoError(t, err)
+	revokedBlock, _ := pem.Decode(revokedCertPEM)
+	require.NotNil(t, revokedBlock)
+
+	// Load the valid certificate raw bytes for testing
+	validCertPEM, err := os.ReadFile(filepath.Join("testdata", "crl-valid-server.crt"))
+	require.NoError(t, err)
+	validBlock, _ := pem.Decode(validCertPEM)
+	require.NotNil(t, validBlock)
+
+	// Load the CRL
+	crlPEM, err := os.ReadFile(filepath.Join("testdata", "test-crl.pem"))
+	require.NoError(t, err)
+	revocationList, err := parseCRL(crlPEM)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name        string
+		rawCerts    [][]byte
+		crl         *x509.RevocationList
+		expectError string
+	}{
+		{
+			name:     "valid certificate not in CRL",
+			rawCerts: [][]byte{validBlock.Bytes},
+			crl:      revocationList,
+		},
+		{
+			name:        "revoked certificate in CRL",
+			rawCerts:    [][]byte{revokedBlock.Bytes},
+			crl:         revocationList,
+			expectError: "certificate with serial number 200 has been revoked",
+		},
+		{
+			name:     "nil CRL should pass all certificates",
+			rawCerts: [][]byte{revokedBlock.Bytes},
+			crl:      nil,
+		},
+		{
+			name:     "empty rawCerts with valid CRL",
+			rawCerts: [][]byte{},
+			crl:      revocationList,
+		},
+		{
+			name:        "invalid raw certificate data",
+			rawCerts:    [][]byte{[]byte("invalid-cert-data")},
+			crl:         revocationList,
+			expectError: "failed to parse peer certificate for CRL check",
+		},
+		{
+			name:     "multiple valid certificates",
+			rawCerts: [][]byte{validBlock.Bytes, validBlock.Bytes},
+			crl:      revocationList,
+		},
+		{
+			name:        "one revoked among multiple certificates",
+			rawCerts:    [][]byte{validBlock.Bytes, revokedBlock.Bytes},
+			crl:         revocationList,
+			expectError: "certificate with serial number 200 has been revoked",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := verifyCRL(test.rawCerts, test.crl)
+			if test.expectError != "" {
+				assert.ErrorContains(t, err, test.expectError)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestCRLClientConfig(t *testing.T) {
+	// Test that CRL is applied when loading client TLS config
+	cfg := ClientConfig{
+		Config: Config{
+			CAFile:  filepath.Join("testdata", "crl-ca.crt"),
+			CRLFile: filepath.Join("testdata", "test-crl.pem"),
+		},
+	}
+	tlsCfg, err := cfg.LoadTLSConfig(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, tlsCfg)
+	assert.NotNil(t, tlsCfg.VerifyPeerCertificate, "VerifyPeerCertificate should be set when CRL is configured")
+}
+
+func TestCRLServerConfig(t *testing.T) {
+	// Test that CRL is applied when loading server TLS config
+	cfg := ServerConfig{
+		Config: Config{
+			CertFile: filepath.Join("testdata", "crl-valid-server.crt"),
+			KeyFile:  filepath.Join("testdata", "crl-valid-server.key"),
+			CRLFile:  filepath.Join("testdata", "test-crl.pem"),
+		},
+		ClientCAFile: filepath.Join("testdata", "crl-ca.crt"),
+	}
+	tlsCfg, err := cfg.LoadTLSConfig(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, tlsCfg)
+	assert.NotNil(t, tlsCfg.VerifyPeerCertificate, "VerifyPeerCertificate should be set when CRL is configured")
+}
+
+func TestCRLNoCRLConfigured(t *testing.T) {
+	// Test that VerifyPeerCertificate is nil when no CRL is configured
+	cfg := Config{
+		CAFile: filepath.Join("testdata", "ca-1.crt"),
+	}
+	tlsCfg, err := cfg.loadTLSConfig()
+	require.NoError(t, err)
+	require.NotNil(t, tlsCfg)
+	assert.Nil(t, tlsCfg.VerifyPeerCertificate, "VerifyPeerCertificate should be nil when no CRL is configured")
+}
+
+func TestCRLReloadInterval(t *testing.T) {
+	// Create a temporary CRL file for reload testing
+	tmpDir := t.TempDir()
+	crlFile := filepath.Join(tmpDir, "test.crl")
+
+	// Copy the empty CRL initially (no revoked certs)
+	emptyCRL, err := os.ReadFile(filepath.Join("testdata", "test-crl-empty.pem"))
+	require.NoError(t, err)
+	err = os.WriteFile(crlFile, emptyCRL, 0o600)
+	require.NoError(t, err)
+
+	// Load with a very short reload interval
+	cfg := Config{
+		CRLFile:           crlFile,
+		CRLReloadInterval: 1 * time.Millisecond,
+	}
+	tlsCfg, err := cfg.loadTLSConfig()
+	require.NoError(t, err)
+	require.NotNil(t, tlsCfg)
+	require.NotNil(t, tlsCfg.VerifyPeerCertificate)
+
+	// Load the revoked certificate
+	revokedCertPEM, err := os.ReadFile(filepath.Join("testdata", "crl-revoked-server.crt"))
+	require.NoError(t, err)
+	revokedBlock, _ := pem.Decode(revokedCertPEM)
+	require.NotNil(t, revokedBlock)
+
+	// With the empty CRL, the revoked cert should pass
+	err = tlsCfg.VerifyPeerCertificate([][]byte{revokedBlock.Bytes}, nil)
+	assert.NoError(t, err, "revoked cert should pass with empty CRL")
+
+	// Now replace the CRL file with one that contains revocations
+	fullCRL, err := os.ReadFile(filepath.Join("testdata", "test-crl.pem"))
+	require.NoError(t, err)
+	err = os.WriteFile(crlFile, fullCRL, 0o600)
+	require.NoError(t, err)
+
+	// Wait for reload interval to elapse
+	time.Sleep(5 * time.Millisecond)
+
+	// Now the revoked cert should be rejected after reload
+	err = tlsCfg.VerifyPeerCertificate([][]byte{revokedBlock.Bytes}, nil)
+	assert.ErrorContains(t, err, "certificate with serial number 200 has been revoked")
+}
+
+func TestCRLReloadIntervalZero(t *testing.T) {
+	// With zero reload interval, CRL should be loaded once and never reloaded
+	tmpDir := t.TempDir()
+	crlFile := filepath.Join(tmpDir, "test.crl")
+
+	// Start with empty CRL
+	emptyCRL, err := os.ReadFile(filepath.Join("testdata", "test-crl-empty.pem"))
+	require.NoError(t, err)
+	err = os.WriteFile(crlFile, emptyCRL, 0o600)
+	require.NoError(t, err)
+
+	cfg := Config{
+		CRLFile:           crlFile,
+		CRLReloadInterval: 0, // no reload
+	}
+	tlsCfg, err := cfg.loadTLSConfig()
+	require.NoError(t, err)
+	require.NotNil(t, tlsCfg)
+
+	// Load the revoked certificate
+	revokedCertPEM, err := os.ReadFile(filepath.Join("testdata", "crl-revoked-server.crt"))
+	require.NoError(t, err)
+	revokedBlock, _ := pem.Decode(revokedCertPEM)
+	require.NotNil(t, revokedBlock)
+
+	// With the empty CRL, the revoked cert should pass
+	err = tlsCfg.VerifyPeerCertificate([][]byte{revokedBlock.Bytes}, nil)
+	assert.NoError(t, err)
+
+	// Replace the CRL file with one that contains revocations
+	fullCRL, err := os.ReadFile(filepath.Join("testdata", "test-crl.pem"))
+	require.NoError(t, err)
+	err = os.WriteFile(crlFile, fullCRL, 0o600)
+	require.NoError(t, err)
+
+	// Even after a delay, the CRL should NOT be reloaded (interval is 0)
+	time.Sleep(5 * time.Millisecond)
+	err = tlsCfg.VerifyPeerCertificate([][]byte{revokedBlock.Bytes}, nil)
+	assert.NoError(t, err, "CRL should not be reloaded when interval is 0")
+}
+
+func TestCRLEndToEnd(t *testing.T) {
+	// End-to-end test: configure CRL, verify valid cert passes, revoked cert fails
+	cfg := Config{
+		CRLFile: filepath.Join("testdata", "test-crl.pem"),
+	}
+	tlsCfg, err := cfg.loadTLSConfig()
+	require.NoError(t, err)
+	require.NotNil(t, tlsCfg.VerifyPeerCertificate)
+
+	// Valid certificate should pass
+	validCertPEM, err := os.ReadFile(filepath.Join("testdata", "crl-valid-server.crt"))
+	require.NoError(t, err)
+	validBlock, _ := pem.Decode(validCertPEM)
+	require.NotNil(t, validBlock)
+	assert.NoError(t, tlsCfg.VerifyPeerCertificate([][]byte{validBlock.Bytes}, nil))
+
+	// Revoked certificate should fail
+	revokedCertPEM, err := os.ReadFile(filepath.Join("testdata", "crl-revoked-server.crt"))
+	require.NoError(t, err)
+	revokedBlock, _ := pem.Decode(revokedCertPEM)
+	require.NotNil(t, revokedBlock)
+	err = tlsCfg.VerifyPeerCertificate([][]byte{revokedBlock.Bytes}, nil)
+	assert.ErrorContains(t, err, "has been revoked")
 }
