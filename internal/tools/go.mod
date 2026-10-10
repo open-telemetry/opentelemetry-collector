@@ -9,6 +9,7 @@ tool (
 	github.com/dkorunic/betteralign/cmd/betteralign
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 	github.com/google/addlicense
+	github.com/itchyny/gojq/cmd/gojq
 	github.com/jcchavezs/porto/cmd/porto
 	github.com/pavius/impi/cmd/impi
 	go.opentelemetry.io/build-tools/checkapi
@@ -155,6 +156,9 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/itchyny/go-yaml v0.0.0-20251001235044-fca9a0999f15 // indirect
+	github.com/itchyny/gojq v0.12.19 // indirect
+	github.com/itchyny/timefmt-go v0.1.8 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jcchavezs/porto v0.7.0 // indirect
 	github.com/jgautheron/goconst v1.11.0 // indirect
@@ -277,13 +281,13 @@ require (
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f // indirect
 	golang.org/x/exp/typeparams v0.0.0-20260811152304-ee035b5b010f // indirect
 	golang.org/x/mod v0.41.0 // indirect
-	golang.org/x/net v0.59.0 // indirect
+	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/telemetry v0.0.0-20260908163034-4bcc4b2ee518 // indirect
+	golang.org/x/telemetry v0.0.0-20260924152758-ed294f943157 // indirect
 	golang.org/x/term v0.46.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
-	golang.org/x/tools v0.50.0 // indirect
+	golang.org/x/tools v0.51.0 // indirect
 	golang.org/x/vuln v1.8.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect

@@ -71,6 +71,7 @@ type ClientConfig struct {
 }
 
 // Validate validates the ClientConfig fields according to schema annotations.
+// Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
 func (c *ClientConfig) Validate() error {
 	var err error
 
@@ -81,7 +82,8 @@ func (c *ClientConfig) Validate() error {
 	return err
 }
 
-// NewDefaultClientConfig returns a new ClientConfig with default values consistent with the annotations in the schema.
+// NewDefaultClientConfig returns a new ClientConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
 		Auth:         configoptional.None[configauth.Config](),
@@ -105,7 +107,8 @@ type KeepaliveClientConfig struct {
 	_ struct{}
 }
 
-// NewDefaultKeepaliveClientConfig returns a new KeepaliveClientConfig with default values consistent with the annotations in the schema.
+// NewDefaultKeepaliveClientConfig returns a new KeepaliveClientConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultKeepaliveClientConfig() KeepaliveClientConfig {
 	return KeepaliveClientConfig{
 		Time:    10 * time.Second,
@@ -125,7 +128,8 @@ type KeepaliveEnforcementPolicy struct {
 	_ struct{}
 }
 
-// NewDefaultKeepaliveEnforcementPolicy returns a new KeepaliveEnforcementPolicy with default values consistent with the annotations in the schema.
+// NewDefaultKeepaliveEnforcementPolicy returns a new KeepaliveEnforcementPolicy with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultKeepaliveEnforcementPolicy() KeepaliveEnforcementPolicy {
 	return KeepaliveEnforcementPolicy{}
 }
@@ -146,7 +150,8 @@ type KeepaliveServerConfig struct {
 	_ struct{}
 }
 
-// NewDefaultKeepaliveServerConfig returns a new KeepaliveServerConfig with default values consistent with the annotations in the schema.
+// NewDefaultKeepaliveServerConfig returns a new KeepaliveServerConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultKeepaliveServerConfig() KeepaliveServerConfig {
 	return KeepaliveServerConfig{
 		EnforcementPolicy: configoptional.Some(NewDefaultKeepaliveEnforcementPolicy()),
@@ -172,7 +177,8 @@ type KeepaliveServerParameters struct {
 	_ struct{}
 }
 
-// NewDefaultKeepaliveServerParameters returns a new KeepaliveServerParameters with default values consistent with the annotations in the schema.
+// NewDefaultKeepaliveServerParameters returns a new KeepaliveServerParameters with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultKeepaliveServerParameters() KeepaliveServerParameters {
 	return KeepaliveServerParameters{}
 }
@@ -217,6 +223,7 @@ type ServerConfig struct {
 }
 
 // Validate validates the ServerConfig fields according to schema annotations.
+// Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
 func (c *ServerConfig) Validate() error {
 	var err error
 
@@ -235,7 +242,8 @@ func (c *ServerConfig) Validate() error {
 	return err
 }
 
-// NewDefaultServerConfig returns a new ServerConfig with default values consistent with the annotations in the schema.
+// NewDefaultServerConfig returns a new ServerConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultServerConfig() ServerConfig {
 	addrConfig := confignet.NewDefaultAddrConfig()
 	addrConfig.Transport = "tcp"

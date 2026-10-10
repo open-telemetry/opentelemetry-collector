@@ -17,25 +17,28 @@ func GenerateProfiles(profilesCount int) pprofile.Profiles {
 	td := pprofile.NewProfiles()
 
 	dic := td.Dictionary()
-	// By convention, the first element is empty
-	dic.StringTable().Append("")
-	dic.StringTable().Append("key")
-
-	// By convention, the first element is empty
-	dic.AttributeTable().AppendEmpty()
-	attr := dic.AttributeTable().AppendEmpty()
-	attr.SetKeyStrindex(1)
-	attr.Value().SetStr("value-1")
-	attr2 := dic.AttributeTable().AppendEmpty()
-	attr2.SetKeyStrindex(1)
-	attr2.Value().SetStr("value-2")
-
 	// By convention, the first element is empty in all dictionary tables
 	dic.MappingTable().AppendEmpty()
 	dic.LocationTable().AppendEmpty()
 	dic.FunctionTable().AppendEmpty()
 	dic.LinkTable().AppendEmpty()
+	dic.StringTable().Append("")
+	dic.AttributeTable().AppendEmpty()
 	dic.StackTable().AppendEmpty()
+
+	if profilesCount != 0 {
+		// At least a single Profiles was requested.
+		dic.StringTable().Append("key")
+		attr1 := dic.AttributeTable().AppendEmpty()
+		attr1.SetKeyStrindex(1)
+		attr1.Value().SetStr("value-1")
+		if profilesCount > 1 {
+			// More than two Profiles were requested.
+			attr2 := dic.AttributeTable().AppendEmpty()
+			attr2.SetKeyStrindex(1)
+			attr2.Value().SetStr("value-2")
+		}
+	}
 
 	initResource(td.ResourceProfiles().AppendEmpty().Resource())
 	ss := td.ResourceProfiles().At(0).ScopeProfiles().AppendEmpty().Profiles()
@@ -69,7 +72,7 @@ func fillProfileOne(dic pprofile.ProfilesDictionary, profile pprofile.Profile) {
 	sample := profile.Samples().AppendEmpty()
 	sample.SetStackIndex(stackID)
 	sample.Values().Append(4)
-	sample.AttributeIndices().Append(1)
+	sample.AttributeIndices().Append(1) // reference to attr1
 }
 
 func fillProfileTwo(dic pprofile.ProfilesDictionary, profile pprofile.Profile) {
@@ -87,5 +90,5 @@ func fillProfileTwo(dic pprofile.ProfilesDictionary, profile pprofile.Profile) {
 	sample := profile.Samples().AppendEmpty()
 	sample.SetStackIndex(stackID)
 	sample.Values().Append(9)
-	sample.AttributeIndices().Append(2)
+	sample.AttributeIndices().Append(2) // reference to attr2
 }

@@ -1092,6 +1092,42 @@ func TestGenerateConfigGoStruct_PropertyDefaultsAndImports(t *testing.T) {
 	require.Contains(t, generated, "Timeout: 30 * time.Second,")
 }
 
+func TestGenerateConfigGoStruct_DeprecatedField(t *testing.T) {
+	root := t.TempDir()
+	outputDir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(outputDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "receiver"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{
+				Type:       "object",
+				Deprecated: &cfggen.DeprecatedConfig{Since: "v0.160.0", Note: "The whole component will be removed soon."},
+				Properties: map[string]*cfggen.ConfigMetadata{
+					"interval": {
+						Type:       "string",
+						Deprecated: &cfggen.DeprecatedConfig{Since: "v0.150.0", Note: "Support for this property will be dropped soon."},
+						GoStruct:   cfggen.GoStructConfig{FieldName: "interval", Type: "time.Duration"},
+					},
+				},
+			},
+		},
+	}
+
+	err := generateConfigGoStruct(md, outputDir)
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+
+	generated := string(content)
+	require.Contains(t, generated, "// Deprecated: [v0.160.0] The whole component will be removed soon.")
+	require.Contains(t, generated, "// Deprecated: [v0.150.0] Support for this property will be dropped soon.")
+}
+
 func TestGenerateConfigGoStruct_InternalResolvedRefGeneratesLocalType(t *testing.T) {
 	root := t.TempDir()
 	outputDir := filepath.Join(root, "shortname")
