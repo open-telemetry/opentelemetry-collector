@@ -108,7 +108,7 @@ func createTraces(
 	}
 	oce.tracesURL = endpointURL.String()
 
-	return exporterhelper.NewTraces(ctx, set, cfg,
+	return exporterhelper.NewTracesWithConfig(ctx, set, cfg,
 		oce.pushTraces,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -137,7 +137,7 @@ func createMetrics(
 	}
 	oce.metricsURL = endpointURL.String()
 
-	return exporterhelper.NewMetrics(ctx, set, cfg,
+	return exporterhelper.NewMetricsWithConfig(ctx, set, cfg,
 		oce.pushMetrics,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -166,7 +166,7 @@ func createLogs(
 	}
 	oce.logsURL = endpointURL.String()
 
-	return exporterhelper.NewLogs(ctx, set, cfg,
+	return exporterhelper.NewLogsWithConfig(ctx, set, cfg,
 		oce.pushLogs,
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
