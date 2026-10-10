@@ -192,11 +192,11 @@ func TestMultiBatcher_CacheSizeEviction(t *testing.T) {
 	}
 	sink := requesttest.NewSink()
 
-	// Evicting a partition flushes it through the worker pool, which in turn needs
-	// a worker to send the pending batch, so more than one worker is required.
+	// A single worker must be enough: the evicted partition's final flush runs
+	// on the worker that is already executing its shutdown.
 	ba, err := newMultiBatcher(cfg,
 		request.NewItemsSizer(),
-		newWorkerPool(2),
+		newWorkerPool(1),
 		batcherSettings[request.Request]{
 			partitioner: NewPartitioner(func(ctx context.Context, _ request.Request) string {
 				return ctx.Value(partitionKey{}).(string)
@@ -222,6 +222,75 @@ func TestMultiBatcher_CacheSizeEviction(t *testing.T) {
 	assert.False(t, ba.partitions.Contains("p1"))
 	assert.True(t, ba.partitions.Contains("p2"))
 	assert.True(t, ba.partitions.Contains("p3"))
+
+	// The evicted partition's pending batch is still exported.
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 1 && sink.ItemsCount() == 5
+	}, time.Second, 10*time.Millisecond)
+}
+
+func TestMultiBatcher_CacheSizeEvictionSingleWorkerNoDeadlock(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: 0,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      100,
+		Partition:    PartitionConfig{CacheSize: 2, IdleTimeout: time.Minute},
+	}
+	sink := requesttest.NewSink()
+
+	ba, err := newMultiBatcher(cfg,
+		request.NewItemsSizer(),
+		newWorkerPool(1),
+		batcherSettings[request.Request]{
+			partitioner: NewPartitioner(func(ctx context.Context, _ request.Request) string {
+				return ctx.Value(partitionKey{}).(string)
+			}),
+			next:      sink.Export,
+			telemetry: componenttest.NewNopTelemetrySettings(),
+			logger:    zap.NewNop(),
+		},
+	)
+	require.NoError(t, err)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, ba.Shutdown(context.Background()))
+	})
+
+	done := newFakeDone()
+	consume := func(key string, items int) {
+		t.Helper()
+		finished := make(chan struct{})
+		go func() {
+			defer close(finished)
+			ba.Consume(context.WithValue(context.Background(), partitionKey{}, key), &requesttest.FakeRequest{Items: items}, done)
+		}()
+		select {
+		case <-finished:
+		case <-time.After(5 * time.Second):
+			t.Fatalf("Consume(%s) blocked: worker pool deadlocked after a partition eviction", key)
+		}
+	}
+
+	consume("p1", 5)
+	consume("p2", 5)
+	require.Equal(t, int64(2), ba.getActivePartitionsCount())
+
+	// Each consume below evicts the oldest partition, whose pending batch has to
+	// be flushed by a pool that has a single worker.
+	consume("p3", 5)
+	consume("p4", 5)
+	consume("p5", 5)
+
+	// All three evicted partitions' data must have been exported.
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 3 && sink.ItemsCount() == 15
+	}, time.Second, 10*time.Millisecond)
+
+	// The pool must still serve live partitions: a full batch flushes right away.
+	consume("p4", 100)
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 4 && sink.ItemsCount() == 120
+	}, time.Second, 10*time.Millisecond)
 }
 
 func TestMultiBatcher_PartitionCacheMetrics(t *testing.T) {
