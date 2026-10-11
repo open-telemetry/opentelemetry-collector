@@ -5,6 +5,7 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
 	"regexp"
+	"strings"
 
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
@@ -18,7 +19,9 @@ var redactedMask = func() string {
 
 // redactByMirroring returns a copy of raw conf where every leaf set to redactedMask
 // in the redacted view is copied over, unless the corresponding pre-expansion leaf
-// is exactly a ${...} provider reference, in which case it is left untouched.
+// is exactly a ${...} provider reference that does not embed a non-empty env-provider
+// literal default. A default such as ${env:NAME:-literal} is masked because the
+// fallback is configuration text, not a provider lookup.
 func redactByMirroring(raw, redacted *confmap.Conf) *confmap.Conf {
 	if raw == nil || redacted == nil {
 		return raw
@@ -47,7 +50,7 @@ func applyMask(raw, redacted any) any {
 		}
 	case string:
 		if redVal == redactedMask {
-			if rawVal, ok := raw.(string); !ok || !providerReferenceRegexp.MatchString(rawVal) {
+			if rawVal, ok := raw.(string); !ok || !preserveUnexpandedProviderReference(rawVal) {
 				return redactedMask
 			}
 		}
@@ -55,4 +58,29 @@ func applyMask(raw, redacted any) any {
 	return raw
 }
 
+// providerReferenceRegexp matches a leaf that is only a ${...} provider reference.
+// Nested braces, such as ${env:A:-${env:B}}, do not match and stay masked.
 var providerReferenceRegexp = regexp.MustCompile(`^\$\{[^}]*\}$`)
+
+// providerURIRegexp splits a provider URI into scheme and opaque value.
+// The scheme pattern matches confmap's unexported uriRegexp in confmap/expand.go.
+var providerURIRegexp = regexp.MustCompile(`(?s:^(?P<Scheme>[A-Za-z][A-Za-z0-9+.-]+):(?P<OpaqueValue>.*)$)`)
+
+// preserveUnexpandedProviderReference reports whether an unexpanded opaque leaf
+// should stay visible. A whole ${...} reference is preserved unless its scheme is
+// env and the opaque value uses the env provider's ":-" default suffix with a
+// non-empty literal. An empty default (${env:NAME:-}) embeds no literal and is
+// preserved. Other schemes, including a file path that happens to contain ":-",
+// are left unchanged.
+func preserveUnexpandedProviderReference(raw string) bool {
+	if !providerReferenceRegexp.MatchString(raw) {
+		return false
+	}
+	uri := raw[2 : len(raw)-1]
+	sub := providerURIRegexp.FindStringSubmatch(uri)
+	if len(sub) != 3 || sub[1] != "env" {
+		return true
+	}
+	_, def, hasDefault := strings.Cut(sub[2], ":-")
+	return !hasDefault || def == ""
+}

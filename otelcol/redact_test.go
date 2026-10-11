@@ -47,6 +47,174 @@ func TestRedactWithPreExpansion(t *testing.T) {
 			},
 		},
 		{
+			name: "redact provider reference that embeds a literal default containing another default marker",
+			pre: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{ // #nosec G101
+						"token": "${env:NAME:-test:-test}",
+					},
+				},
+			},
+			redacted: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"token": redactedMask,
+					},
+				},
+			},
+			want: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"token": redactedMask,
+					},
+				},
+			},
+		},
+		{
+			name: "redact provider reference that embeds a literal default",
+			pre: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{ // #nosec G101
+						"token": "${env:NAME:-literal}",
+					},
+				},
+			},
+			redacted: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"token": redactedMask,
+					},
+				},
+			},
+			want: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"token": redactedMask,
+					},
+				},
+			},
+		},
+		{
+			name: "preserve provider reference with an empty default",
+			pre: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{ // #nosec G101
+						"token": "${env:NAME:-}",
+					},
+				},
+			},
+			redacted: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"token": redactedMask,
+					},
+				},
+			},
+			want: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{ // #nosec G101
+						"token": "${env:NAME:-}",
+					},
+				},
+			},
+		},
+		{
+			name: "redact nested default that is not one provider reference",
+			pre: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{ // #nosec G101
+						"token": "${env:UNDEFINED_KEY:-${env:OTHER}}",
+					},
+				},
+			},
+			redacted: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"token": redactedMask,
+					},
+				},
+			},
+			want: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"token": redactedMask,
+					},
+				},
+			},
+		},
+		{
+			name: "preserve reference whose colon is not the default suffix",
+			pre: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{ // #nosec G101
+						"token": "${env:NAME:value}",
+					},
+				},
+			},
+			redacted: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"token": redactedMask,
+					},
+				},
+			},
+			want: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{ // #nosec G101
+						"token": "${env:NAME:value}",
+					},
+				},
+			},
+		},
+		{
+			name: "preserve non-env provider reference that contains the default marker",
+			pre: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{ // #nosec G101
+						"token": "${file:c:/dir/name:-backup}",
+					},
+				},
+			},
+			redacted: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"token": redactedMask,
+					},
+				},
+			},
+			want: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{ // #nosec G101
+						"token": "${file:c:/dir/name:-backup}",
+					},
+				},
+			},
+		},
+		{
+			name: "preserve plain env provider reference",
+			pre: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{ // #nosec G101
+						"token": "${env:NAME}",
+					},
+				},
+			},
+			redacted: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"token": redactedMask,
+					},
+				},
+			},
+			want: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{ // #nosec G101
+						"token": "${env:NAME}",
+					},
+				},
+			},
+		},
+		{
 			name: "preserve provider reference at opaque leaf",
 			pre: map[string]any{
 				"exporters": map[string]any{
