@@ -12,7 +12,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -912,23 +911,46 @@ func TestCurvePreferences(t *testing.T) {
 			expectedCurveIDs: []tls.CurveID{},
 			expectedErr:      "invalid curve type",
 		},
+		{
+			// An unset curve_preferences must leave tls.Config.CurvePreferences nil so that crypto/tls applies its own defaults
+			name:             "unset-uses-stdlib-defaults",
+			preferences:      nil,
+			expectedCurveIDs: nil,
+		},
 	}
 
-	// X25519 curves are not supported when GODEBUG=fips140=only is set, so we
-	// detect if it is and conditionally add test cases for those curves.
-	if !strings.Contains(os.Getenv("GODEBUG"), "fips140=only") {
-		tests = append(tests,
-			testCase{
-				name:             "X25519MLKEM768",
-				preferences:      []string{"X25519MLKEM768"},
-				expectedCurveIDs: []tls.CurveID{tls.X25519MLKEM768},
-			},
-			testCase{
-				name:             "X25519",
-				preferences:      []string{"X25519"},
-				expectedCurveIDs: []tls.CurveID{tls.X25519},
-			},
-		)
+	// The hybrid key exchanges are FIPS-approved, so they are configurable in
+	// both builds. Bare X25519 is not, and is rejected by the requirefips build.
+	tests = append(tests,
+		testCase{
+			name:             "X25519MLKEM768",
+			preferences:      []string{"X25519MLKEM768"},
+			expectedCurveIDs: []tls.CurveID{tls.X25519MLKEM768},
+		},
+		testCase{
+			name:             "SecP256r1MLKEM768",
+			preferences:      []string{"SecP256r1MLKEM768"},
+			expectedCurveIDs: []tls.CurveID{tls.SecP256r1MLKEM768},
+		},
+		testCase{
+			name:             "SecP384r1MLKEM1024",
+			preferences:      []string{"SecP384r1MLKEM1024"},
+			expectedCurveIDs: []tls.CurveID{tls.SecP384r1MLKEM1024},
+		},
+	)
+
+	if requireFIPSBuild {
+		tests = append(tests, testCase{
+			name:        "X25519",
+			preferences: []string{"X25519"},
+			expectedErr: "invalid curve type",
+		})
+	} else {
+		tests = append(tests, testCase{
+			name:             "X25519",
+			preferences:      []string{"X25519"},
+			expectedCurveIDs: []tls.CurveID{tls.X25519},
+		})
 	}
 
 	for _, test := range tests {
