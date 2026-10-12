@@ -65,7 +65,7 @@ to identify its compiled-in schema. Any configured value for this metadata key
 is overridden. The exporter does not forward incoming version metadata or
 negotiate a different version.
 See the [receiver documentation](../../receiver/otlpreceiver/README.md#profiles-development-version)
-for the proposed protocol and compatibility considerations.
+for the protocol and compatibility considerations.
 
 ## Advanced Configuration
 

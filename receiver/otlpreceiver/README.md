@@ -43,8 +43,8 @@ The following settings are configurable:
 
 ## Profiles Development Version
 
-This implements the development-version mechanism proposed in
-[opentelemetry-proto#857](https://github.com/open-telemetry/opentelemetry-proto/pull/857).
+This implements the Profiles development-version mechanism defined in the
+[OTLP specification](https://github.com/open-telemetry/opentelemetry-proto/blob/1b0835ea26b8499510eae45a1ffa13a2b51d30c6/docs/specification.md#profiles-development-version).
 The Profiles receiver supports only the development version corresponding to
 its compiled-in schema, exposed as
 [`pprofileotlp.DevelopmentVersion`](../../pdata/pprofile/pprofileotlp/version.go).
