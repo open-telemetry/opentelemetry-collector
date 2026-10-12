@@ -93,7 +93,7 @@
         },
         "http2_read_idle_timeout": {
           "type": "string",
-          "description": "Is the duration after which, if the connection has been idle, a ping frame is sent for a health check.\n0s means no health check will be performed.\n",
+          "description": "Is the duration after which, if the connection has been idle, a ping frame is sent for a health check.\n0s means no health check will be performed.\nThis is needed in case you run into\nhttps://github.com/golang/go/issues/59690\nhttps://github.com/golang/go/issues/36026\n",
           "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
         },
         "idle_conn_timeout": {

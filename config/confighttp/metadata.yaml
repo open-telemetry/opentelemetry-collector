@@ -62,9 +62,9 @@ exported_configs:
         description: |
           Is the duration after which, if the connection has been idle, a ping frame is sent for a health check.
           0s means no health check will be performed.
-        # This is needed in case you run into
-        # https://github.com/golang/go/issues/59690
-        # https://github.com/golang/go/issues/36026
+          This is needed in case you run into
+          https://github.com/golang/go/issues/59690
+          https://github.com/golang/go/issues/36026
       http2_ping_timeout:
         type: duration
         description: |

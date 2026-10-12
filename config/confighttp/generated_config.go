@@ -62,6 +62,9 @@ type ClientConfig struct {
 
 	// HTTP2ReadIdleTimeout is the duration after which, if the connection has been idle, a ping frame is sent for a health check.
 	// 0s means no health check will be performed.
+	// This is needed in case you run into
+	// https://github.com/golang/go/issues/59690
+	// https://github.com/golang/go/issues/36026
 	HTTP2ReadIdleTimeout time.Duration `mapstructure:"http2_read_idle_timeout,omitempty"`
 
 	// Deprecated: [v0.160.0] Use Keepalive.IdleConnTimeout instead.
