@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -86,6 +87,11 @@ type ClientConfig struct {
 	// Cookies configures the cookie management of the HTTP client.
 	Cookies configoptional.Optional[CookiesConfig] `mapstructure:"cookies,omitempty"`
 
+	// DNS configures a custom DNS resolver used to resolve the hostname of Endpoint
+	// and of any address reached through this client (e.g. via a proxy).
+	// If unset, the default system resolver is used.
+	DNS configoptional.Optional[DNSConfig] `mapstructure:"dns,omitempty"`
+
 	// Enabling ForceAttemptHTTP2 forces the HTTP transport to use the HTTP/2 protocol.
 	// By default, this is set to true.
 	// NOTE: HTTP/2 does not support settings such as MaxConnsPerHost, MaxIdleConnsPerHost and MaxIdleConns.
@@ -123,6 +129,31 @@ type ClientConfig struct {
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
 type CookiesConfig struct {
 	_ struct{}
+}
+
+// DNSConfig defines a custom DNS resolver for an HTTP client.
+type DNSConfig struct {
+	// Endpoint is the address (ip:port) of the DNS server to use for resolving hostnames.
+	// It must be a literal IP:port; hostnames are rejected to avoid a DNS
+	// bootstrap problem (resolving the resolver's own address).
+	Endpoint string `mapstructure:"endpoint"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+func (d *DNSConfig) Validate() error {
+	host, port, err := net.SplitHostPort(d.Endpoint)
+	if err != nil {
+		return fmt.Errorf("dns.endpoint must be an address of the form ip:port: %w", err)
+	}
+	if port == "" {
+		return errors.New("dns.endpoint must include a port")
+	}
+	if net.ParseIP(host) == nil {
+		return fmt.Errorf("dns.endpoint must be a literal IP address, hostnames are not supported: %q", host)
+	}
+	return nil
 }
 
 // KeepaliveClientConfig describes the keepalive configuration.
@@ -371,6 +402,11 @@ func (cc *ClientConfig) Validate() error {
 			return err
 		}
 	}
+	if dnsCfg := cc.DNS.Get(); dnsCfg != nil {
+		if err := dnsCfg.Validate(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -423,6 +459,19 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 	}
 	transport.MaxConnsPerHost = cc.MaxConnsPerHost
 	transport.ForceAttemptHTTP2 = cc.ForceAttemptHTTP2
+
+	if dnsCfg := cc.DNS.Get(); dnsCfg != nil {
+		resolver := &net.Resolver{
+			PreferGo: true,
+			Dial: func(ctx context.Context, network, _ string) (net.Conn, error) {
+				d := net.Dialer{}
+				return d.DialContext(ctx, network, dnsCfg.Endpoint)
+			},
+		}
+		dialer := &net.Dialer{Resolver: resolver}
+		transport.DialContext = dialer.DialContext
+	}
+
 	// Setting the Proxy URL
 	if cc.ProxyURL != "" {
 		proxyURL, parseErr := url.ParseRequestURI(cc.ProxyURL)

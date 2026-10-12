@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -645,6 +646,133 @@ func TestHTTPTransportOptionsDeprecated(t *testing.T) {
 	require.Equal(t, time.Duration(0), transport.IdleConnTimeout)
 	require.Equal(t, 0, transport.MaxConnsPerHost)
 	require.Equal(t, 0, transport.MaxIdleConnsPerHost)
+}
+
+func TestDNSConfigValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		dns     DNSConfig
+		wantErr string
+	}{
+		{
+			name: "valid ipv4",
+			dns:  DNSConfig{Endpoint: "1.1.1.1:53"},
+		},
+		{
+			name: "valid ipv6",
+			dns:  DNSConfig{Endpoint: "[::1]:53"},
+		},
+		{
+			name:    "missing port",
+			dns:     DNSConfig{Endpoint: "1.1.1.1"},
+			wantErr: "must be an address of the form ip:port",
+		},
+		{
+			name:    "hostname rejected",
+			dns:     DNSConfig{Endpoint: "dns.example.com:53"},
+			wantErr: "must be a literal IP address",
+		},
+		{
+			name:    "empty endpoint",
+			dns:     DNSConfig{Endpoint: ""},
+			wantErr: "must be an address of the form ip:port",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.dns.Validate()
+			if tt.wantErr == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.ErrorContains(t, err, tt.wantErr)
+		})
+	}
+}
+
+func TestClientConfigValidateDNS(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	cfg.DNS = configoptional.Some(DNSConfig{Endpoint: "not-an-ip:53"})
+	require.ErrorContains(t, cfg.Validate(), "must be a literal IP address")
+
+	cfg.DNS = configoptional.Some(DNSConfig{Endpoint: "127.0.0.1:53"})
+	require.NoError(t, cfg.Validate())
+}
+
+// TestDNSResolverUsed proves the client actually resolves hostnames through
+// the configured DNS server rather than the system default resolver, by
+// standing up a fake DNS server that answers every query with a fixed IP.
+func TestDNSResolverUsed(t *testing.T) {
+	const resolvedIP = "127.0.0.1"
+
+	ln, err := net.ListenPacket("udp", "127.0.0.1:0")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = ln.Close() })
+
+	var queried atomic.Bool
+	go func() {
+		buf := make([]byte, 512)
+		for {
+			n, addr, rerr := ln.ReadFrom(buf)
+			if rerr != nil {
+				return
+			}
+			queried.Store(true)
+			resp := buildDNSAResponse(t, buf[:n], resolvedIP)
+			_, _ = ln.WriteTo(resp, addr)
+		}
+	}()
+
+	settings := componenttest.NewNopTelemetrySettings()
+	// Disable OTel instrumentation so the *http.Transport object is directly accessible.
+	settings.MeterProvider = nil
+	settings.TracerProvider = nil
+
+	clientConfig := NewDefaultClientConfig()
+	clientConfig.DNS = configoptional.Some(DNSConfig{Endpoint: ln.LocalAddr().String()})
+	require.NoError(t, clientConfig.Validate())
+
+	httpClient, err := clientConfig.ToClient(context.Background(), nil, settings)
+	require.NoError(t, err)
+
+	transport, ok := httpClient.Transport.(*http.Transport)
+	require.True(t, ok, "client.Transport is not an *http.Transport")
+	require.NotNil(t, transport.DialContext)
+
+	conn, err := transport.DialContext(context.Background(), "tcp", "this-hostname-does-not-exist.invalid:80")
+	if conn != nil {
+		_ = conn.Close()
+	}
+	// Dialing a real connection will still fail (nothing listens on that port),
+	// but resolution itself must have gone through our fake DNS server.
+	require.Error(t, err)
+	require.True(t, queried.Load(), "expected the custom DNS resolver to be queried")
+}
+
+// buildDNSAResponse builds a minimal DNS response answering the single
+// question in req with a single A record pointing at ip.
+func buildDNSAResponse(t *testing.T, req []byte, ip string) []byte {
+	t.Helper()
+	require.GreaterOrEqual(t, len(req), 12)
+
+	resp := make([]byte, len(req))
+	copy(resp, req)
+	resp[2] = 0x81          // QR=1 (response), RD copied from request
+	resp[3] = 0x80          // RA=1, no error
+	resp[6], resp[7] = 0, 1 // ANCOUNT=1
+
+	answer := []byte{
+		0xc0, 0x0c, // pointer to question's name at offset 12
+		0x00, 0x01, // TYPE=A
+		0x00, 0x01, // CLASS=IN
+		0x00, 0x00, 0x00, 0x3c, // TTL=60
+		0x00, 0x04, // RDLENGTH=4
+	}
+	parsedIP := net.ParseIP(ip).To4()
+	require.NotNil(t, parsedIP)
+	answer = append(answer, parsedIP...)
+
+	return append(resp, answer...)
 }
 
 func TestContextWithClient(t *testing.T) {
