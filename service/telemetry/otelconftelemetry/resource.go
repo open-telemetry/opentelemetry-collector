@@ -46,8 +46,16 @@ func createInitialResourceConfig(buildInfo component.BuildInfo, cfg *ResourceCon
 	maxAttributes := len(cfg.Attributes) + len(cfg.LegacyAttributes) + len(defaults)
 	sdkCfg.Attributes = make([]otelconf.AttributeNameValue, 0, maxAttributes)
 
+	configuredNames := make(map[string]struct{}, len(cfg.Attributes))
+	for _, attr := range cfg.Attributes {
+		configuredNames[attr.Name] = struct{}{}
+	}
+
 	for name, value := range defaults {
 		if _, ok := cfg.LegacyAttributes[name]; ok {
+			continue
+		}
+		if _, ok := configuredNames[name]; ok {
 			continue
 		}
 		sdkCfg.Attributes = append(sdkCfg.Attributes, otelconf.AttributeNameValue{
@@ -66,7 +74,14 @@ func createInitialResourceConfig(buildInfo component.BuildInfo, cfg *ResourceCon
 		})
 	}
 
-	sdkCfg.Attributes = append(sdkCfg.Attributes, cfg.Attributes...)
+	// Attributes with a null value remove the corresponding default attribute,
+	// matching the documented behavior of the legacy inline map format.
+	for _, attr := range cfg.Attributes {
+		if attr.Value == nil {
+			continue
+		}
+		sdkCfg.Attributes = append(sdkCfg.Attributes, attr)
+	}
 	return &sdkCfg, nil
 }
 

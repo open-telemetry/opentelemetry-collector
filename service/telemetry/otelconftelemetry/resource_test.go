@@ -112,10 +112,26 @@ func TestCreateResource(t *testing.T) {
 
 		raw := res.Attributes().AsRaw()
 		assert.Equal(t, map[string]any{
-			"extra.attr":          "value",
-			"service.name":        "custom-service",
-			"service.version":     "0.1.0",
-			"service.instance.id": "<nil>",
+			"extra.attr":      "value",
+			"service.name":    "custom-service",
+			"service.version": "0.1.0",
+		}, raw)
+	})
+	t.Run("with new format removing default attributes", func(t *testing.T) {
+		cfg := createDefaultConfig().(*Config)
+		cfg.Resource.Attributes = []config.AttributeNameValue{
+			{Name: "custom.attr", Value: "value"},
+			{Name: "service.name", Value: nil},
+			{Name: "service.version", Value: nil},
+			{Name: "service.instance.id", Value: nil},
+		}
+		set := telemetry.Settings{BuildInfo: component.BuildInfo{Command: "otelcol", Version: "latest"}}
+		res, _, err := createResource(t.Context(), set, cfg)
+		require.NoError(t, err)
+
+		raw := res.Attributes().AsRaw()
+		assert.Equal(t, map[string]any{
+			"custom.attr": "value",
 		}, raw)
 	})
 	t.Run("with custom schema_url", func(t *testing.T) {
