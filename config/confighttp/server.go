@@ -45,10 +45,10 @@ type ServerConfig struct {
 	NetAddr confignet.AddrConfig `mapstructure:",squash"`
 
 	// TLS struct exposes TLS server configuration.
-	TLS configoptional.Optional[configtls.ServerConfig] `mapstructure:"tls"`
+	TLS configoptional.Optional[configtls.ServerConfig] `mapstructure:"tls,omitempty"`
 
 	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
-	CORS configoptional.Optional[CORSConfig] `mapstructure:"cors"`
+	CORS configoptional.Optional[CORSConfig] `mapstructure:"cors,omitempty"`
 
 	// Auth for this receiver
 	Auth configoptional.Optional[AuthConfig] `mapstructure:"auth,omitempty"`

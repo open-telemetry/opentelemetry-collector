@@ -9,8 +9,22 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 )
+
+func TestMapListPairKeys(t *testing.T) {
+	conf := confmap.New()
+	require.NoError(t, conf.Marshal(configopaque.Pair{
+		Name:  "header",
+		Value: "secret",
+	}))
+
+	assert.Equal(t, map[string]any{
+		nameKey:  "header",
+		valueKey: redactedMask,
+	}, conf.ToStringMap())
+}
 
 func TestRedactWithPreExpansion(t *testing.T) {
 	tests := []struct {
@@ -146,6 +160,84 @@ func TestRedactWithPreExpansion(t *testing.T) {
 						"nested": map[string]any{
 							"secret": redactedMask,
 							"list":   []any{redactedMask, "${env:B}", redactedMask},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "redact map transformed to name value list",
+			pre: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"headers": map[string]any{ // #nosec G101
+							"token": "abc",
+							"other": "${env:HEADER}",
+						},
+					},
+				},
+			},
+			redacted: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"headers": []any{
+							map[string]any{nameKey: "token", valueKey: redactedMask},
+							map[string]any{nameKey: "other", valueKey: redactedMask},
+						},
+					},
+				},
+			},
+			want: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"headers": map[string]any{ // #nosec G101
+							"token": redactedMask,
+							"other": "${env:HEADER}",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "ignore malformed transformed map list entries",
+			pre: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"headers": map[string]any{ // #nosec G101
+							"non-map":         "unchanged",
+							"123":             "unchanged",
+							"missing-value":   "unchanged",
+							"extra-field":     "unchanged",
+							"wrong-value-key": "unchanged",
+							"valid":           "secret",
+						},
+					},
+				},
+			},
+			redacted: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"headers": []any{
+							"non-map",
+							map[string]any{nameKey: 123, valueKey: redactedMask},
+							map[string]any{nameKey: "missing-value"},
+							map[string]any{nameKey: "extra-field", valueKey: redactedMask, "extra": true},
+							map[string]any{nameKey: "wrong-value-key", "value-name": redactedMask},
+							map[string]any{nameKey: "valid", valueKey: redactedMask},
+						},
+					},
+				},
+			},
+			want: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"headers": map[string]any{ // #nosec G101
+							"non-map":         "unchanged",
+							"123":             "unchanged",
+							"missing-value":   "unchanged",
+							"extra-field":     "unchanged",
+							"wrong-value-key": "unchanged",
+							"valid":           redactedMask,
 						},
 					},
 				},

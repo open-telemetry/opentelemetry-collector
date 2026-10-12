@@ -134,9 +134,16 @@ func generateProfiles(tb testing.TB, resourceCount, scopeCount, profileCount, sa
 
 	profiles := NewProfiles()
 	dict := profiles.Dictionary()
+	// By convention, the first element is empty in all dictionary tables
+	dict.MappingTable().AppendEmpty()
+	dict.LocationTable().AppendEmpty()
+	dict.FunctionTable().AppendEmpty()
+	dict.LinkTable().AppendEmpty()
+	dict.StringTable().Append("")
+	dict.AttributeTable().AppendEmpty()
+	dict.StackTable().AppendEmpty()
 
 	// Pre-populate dictionary with common strings
-	dict.StringTable().Append("") // Index 0 is always empty string
 	dict.StringTable().Append("cpu")
 	dict.StringTable().Append("nanoseconds")
 	dict.StringTable().Append("samples")
@@ -176,8 +183,8 @@ func generateProfiles(tb testing.TB, resourceCount, scopeCount, profileCount, sa
 
 				// Add period type
 				periodType := profile.PeriodType()
-				periodType.SetTypeStrindex(1) // "cpu"
-				periodType.SetUnitStrindex(2) // "nanoseconds"
+				periodType.SetTypeStrindex(3) // "samples"
+				periodType.SetUnitStrindex(4) // "count"
 				profile.SetPeriod(1000000)
 
 				// Generate samples
