@@ -26,11 +26,20 @@ require.NotNil(t, cfg)
     {{- template "imports" $imports_addded }}
     {{- $imports_addded = true }}
 
+    {{- $configDefaultValid := true }}
+    {{- range $validator := $validators }}
+        {{- if and $validator.Rules.Required $validator.RequiredCheckEmitted (not $validator.HasDefault) }}
+            {{- $configDefaultValid = false }}
+        {{- end }}
+    {{- end }}
+
+    {{- if $configDefaultValid }}
     func TestConfigValidate_DefaultValid(t *testing.T) {
     cfg := createDefaultConfig().(*Config)
 
     require.NoError(t, cfg.Validate())
     }
+    {{- end }}
 
     {{ range $validator := $validators }}
         {{- if and $validator.Rules.Required $validator.RequiredCheckEmitted }}
@@ -177,16 +186,24 @@ require.NotNil(t, cfg)
         {{- else }}
             {{- $typeName := $defName | publicVar }}
             {{- $hasDefault := hasDefaultValue $def }}
-            {{- if $hasDefault }}
-            func Test{{ $typeName }}Validate_DefaultValid(t *testing.T) {
-                cfg := NewDefault{{ $typeName }}()
+            {{- $defDefaultValid := true }}
+            {{- range $validator := $defValidators }}
+                {{- if and $validator.Rules.Required $validator.RequiredCheckEmitted (not $validator.HasDefault) }}
+                    {{- $defDefaultValid = false }}
+                {{- end }}
+            {{- end }}
+            {{- if $defDefaultValid }}
+                {{- if $hasDefault }}
+                func Test{{ $typeName }}Validate_DefaultValid(t *testing.T) {
+                    cfg := NewDefault{{ $typeName }}()
 
-                require.NoError(t, cfg.Validate())
-            }
-            {{- else if not $def.GoStruct.IgnoreDefault }}
-            func Test{{ $typeName }}Validate_DefaultValid(t *testing.T) {
-                require.Fail(t, "Missing default values for {{ $typeName }} struct. Please add default values to the schema to enable this test.")
-            }
+                    require.NoError(t, cfg.Validate())
+                }
+                {{- else if not $def.GoStruct.IgnoreDefault }}
+                func Test{{ $typeName }}Validate_DefaultValid(t *testing.T) {
+                    require.Fail(t, "Missing default values for {{ $typeName }} struct. Please add default values to the schema to enable this test.")
+                }
+                {{- end }}
             {{- end }}
 
             {{ range $validator := $defValidators }}

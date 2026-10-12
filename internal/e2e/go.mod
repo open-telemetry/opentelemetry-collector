@@ -123,7 +123,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.68.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.162.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.162.0 // indirect
-	go.opentelemetry.io/collector/internal/statusutil v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/internal/statusutil v0.0.0-20261008222028-cee245c32ca5 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.162.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.162.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.162.0 // indirect

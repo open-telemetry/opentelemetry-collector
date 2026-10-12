@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/collector/exporter/exportertest v0.162.0
 	go.opentelemetry.io/collector/exporter/xexporter v0.162.0
 	go.opentelemetry.io/collector/featuregate v1.68.0
-	go.opentelemetry.io/collector/internal/statusutil v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/internal/statusutil v0.0.0-20261008222028-cee245c32ca5
 	go.opentelemetry.io/collector/internal/testutil v0.162.0
 	go.opentelemetry.io/collector/pdata v1.68.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.162.0
