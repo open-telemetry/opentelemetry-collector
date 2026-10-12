@@ -24,9 +24,16 @@ import (
 )
 
 const (
-	separator         = "\n"
-	recordHeaderSize  = int64(24)
-	metadataValueSize = 32
+	separator                  = "\n"
+	recordHeaderSize           = 24
+	recordLogicalIndexOffset   = 0
+	recordDataLengthOffset     = 8
+	recordSizeOffset           = 16
+	metadataValueSize          = 32
+	metadataFileNumOffset      = 0
+	metadataPosOffset          = 8
+	metadataLogicalIndexOffset = 16
+	metadataTotalSizeOffset    = 24
 )
 
 var errClientClosed = errors.New("disk queue client is closed")
@@ -43,16 +50,10 @@ type Extension interface {
 var _ Extension = (*diskAccessExtension)(nil)
 
 type diskAccessExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
 	cfg    *Config
 	logger *zap.Logger
-}
-
-func (d *diskAccessExtension) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func (d *diskAccessExtension) Shutdown(_ context.Context) error {
-	return nil
 }
 
 func (d *diskAccessExtension) GetClient(_ context.Context, _ component.Kind, _ component.ID, storageName string) (queue.Client, error) {
@@ -348,9 +349,9 @@ func (d *diskAccessClient) peekData() (queueRecord, error) {
 		return queueRecord{}, err
 	}
 
-	logicalIndex := binary.BigEndian.Uint64(header[0:8])
-	dataLen := binary.BigEndian.Uint64(header[8:16])
-	size := binary.BigEndian.Uint64(header[16:24])
+	logicalIndex := binary.BigEndian.Uint64(header[recordLogicalIndexOffset:recordDataLengthOffset])
+	dataLen := binary.BigEndian.Uint64(header[recordDataLengthOffset:recordSizeOffset])
+	size := binary.BigEndian.Uint64(header[recordSizeOffset:recordHeaderSize])
 	readBuf := make([]byte, dataLen)
 	if _, err = d.peekFile.ReadAt(readBuf, d.peekMetadata.pos+recordHeaderSize); err != nil {
 		_ = d.peekFile.Close()
@@ -622,13 +623,13 @@ func (d *diskAccessClient) retrieveMetadataFile(fileName string) (*metadata, err
 	if _, err = io.ReadFull(f, data); err != nil {
 		return nil, err
 	}
-	totalSize := int64(binary.BigEndian.Uint64(data[24:32]))
+	totalSize := int64(binary.BigEndian.Uint64(data[metadataTotalSizeOffset:metadataValueSize]))
 	size := &atomic.Int64{}
 	size.Store(totalSize)
 	return &metadata{
-		fileNum:      int64(binary.BigEndian.Uint64(data[0:8])),
-		pos:          int64(binary.BigEndian.Uint64(data[8:16])),
-		logicalIndex: binary.BigEndian.Uint64(data[16:24]),
+		fileNum:      int64(binary.BigEndian.Uint64(data[metadataFileNumOffset:metadataPosOffset])),
+		pos:          int64(binary.BigEndian.Uint64(data[metadataPosOffset:metadataLogicalIndexOffset])),
+		logicalIndex: binary.BigEndian.Uint64(data[metadataLogicalIndexOffset:metadataTotalSizeOffset]),
 		totalSize:    totalSize,
 		size:         size,
 	}, nil

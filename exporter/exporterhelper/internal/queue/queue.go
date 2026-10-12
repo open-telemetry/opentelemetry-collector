@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/extension/diskqueueextension"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -93,8 +94,9 @@ func newBaseQueue[T request.Request](set Settings[T]) readableQueue[T] {
 	if set.StorageID == nil {
 		return newMemoryQueue[T](set)
 	}
-	// TODO better logic on which queue to pick.
-	if set.StorageID.Type() == component.MustNewType("disk_access") {
+	// disk_access uses the callback-based queue client rather than the storage
+	// client used by the persistent queue.
+	if set.StorageID.Type() == component.MustNewType(diskqueueextension.TypeStr) {
 		return newDiskQueue[T](set)
 	}
 

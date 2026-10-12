@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 	"os"
-	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -294,26 +294,19 @@ func TestDiskQueueReadUnmarshalErrorDoesNotPanic(t *testing.T) {
 // countingReferenceCounter tracks the net number of outstanding references,
 // so tests can assert Offer correctly balances Ref/Unref on failure paths.
 type countingReferenceCounter struct {
-	mu  sync.Mutex
-	ref int64
+	ref atomic.Int64
 }
 
 func (c *countingReferenceCounter) Ref(intRequest) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.ref++
+	c.ref.Add(1)
 }
 
 func (c *countingReferenceCounter) Unref(intRequest) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.ref--
+	c.ref.Add(-1)
 }
 
 func (c *countingReferenceCounter) load() int64 {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.ref
+	return c.ref.Load()
 }
 
 // failingEncoding lets tests force Marshal/Unmarshal failures independently.
