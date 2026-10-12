@@ -161,13 +161,6 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 		curvePreferences = append(curvePreferences, curveID)
 	}
 
-	// If no curve preferences were explicitly specified in the configuration, use
-	// the ones we allow. This helps in particular with FIPS builds where not all curves
-	// are allowed.
-	if len(curvePreferences) == 0 {
-		curvePreferences = allowedCurves
-	}
-
 	return &tls.Config{
 		RootCAs:              certPool,
 		GetCertificate:       getCertificate,
