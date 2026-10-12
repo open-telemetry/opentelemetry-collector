@@ -50,9 +50,14 @@ func TestBaseExporterWithOptions(t *testing.T) {
 
 func TestBaseExporterBatchingEnabled(t *testing.T) {
 	qCfg := NewDefaultQueueConfig()
+	qCfg.Batch = configoptional.None[queuebatch.BatchConfig]()
 	set := exportertest.NewNopSettings(exportertest.NopType)
 
-	be, err := NewBaseExporter(
+	be, err := NewBaseExporter(set, pipeline.SignalMetrics, noopExport)
+	require.NoError(t, err)
+	require.False(t, be.ExporterHelperBatchingEnabled())
+
+	be, err = NewBaseExporter(
 		set,
 		pipeline.SignalMetrics,
 		noopExport,
@@ -60,7 +65,7 @@ func TestBaseExporterBatchingEnabled(t *testing.T) {
 		WithQueueBatch(configoptional.Some(qCfg), newFakeQueueBatch()),
 	)
 	require.NoError(t, err)
-	require.False(t, be.BatchingEnabled())
+	require.False(t, be.ExporterHelperBatchingEnabled())
 
 	qCfg.Batch = configoptional.Some(queuebatch.BatchConfig{})
 	be, err = NewBaseExporter(
@@ -71,7 +76,7 @@ func TestBaseExporterBatchingEnabled(t *testing.T) {
 		WithQueueBatch(configoptional.Some(qCfg), newFakeQueueBatch()),
 	)
 	require.NoError(t, err)
-	require.True(t, be.BatchingEnabled())
+	require.True(t, be.ExporterHelperBatchingEnabled())
 }
 
 func TestQueueOptionsWithRequestExporter(t *testing.T) {

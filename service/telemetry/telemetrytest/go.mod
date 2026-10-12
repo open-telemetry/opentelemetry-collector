@@ -175,5 +175,3 @@ replace go.opentelemetry.io/collector/internal/testutil => ../../../internal/tes
 replace go.opentelemetry.io/collector/internal/componentalias => ../../../internal/componentalias
 
 replace go.opentelemetry.io/collector/config/confignet => ../../../config/confignet
-
-replace go.opentelemetry.io/collector => ../../..

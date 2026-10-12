@@ -6,7 +6,6 @@ require (
 	github.com/cenkalti/backoff/v7 v7.0.1
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector v0.162.0
 	go.opentelemetry.io/collector/client v1.68.0
 	go.opentelemetry.io/collector/component v1.68.0
 	go.opentelemetry.io/collector/component/componenttest v0.162.0
@@ -71,8 +70,6 @@ require (
 )
 
 replace go.opentelemetry.io/collector/component => ../../component
-
-replace go.opentelemetry.io/collector => ../..
 
 replace go.opentelemetry.io/collector/component/componenttest => ../../component/componenttest
 

@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
-	internalexporterhelper "go.opentelemetry.io/collector/internal/exporterhelper"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/service/internal/attribute"
@@ -23,6 +22,10 @@ import (
 )
 
 var _ consumerNode = (*exporterNode)(nil)
+
+type exporterHelperBatcher interface {
+	ExporterHelperBatchingEnabled() bool
+}
 
 // An exporter instance can be shared by multiple pipelines of the same type.
 // Therefore, nodeID is derived from "pipeline type" and "component ID".
@@ -102,8 +105,8 @@ func (n *exporterNode) buildComponent(
 	default:
 		return fmt.Errorf("error creating exporter %q for data type %q is not supported", set.ID, n.pipelineType)
 	}
-	if helper, ok := n.Component.(internalexporterhelper.ExporterHelper); ok {
-		n.exporterHelperBatchingEnabled = helper.BatchingEnabled()
+	if helper, ok := n.Component.(exporterHelperBatcher); ok {
+		n.exporterHelperBatchingEnabled = helper.ExporterHelperBatchingEnabled()
 	}
 	return nil
 }

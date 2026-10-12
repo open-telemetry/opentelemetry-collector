@@ -5,6 +5,7 @@ package graph
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,9 +16,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter"
-	internalexporterhelper "go.opentelemetry.io/collector/internal/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/internal/builders"
@@ -25,51 +26,102 @@ import (
 )
 
 type wrappedMetricsExporter struct {
-	consumer.Metrics
-	internalexporterhelper.ExporterHelper
+	exporter.Metrics
 }
 
-func (*wrappedMetricsExporter) Start(context.Context, component.Host) error {
-	return nil
-}
-
-func (*wrappedMetricsExporter) Shutdown(context.Context) error {
-	return nil
+type wrappedMetricsExporterWithBatching struct {
+	exporter.Metrics
+	exporterHelperBatcher
 }
 
 func TestExporterNodeReadsBatchingStatusCapability(t *testing.T) {
-	exporterType := component.MustNewType("wrapped")
-	exporterID := component.NewID(exporterType)
-	factory := exporter.NewFactory(
-		exporterType,
-		func() component.Config { return struct{}{} },
-		exporter.WithMetrics(
-			func(_ context.Context, _ exporter.Settings, _ component.Config) (exporter.Metrics, error) {
-				metrics, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error { return nil })
-				if err != nil {
-					return nil, err
-				}
-				return &wrappedMetricsExporter{
-					Metrics:        metrics,
-					ExporterHelper: internalexporterhelper.NewExporterHelper(true),
-				}, nil
-			},
-			component.StabilityLevelAlpha,
-		),
-	)
-	node := newExporterNode(pipeline.SignalMetrics, exporterID)
+	for _, tt := range []struct {
+		name            string
+		queueEnabled    bool
+		batchEnabled    bool
+		wrapped         bool
+		exposesBatching bool
+		wantBatching    bool
+	}{
+		{name: "no_queue"},
+		{name: "queue_without_batching", queueEnabled: true},
+		{name: "direct", queueEnabled: true, batchEnabled: true, wantBatching: true},
+		{name: "opaque_wrapper", queueEnabled: true, batchEnabled: true, wrapped: true},
+		{name: "wrapped_disabled", queueEnabled: true, wrapped: true},
+		{name: "wrapper_exposes_capability", queueEnabled: true, batchEnabled: true, exposesBatching: true, wantBatching: true},
+		{name: "wrapper_exposes_disabled_capability", queueEnabled: true, exposesBatching: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			exporterType := component.MustNewType("wrapped")
+			exporterID := component.NewID(exporterType)
+			factory := exporter.NewFactory(
+				exporterType,
+				func() component.Config { return struct{}{} },
+				exporter.WithMetrics(
+					func(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Metrics, error) {
+						qCfg := exporterhelper.NewDefaultQueueConfig()
+						qCfg.Batch = configoptional.None[exporterhelper.BatchConfig]()
+						if tt.batchEnabled {
+							qCfg.Batch = configoptional.Some(exporterhelper.NewDefaultBatchConfig())
+						}
+						queue := configoptional.None[exporterhelper.QueueBatchConfig]()
+						if tt.queueEnabled {
+							queue = configoptional.Some(qCfg)
+						}
+						push := func(context.Context, pmetric.Metrics) error { return nil }
+						metrics, err := exporterhelper.NewMetrics(ctx, set, cfg, push,
+							exporterhelper.WithQueue(queue))
+						if err != nil {
+							return nil, err
+						}
+						if tt.exposesBatching {
+							helper, ok := metrics.(exporterHelperBatcher)
+							if !ok {
+								return nil, fmt.Errorf("exporterhelper exporter %T does not expose batching status", metrics)
+							}
+							return &wrappedMetricsExporterWithBatching{Metrics: metrics, exporterHelperBatcher: helper}, nil
+						}
+						if tt.wrapped {
+							return &wrappedMetricsExporter{Metrics: metrics}, nil
+						}
+						return metrics, nil
+					},
+					component.StabilityLevelAlpha,
+				),
+			)
+			node := newExporterNode(pipeline.SignalMetrics, exporterID)
+			core, logs := observer.New(zapcore.WarnLevel)
+			telemetry := componenttest.NewNopTelemetrySettings()
+			telemetry.Logger = zap.New(core)
 
-	err := node.buildComponent(
-		context.Background(),
-		componenttest.NewNopTelemetrySettings(),
-		component.NewDefaultBuildInfo(),
-		builders.NewExporter(
-			map[component.ID]component.Config{exporterID: factory.CreateDefaultConfig()},
-			map[component.Type]exporter.Factory{exporterType: factory},
-		),
-	)
-	require.NoError(t, err)
-	require.True(t, node.exporterHelperBatchingEnabled)
+			err := node.buildComponent(context.Background(), telemetry, component.NewDefaultBuildInfo(),
+				builders.NewExporter(
+					map[component.ID]component.Config{exporterID: factory.CreateDefaultConfig()},
+					map[component.Type]exporter.Factory{exporterType: factory},
+				))
+			require.NoError(t, err)
+			require.Equal(t, tt.wantBatching, node.exporterHelperBatchingEnabled)
+
+			pipelineID := pipeline.NewID(pipeline.SignalMetrics)
+			g := &Graph{
+				pipelines: map[pipeline.ID]*pipelineNodes{
+					pipelineID: {exporters: map[int64]graph.Node{node.ID(): node}},
+				},
+				telemetry: telemetry,
+			}
+			g.warnIfDoubleBatching(pipelines.Config{
+				pipelineID: {Processors: []component.ID{component.MustNewID("batch")}},
+			})
+			entries := logs.FilterMessageSnippet("double batching").All()
+			if tt.wantBatching {
+				require.Len(t, entries, 1)
+				require.Equal(t, pipelineID.String(), entries[0].ContextMap()["pipeline"])
+				require.Equal(t, exporterID.String(), entries[0].ContextMap()["exporter"])
+			} else {
+				require.Empty(t, entries)
+			}
+		})
+	}
 }
 
 func TestWarnIfDoubleBatching(t *testing.T) {

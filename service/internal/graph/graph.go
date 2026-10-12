@@ -95,7 +95,8 @@ func Build(ctx context.Context, set Settings) (*Graph, error) {
 	if err := pipelines.buildComponents(ctx, set); err != nil {
 		return pipelines, err
 	}
-	// TODO: Revisit this warning after Phase 2 of the batching migration is complete.
+	// TODO: Revisit this warning when custom builds no longer need batchprocessor.
+	// See https://github.com/open-telemetry/opentelemetry-collector/issues/15965.
 	pipelines.warnIfDoubleBatching(set.PipelineConfigs)
 	return pipelines, nil
 }
