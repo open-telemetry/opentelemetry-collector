@@ -115,7 +115,11 @@ config:
       # Optional: Example values for this property.
       examples: [any]
       # Optional: Indicates if this property is deprecated.
-      deprecated: bool
+      deprecated:
+        # Required: version when the prop was deprecated
+        since:
+        # Required: migration note
+        note:
       # Optional: For string types - allowed values.
       enum: [string]
       # Optional: Constant value - property must have exactly this value.

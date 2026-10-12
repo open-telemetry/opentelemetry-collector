@@ -18,7 +18,8 @@ import (
 
 type SamplePkg = samplepkg.SampleConfig
 
-// NewDefaultSamplePkg returns a new SamplePkg with default values consistent with the annotations in the schema.
+// NewDefaultSamplePkg returns a new SamplePkg with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultSamplePkg() SamplePkg {
 	return samplepkg.NewDefaultSampleConfig()
 }
@@ -27,6 +28,8 @@ type TargetsItem struct {
 	// Endpoint represents a network endpoint address.
 	Endpoint configoptional.Optional[confignet.AddrConfig] `mapstructure:"endpoint"`
 
+	// Interval polling interval for the scraper target.
+	// Deprecated: [v0.160.0] Support for this property will be dropped soon.
 	Interval configoptional.Optional[time.Duration] `mapstructure:"interval"`
 
 	// Labels static key-value labels attached to all metrics from this target.
@@ -46,6 +49,7 @@ type TargetsItem struct {
 }
 
 // Validate validates the TargetsItem fields according to schema annotations.
+// Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
 func (c *TargetsItem) Validate() error {
 	var err error
 
@@ -70,7 +74,8 @@ func (c *TargetsItem) Validate() error {
 	return err
 }
 
-// NewDefaultTargetsItem returns a new TargetsItem with default values consistent with the annotations in the schema.
+// NewDefaultTargetsItem returns a new TargetsItem with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultTargetsItem() TargetsItem {
 	endpoint := confignet.NewDefaultAddrConfig()
 	endpoint.Transport = "ip4"

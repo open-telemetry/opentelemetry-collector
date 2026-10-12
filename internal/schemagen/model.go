@@ -41,7 +41,7 @@ type ConfigMetadata struct {
 	Type             SchemaType                 `mapstructure:"type,omitempty" json:"type,omitempty" yaml:"type,omitempty"`
 	Ref              string                     `mapstructure:"$ref,omitempty" json:"-" yaml:"$ref,omitempty"`
 	Default          any                        `mapstructure:"default,omitempty" json:"default,omitempty" yaml:"default,omitempty"`
-	Deprecated       bool                       `mapstructure:"deprecated,omitempty" json:"deprecated,omitempty" yaml:"deprecated,omitempty"`
+	Deprecated       *DeprecatedConfig          `mapstructure:"deprecated,omitempty" json:"deprecated,omitempty" yaml:"deprecated,omitempty"`
 	Enum             []any                      `mapstructure:"enum,omitempty" json:"enum,omitempty" yaml:"enum,omitempty"`
 	Properties       map[string]*ConfigMetadata `mapstructure:"properties,omitempty" json:"properties,omitempty" yaml:"properties,omitempty"`
 	Values           *ConfigMetadata            `mapstructure:"values,omitempty" json:"values,omitempty" yaml:"values,omitempty"`
@@ -71,6 +71,11 @@ type ConfigMetadata struct {
 type ConfigsMetadata struct {
 	Config          *ConfigMetadata            `mapstructure:"config,omitempty" json:"config,omitempty" yaml:"config,omitempty"`
 	ExportedConfigs map[string]*ConfigMetadata `mapstructure:"exported_configs,omitempty" json:"exported_configs,omitempty" yaml:"exported_configs,omitempty"`
+}
+
+type DeprecatedConfig struct {
+	Since string `mapstructure:"since,omitempty" yaml:"since,omitempty"`
+	Note  string `mapstructure:"note,omitempty" yaml:"note,omitempty"`
 }
 
 type GoStructConfig struct {
@@ -151,6 +156,14 @@ func (md *ConfigsMetadata) Validate() error {
 // For maps (Properties, PatternProperties), missing keys are merged in individually.
 // Calling MergeFrom on a zero-value ConfigMetadata is equivalent to a deep clone of other.
 func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
+	md.mergeFrom(other, false)
+}
+
+func (md *ConfigMetadata) mergeResolvedRef(other *ConfigMetadata) {
+	md.mergeFrom(other, true)
+}
+
+func (md *ConfigMetadata) mergeFrom(other *ConfigMetadata, isRef bool) {
 	if other == nil {
 		return
 	}
@@ -178,9 +191,6 @@ func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
 	}
 
 	// booleans — false is treated as "not set"
-	if !md.Deprecated {
-		md.Deprecated = other.Deprecated
-	}
 	if !md.UniqueItems {
 		md.UniqueItems = other.UniqueItems
 	}
@@ -258,8 +268,13 @@ func (md *ConfigMetadata) MergeFrom(other *ConfigMetadata) {
 		md.ExclusiveMinimum = clonePtr(other.ExclusiveMinimum)
 	}
 
+	// deprecated config
+	if md.Deprecated == nil && other.Deprecated != nil {
+		md.Deprecated = clonePtr(other.Deprecated)
+	}
+
 	// GoStructConfig — merge field by field
-	if md.GoStruct.CustomValidator == nil && other.GoStruct.CustomValidator != nil {
+	if !isRef && md.GoStruct.CustomValidator == nil && other.GoStruct.CustomValidator != nil {
 		cv := *other.GoStruct.CustomValidator
 		md.GoStruct.CustomValidator = &cv
 	}
@@ -379,6 +394,14 @@ func (md *ConfigMetadata) Validate() error {
 	if md.Values != nil {
 		if err := md.Values.Validate(); err != nil {
 			errs = errors.Join(errs, err)
+		}
+	}
+	if md.Deprecated != nil {
+		if md.Deprecated.Since == "" {
+			errs = errors.Join(errs, errors.New("deprecated.since must be set"))
+		}
+		if md.Deprecated.Note == "" {
+			errs = errors.Join(errs, errors.New("deprecated.note must be set"))
 		}
 	}
 	return errs
