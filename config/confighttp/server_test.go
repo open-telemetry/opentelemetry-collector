@@ -341,7 +341,7 @@ func TestHTTPServerTLSHandshakeEOFLogging(t *testing.T) {
 	require.Contains(t, entries[0].Message, "http: TLS handshake error from ")
 	require.True(t, strings.HasSuffix(entries[0].Message, ": EOF"))
 	assert.Equal(t, zapcore.DebugLevel, entries[0].Level)
-	assert.Equal(t, "server.go", filepath.Base(entries[0].Caller.File))
+	assert.True(t, strings.HasSuffix(entries[0].Caller.File, "net/http/server.go"))
 	assert.Equal(t, "net/http.(*Server).logf", strings.Split(entries[0].Stack, "\n")[0])
 	assert.NotContains(t, entries[0].Stack, "httpErrorLogWriter.Write")
 }

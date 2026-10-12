@@ -34,7 +34,11 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
-const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
+const (
+	defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
+	tlsHandshakeErrorPrefix   = "http: TLS handshake error from "
+	tlsHandshakeEOFMessage    = ": EOF"
+)
 
 type httpErrorLogWriter struct {
 	logger *zap.Logger
@@ -43,8 +47,8 @@ type httpErrorLogWriter struct {
 func (w *httpErrorLogWriter) Write(p []byte) (int, error) {
 	msg := strings.TrimSuffix(string(p), "\n")
 
-	if strings.HasPrefix(msg, "http: TLS handshake error from ") &&
-		strings.HasSuffix(msg, ": EOF") {
+	if strings.HasPrefix(msg, tlsHandshakeErrorPrefix) &&
+		strings.HasSuffix(msg, tlsHandshakeEOFMessage) {
 		w.logger.Debug(msg)
 	} else {
 		w.logger.Error(msg)
