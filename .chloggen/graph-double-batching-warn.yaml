@@ -1,0 +1,12 @@
+change_type: enhancement
+component: pkg/graph
+note: Emit a startup warning when a `batch` processor and an exporterhelper exporter with batching enabled (`sending_queue.batch`) appear on the same active signal path.
+issues: [15965]
+subtext: |
+  The check is graph-level: it walks the resolved execution graph rather than
+  inspecting raw config, so connectors, disabled components, and exporters
+  that are configured but not wired into a pipeline do not produce false
+  positives.  The warning message names the exact pipeline, exporter, and
+  path (e.g. `traces: processor/batch -> exporter/otlp`) so the operator
+  knows precisely where to act.
+change_logs: [user]
