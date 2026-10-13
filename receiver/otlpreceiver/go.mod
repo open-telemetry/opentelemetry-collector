@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/receiver/otlpreceiver
 go 1.26.0
 
 require (
-	github.com/klauspost/compress v1.20.1
+	github.com/klauspost/compress v1.20.3
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.68.0
 	go.opentelemetry.io/collector/component/componentstatus v0.162.0
