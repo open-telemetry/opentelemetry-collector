@@ -175,6 +175,7 @@
   "prConcurrentLimit": 200,
   "prHourlyLimit": 5,
   "postUpdateOptions": [
-    "gomodTidy"
+    "gomodTidyAll",
+    "gomodUpdateImportPaths"
   ]
 }
