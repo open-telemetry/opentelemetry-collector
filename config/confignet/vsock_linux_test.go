@@ -51,6 +51,71 @@ func TestVsockDialErrors(t *testing.T) {
 	}
 }
 
+func TestVsockDialHonorsContext(t *testing.T) {
+	tests := []struct {
+		name    string
+		timeout time.Duration
+		cancel  bool
+		errIs   error
+	}{
+		{name: "timeout", timeout: 10 * time.Millisecond, errIs: context.DeadlineExceeded},
+		{name: "canceled mid-dial", cancel: true, errIs: context.Canceled},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			release := make(chan struct{})
+			dialStarted := make(chan struct{})
+			client, server := net.Pipe()
+			t.Cleanup(func() { _ = server.Close() })
+			lateConn := &closeTrackingConn{Conn: client, closed: make(chan struct{})}
+
+			origDial := vsockDial
+			t.Cleanup(func() { vsockDial = origDial })
+			vsockDial = func(uint32, uint32) (net.Conn, error) {
+				close(dialStarted)
+				<-release
+				return lateConn, nil
+			}
+
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			if tt.cancel {
+				go func() {
+					<-dialStarted
+					cancel()
+				}()
+			}
+
+			nac := &AddrConfig{
+				Endpoint:     "2:8080",
+				Transport:    TransportTypeVsock,
+				DialerConfig: DialerConfig{Timeout: tt.timeout},
+			}
+			conn, err := nac.Dial(ctx)
+			require.ErrorIs(t, err, tt.errIs)
+			assert.Nil(t, conn)
+
+			// A connection established after the context is done must be closed.
+			close(release)
+			select {
+			case <-lateConn.closed:
+			case <-time.After(5 * time.Second):
+				t.Fatal("connection established after the context was done was not closed")
+			}
+		})
+	}
+}
+
+type closeTrackingConn struct {
+	net.Conn
+	closed chan struct{}
+}
+
+func (c *closeTrackingConn) Close() error {
+	close(c.closed)
+	return c.Conn.Close()
+}
+
 func TestVsockListenErrors(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -98,17 +163,19 @@ func TestVsockListenAndDial(t *testing.T) {
 	require.True(t, ok, "expected *vsock.Addr from listener")
 	dialEndpoint := fmt.Sprintf("%d:%d", vsockAddr.ContextID, vsockAddr.Port)
 
-	done := make(chan bool, 1)
+	done := make(chan struct{})
 	go func() {
+		defer close(done)
 		conn, errGo := ln.Accept()
-		assert.NoError(t, errGo)
+		if !assert.NoError(t, errGo) {
+			return
+		}
 		buf := make([]byte, 10)
 		var numChr int
 		numChr, errGo = conn.Read(buf)
 		assert.NoError(t, errGo)
 		assert.Equal(t, "test", string(buf[:numChr]))
 		assert.NoError(t, conn.Close())
-		done <- true
 	}()
 
 	nac := &AddrConfig{
