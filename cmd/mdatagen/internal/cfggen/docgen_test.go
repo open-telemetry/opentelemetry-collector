@@ -215,3 +215,41 @@ func TestCfgSubSection(t *testing.T) {
 	assert.Equal(t, "tls", sec.Anchor)
 	assert.Equal(t, "tls", sec.Title)
 }
+
+func TestCfgExportedSections(t *testing.T) {
+	t.Parallel()
+	objectWithProp := func() *ConfigMetadata {
+		return &ConfigMetadata{
+			Type: "object",
+			Properties: map[string]*ConfigMetadata{
+				"host": {Type: "string"},
+			},
+		}
+	}
+	internal := objectWithProp()
+	internal.InternalOnly = true
+
+	md := &ConfigsMetadata{
+		ExportedConfigs: map[string]*ConfigMetadata{
+			"zeta":     objectWithProp(),
+			"alpha":    objectWithProp(),
+			"scalar":   {Type: "string"},
+			"internal": internal,
+			"nil_def":  nil,
+		},
+	}
+
+	sections := CfgExportedSections(md)
+	require.Len(t, sections, 2, "scalar, internal and nil definitions must be skipped")
+	// sorted by name for stable README output
+	assert.Equal(t, "exported_configs.alpha", sections[0].Anchor)
+	assert.Equal(t, "exported_configs.alpha", sections[0].Title)
+	assert.Equal(t, "exported_configs.zeta", sections[1].Anchor)
+	assert.NotNil(t, sections[0].Schema)
+}
+
+func TestCfgExportedSections_NilAndEmpty(t *testing.T) {
+	t.Parallel()
+	assert.Nil(t, CfgExportedSections(nil))
+	assert.Nil(t, CfgExportedSections(&ConfigsMetadata{}))
+}

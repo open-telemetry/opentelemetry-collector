@@ -5,6 +5,7 @@ package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cf
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -173,12 +174,33 @@ func setFlowStyle(n *yaml.Node) {
 // These are added to the func map by WithCfgFns.
 func NewCfgDocFns() map[string]any {
 	return map[string]any{
-		"cfgPropDocs":    CfgPropDocs,
-		"cfgIsObject":    CfgIsObject,
-		"cfgAnchor":      CfgAnchor,
-		"cfgDocType":     CfgDocType,
-		"cfgDocDefault":  CfgDocDefault,
-		"cfgRootSection": CfgRootSection,
-		"cfgSubSection":  CfgSubSection,
+		"cfgPropDocs":         CfgPropDocs,
+		"cfgIsObject":         CfgIsObject,
+		"cfgAnchor":           CfgAnchor,
+		"cfgDocType":          CfgDocType,
+		"cfgDocDefault":       CfgDocDefault,
+		"cfgRootSection":      CfgRootSection,
+		"cfgSubSection":       CfgSubSection,
+		"cfgExportedSections": CfgExportedSections,
 	}
+}
+
+// CfgExportedSections returns one DocSection for every user-facing object
+// definition under exported_configs. InternalOnly definitions (injected by
+// mdatagen itself) and non-object definitions are skipped. Sections are sorted
+// by name so the generated README is stable.
+func CfgExportedSections(md *ConfigsMetadata) []DocSection {
+	if md == nil {
+		return nil
+	}
+	var sections []DocSection
+	for _, name := range slices.Sorted(maps.Keys(md.ExportedConfigs)) {
+		cfg := md.ExportedConfigs[name]
+		if cfg == nil || cfg.InternalOnly || !CfgIsObject(cfg) {
+			continue
+		}
+		anchor := CfgAnchor("exported_configs", name)
+		sections = append(sections, CfgSubSection(cfg, anchor, anchor))
+	}
+	return sections
 }
