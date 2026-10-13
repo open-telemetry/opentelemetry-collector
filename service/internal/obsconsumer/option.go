@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	ComponentOutcome = "otelcol.component.outcome"
+	ComponentOutcome   = "otelcol.component.outcome"
+	ComponentErrorType = "otelcol.component.error.type"
 )
 
 // Option modifies the consumer behavior.
@@ -17,6 +18,16 @@ type Option func(*options)
 
 type options struct {
 	staticDataPointAttributes []attribute.KeyValue
+}
+
+func (o *options) attrsForError(outcome, errorType string) metric.AddOption {
+	attrs := make([]attribute.KeyValue, 0, 2+len(o.staticDataPointAttributes))
+	attrs = append(attrs,
+		attribute.String(ComponentOutcome, outcome),
+		attribute.String(ComponentErrorType, errorType),
+	)
+	attrs = append(attrs, o.staticDataPointAttributes...)
+	return metric.WithAttributes(attrs...)
 }
 
 // WithStaticDataPointAttribute returns an Option that adds a static attribute to data points.
