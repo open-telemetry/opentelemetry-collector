@@ -27,7 +27,7 @@ func (f *fakeProxy) list(_ context.Context, modules []string) ([]ListedModule, e
 	return out, nil
 }
 
-func acceptAll(ListedModule) bool { return true }
+func acceptAll(ListedModule) (string, bool) { return "", true }
 
 func TestVerifyHighestPriorityWins(t *testing.T) {
 	proxy := &fakeProxy{modules: map[string][]string{
@@ -45,10 +45,10 @@ func TestVerifyHighestPriorityWins(t *testing.T) {
 	got, err := verify(t.Context(), proxy.list, components, acceptAll)
 	require.NoError(t, err)
 
-	assert.Equal(t, corePrefix+"receiver/otlpreceiver", got.modules[components[0]].Path)
-	assert.Equal(t, contribPrefix+"receiver/hostmetricsreceiver", got.modules[components[1]].Path)
+	assert.Equal(t, corePrefix+"receiver/otlpreceiver", got.modules[components[0]].module.Path)
+	assert.Equal(t, contribPrefix+"receiver/hostmetricsreceiver", got.modules[components[1]].module.Path)
 	// Pattern #4 outranks pattern #5.
-	assert.Equal(t, contribPrefix+"extension/storage/filestorageextension", got.modules[components[2]].Path)
+	assert.Equal(t, contribPrefix+"extension/storage/filestorageextension", got.modules[components[2]].module.Path)
 }
 
 func TestVerifyBatchesByLevel(t *testing.T) {
@@ -102,14 +102,14 @@ func TestVerifyAccept(t *testing.T) {
 	components := []Component{{Processor, "batch"}}
 
 	// The core module is skipped because it is not accepted, the contrib one is used.
-	got, err := verify(t.Context(), proxy.list, components, func(m ListedModule) bool {
-		return m.Versions[0] == "v0.1.0"
+	got, err := verify(t.Context(), proxy.list, components, func(m ListedModule) (string, bool) {
+		return "v0.1.0", m.Versions[0] == "v0.1.0"
 	})
 	require.NoError(t, err)
-	assert.Equal(t, contribPrefix+"processor/batchprocessor", got.modules[components[0]].Path)
+	assert.Equal(t, contribPrefix+"processor/batchprocessor", got.modules[components[0]].module.Path)
 
 	// When nothing is accepted, the component is reported as found.
-	got, err = verify(t.Context(), proxy.list, components, func(ListedModule) bool { return false })
+	got, err = verify(t.Context(), proxy.list, components, func(ListedModule) (string, bool) { return "", false })
 	require.NoError(t, err)
 	assert.Empty(t, got.modules)
 	assert.True(t, got.found[components[0]])

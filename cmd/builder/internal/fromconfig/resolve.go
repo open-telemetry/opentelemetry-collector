@@ -69,9 +69,8 @@ func (r *Resolver) Resolve(ctx context.Context, config []byte) (Result, error) {
 		return Result{}, err
 	}
 
-	found, err := verify(ctx, list, components, func(m ListedModule) bool {
-		_, ok := versions.selectVersion(m.Versions)
-		return ok
+	found, err := verify(ctx, list, components, func(m ListedModule) (string, bool) {
+		return versions.selectVersion(m.Versions)
 	})
 	if err != nil {
 		return Result{}, err
@@ -79,7 +78,7 @@ func (r *Resolver) Resolve(ctx context.Context, config []byte) (Result, error) {
 
 	var result Result
 	for _, c := range components {
-		m, ok := found.modules[c]
+		sel, ok := found.modules[c]
 		if !ok {
 			reason := fmt.Sprintf("no Go module found for %s %q", c.Class, c.Type)
 			if found.found[c] {
@@ -88,8 +87,7 @@ func (r *Resolver) Resolve(ctx context.Context, config []byte) (Result, error) {
 			result.Unresolved = append(result.Unresolved, Unresolved{Component: c, Reason: reason})
 			continue
 		}
-		version, _ := versions.selectVersion(m.Versions)
-		result.Resolved = append(result.Resolved, Resolved{Component: c, Module: m.Path, Version: version})
+		result.Resolved = append(result.Resolved, Resolved{Component: c, Module: sel.module.Path, Version: sel.version})
 	}
 	return result, nil
 }

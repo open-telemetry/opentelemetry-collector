@@ -44,10 +44,16 @@ type ListFunc func(ctx context.Context, modules []string) ([]ListedModule, error
 // errLookupUnavailable is returned when module lookups do not work at all.
 var errLookupUnavailable = errors.New("module lookup unavailable")
 
+// selection is the module selected for a component, with the version chosen for it.
+type selection struct {
+	module  ListedModule
+	version string
+}
+
 // verified holds the outcome of verifying the candidates of a set of components.
 type verified struct {
 	// modules holds, for each resolved component, the selected module.
-	modules map[Component]ListedModule
+	modules map[Component]selection
 	// found holds the components for which at least one candidate module exists
 	// but none was accepted.
 	found map[Component]bool
@@ -55,10 +61,10 @@ type verified struct {
 
 // verify looks up the candidate modules of the components through list, one
 // priority level at a time, and selects for each component the highest-priority
-// module that exists and that accept approves.
-func verify(ctx context.Context, list ListFunc, components []Component, accept func(ListedModule) bool) (verified, error) {
+// module that exists and for which choose returns a version.
+func verify(ctx context.Context, list ListFunc, components []Component, choose func(ListedModule) (string, bool)) (verified, error) {
 	result := verified{
-		modules: map[Component]ListedModule{},
+		modules: map[Component]selection{},
 		found:   map[Component]bool{},
 	}
 
@@ -105,8 +111,8 @@ func verify(ctx context.Context, list ListFunc, components []Component, accept f
 					if _, done := result.modules[c]; done {
 						continue
 					}
-					if accept(m) {
-						result.modules[c] = m
+					if version, ok := choose(m); ok {
+						result.modules[c] = selection{module: m, version: version}
 					} else {
 						result.found[c] = true
 					}
@@ -120,7 +126,7 @@ func verify(ctx context.Context, list ListFunc, components []Component, accept f
 // levelPaths returns the distinct module paths to look up for the candidates of
 // the given level, and the components each path is a candidate for. Components
 // that are already resolved are skipped.
-func levelPaths(level int, components []Component, cands map[Component][]candidate, resolved map[Component]ListedModule) ([]string, map[string][]Component) {
+func levelPaths(level int, components []Component, cands map[Component][]candidate, resolved map[Component]selection) ([]string, map[string][]Component) {
 	byPath := map[string][]Component{}
 	var paths []string
 	for _, c := range components {
