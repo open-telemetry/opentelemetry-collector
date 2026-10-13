@@ -24,8 +24,8 @@ const (
 	Connector Class = "connector"
 )
 
-// Classes lists every component class, in the order sections are reported.
-var Classes = []Class{Receiver, Processor, Exporter, Extension, Connector}
+// classes lists every component class, in the order components are reported.
+var classes = []Class{Receiver, Processor, Exporter, Extension, Connector}
 
 // section returns the top-level configuration key holding components of the class.
 func (c Class) section() string {
@@ -51,7 +51,7 @@ func ParseComponents(data []byte) ([]Component, error) {
 	}
 
 	var components []Component
-	for _, class := range Classes {
+	for _, class := range classes {
 		node, ok := cfg[class.section()]
 		if !ok || isNull(&node) {
 			continue
