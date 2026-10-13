@@ -42,7 +42,8 @@ type Component struct {
 // connectors sections of a Collector configuration and returns the distinct
 // components it references, sorted by class then type.
 //
-// No environment variable expansion is performed.
+// Only the component sections are read: a component that is defined but not used
+// by any pipeline is still returned. No environment variable expansion is performed.
 func ParseComponents(data []byte) ([]Component, error) {
 	var cfg map[string]yaml.Node
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
@@ -75,8 +76,9 @@ func ParseComponents(data []byte) ([]Component, error) {
 	return components, nil
 }
 
+// isNull reports whether the node is an explicit null, such as `receivers:` with no value.
 func isNull(n *yaml.Node) bool {
-	return n.Kind == 0 || (n.Kind == yaml.ScalarNode && n.Tag == "!!null")
+	return n.Kind == yaml.ScalarNode && n.Tag == "!!null"
 }
 
 // componentType extracts the type from a component ID of the form `type` or `type/name`.
