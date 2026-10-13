@@ -62,7 +62,8 @@ func (r *Resolver) Resolve(ctx context.Context, config []byte) (Result, error) {
 		if err != nil {
 			return Result{}, fmt.Errorf("failed to prepare module lookups: %w", err)
 		}
-		defer g.close()
+		// Failing to remove the temporary folder does not affect the result.
+		defer func() { _ = g.close() }()
 		if list == nil {
 			list = g.list
 		}
