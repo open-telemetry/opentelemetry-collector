@@ -31,9 +31,9 @@ func TestCopyLocation(t *testing.T) {
 				}()
 
 				dest := NewLocation()
-				CopyLocation(dest, src)
+				CopyLocation(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyLocation(dest, dest)
+				CopyLocation(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyLocationSlice(t *testing.T) {
 	src := []Location{}
 	dest := []Location{}
 	// Test CopyTo empty
-	dest = CopyLocationSlice(dest, src)
+	dest = CopyLocationSlice(dest, src, nil)
 	assert.Equal(t, []Location{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestLocationSlice()
-	dest = CopyLocationSlice(dest, src)
+	dest = CopyLocationSlice(dest, src, nil)
 	assert.Equal(t, GenTestLocationSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyLocationSlice(dest, src)
+	dest = CopyLocationSlice(dest, src, nil)
 	assert.Equal(t, GenTestLocationSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyLocationSlice(dest, []Location{})
+	dest = CopyLocationSlice(dest, []Location{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyLocationSlice(dest, src)
+	dest = CopyLocationSlice(dest, src, nil)
 	assert.Equal(t, GenTestLocationSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyLocationPtrSlice(t *testing.T) {
 	src := []*Location{}
 	dest := []*Location{}
 	// Test CopyTo empty
-	dest = CopyLocationPtrSlice(dest, src)
+	dest = CopyLocationPtrSlice(dest, src, nil)
 	assert.Equal(t, []*Location{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestLocationPtrSlice()
-	dest = CopyLocationPtrSlice(dest, src)
+	dest = CopyLocationPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLocationPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyLocationPtrSlice(dest, src)
+	dest = CopyLocationPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLocationPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyLocationPtrSlice(dest, []*Location{})
+	dest = CopyLocationPtrSlice(dest, []*Location{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyLocationPtrSlice(dest, src)
+	dest = CopyLocationPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLocationPtrSlice(), dest)
 }
 
@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufLocation(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesLocation() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                    {0x02},
-		"MappingIndex/wrong_wire_type":     {0xc},
-		"MappingIndex/missing_value":       {0x8},
-		"Address/wrong_wire_type":          {0x14},
-		"Address/missing_value":            {0x10},
-		"Lines/wrong_wire_type":            {0x1c},
-		"Lines/missing_value":              {0x1a},
-		"AttributeIndices/wrong_wire_type": {0x24},
-		"AttributeIndices/missing_value":   {0x22},
+		"MappingIndex/wrong_wire_type":     []byte{0xc},
+		"MappingIndex/missing_value":       []byte{0x8},
+		"Address/wrong_wire_type":          []byte{0x14},
+		"Address/missing_value":            []byte{0x10},
+		"Lines/wrong_wire_type":            []byte{0x1c},
+		"Lines/missing_value":              []byte{0x1a},
+		"AttributeIndices/wrong_wire_type": []byte{0x24},
+		"AttributeIndices/missing_value":   []byte{0x22},
 	}
 }
 
@@ -206,7 +206,7 @@ func genTestEncodingValuesLocation() map[string]*Location {
 		"empty":                 NewLocation(),
 		"MappingIndex/test":     {MappingIndex: int32(13)},
 		"Address/test":          {Address: uint64(13)},
-		"Lines/test":            {Lines: []*Line{{}, GenTestLine()}},
+		"Lines/test":            {Lines: []*Line{&Line{}, GenTestLine()}},
 		"AttributeIndices/test": {AttributeIndices: []int32{int32(0), int32(13)}},
 	}
 }

@@ -31,9 +31,9 @@ func TestCopyAnyValue(t *testing.T) {
 				}()
 
 				dest := NewAnyValue()
-				CopyAnyValue(dest, src)
+				CopyAnyValue(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyAnyValue(dest, dest)
+				CopyAnyValue(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyAnyValueSlice(t *testing.T) {
 	src := []AnyValue{}
 	dest := []AnyValue{}
 	// Test CopyTo empty
-	dest = CopyAnyValueSlice(dest, src)
+	dest = CopyAnyValueSlice(dest, src, nil)
 	assert.Equal(t, []AnyValue{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestAnyValueSlice()
-	dest = CopyAnyValueSlice(dest, src)
+	dest = CopyAnyValueSlice(dest, src, nil)
 	assert.Equal(t, GenTestAnyValueSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyAnyValueSlice(dest, src)
+	dest = CopyAnyValueSlice(dest, src, nil)
 	assert.Equal(t, GenTestAnyValueSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyAnyValueSlice(dest, []AnyValue{})
+	dest = CopyAnyValueSlice(dest, []AnyValue{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyAnyValueSlice(dest, src)
+	dest = CopyAnyValueSlice(dest, src, nil)
 	assert.Equal(t, GenTestAnyValueSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyAnyValuePtrSlice(t *testing.T) {
 	src := []*AnyValue{}
 	dest := []*AnyValue{}
 	// Test CopyTo empty
-	dest = CopyAnyValuePtrSlice(dest, src)
+	dest = CopyAnyValuePtrSlice(dest, src, nil)
 	assert.Equal(t, []*AnyValue{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestAnyValuePtrSlice()
-	dest = CopyAnyValuePtrSlice(dest, src)
+	dest = CopyAnyValuePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestAnyValuePtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyAnyValuePtrSlice(dest, src)
+	dest = CopyAnyValuePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestAnyValuePtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyAnyValuePtrSlice(dest, []*AnyValue{})
+	dest = CopyAnyValuePtrSlice(dest, []*AnyValue{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyAnyValuePtrSlice(dest, src)
+	dest = CopyAnyValuePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestAnyValuePtrSlice(), dest)
 }
 
@@ -191,22 +191,22 @@ func genTestFailingUnmarshalProtoValuesAnyValue() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field": {0x02},
 
-		"StringValue/wrong_wire_type":         {0xc},
-		"StringValue/missing_value":           {0xa},
-		"BoolValue/wrong_wire_type":           {0x14},
-		"BoolValue/missing_value":             {0x10},
-		"IntValue/wrong_wire_type":            {0x1c},
-		"IntValue/missing_value":              {0x18},
-		"DoubleValue/wrong_wire_type":         {0x24},
-		"DoubleValue/missing_value":           {0x21},
-		"ArrayValue/wrong_wire_type":          {0x2c},
-		"ArrayValue/missing_value":            {0x2a},
-		"KvlistValue/wrong_wire_type":         {0x34},
-		"KvlistValue/missing_value":           {0x32},
-		"BytesValue/wrong_wire_type":          {0x3c},
-		"BytesValue/missing_value":            {0x3a},
-		"StringValueStrindex/wrong_wire_type": {0x44},
-		"StringValueStrindex/missing_value":   {0x40},
+		"StringValue/wrong_wire_type":         []byte{0xc},
+		"StringValue/missing_value":           []byte{0xa},
+		"BoolValue/wrong_wire_type":           []byte{0x14},
+		"BoolValue/missing_value":             []byte{0x10},
+		"IntValue/wrong_wire_type":            []byte{0x1c},
+		"IntValue/missing_value":              []byte{0x18},
+		"DoubleValue/wrong_wire_type":         []byte{0x24},
+		"DoubleValue/missing_value":           []byte{0x21},
+		"ArrayValue/wrong_wire_type":          []byte{0x2c},
+		"ArrayValue/missing_value":            []byte{0x2a},
+		"KvlistValue/wrong_wire_type":         []byte{0x34},
+		"KvlistValue/missing_value":           []byte{0x32},
+		"BytesValue/wrong_wire_type":          []byte{0x3c},
+		"BytesValue/missing_value":            []byte{0x3a},
+		"StringValueStrindex/wrong_wire_type": []byte{0x44},
+		"StringValueStrindex/missing_value":   []byte{0x40},
 	}
 }
 

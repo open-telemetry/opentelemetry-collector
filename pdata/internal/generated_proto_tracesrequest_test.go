@@ -31,9 +31,9 @@ func TestCopyTracesRequest(t *testing.T) {
 				}()
 
 				dest := NewTracesRequest()
-				CopyTracesRequest(dest, src)
+				CopyTracesRequest(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyTracesRequest(dest, dest)
+				CopyTracesRequest(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyTracesRequestSlice(t *testing.T) {
 	src := []TracesRequest{}
 	dest := []TracesRequest{}
 	// Test CopyTo empty
-	dest = CopyTracesRequestSlice(dest, src)
+	dest = CopyTracesRequestSlice(dest, src, nil)
 	assert.Equal(t, []TracesRequest{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestTracesRequestSlice()
-	dest = CopyTracesRequestSlice(dest, src)
+	dest = CopyTracesRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestTracesRequestSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyTracesRequestSlice(dest, src)
+	dest = CopyTracesRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestTracesRequestSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyTracesRequestSlice(dest, []TracesRequest{})
+	dest = CopyTracesRequestSlice(dest, []TracesRequest{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyTracesRequestSlice(dest, src)
+	dest = CopyTracesRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestTracesRequestSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyTracesRequestPtrSlice(t *testing.T) {
 	src := []*TracesRequest{}
 	dest := []*TracesRequest{}
 	// Test CopyTo empty
-	dest = CopyTracesRequestPtrSlice(dest, src)
+	dest = CopyTracesRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, []*TracesRequest{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestTracesRequestPtrSlice()
-	dest = CopyTracesRequestPtrSlice(dest, src)
+	dest = CopyTracesRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestTracesRequestPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyTracesRequestPtrSlice(dest, src)
+	dest = CopyTracesRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestTracesRequestPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyTracesRequestPtrSlice(dest, []*TracesRequest{})
+	dest = CopyTracesRequestPtrSlice(dest, []*TracesRequest{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyTracesRequestPtrSlice(dest, src)
+	dest = CopyTracesRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestTracesRequestPtrSlice(), dest)
 }
 
@@ -190,12 +190,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufTracesRequest(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesTracesRequest() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                  {0x02},
-		"RequestContext/wrong_wire_type": {0x14},
-		"RequestContext/missing_value":   {0x12},
-		"TracesData/wrong_wire_type":     {0x1c},
-		"TracesData/missing_value":       {0x1a},
-		"FormatVersion/wrong_wire_type":  {0xc},
-		"FormatVersion/missing_value":    {0xd},
+		"RequestContext/wrong_wire_type": []byte{0x14},
+		"RequestContext/missing_value":   []byte{0x12},
+		"TracesData/wrong_wire_type":     []byte{0x1c},
+		"TracesData/missing_value":       []byte{0x1a},
+		"FormatVersion/wrong_wire_type":  []byte{0xc},
+		"FormatVersion/missing_value":    []byte{0xd},
 	}
 }
 

@@ -31,9 +31,9 @@ func TestCopyExportTraceServiceRequest(t *testing.T) {
 				}()
 
 				dest := NewExportTraceServiceRequest()
-				CopyExportTraceServiceRequest(dest, src)
+				CopyExportTraceServiceRequest(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyExportTraceServiceRequest(dest, dest)
+				CopyExportTraceServiceRequest(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyExportTraceServiceRequestSlice(t *testing.T) {
 	src := []ExportTraceServiceRequest{}
 	dest := []ExportTraceServiceRequest{}
 	// Test CopyTo empty
-	dest = CopyExportTraceServiceRequestSlice(dest, src)
+	dest = CopyExportTraceServiceRequestSlice(dest, src, nil)
 	assert.Equal(t, []ExportTraceServiceRequest{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExportTraceServiceRequestSlice()
-	dest = CopyExportTraceServiceRequestSlice(dest, src)
+	dest = CopyExportTraceServiceRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportTraceServiceRequestSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExportTraceServiceRequestSlice(dest, src)
+	dest = CopyExportTraceServiceRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportTraceServiceRequestSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExportTraceServiceRequestSlice(dest, []ExportTraceServiceRequest{})
+	dest = CopyExportTraceServiceRequestSlice(dest, []ExportTraceServiceRequest{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExportTraceServiceRequestSlice(dest, src)
+	dest = CopyExportTraceServiceRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportTraceServiceRequestSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyExportTraceServiceRequestPtrSlice(t *testing.T) {
 	src := []*ExportTraceServiceRequest{}
 	dest := []*ExportTraceServiceRequest{}
 	// Test CopyTo empty
-	dest = CopyExportTraceServiceRequestPtrSlice(dest, src)
+	dest = CopyExportTraceServiceRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, []*ExportTraceServiceRequest{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExportTraceServiceRequestPtrSlice()
-	dest = CopyExportTraceServiceRequestPtrSlice(dest, src)
+	dest = CopyExportTraceServiceRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportTraceServiceRequestPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExportTraceServiceRequestPtrSlice(dest, src)
+	dest = CopyExportTraceServiceRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportTraceServiceRequestPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExportTraceServiceRequestPtrSlice(dest, []*ExportTraceServiceRequest{})
+	dest = CopyExportTraceServiceRequestPtrSlice(dest, []*ExportTraceServiceRequest{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExportTraceServiceRequestPtrSlice(dest, src)
+	dest = CopyExportTraceServiceRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportTraceServiceRequestPtrSlice(), dest)
 }
 
@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportTraceServiceRequest(t *testing
 func genTestFailingUnmarshalProtoValuesExportTraceServiceRequest() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                 {0x02},
-		"ResourceSpans/wrong_wire_type": {0xc},
-		"ResourceSpans/missing_value":   {0xa},
+		"ResourceSpans/wrong_wire_type": []byte{0xc},
+		"ResourceSpans/missing_value":   []byte{0xa},
 	}
 }
 
 func genTestEncodingValuesExportTraceServiceRequest() map[string]*ExportTraceServiceRequest {
 	return map[string]*ExportTraceServiceRequest{
 		"empty":              NewExportTraceServiceRequest(),
-		"ResourceSpans/test": {ResourceSpans: []*ResourceSpans{{}, GenTestResourceSpans()}},
+		"ResourceSpans/test": {ResourceSpans: []*ResourceSpans{&ResourceSpans{}, GenTestResourceSpans()}},
 	}
 }

@@ -4,6 +4,8 @@
 package ptrace
 
 import (
+	"fmt"
+	"runtime"
 	"testing"
 	"time"
 
@@ -12,6 +14,8 @@ import (
 	gootlptrace "go.opentelemetry.io/proto/slim/otlp/trace/v1"
 	goproto "google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/pdata/internal/metadata"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -101,6 +105,71 @@ func BenchmarkTracesFromProto2k(b *testing.B) {
 	}
 }
 
+func BenchmarkTracesFromProto10MB(b *testing.B) {
+	benchmarkFromProto10MB(b, func(n int) []byte {
+		td := generateBenchmarkTracesPayload(n)
+		buf, err := (&ProtoMarshaler{}).MarshalTraces(td)
+		require.NoError(b, err)
+		td.getState().DropArena()
+		return buf
+	}, func(buf []byte) func() {
+		td, err := (&ProtoUnmarshaler{}).UnmarshalTraces(buf)
+		require.NoError(b, err)
+		return func() { td.getState().DropArena() }
+	})
+}
+
+const protoSize10MB = 10 << 20
+
+func benchmarkFromProto10MB(b *testing.B, gen func(n int) []byte, unmarshalNew func([]byte) func()) {
+	for _, pooling := range []bool{false, true} {
+		b.Run(fmt.Sprintf("pooling=%v", pooling), func(b *testing.B) {
+			prev := metadata.PdataUseProtoPoolingFeatureGate.IsEnabled()
+			require.NoError(b, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), pooling))
+			b.Cleanup(func() {
+				require.NoError(b, featuregate.GlobalRegistry().Set(metadata.PdataUseProtoPoolingFeatureGate.ID(), prev))
+			})
+
+			buf := protoBufAtLeast(b, protoSize10MB, gen)
+			var mBefore, mAfter runtime.MemStats
+			runtime.GC()
+			runtime.ReadMemStats(&mBefore)
+			release := unmarshalNew(buf)
+			runtime.ReadMemStats(&mAfter)
+			logHeapDelta(b, buf, pooling, mBefore, mAfter)
+			release()
+
+			b.SetBytes(int64(len(buf)))
+			b.ReportAllocs()
+			b.ResetTimer()
+			for b.Loop() {
+				unmarshalNew(buf)()
+			}
+		})
+	}
+}
+
+func logHeapDelta(b *testing.B, buf []byte, pooling bool, mBefore, mAfter runtime.MemStats) {
+	heapDelta := uint64(0)
+	if mAfter.HeapAlloc > mBefore.HeapAlloc {
+		heapDelta = mAfter.HeapAlloc - mBefore.HeapAlloc
+	}
+	b.Logf("wire_bytes=%d pooling=%v heapdeltaB=%d totalallocB=%d", len(buf), pooling, heapDelta, mAfter.TotalAlloc-mBefore.TotalAlloc)
+}
+
+func protoBufAtLeast(b *testing.B, target int, gen func(n int) []byte) []byte {
+	n := 2_000
+	buf := gen(n)
+	require.NotEmpty(b, buf)
+	n = int(float64(n)*float64(target)/float64(len(buf))) + 1
+	buf = gen(n)
+	for len(buf) < target {
+		n = n*target/len(buf) + n/10 + 1
+		buf = gen(n)
+	}
+	return buf
+}
+
 func generateBenchmarkTraces(metricsCount int) Traces {
 	now := time.Now()
 	startTime := pcommon.NewTimestampFromTime(now.Add(-10 * time.Second))
@@ -116,4 +185,25 @@ func generateBenchmarkTraces(metricsCount int) Traces {
 		im.SetEndTimestamp(endTime)
 	}
 	return md
+}
+
+func generateBenchmarkTracesPayload(n int) Traces {
+	now := time.Now()
+	startTime := pcommon.NewTimestampFromTime(now.Add(-10 * time.Second))
+	endTime := pcommon.NewTimestampFromTime(now)
+
+	td := NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("service.name", "bench-service")
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Spans().EnsureCapacity(n)
+	for range n {
+		sp := ss.Spans().AppendEmpty()
+		sp.SetName("benchmark-operation-with-a-reasonably-long-name")
+		sp.SetStartTimestamp(startTime)
+		sp.SetEndTimestamp(endTime)
+		sp.Attributes().PutStr("http.route", "/api/v1/resource/{id}")
+		sp.Attributes().PutStr("peer.service", "downstream")
+	}
+	return td
 }

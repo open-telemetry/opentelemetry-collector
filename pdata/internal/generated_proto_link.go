@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -21,19 +20,8 @@ type Link struct {
 	SpanId  SpanID
 }
 
-var (
-	protoPoolLink = sync.Pool{
-		New: func() any {
-			return &Link{}
-		},
-	}
-)
-
 func NewLink() *Link {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &Link{}
-	}
-	return protoPoolLink.Get().(*Link)
+	return Alloc[Link](nil)
 }
 
 func DeleteLink(orig *Link, nullable bool) {
@@ -48,12 +36,10 @@ func DeleteLink(orig *Link, nullable bool) {
 	DeleteTraceID(&orig.TraceId, false)
 	DeleteSpanID(&orig.SpanId, false)
 	orig.Reset()
-	if nullable {
-		protoPoolLink.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyLink(dest, src *Link) *Link {
+func CopyLink(dest, src *Link, st *State) *Link {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -64,19 +50,19 @@ func CopyLink(dest, src *Link) *Link {
 	}
 
 	if dest == nil {
-		dest = NewLink()
+		dest = Alloc[Link](st)
 	}
-	CopyTraceID(&dest.TraceId, &src.TraceId)
+	CopyTraceID(&dest.TraceId, &src.TraceId, st)
 
-	CopySpanID(&dest.SpanId, &src.SpanId)
+	CopySpanID(&dest.SpanId, &src.SpanId, st)
 
 	return dest
 }
 
-func CopyLinkSlice(dest, src []Link) []Link {
+func CopyLinkSlice(dest, src []Link, st *State) []Link {
 	var newDest []Link
 	if cap(dest) < len(src) {
-		newDest = make([]Link, len(src))
+		newDest = AllocSlice[Link](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -86,20 +72,20 @@ func CopyLinkSlice(dest, src []Link) []Link {
 		}
 	}
 	for i := range src {
-		CopyLink(&newDest[i], &src[i])
+		CopyLink(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyLinkPtrSlice(dest, src []*Link) []*Link {
+func CopyLinkPtrSlice(dest, src []*Link, st *State) []*Link {
 	var newDest []*Link
 	if cap(dest) < len(src) {
-		newDest = make([]*Link, len(src))
+		newDest = AllocSlice[*Link](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewLink()
+			newDest[i] = Alloc[Link](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -112,11 +98,11 @@ func CopyLinkPtrSlice(dest, src []*Link) []*Link {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewLink()
+			newDest[i] = Alloc[Link](st)
 		}
 	}
 	for i := range src {
-		CopyLink(newDest[i], src[i])
+		CopyLink(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -141,14 +127,19 @@ func (orig *Link) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *Link) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *Link) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "traceId", "trace_id":
 
-			orig.TraceId.UnmarshalJSON(iter)
+			orig.TraceId.UnmarshalJSONState(iter, st)
 		case "spanId", "span_id":
 
-			orig.SpanId.UnmarshalJSON(iter)
+			orig.SpanId.UnmarshalJSONState(iter, st)
 		default:
 			iter.HandleUnknownField(f)
 		}
@@ -186,6 +177,10 @@ func (orig *Link) MarshalProto(buf []byte) int {
 }
 
 func (orig *Link) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *Link) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -211,7 +206,7 @@ func (orig *Link) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.TraceId.UnmarshalProto(buf[startPos:pos])
+			err = orig.TraceId.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -227,7 +222,7 @@ func (orig *Link) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.SpanId.UnmarshalProto(buf[startPos:pos])
+			err = orig.SpanId.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -242,7 +237,7 @@ func (orig *Link) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestLink() *Link {
-	orig := NewLink()
+	orig := Alloc[Link](nil)
 	orig.TraceId = *GenTestTraceID()
 	orig.SpanId = *GenTestSpanID()
 	return orig
@@ -250,11 +245,11 @@ func GenTestLink() *Link {
 
 func GenTestLinkPtrSlice() []*Link {
 	orig := make([]*Link, 5)
-	orig[0] = NewLink()
+	orig[0] = Alloc[Link](nil)
 	orig[1] = GenTestLink()
-	orig[2] = NewLink()
+	orig[2] = Alloc[Link](nil)
 	orig[3] = GenTestLink()
-	orig[4] = NewLink()
+	orig[4] = Alloc[Link](nil)
 	return orig
 }
 

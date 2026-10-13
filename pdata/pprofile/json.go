@@ -57,7 +57,7 @@ func (u *JSONUnmarshaler) UnmarshalProfiles(buf []byte) (Profiles, error) {
 	defer json.ReturnIterator(iter)
 	iter.SetDisallowUnknownFields(u.DisallowUnknownFields)
 	pd := NewProfiles()
-	pd.getOrig().UnmarshalJSON(iter)
+	pd.getOrig().UnmarshalJSONState(iter, pd.getState())
 	if iter.Error() != nil {
 		return Profiles{}, iter.Error()
 	}

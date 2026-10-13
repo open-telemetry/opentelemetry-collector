@@ -9,7 +9,6 @@ package internal
 import (
 	"encoding/binary"
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -22,19 +21,8 @@ type ProfilesRequest struct {
 	FormatVersion  uint32
 }
 
-var (
-	protoPoolProfilesRequest = sync.Pool{
-		New: func() any {
-			return &ProfilesRequest{}
-		},
-	}
-)
-
 func NewProfilesRequest() *ProfilesRequest {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &ProfilesRequest{}
-	}
-	return protoPoolProfilesRequest.Get().(*ProfilesRequest)
+	return Alloc[ProfilesRequest](nil)
 }
 
 func DeleteProfilesRequest(orig *ProfilesRequest, nullable bool) {
@@ -50,12 +38,10 @@ func DeleteProfilesRequest(orig *ProfilesRequest, nullable bool) {
 	DeleteProfilesData(&orig.ProfilesData, false)
 
 	orig.Reset()
-	if nullable {
-		protoPoolProfilesRequest.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyProfilesRequest(dest, src *ProfilesRequest) *ProfilesRequest {
+func CopyProfilesRequest(dest, src *ProfilesRequest, st *State) *ProfilesRequest {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -66,21 +52,21 @@ func CopyProfilesRequest(dest, src *ProfilesRequest) *ProfilesRequest {
 	}
 
 	if dest == nil {
-		dest = NewProfilesRequest()
+		dest = Alloc[ProfilesRequest](st)
 	}
-	dest.RequestContext = CopyRequestContext(dest.RequestContext, src.RequestContext)
+	dest.RequestContext = CopyRequestContext(dest.RequestContext, src.RequestContext, st)
 
-	CopyProfilesData(&dest.ProfilesData, &src.ProfilesData)
+	CopyProfilesData(&dest.ProfilesData, &src.ProfilesData, st)
 
 	dest.FormatVersion = src.FormatVersion
 
 	return dest
 }
 
-func CopyProfilesRequestSlice(dest, src []ProfilesRequest) []ProfilesRequest {
+func CopyProfilesRequestSlice(dest, src []ProfilesRequest, st *State) []ProfilesRequest {
 	var newDest []ProfilesRequest
 	if cap(dest) < len(src) {
-		newDest = make([]ProfilesRequest, len(src))
+		newDest = AllocSlice[ProfilesRequest](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -90,20 +76,20 @@ func CopyProfilesRequestSlice(dest, src []ProfilesRequest) []ProfilesRequest {
 		}
 	}
 	for i := range src {
-		CopyProfilesRequest(&newDest[i], &src[i])
+		CopyProfilesRequest(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyProfilesRequestPtrSlice(dest, src []*ProfilesRequest) []*ProfilesRequest {
+func CopyProfilesRequestPtrSlice(dest, src []*ProfilesRequest, st *State) []*ProfilesRequest {
 	var newDest []*ProfilesRequest
 	if cap(dest) < len(src) {
-		newDest = make([]*ProfilesRequest, len(src))
+		newDest = AllocSlice[*ProfilesRequest](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewProfilesRequest()
+			newDest[i] = Alloc[ProfilesRequest](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -116,11 +102,11 @@ func CopyProfilesRequestPtrSlice(dest, src []*ProfilesRequest) []*ProfilesReques
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewProfilesRequest()
+			newDest[i] = Alloc[ProfilesRequest](st)
 		}
 	}
 	for i := range src {
-		CopyProfilesRequest(newDest[i], src[i])
+		CopyProfilesRequest(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -147,15 +133,21 @@ func (orig *ProfilesRequest) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *ProfilesRequest) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *ProfilesRequest) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "requestContext", "request_context":
-			orig.RequestContext = NewRequestContext()
-			orig.RequestContext.UnmarshalJSON(iter)
+			orig.RequestContext = Alloc[RequestContext](st)
+			orig.RequestContext.UnmarshalJSONState(iter, st)
 		case "profilesData", "profiles_data":
 
-			orig.ProfilesData.UnmarshalJSON(iter)
+			orig.ProfilesData.UnmarshalJSONState(iter, st)
 		case "formatVersion", "format_version":
+
 			orig.FormatVersion = iter.ReadUint32()
 		default:
 			iter.HandleUnknownField(f)
@@ -206,6 +198,10 @@ func (orig *ProfilesRequest) MarshalProto(buf []byte) int {
 }
 
 func (orig *ProfilesRequest) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *ProfilesRequest) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -231,8 +227,8 @@ func (orig *ProfilesRequest) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			orig.RequestContext = NewRequestContext()
-			err = orig.RequestContext.UnmarshalProto(buf[startPos:pos])
+			orig.RequestContext = Alloc[RequestContext](st)
+			err = orig.RequestContext.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -248,7 +244,7 @@ func (orig *ProfilesRequest) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.ProfilesData.UnmarshalProto(buf[startPos:pos])
+			err = orig.ProfilesData.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -275,7 +271,7 @@ func (orig *ProfilesRequest) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestProfilesRequest() *ProfilesRequest {
-	orig := NewProfilesRequest()
+	orig := Alloc[ProfilesRequest](nil)
 	orig.RequestContext = GenTestRequestContext()
 	orig.ProfilesData = *GenTestProfilesData()
 	orig.FormatVersion = uint32(13)
@@ -284,11 +280,11 @@ func GenTestProfilesRequest() *ProfilesRequest {
 
 func GenTestProfilesRequestPtrSlice() []*ProfilesRequest {
 	orig := make([]*ProfilesRequest, 5)
-	orig[0] = NewProfilesRequest()
+	orig[0] = Alloc[ProfilesRequest](nil)
 	orig[1] = GenTestProfilesRequest()
-	orig[2] = NewProfilesRequest()
+	orig[2] = Alloc[ProfilesRequest](nil)
 	orig[3] = GenTestProfilesRequest()
-	orig[4] = NewProfilesRequest()
+	orig[4] = Alloc[ProfilesRequest](nil)
 	return orig
 }
 

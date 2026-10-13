@@ -31,9 +31,9 @@ func TestCopyScopeMetrics(t *testing.T) {
 				}()
 
 				dest := NewScopeMetrics()
-				CopyScopeMetrics(dest, src)
+				CopyScopeMetrics(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyScopeMetrics(dest, dest)
+				CopyScopeMetrics(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyScopeMetricsSlice(t *testing.T) {
 	src := []ScopeMetrics{}
 	dest := []ScopeMetrics{}
 	// Test CopyTo empty
-	dest = CopyScopeMetricsSlice(dest, src)
+	dest = CopyScopeMetricsSlice(dest, src, nil)
 	assert.Equal(t, []ScopeMetrics{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestScopeMetricsSlice()
-	dest = CopyScopeMetricsSlice(dest, src)
+	dest = CopyScopeMetricsSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeMetricsSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyScopeMetricsSlice(dest, src)
+	dest = CopyScopeMetricsSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeMetricsSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyScopeMetricsSlice(dest, []ScopeMetrics{})
+	dest = CopyScopeMetricsSlice(dest, []ScopeMetrics{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyScopeMetricsSlice(dest, src)
+	dest = CopyScopeMetricsSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeMetricsSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyScopeMetricsPtrSlice(t *testing.T) {
 	src := []*ScopeMetrics{}
 	dest := []*ScopeMetrics{}
 	// Test CopyTo empty
-	dest = CopyScopeMetricsPtrSlice(dest, src)
+	dest = CopyScopeMetricsPtrSlice(dest, src, nil)
 	assert.Equal(t, []*ScopeMetrics{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestScopeMetricsPtrSlice()
-	dest = CopyScopeMetricsPtrSlice(dest, src)
+	dest = CopyScopeMetricsPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeMetricsPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyScopeMetricsPtrSlice(dest, src)
+	dest = CopyScopeMetricsPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeMetricsPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyScopeMetricsPtrSlice(dest, []*ScopeMetrics{})
+	dest = CopyScopeMetricsPtrSlice(dest, []*ScopeMetrics{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyScopeMetricsPtrSlice(dest, src)
+	dest = CopyScopeMetricsPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeMetricsPtrSlice(), dest)
 }
 
@@ -190,12 +190,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeMetrics(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesScopeMetrics() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":             {0x02},
-		"Scope/wrong_wire_type":     {0xc},
-		"Scope/missing_value":       {0xa},
-		"Metrics/wrong_wire_type":   {0x14},
-		"Metrics/missing_value":     {0x12},
-		"SchemaUrl/wrong_wire_type": {0x1c},
-		"SchemaUrl/missing_value":   {0x1a},
+		"Scope/wrong_wire_type":     []byte{0xc},
+		"Scope/missing_value":       []byte{0xa},
+		"Metrics/wrong_wire_type":   []byte{0x14},
+		"Metrics/missing_value":     []byte{0x12},
+		"SchemaUrl/wrong_wire_type": []byte{0x1c},
+		"SchemaUrl/missing_value":   []byte{0x1a},
 	}
 }
 
@@ -203,7 +203,7 @@ func genTestEncodingValuesScopeMetrics() map[string]*ScopeMetrics {
 	return map[string]*ScopeMetrics{
 		"empty":          NewScopeMetrics(),
 		"Scope/test":     {Scope: *GenTestInstrumentationScope()},
-		"Metrics/test":   {Metrics: []*Metric{{}, GenTestMetric()}},
+		"Metrics/test":   {Metrics: []*Metric{&Metric{}, GenTestMetric()}},
 		"SchemaUrl/test": {SchemaUrl: "test_schemaurl"},
 	}
 }

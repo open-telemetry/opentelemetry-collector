@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -20,19 +19,8 @@ type ExportLogsServiceResponse struct {
 	PartialSuccess ExportLogsPartialSuccess
 }
 
-var (
-	protoPoolExportLogsServiceResponse = sync.Pool{
-		New: func() any {
-			return &ExportLogsServiceResponse{}
-		},
-	}
-)
-
 func NewExportLogsServiceResponse() *ExportLogsServiceResponse {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &ExportLogsServiceResponse{}
-	}
-	return protoPoolExportLogsServiceResponse.Get().(*ExportLogsServiceResponse)
+	return Alloc[ExportLogsServiceResponse](nil)
 }
 
 func DeleteExportLogsServiceResponse(orig *ExportLogsServiceResponse, nullable bool) {
@@ -46,12 +34,10 @@ func DeleteExportLogsServiceResponse(orig *ExportLogsServiceResponse, nullable b
 	}
 	DeleteExportLogsPartialSuccess(&orig.PartialSuccess, false)
 	orig.Reset()
-	if nullable {
-		protoPoolExportLogsServiceResponse.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyExportLogsServiceResponse(dest, src *ExportLogsServiceResponse) *ExportLogsServiceResponse {
+func CopyExportLogsServiceResponse(dest, src *ExportLogsServiceResponse, st *State) *ExportLogsServiceResponse {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -62,17 +48,17 @@ func CopyExportLogsServiceResponse(dest, src *ExportLogsServiceResponse) *Export
 	}
 
 	if dest == nil {
-		dest = NewExportLogsServiceResponse()
+		dest = Alloc[ExportLogsServiceResponse](st)
 	}
-	CopyExportLogsPartialSuccess(&dest.PartialSuccess, &src.PartialSuccess)
+	CopyExportLogsPartialSuccess(&dest.PartialSuccess, &src.PartialSuccess, st)
 
 	return dest
 }
 
-func CopyExportLogsServiceResponseSlice(dest, src []ExportLogsServiceResponse) []ExportLogsServiceResponse {
+func CopyExportLogsServiceResponseSlice(dest, src []ExportLogsServiceResponse, st *State) []ExportLogsServiceResponse {
 	var newDest []ExportLogsServiceResponse
 	if cap(dest) < len(src) {
-		newDest = make([]ExportLogsServiceResponse, len(src))
+		newDest = AllocSlice[ExportLogsServiceResponse](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -82,20 +68,20 @@ func CopyExportLogsServiceResponseSlice(dest, src []ExportLogsServiceResponse) [
 		}
 	}
 	for i := range src {
-		CopyExportLogsServiceResponse(&newDest[i], &src[i])
+		CopyExportLogsServiceResponse(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyExportLogsServiceResponsePtrSlice(dest, src []*ExportLogsServiceResponse) []*ExportLogsServiceResponse {
+func CopyExportLogsServiceResponsePtrSlice(dest, src []*ExportLogsServiceResponse, st *State) []*ExportLogsServiceResponse {
 	var newDest []*ExportLogsServiceResponse
 	if cap(dest) < len(src) {
-		newDest = make([]*ExportLogsServiceResponse, len(src))
+		newDest = AllocSlice[*ExportLogsServiceResponse](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewExportLogsServiceResponse()
+			newDest[i] = Alloc[ExportLogsServiceResponse](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -108,11 +94,11 @@ func CopyExportLogsServiceResponsePtrSlice(dest, src []*ExportLogsServiceRespons
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewExportLogsServiceResponse()
+			newDest[i] = Alloc[ExportLogsServiceResponse](st)
 		}
 	}
 	for i := range src {
-		CopyExportLogsServiceResponse(newDest[i], src[i])
+		CopyExportLogsServiceResponse(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -131,11 +117,16 @@ func (orig *ExportLogsServiceResponse) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *ExportLogsServiceResponse) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *ExportLogsServiceResponse) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "partialSuccess", "partial_success":
 
-			orig.PartialSuccess.UnmarshalJSON(iter)
+			orig.PartialSuccess.UnmarshalJSONState(iter, st)
 		default:
 			iter.HandleUnknownField(f)
 		}
@@ -165,6 +156,10 @@ func (orig *ExportLogsServiceResponse) MarshalProto(buf []byte) int {
 }
 
 func (orig *ExportLogsServiceResponse) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *ExportLogsServiceResponse) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -190,7 +185,7 @@ func (orig *ExportLogsServiceResponse) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.PartialSuccess.UnmarshalProto(buf[startPos:pos])
+			err = orig.PartialSuccess.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -205,18 +200,18 @@ func (orig *ExportLogsServiceResponse) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestExportLogsServiceResponse() *ExportLogsServiceResponse {
-	orig := NewExportLogsServiceResponse()
+	orig := Alloc[ExportLogsServiceResponse](nil)
 	orig.PartialSuccess = *GenTestExportLogsPartialSuccess()
 	return orig
 }
 
 func GenTestExportLogsServiceResponsePtrSlice() []*ExportLogsServiceResponse {
 	orig := make([]*ExportLogsServiceResponse, 5)
-	orig[0] = NewExportLogsServiceResponse()
+	orig[0] = Alloc[ExportLogsServiceResponse](nil)
 	orig[1] = GenTestExportLogsServiceResponse()
-	orig[2] = NewExportLogsServiceResponse()
+	orig[2] = Alloc[ExportLogsServiceResponse](nil)
 	orig[3] = GenTestExportLogsServiceResponse()
-	orig[4] = NewExportLogsServiceResponse()
+	orig[4] = Alloc[ExportLogsServiceResponse](nil)
 	return orig
 }
 

@@ -31,9 +31,9 @@ func TestCopyGauge(t *testing.T) {
 				}()
 
 				dest := NewGauge()
-				CopyGauge(dest, src)
+				CopyGauge(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyGauge(dest, dest)
+				CopyGauge(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyGaugeSlice(t *testing.T) {
 	src := []Gauge{}
 	dest := []Gauge{}
 	// Test CopyTo empty
-	dest = CopyGaugeSlice(dest, src)
+	dest = CopyGaugeSlice(dest, src, nil)
 	assert.Equal(t, []Gauge{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestGaugeSlice()
-	dest = CopyGaugeSlice(dest, src)
+	dest = CopyGaugeSlice(dest, src, nil)
 	assert.Equal(t, GenTestGaugeSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyGaugeSlice(dest, src)
+	dest = CopyGaugeSlice(dest, src, nil)
 	assert.Equal(t, GenTestGaugeSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyGaugeSlice(dest, []Gauge{})
+	dest = CopyGaugeSlice(dest, []Gauge{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyGaugeSlice(dest, src)
+	dest = CopyGaugeSlice(dest, src, nil)
 	assert.Equal(t, GenTestGaugeSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyGaugePtrSlice(t *testing.T) {
 	src := []*Gauge{}
 	dest := []*Gauge{}
 	// Test CopyTo empty
-	dest = CopyGaugePtrSlice(dest, src)
+	dest = CopyGaugePtrSlice(dest, src, nil)
 	assert.Equal(t, []*Gauge{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestGaugePtrSlice()
-	dest = CopyGaugePtrSlice(dest, src)
+	dest = CopyGaugePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestGaugePtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyGaugePtrSlice(dest, src)
+	dest = CopyGaugePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestGaugePtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyGaugePtrSlice(dest, []*Gauge{})
+	dest = CopyGaugePtrSlice(dest, []*Gauge{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyGaugePtrSlice(dest, src)
+	dest = CopyGaugePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestGaugePtrSlice(), dest)
 }
 
@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufGauge(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesGauge() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":              {0x02},
-		"DataPoints/wrong_wire_type": {0xc},
-		"DataPoints/missing_value":   {0xa},
+		"DataPoints/wrong_wire_type": []byte{0xc},
+		"DataPoints/missing_value":   []byte{0xa},
 	}
 }
 
 func genTestEncodingValuesGauge() map[string]*Gauge {
 	return map[string]*Gauge{
 		"empty":           NewGauge(),
-		"DataPoints/test": {DataPoints: []*NumberDataPoint{{}, GenTestNumberDataPoint()}},
+		"DataPoints/test": {DataPoints: []*NumberDataPoint{&NumberDataPoint{}, GenTestNumberDataPoint()}},
 	}
 }

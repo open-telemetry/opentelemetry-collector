@@ -44,7 +44,7 @@ func (u *JSONUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
 	defer json.ReturnIterator(iter)
 	iter.SetDisallowUnknownFields(u.DisallowUnknownFields)
 	td := NewTraces()
-	td.getOrig().UnmarshalJSON(iter)
+	td.getOrig().UnmarshalJSONState(iter, td.getState())
 	if iter.Error() != nil {
 		return Traces{}, iter.Error()
 	}

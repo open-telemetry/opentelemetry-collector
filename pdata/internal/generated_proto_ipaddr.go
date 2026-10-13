@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -20,19 +19,8 @@ type IPAddr struct {
 	Zone string
 }
 
-var (
-	protoPoolIPAddr = sync.Pool{
-		New: func() any {
-			return &IPAddr{}
-		},
-	}
-)
-
 func NewIPAddr() *IPAddr {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &IPAddr{}
-	}
-	return protoPoolIPAddr.Get().(*IPAddr)
+	return Alloc[IPAddr](nil)
 }
 
 func DeleteIPAddr(orig *IPAddr, nullable bool) {
@@ -46,12 +34,10 @@ func DeleteIPAddr(orig *IPAddr, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolIPAddr.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyIPAddr(dest, src *IPAddr) *IPAddr {
+func CopyIPAddr(dest, src *IPAddr, st *State) *IPAddr {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -62,18 +48,19 @@ func CopyIPAddr(dest, src *IPAddr) *IPAddr {
 	}
 
 	if dest == nil {
-		dest = NewIPAddr()
+		dest = Alloc[IPAddr](st)
 	}
-	dest.IP = src.IP
-	dest.Zone = src.Zone
+	dest.IP = CopyBytes(st, src.IP)
+
+	dest.Zone = CopyString(st, src.Zone)
 
 	return dest
 }
 
-func CopyIPAddrSlice(dest, src []IPAddr) []IPAddr {
+func CopyIPAddrSlice(dest, src []IPAddr, st *State) []IPAddr {
 	var newDest []IPAddr
 	if cap(dest) < len(src) {
-		newDest = make([]IPAddr, len(src))
+		newDest = AllocSlice[IPAddr](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -83,20 +70,20 @@ func CopyIPAddrSlice(dest, src []IPAddr) []IPAddr {
 		}
 	}
 	for i := range src {
-		CopyIPAddr(&newDest[i], &src[i])
+		CopyIPAddr(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyIPAddrPtrSlice(dest, src []*IPAddr) []*IPAddr {
+func CopyIPAddrPtrSlice(dest, src []*IPAddr, st *State) []*IPAddr {
 	var newDest []*IPAddr
 	if cap(dest) < len(src) {
-		newDest = make([]*IPAddr, len(src))
+		newDest = AllocSlice[*IPAddr](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewIPAddr()
+			newDest[i] = Alloc[IPAddr](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -109,11 +96,11 @@ func CopyIPAddrPtrSlice(dest, src []*IPAddr) []*IPAddr {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewIPAddr()
+			newDest[i] = Alloc[IPAddr](st)
 		}
 	}
 	for i := range src {
-		CopyIPAddr(newDest[i], src[i])
+		CopyIPAddr(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -139,12 +126,18 @@ func (orig *IPAddr) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *IPAddr) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *IPAddr) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "iP":
-			orig.IP = iter.ReadBytes()
+			orig.IP = CopyBytes(st, iter.ReadBytes())
 		case "zone":
-			orig.Zone = iter.ReadString()
+
+			orig.Zone = CopyString(st, iter.ReadString())
 		default:
 			iter.HandleUnknownField(f)
 		}
@@ -192,6 +185,10 @@ func (orig *IPAddr) MarshalProto(buf []byte) int {
 }
 
 func (orig *IPAddr) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *IPAddr) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -216,10 +213,7 @@ func (orig *IPAddr) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			if length != 0 {
-				orig.IP = make([]byte, length)
-				copy(orig.IP, buf[startPos:pos])
-			}
+			orig.IP = BorrowBytes(st, buf, startPos, pos)
 
 		case 2:
 			if wireType != proto.WireTypeLen {
@@ -231,7 +225,7 @@ func (orig *IPAddr) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.Zone = string(buf[startPos:pos])
+			orig.Zone = BorrowString(st, buf, startPos, pos)
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -243,7 +237,7 @@ func (orig *IPAddr) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestIPAddr() *IPAddr {
-	orig := NewIPAddr()
+	orig := Alloc[IPAddr](nil)
 	orig.IP = []byte{1, 2, 3}
 	orig.Zone = "test_zone"
 	return orig
@@ -251,11 +245,11 @@ func GenTestIPAddr() *IPAddr {
 
 func GenTestIPAddrPtrSlice() []*IPAddr {
 	orig := make([]*IPAddr, 5)
-	orig[0] = NewIPAddr()
+	orig[0] = Alloc[IPAddr](nil)
 	orig[1] = GenTestIPAddr()
-	orig[2] = NewIPAddr()
+	orig[2] = Alloc[IPAddr](nil)
 	orig[3] = GenTestIPAddr()
-	orig[4] = NewIPAddr()
+	orig[4] = Alloc[IPAddr](nil)
 	return orig
 }
 

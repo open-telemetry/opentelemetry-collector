@@ -31,9 +31,9 @@ func TestCopyExponentialHistogramDataPointBuckets(t *testing.T) {
 				}()
 
 				dest := NewExponentialHistogramDataPointBuckets()
-				CopyExponentialHistogramDataPointBuckets(dest, src)
+				CopyExponentialHistogramDataPointBuckets(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyExponentialHistogramDataPointBuckets(dest, dest)
+				CopyExponentialHistogramDataPointBuckets(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyExponentialHistogramDataPointBucketsSlice(t *testing.T) {
 	src := []ExponentialHistogramDataPointBuckets{}
 	dest := []ExponentialHistogramDataPointBuckets{}
 	// Test CopyTo empty
-	dest = CopyExponentialHistogramDataPointBucketsSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointBucketsSlice(dest, src, nil)
 	assert.Equal(t, []ExponentialHistogramDataPointBuckets{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExponentialHistogramDataPointBucketsSlice()
-	dest = CopyExponentialHistogramDataPointBucketsSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointBucketsSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramDataPointBucketsSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExponentialHistogramDataPointBucketsSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointBucketsSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramDataPointBucketsSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExponentialHistogramDataPointBucketsSlice(dest, []ExponentialHistogramDataPointBuckets{})
+	dest = CopyExponentialHistogramDataPointBucketsSlice(dest, []ExponentialHistogramDataPointBuckets{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExponentialHistogramDataPointBucketsSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointBucketsSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramDataPointBucketsSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyExponentialHistogramDataPointBucketsPtrSlice(t *testing.T) {
 	src := []*ExponentialHistogramDataPointBuckets{}
 	dest := []*ExponentialHistogramDataPointBuckets{}
 	// Test CopyTo empty
-	dest = CopyExponentialHistogramDataPointBucketsPtrSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointBucketsPtrSlice(dest, src, nil)
 	assert.Equal(t, []*ExponentialHistogramDataPointBuckets{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExponentialHistogramDataPointBucketsPtrSlice()
-	dest = CopyExponentialHistogramDataPointBucketsPtrSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointBucketsPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramDataPointBucketsPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExponentialHistogramDataPointBucketsPtrSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointBucketsPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramDataPointBucketsPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExponentialHistogramDataPointBucketsPtrSlice(dest, []*ExponentialHistogramDataPointBuckets{})
+	dest = CopyExponentialHistogramDataPointBucketsPtrSlice(dest, []*ExponentialHistogramDataPointBuckets{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExponentialHistogramDataPointBucketsPtrSlice(dest, src)
+	dest = CopyExponentialHistogramDataPointBucketsPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramDataPointBucketsPtrSlice(), dest)
 }
 
@@ -190,10 +190,10 @@ func TestMarshalAndUnmarshalProtoViaProtobufExponentialHistogramDataPointBuckets
 func genTestFailingUnmarshalProtoValuesExponentialHistogramDataPointBuckets() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                {0x02},
-		"Offset/wrong_wire_type":       {0xc},
-		"Offset/missing_value":         {0x8},
-		"BucketCounts/wrong_wire_type": {0x14},
-		"BucketCounts/missing_value":   {0x12},
+		"Offset/wrong_wire_type":       []byte{0xc},
+		"Offset/missing_value":         []byte{0x8},
+		"BucketCounts/wrong_wire_type": []byte{0x14},
+		"BucketCounts/missing_value":   []byte{0x12},
 	}
 }
 

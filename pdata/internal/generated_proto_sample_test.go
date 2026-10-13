@@ -31,9 +31,9 @@ func TestCopySample(t *testing.T) {
 				}()
 
 				dest := NewSample()
-				CopySample(dest, src)
+				CopySample(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopySample(dest, dest)
+				CopySample(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopySampleSlice(t *testing.T) {
 	src := []Sample{}
 	dest := []Sample{}
 	// Test CopyTo empty
-	dest = CopySampleSlice(dest, src)
+	dest = CopySampleSlice(dest, src, nil)
 	assert.Equal(t, []Sample{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSampleSlice()
-	dest = CopySampleSlice(dest, src)
+	dest = CopySampleSlice(dest, src, nil)
 	assert.Equal(t, GenTestSampleSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySampleSlice(dest, src)
+	dest = CopySampleSlice(dest, src, nil)
 	assert.Equal(t, GenTestSampleSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySampleSlice(dest, []Sample{})
+	dest = CopySampleSlice(dest, []Sample{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySampleSlice(dest, src)
+	dest = CopySampleSlice(dest, src, nil)
 	assert.Equal(t, GenTestSampleSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopySamplePtrSlice(t *testing.T) {
 	src := []*Sample{}
 	dest := []*Sample{}
 	// Test CopyTo empty
-	dest = CopySamplePtrSlice(dest, src)
+	dest = CopySamplePtrSlice(dest, src, nil)
 	assert.Equal(t, []*Sample{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSamplePtrSlice()
-	dest = CopySamplePtrSlice(dest, src)
+	dest = CopySamplePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSamplePtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySamplePtrSlice(dest, src)
+	dest = CopySamplePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSamplePtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySamplePtrSlice(dest, []*Sample{})
+	dest = CopySamplePtrSlice(dest, []*Sample{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySamplePtrSlice(dest, src)
+	dest = CopySamplePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSamplePtrSlice(), dest)
 }
 
@@ -190,16 +190,16 @@ func TestMarshalAndUnmarshalProtoViaProtobufSample(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesSample() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                      {0x02},
-		"StackIndex/wrong_wire_type":         {0xc},
-		"StackIndex/missing_value":           {0x8},
-		"AttributeIndices/wrong_wire_type":   {0x14},
-		"AttributeIndices/missing_value":     {0x12},
-		"LinkIndex/wrong_wire_type":          {0x1c},
-		"LinkIndex/missing_value":            {0x18},
-		"Values/wrong_wire_type":             {0x24},
-		"Values/missing_value":               {0x22},
-		"TimestampsUnixNano/wrong_wire_type": {0x2c},
-		"TimestampsUnixNano/missing_value":   {0x2a},
+		"StackIndex/wrong_wire_type":         []byte{0xc},
+		"StackIndex/missing_value":           []byte{0x8},
+		"AttributeIndices/wrong_wire_type":   []byte{0x14},
+		"AttributeIndices/missing_value":     []byte{0x12},
+		"LinkIndex/wrong_wire_type":          []byte{0x1c},
+		"LinkIndex/missing_value":            []byte{0x18},
+		"Values/wrong_wire_type":             []byte{0x24},
+		"Values/missing_value":               []byte{0x22},
+		"TimestampsUnixNano/wrong_wire_type": []byte{0x2c},
+		"TimestampsUnixNano/missing_value":   []byte{0x2a},
 	}
 }
 

@@ -28,6 +28,7 @@ func UnrefLogs(ld plog.Logs) {
 	// Don't call DeleteExportLogsServiceRequest without the gate because we reset the data and that may still cause issues.
 	if pmetadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 		internal.DeleteExportLogsServiceRequest(internal.GetLogsOrig(internal.LogsWrapper(ld)), true)
+		internal.GetLogsState(internal.LogsWrapper(ld)).DropArena()
 	}
 }
 

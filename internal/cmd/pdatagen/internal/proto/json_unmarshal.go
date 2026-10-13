@@ -15,29 +15,36 @@ import (
 const unmarshalJSONPrimitive = `	case {{ .allJSONTags }}:
 {{ if .repeated -}}
 	for iter.ReadArray() {
-		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, iter.Read{{ upperFirst .goType }}())
+		{{- if eq .goType "string" }}
+		orig.{{ .fieldName }} = Append(st, orig.{{ .fieldName }}, CopyString(st, iter.ReadString()))
+		{{- else }}
+		orig.{{ .fieldName }} = Append(st, orig.{{ .fieldName }}, iter.Read{{ upperFirst .goType }}())
+		{{- end }}
 	}
 {{ else if ne .oneOfGroup "" -}}
 	{
-		var ov *{{ .oneOfMessageName }}
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &{{ .oneOfMessageName }}{}
-		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
-		}
+		ov := Alloc[{{ .oneOfMessageName }}](st)
+		{{- if eq .goType "string" }}
+		ov.{{ .fieldName }} = CopyString(st, iter.ReadString())
+		{{- else }}
 		ov.{{ .fieldName }} = iter.Read{{ upperFirst .goType }}()
+		{{- end }}
 		orig.{{ .oneOfGroup }} = ov
 	}
 {{ else if .nullable -}}
 	orig.Set{{ .fieldName }}(iter.Read{{ upperFirst .goType }}())
 {{ else -}}
+	{{- if eq .goType "string" }}
+	orig.{{ .fieldName }} = CopyString(st, iter.ReadString())
+	{{- else }}
 	orig.{{ .fieldName }} = iter.Read{{ upperFirst .goType }}()
+	{{- end }}
 {{- end }}`
 
 const unmarshalJSONEnum = `	case {{ .allJSONTags }}:
 {{ if .repeated -}}
 	for iter.ReadArray() {
-		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ .messageName }}(iter.ReadEnumValue({{ .messageName }}_value)))
+		orig.{{ .fieldName }} = Append(st, orig.{{ .fieldName }}, {{ .messageName }}(iter.ReadEnumValue({{ .messageName }}_value)))
 	}
 {{ else -}}
 	orig.{{ .fieldName }} = {{ .messageName }}(iter.ReadEnumValue({{ .messageName }}_value))
@@ -46,44 +53,34 @@ const unmarshalJSONEnum = `	case {{ .allJSONTags }}:
 const unmarshalJSONMessage = `	case {{ .allJSONTags }}:
 {{ if .repeated -}}
 	for iter.ReadArray() {
-		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ if .nullable }}New{{ .messageName }}(){{ else }}{{ .defaultValue }}{{ end }})
-		orig.{{ .fieldName }}[len(orig.{{ .fieldName }}) - 1].UnmarshalJSON(iter)
+		orig.{{ .fieldName }} = Append(st, orig.{{ .fieldName }}, {{ if .nullable }}Alloc[{{ .messageName }}](st){{ else }}{{ .defaultValue }}{{ end }})
+		orig.{{ .fieldName }}[len(orig.{{ .fieldName }}) - 1].UnmarshalJSONState(iter, st)
 	}
 {{ else if ne .oneOfGroup "" -}}
 	{
-		var ov *{{ .oneOfMessageName }}
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &{{ .oneOfMessageName }}{}
-		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
-		}
-		ov.{{ .fieldName }} = New{{ .messageName }}()
-		ov.{{ .fieldName }}.UnmarshalJSON(iter)
+		ov := Alloc[{{ .oneOfMessageName }}](st)
+		ov.{{ .fieldName }} = Alloc[{{ .messageName }}](st)
+		ov.{{ .fieldName }}.UnmarshalJSONState(iter, st)
 		orig.{{ .oneOfGroup }} = ov
 	}
 {{ else -}}
-	{{ if .nullable }}orig.{{ .fieldName }} = New{{ .messageName }}(){{ end }}
-	orig.{{ .fieldName }}.UnmarshalJSON(iter)
+	{{ if .nullable }}orig.{{ .fieldName }} = Alloc[{{ .messageName }}](st){{ end }}
+	orig.{{ .fieldName }}.UnmarshalJSONState(iter, st)
 {{- end }}`
 
 const unmarshalJSONBytes = `	case {{ .allJSONTags }}:
 {{ if .repeated -}}
 	for iter.ReadArray() {
-		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, iter.ReadBytes())
+		orig.{{ .fieldName }} = Append(st, orig.{{ .fieldName }}, CopyBytes(st, iter.ReadBytes()))
 	}
 {{ else if ne .oneOfGroup "" -}}
 	{
-		var ov *{{ .oneOfMessageName }}
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &{{ .oneOfMessageName }}{}
-		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
-		}
-		ov.{{ .fieldName }} = iter.ReadBytes()
+		ov := Alloc[{{ .oneOfMessageName }}](st)
+		ov.{{ .fieldName }} = CopyBytes(st, iter.ReadBytes())
 		orig.{{ .oneOfGroup }} = ov
 	}
 {{ else -}}
-	orig.{{ .fieldName }} = iter.ReadBytes()
+	orig.{{ .fieldName }} = CopyBytes(st, iter.ReadBytes())
 {{- end }}`
 
 func (pf *Field) GenUnmarshalJSON() string {

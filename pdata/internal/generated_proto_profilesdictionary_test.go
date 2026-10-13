@@ -31,9 +31,9 @@ func TestCopyProfilesDictionary(t *testing.T) {
 				}()
 
 				dest := NewProfilesDictionary()
-				CopyProfilesDictionary(dest, src)
+				CopyProfilesDictionary(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyProfilesDictionary(dest, dest)
+				CopyProfilesDictionary(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyProfilesDictionarySlice(t *testing.T) {
 	src := []ProfilesDictionary{}
 	dest := []ProfilesDictionary{}
 	// Test CopyTo empty
-	dest = CopyProfilesDictionarySlice(dest, src)
+	dest = CopyProfilesDictionarySlice(dest, src, nil)
 	assert.Equal(t, []ProfilesDictionary{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestProfilesDictionarySlice()
-	dest = CopyProfilesDictionarySlice(dest, src)
+	dest = CopyProfilesDictionarySlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilesDictionarySlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyProfilesDictionarySlice(dest, src)
+	dest = CopyProfilesDictionarySlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilesDictionarySlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyProfilesDictionarySlice(dest, []ProfilesDictionary{})
+	dest = CopyProfilesDictionarySlice(dest, []ProfilesDictionary{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyProfilesDictionarySlice(dest, src)
+	dest = CopyProfilesDictionarySlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilesDictionarySlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyProfilesDictionaryPtrSlice(t *testing.T) {
 	src := []*ProfilesDictionary{}
 	dest := []*ProfilesDictionary{}
 	// Test CopyTo empty
-	dest = CopyProfilesDictionaryPtrSlice(dest, src)
+	dest = CopyProfilesDictionaryPtrSlice(dest, src, nil)
 	assert.Equal(t, []*ProfilesDictionary{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestProfilesDictionaryPtrSlice()
-	dest = CopyProfilesDictionaryPtrSlice(dest, src)
+	dest = CopyProfilesDictionaryPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilesDictionaryPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyProfilesDictionaryPtrSlice(dest, src)
+	dest = CopyProfilesDictionaryPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilesDictionaryPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyProfilesDictionaryPtrSlice(dest, []*ProfilesDictionary{})
+	dest = CopyProfilesDictionaryPtrSlice(dest, []*ProfilesDictionary{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyProfilesDictionaryPtrSlice(dest, src)
+	dest = CopyProfilesDictionaryPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilesDictionaryPtrSlice(), dest)
 }
 
@@ -190,32 +190,32 @@ func TestMarshalAndUnmarshalProtoViaProtobufProfilesDictionary(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesProfilesDictionary() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                  {0x02},
-		"MappingTable/wrong_wire_type":   {0xc},
-		"MappingTable/missing_value":     {0xa},
-		"LocationTable/wrong_wire_type":  {0x14},
-		"LocationTable/missing_value":    {0x12},
-		"FunctionTable/wrong_wire_type":  {0x1c},
-		"FunctionTable/missing_value":    {0x1a},
-		"LinkTable/wrong_wire_type":      {0x24},
-		"LinkTable/missing_value":        {0x22},
-		"StringTable/wrong_wire_type":    {0x2c},
-		"StringTable/missing_value":      {0x2a},
-		"AttributeTable/wrong_wire_type": {0x34},
-		"AttributeTable/missing_value":   {0x32},
-		"StackTable/wrong_wire_type":     {0x3c},
-		"StackTable/missing_value":       {0x3a},
+		"MappingTable/wrong_wire_type":   []byte{0xc},
+		"MappingTable/missing_value":     []byte{0xa},
+		"LocationTable/wrong_wire_type":  []byte{0x14},
+		"LocationTable/missing_value":    []byte{0x12},
+		"FunctionTable/wrong_wire_type":  []byte{0x1c},
+		"FunctionTable/missing_value":    []byte{0x1a},
+		"LinkTable/wrong_wire_type":      []byte{0x24},
+		"LinkTable/missing_value":        []byte{0x22},
+		"StringTable/wrong_wire_type":    []byte{0x2c},
+		"StringTable/missing_value":      []byte{0x2a},
+		"AttributeTable/wrong_wire_type": []byte{0x34},
+		"AttributeTable/missing_value":   []byte{0x32},
+		"StackTable/wrong_wire_type":     []byte{0x3c},
+		"StackTable/missing_value":       []byte{0x3a},
 	}
 }
 
 func genTestEncodingValuesProfilesDictionary() map[string]*ProfilesDictionary {
 	return map[string]*ProfilesDictionary{
 		"empty":               NewProfilesDictionary(),
-		"MappingTable/test":   {MappingTable: []*Mapping{{}, GenTestMapping()}},
-		"LocationTable/test":  {LocationTable: []*Location{{}, GenTestLocation()}},
-		"FunctionTable/test":  {FunctionTable: []*Function{{}, GenTestFunction()}},
-		"LinkTable/test":      {LinkTable: []*Link{{}, GenTestLink()}},
+		"MappingTable/test":   {MappingTable: []*Mapping{&Mapping{}, GenTestMapping()}},
+		"LocationTable/test":  {LocationTable: []*Location{&Location{}, GenTestLocation()}},
+		"FunctionTable/test":  {FunctionTable: []*Function{&Function{}, GenTestFunction()}},
+		"LinkTable/test":      {LinkTable: []*Link{&Link{}, GenTestLink()}},
 		"StringTable/test":    {StringTable: []string{"", "test_stringtable"}},
-		"AttributeTable/test": {AttributeTable: []*KeyValueAndUnit{{}, GenTestKeyValueAndUnit()}},
-		"StackTable/test":     {StackTable: []*Stack{{}, GenTestStack()}},
+		"AttributeTable/test": {AttributeTable: []*KeyValueAndUnit{&KeyValueAndUnit{}, GenTestKeyValueAndUnit()}},
+		"StackTable/test":     {StackTable: []*Stack{&Stack{}, GenTestStack()}},
 	}
 }

@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -22,19 +21,8 @@ type MetricsData struct {
 	ResourceMetrics []*ResourceMetrics
 }
 
-var (
-	protoPoolMetricsData = sync.Pool{
-		New: func() any {
-			return &MetricsData{}
-		},
-	}
-)
-
 func NewMetricsData() *MetricsData {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &MetricsData{}
-	}
-	return protoPoolMetricsData.Get().(*MetricsData)
+	return Alloc[MetricsData](nil)
 }
 
 func DeleteMetricsData(orig *MetricsData, nullable bool) {
@@ -50,12 +38,10 @@ func DeleteMetricsData(orig *MetricsData, nullable bool) {
 		DeleteResourceMetrics(orig.ResourceMetrics[i], true)
 	}
 	orig.Reset()
-	if nullable {
-		protoPoolMetricsData.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyMetricsData(dest, src *MetricsData) *MetricsData {
+func CopyMetricsData(dest, src *MetricsData, st *State) *MetricsData {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -66,17 +52,17 @@ func CopyMetricsData(dest, src *MetricsData) *MetricsData {
 	}
 
 	if dest == nil {
-		dest = NewMetricsData()
+		dest = Alloc[MetricsData](st)
 	}
-	dest.ResourceMetrics = CopyResourceMetricsPtrSlice(dest.ResourceMetrics, src.ResourceMetrics)
+	dest.ResourceMetrics = CopyResourceMetricsPtrSlice(dest.ResourceMetrics, src.ResourceMetrics, st)
 
 	return dest
 }
 
-func CopyMetricsDataSlice(dest, src []MetricsData) []MetricsData {
+func CopyMetricsDataSlice(dest, src []MetricsData, st *State) []MetricsData {
 	var newDest []MetricsData
 	if cap(dest) < len(src) {
-		newDest = make([]MetricsData, len(src))
+		newDest = AllocSlice[MetricsData](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -86,20 +72,20 @@ func CopyMetricsDataSlice(dest, src []MetricsData) []MetricsData {
 		}
 	}
 	for i := range src {
-		CopyMetricsData(&newDest[i], &src[i])
+		CopyMetricsData(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyMetricsDataPtrSlice(dest, src []*MetricsData) []*MetricsData {
+func CopyMetricsDataPtrSlice(dest, src []*MetricsData, st *State) []*MetricsData {
 	var newDest []*MetricsData
 	if cap(dest) < len(src) {
-		newDest = make([]*MetricsData, len(src))
+		newDest = AllocSlice[*MetricsData](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewMetricsData()
+			newDest[i] = Alloc[MetricsData](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -112,11 +98,11 @@ func CopyMetricsDataPtrSlice(dest, src []*MetricsData) []*MetricsData {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewMetricsData()
+			newDest[i] = Alloc[MetricsData](st)
 		}
 	}
 	for i := range src {
-		CopyMetricsData(newDest[i], src[i])
+		CopyMetricsData(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -143,12 +129,17 @@ func (orig *MetricsData) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *MetricsData) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *MetricsData) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resourceMetrics", "resource_metrics":
 			for iter.ReadArray() {
-				orig.ResourceMetrics = append(orig.ResourceMetrics, NewResourceMetrics())
-				orig.ResourceMetrics[len(orig.ResourceMetrics)-1].UnmarshalJSON(iter)
+				orig.ResourceMetrics = Append(st, orig.ResourceMetrics, Alloc[ResourceMetrics](st))
+				orig.ResourceMetrics[len(orig.ResourceMetrics)-1].UnmarshalJSONState(iter, st)
 			}
 
 		default:
@@ -183,6 +174,10 @@ func (orig *MetricsData) MarshalProto(buf []byte) int {
 }
 
 func (orig *MetricsData) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *MetricsData) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -207,8 +202,8 @@ func (orig *MetricsData) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceMetrics = append(orig.ResourceMetrics, NewResourceMetrics())
-			err = orig.ResourceMetrics[len(orig.ResourceMetrics)-1].UnmarshalProto(buf[startPos:pos])
+			orig.ResourceMetrics = AppendEstimated(st, orig.ResourceMetrics, Alloc[ResourceMetrics](st), len(buf)-pos, length+2)
+			err = orig.ResourceMetrics[len(orig.ResourceMetrics)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -223,18 +218,18 @@ func (orig *MetricsData) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestMetricsData() *MetricsData {
-	orig := NewMetricsData()
-	orig.ResourceMetrics = []*ResourceMetrics{{}, GenTestResourceMetrics()}
+	orig := Alloc[MetricsData](nil)
+	orig.ResourceMetrics = []*ResourceMetrics{&ResourceMetrics{}, GenTestResourceMetrics()}
 	return orig
 }
 
 func GenTestMetricsDataPtrSlice() []*MetricsData {
 	orig := make([]*MetricsData, 5)
-	orig[0] = NewMetricsData()
+	orig[0] = Alloc[MetricsData](nil)
 	orig[1] = GenTestMetricsData()
-	orig[2] = NewMetricsData()
+	orig[2] = Alloc[MetricsData](nil)
 	orig[3] = GenTestMetricsData()
-	orig[4] = NewMetricsData()
+	orig[4] = Alloc[MetricsData](nil)
 	return orig
 }
 

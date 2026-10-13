@@ -89,7 +89,7 @@ func (es StackSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*internal.Stack, len(*es.orig), newCap)
+	newOrig := internal.AllocSlice[*internal.Stack](es.state, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -98,7 +98,7 @@ func (es StackSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Stack.
 func (es StackSlice) AppendEmpty() Stack {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewStack())
+	*es.orig = internal.Append(es.state, *es.orig, internal.Alloc[internal.Stack](es.state))
 	return es.At(es.Len() - 1)
 }
 
@@ -111,11 +111,22 @@ func (es StackSlice) MoveAndAppendTo(dest StackSlice) {
 	if es.orig == dest.orig {
 		return
 	}
+	if internal.MoveNeedsCopy(es.state, dest.state) {
+		for i := 0; i < es.Len(); i++ {
+			es.At(i).CopyTo(dest.AppendEmpty())
+		}
+		for i := range *es.orig {
+			internal.DeleteStack((*es.orig)[i], true)
+
+		}
+		*es.orig = nil
+		return
+	}
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.orig = internal.AppendSeq(dest.state, *dest.orig, *es.orig)
 	}
 	*es.orig = nil
 }
@@ -151,7 +162,7 @@ func (es StackSlice) CopyTo(dest StackSlice) {
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyStackPtrSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyStackPtrSlice(*dest.orig, *es.orig, dest.state)
 }
 
 // Sort sorts the Stack elements within StackSlice given the

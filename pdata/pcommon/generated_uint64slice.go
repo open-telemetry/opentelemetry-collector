@@ -36,13 +36,13 @@ func NewUInt64Slice() UInt64Slice {
 
 // AsRaw returns a copy of the []uint64 slice.
 func (ms UInt64Slice) AsRaw() []uint64 {
-	return copyUint64Slice(nil, *ms.getOrig())
+	return slices.Clone(*ms.getOrig())
 }
 
 // FromRaw copies raw []uint64 into the slice UInt64Slice.
 func (ms UInt64Slice) FromRaw(val []uint64) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = copyUint64Slice(*ms.getOrig(), val)
+	*ms.getOrig() = internal.CopySlice(ms.getState(), *ms.getOrig(), val)
 }
 
 // Len returns length of the []uint64 slice value.
@@ -88,7 +88,7 @@ func (ms UInt64Slice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]uint64, len(*ms.getOrig()), newCap)
+	newOrig := internal.AllocSlice[uint64](ms.getState(), len(*ms.getOrig()), newCap)
 	copy(newOrig, *ms.getOrig())
 	*ms.getOrig() = newOrig
 }
@@ -97,7 +97,7 @@ func (ms UInt64Slice) EnsureCapacity(newCap int) {
 // Equivalent of uInt64Slice = append(uInt64Slice, elms...)
 func (ms UInt64Slice) Append(elms ...uint64) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = append(*ms.getOrig(), elms...)
+	*ms.getOrig() = internal.AppendSeq(ms.getState(), *ms.getOrig(), elms)
 }
 
 // MoveTo moves all elements from the current slice overriding the destination and
@@ -109,6 +109,11 @@ func (ms UInt64Slice) MoveTo(dest UInt64Slice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
+	if ms.getState() != dest.getState() {
+		ms.CopyTo(dest)
+		*ms.getOrig() = nil
+		return
+	}
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = nil
 }
@@ -118,11 +123,16 @@ func (ms UInt64Slice) MoveTo(dest UInt64Slice) {
 func (ms UInt64Slice) MoveAndAppendTo(dest UInt64Slice) {
 	ms.getState().AssertMutable()
 	dest.getState().AssertMutable()
+	if ms.getState() != dest.getState() {
+		dest.Append(*ms.getOrig()...)
+		*ms.getOrig() = nil
+		return
+	}
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *ms.getOrig()
 	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *ms.getOrig()...)
+		*dest.getOrig() = internal.AppendSeq(dest.getState(), *dest.getOrig(), *ms.getOrig())
 	}
 	*ms.getOrig() = nil
 }
@@ -155,7 +165,7 @@ func (ms UInt64Slice) CopyTo(dest UInt64Slice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = copyUint64Slice(*dest.getOrig(), *ms.getOrig())
+	*dest.getOrig() = internal.CopySlice(dest.getState(), *dest.getOrig(), *ms.getOrig())
 }
 
 // Equal checks equality with another UInt64Slice

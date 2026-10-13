@@ -46,7 +46,7 @@ func (u *JSONUnmarshaler) UnmarshalMetrics(buf []byte) (Metrics, error) {
 	defer json.ReturnIterator(iter)
 	iter.SetDisallowUnknownFields(u.DisallowUnknownFields)
 	md := NewMetrics()
-	md.getOrig().UnmarshalJSON(iter)
+	md.getOrig().UnmarshalJSONState(iter, md.getState())
 	if iter.Error() != nil {
 		return Metrics{}, iter.Error()
 	}

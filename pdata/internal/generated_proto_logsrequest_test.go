@@ -31,9 +31,9 @@ func TestCopyLogsRequest(t *testing.T) {
 				}()
 
 				dest := NewLogsRequest()
-				CopyLogsRequest(dest, src)
+				CopyLogsRequest(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyLogsRequest(dest, dest)
+				CopyLogsRequest(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyLogsRequestSlice(t *testing.T) {
 	src := []LogsRequest{}
 	dest := []LogsRequest{}
 	// Test CopyTo empty
-	dest = CopyLogsRequestSlice(dest, src)
+	dest = CopyLogsRequestSlice(dest, src, nil)
 	assert.Equal(t, []LogsRequest{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestLogsRequestSlice()
-	dest = CopyLogsRequestSlice(dest, src)
+	dest = CopyLogsRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogsRequestSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyLogsRequestSlice(dest, src)
+	dest = CopyLogsRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogsRequestSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyLogsRequestSlice(dest, []LogsRequest{})
+	dest = CopyLogsRequestSlice(dest, []LogsRequest{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyLogsRequestSlice(dest, src)
+	dest = CopyLogsRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogsRequestSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyLogsRequestPtrSlice(t *testing.T) {
 	src := []*LogsRequest{}
 	dest := []*LogsRequest{}
 	// Test CopyTo empty
-	dest = CopyLogsRequestPtrSlice(dest, src)
+	dest = CopyLogsRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, []*LogsRequest{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestLogsRequestPtrSlice()
-	dest = CopyLogsRequestPtrSlice(dest, src)
+	dest = CopyLogsRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogsRequestPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyLogsRequestPtrSlice(dest, src)
+	dest = CopyLogsRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogsRequestPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyLogsRequestPtrSlice(dest, []*LogsRequest{})
+	dest = CopyLogsRequestPtrSlice(dest, []*LogsRequest{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyLogsRequestPtrSlice(dest, src)
+	dest = CopyLogsRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestLogsRequestPtrSlice(), dest)
 }
 
@@ -190,12 +190,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufLogsRequest(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesLogsRequest() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                  {0x02},
-		"RequestContext/wrong_wire_type": {0x14},
-		"RequestContext/missing_value":   {0x12},
-		"LogsData/wrong_wire_type":       {0x1c},
-		"LogsData/missing_value":         {0x1a},
-		"FormatVersion/wrong_wire_type":  {0xc},
-		"FormatVersion/missing_value":    {0xd},
+		"RequestContext/wrong_wire_type": []byte{0x14},
+		"RequestContext/missing_value":   []byte{0x12},
+		"LogsData/wrong_wire_type":       []byte{0x1c},
+		"LogsData/missing_value":         []byte{0x1a},
+		"FormatVersion/wrong_wire_type":  []byte{0xc},
+		"FormatVersion/missing_value":    []byte{0xd},
 	}
 }
 

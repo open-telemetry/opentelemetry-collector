@@ -3,8 +3,6 @@
 
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
-import "go.opentelemetry.io/collector/pdata/internal/metadata"
-
 type ValueWrapper struct {
 	orig  *AnyValue
 	state *State
@@ -28,50 +26,29 @@ func GenTestValueWrapper() ValueWrapper {
 }
 
 func NewAnyValueStringValue() *AnyValue_StringValue {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &AnyValue_StringValue{}
-	}
-	return ProtoPoolAnyValue_StringValue.Get().(*AnyValue_StringValue)
+	return Alloc[AnyValue_StringValue](nil)
 }
 
 func NewAnyValueIntValue() *AnyValue_IntValue {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &AnyValue_IntValue{}
-	}
-	return ProtoPoolAnyValue_IntValue.Get().(*AnyValue_IntValue)
+	return Alloc[AnyValue_IntValue](nil)
 }
 
 func NewAnyValueBoolValue() *AnyValue_BoolValue {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &AnyValue_BoolValue{}
-	}
-	return ProtoPoolAnyValue_BoolValue.Get().(*AnyValue_BoolValue)
+	return Alloc[AnyValue_BoolValue](nil)
 }
 
 func NewAnyValueDoubleValue() *AnyValue_DoubleValue {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &AnyValue_DoubleValue{}
-	}
-	return ProtoPoolAnyValue_DoubleValue.Get().(*AnyValue_DoubleValue)
+	return Alloc[AnyValue_DoubleValue](nil)
 }
 
 func NewAnyValueBytesValue() *AnyValue_BytesValue {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &AnyValue_BytesValue{}
-	}
-	return ProtoPoolAnyValue_BytesValue.Get().(*AnyValue_BytesValue)
+	return Alloc[AnyValue_BytesValue](nil)
 }
 
 func NewAnyValueArrayValue() *AnyValue_ArrayValue {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &AnyValue_ArrayValue{}
-	}
-	return ProtoPoolAnyValue_ArrayValue.Get().(*AnyValue_ArrayValue)
+	return Alloc[AnyValue_ArrayValue](nil)
 }
 
 func NewAnyValueKvlistValue() *AnyValue_KvlistValue {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &AnyValue_KvlistValue{}
-	}
-	return ProtoPoolAnyValue_KvlistValue.Get().(*AnyValue_KvlistValue)
+	return Alloc[AnyValue_KvlistValue](nil)
 }

@@ -31,7 +31,8 @@ func newExportResponse(orig *internal.ExportTraceServiceResponse, state *interna
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewExportResponse() ExportResponse {
-	return newExportResponse(internal.NewExportTraceServiceResponse(), internal.NewState())
+	st := internal.NewState()
+	return newExportResponse(internal.Alloc[internal.ExportTraceServiceResponse](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -41,6 +42,11 @@ func (ms ExportResponse) MoveTo(dest ExportResponse) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		ms.CopyTo(dest)
+		internal.DeleteExportTraceServiceResponse(ms.orig, false)
 		return
 	}
 	internal.DeleteExportTraceServiceResponse(dest.orig, false)
@@ -55,5 +61,5 @@ func (ms ExportResponse) PartialSuccess() ExportPartialSuccess {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExportResponse) CopyTo(dest ExportResponse) {
 	dest.state.AssertMutable()
-	internal.CopyExportTraceServiceResponse(dest.orig, ms.orig)
+	internal.CopyExportTraceServiceResponse(dest.orig, ms.orig, dest.state)
 }

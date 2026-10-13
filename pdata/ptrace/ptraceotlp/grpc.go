@@ -84,6 +84,6 @@ type rawTracesServer struct {
 
 func (s rawTracesServer) Export(ctx context.Context, request *internal.ExportTraceServiceRequest) (*internal.ExportTraceServiceResponse, error) {
 	otlp.MigrateTraces(request.ResourceSpans)
-	rsp, err := s.srv.Export(ctx, ExportRequest{orig: request, state: internal.NewState()})
+	rsp, err := s.srv.Export(ctx, ExportRequest{orig: request, state: otelgrpc.TakeGRPCState(request)})
 	return rsp.orig, err
 }

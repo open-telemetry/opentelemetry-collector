@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -21,19 +20,8 @@ type Histogram struct {
 	AggregationTemporality AggregationTemporality
 }
 
-var (
-	protoPoolHistogram = sync.Pool{
-		New: func() any {
-			return &Histogram{}
-		},
-	}
-)
-
 func NewHistogram() *Histogram {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &Histogram{}
-	}
-	return protoPoolHistogram.Get().(*Histogram)
+	return Alloc[Histogram](nil)
 }
 
 func DeleteHistogram(orig *Histogram, nullable bool) {
@@ -50,12 +38,10 @@ func DeleteHistogram(orig *Histogram, nullable bool) {
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolHistogram.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyHistogram(dest, src *Histogram) *Histogram {
+func CopyHistogram(dest, src *Histogram, st *State) *Histogram {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -66,19 +52,19 @@ func CopyHistogram(dest, src *Histogram) *Histogram {
 	}
 
 	if dest == nil {
-		dest = NewHistogram()
+		dest = Alloc[Histogram](st)
 	}
-	dest.DataPoints = CopyHistogramDataPointPtrSlice(dest.DataPoints, src.DataPoints)
+	dest.DataPoints = CopyHistogramDataPointPtrSlice(dest.DataPoints, src.DataPoints, st)
 
 	dest.AggregationTemporality = src.AggregationTemporality
 
 	return dest
 }
 
-func CopyHistogramSlice(dest, src []Histogram) []Histogram {
+func CopyHistogramSlice(dest, src []Histogram, st *State) []Histogram {
 	var newDest []Histogram
 	if cap(dest) < len(src) {
-		newDest = make([]Histogram, len(src))
+		newDest = AllocSlice[Histogram](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -88,20 +74,20 @@ func CopyHistogramSlice(dest, src []Histogram) []Histogram {
 		}
 	}
 	for i := range src {
-		CopyHistogram(&newDest[i], &src[i])
+		CopyHistogram(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyHistogramPtrSlice(dest, src []*Histogram) []*Histogram {
+func CopyHistogramPtrSlice(dest, src []*Histogram, st *State) []*Histogram {
 	var newDest []*Histogram
 	if cap(dest) < len(src) {
-		newDest = make([]*Histogram, len(src))
+		newDest = AllocSlice[*Histogram](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewHistogram()
+			newDest[i] = Alloc[Histogram](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -114,11 +100,11 @@ func CopyHistogramPtrSlice(dest, src []*Histogram) []*Histogram {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewHistogram()
+			newDest[i] = Alloc[Histogram](st)
 		}
 	}
 	for i := range src {
-		CopyHistogram(newDest[i], src[i])
+		CopyHistogram(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -150,12 +136,17 @@ func (orig *Histogram) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *Histogram) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *Histogram) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "dataPoints", "data_points":
 			for iter.ReadArray() {
-				orig.DataPoints = append(orig.DataPoints, NewHistogramDataPoint())
-				orig.DataPoints[len(orig.DataPoints)-1].UnmarshalJSON(iter)
+				orig.DataPoints = Append(st, orig.DataPoints, Alloc[HistogramDataPoint](st))
+				orig.DataPoints[len(orig.DataPoints)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "aggregationTemporality", "aggregation_temporality":
@@ -200,6 +191,10 @@ func (orig *Histogram) MarshalProto(buf []byte) int {
 }
 
 func (orig *Histogram) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *Histogram) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -224,8 +219,8 @@ func (orig *Histogram) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DataPoints = append(orig.DataPoints, NewHistogramDataPoint())
-			err = orig.DataPoints[len(orig.DataPoints)-1].UnmarshalProto(buf[startPos:pos])
+			orig.DataPoints = AppendEstimated(st, orig.DataPoints, Alloc[HistogramDataPoint](st), len(buf)-pos, length+2)
+			err = orig.DataPoints[len(orig.DataPoints)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -251,19 +246,19 @@ func (orig *Histogram) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestHistogram() *Histogram {
-	orig := NewHistogram()
-	orig.DataPoints = []*HistogramDataPoint{{}, GenTestHistogramDataPoint()}
+	orig := Alloc[Histogram](nil)
+	orig.DataPoints = []*HistogramDataPoint{&HistogramDataPoint{}, GenTestHistogramDataPoint()}
 	orig.AggregationTemporality = AggregationTemporality(13)
 	return orig
 }
 
 func GenTestHistogramPtrSlice() []*Histogram {
 	orig := make([]*Histogram, 5)
-	orig[0] = NewHistogram()
+	orig[0] = Alloc[Histogram](nil)
 	orig[1] = GenTestHistogram()
-	orig[2] = NewHistogram()
+	orig[2] = Alloc[Histogram](nil)
 	orig[3] = GenTestHistogram()
-	orig[4] = NewHistogram()
+	orig[4] = Alloc[Histogram](nil)
 	return orig
 }
 

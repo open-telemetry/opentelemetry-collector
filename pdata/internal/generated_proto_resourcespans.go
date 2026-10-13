@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -23,19 +22,8 @@ type ResourceSpans struct {
 	DeprecatedScopeSpans []*ScopeSpans
 }
 
-var (
-	protoPoolResourceSpans = sync.Pool{
-		New: func() any {
-			return &ResourceSpans{}
-		},
-	}
-)
-
 func NewResourceSpans() *ResourceSpans {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &ResourceSpans{}
-	}
-	return protoPoolResourceSpans.Get().(*ResourceSpans)
+	return Alloc[ResourceSpans](nil)
 }
 
 func DeleteResourceSpans(orig *ResourceSpans, nullable bool) {
@@ -56,12 +44,10 @@ func DeleteResourceSpans(orig *ResourceSpans, nullable bool) {
 		DeleteScopeSpans(orig.DeprecatedScopeSpans[i], true)
 	}
 	orig.Reset()
-	if nullable {
-		protoPoolResourceSpans.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyResourceSpans(dest, src *ResourceSpans) *ResourceSpans {
+func CopyResourceSpans(dest, src *ResourceSpans, st *State) *ResourceSpans {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -72,22 +58,23 @@ func CopyResourceSpans(dest, src *ResourceSpans) *ResourceSpans {
 	}
 
 	if dest == nil {
-		dest = NewResourceSpans()
+		dest = Alloc[ResourceSpans](st)
 	}
-	CopyResource(&dest.Resource, &src.Resource)
+	CopyResource(&dest.Resource, &src.Resource, st)
 
-	dest.ScopeSpans = CopyScopeSpansPtrSlice(dest.ScopeSpans, src.ScopeSpans)
+	dest.ScopeSpans = CopyScopeSpansPtrSlice(dest.ScopeSpans, src.ScopeSpans, st)
 
-	dest.SchemaUrl = src.SchemaUrl
-	dest.DeprecatedScopeSpans = CopyScopeSpansPtrSlice(dest.DeprecatedScopeSpans, src.DeprecatedScopeSpans)
+	dest.SchemaUrl = CopyString(st, src.SchemaUrl)
+
+	dest.DeprecatedScopeSpans = CopyScopeSpansPtrSlice(dest.DeprecatedScopeSpans, src.DeprecatedScopeSpans, st)
 
 	return dest
 }
 
-func CopyResourceSpansSlice(dest, src []ResourceSpans) []ResourceSpans {
+func CopyResourceSpansSlice(dest, src []ResourceSpans, st *State) []ResourceSpans {
 	var newDest []ResourceSpans
 	if cap(dest) < len(src) {
-		newDest = make([]ResourceSpans, len(src))
+		newDest = AllocSlice[ResourceSpans](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -97,20 +84,20 @@ func CopyResourceSpansSlice(dest, src []ResourceSpans) []ResourceSpans {
 		}
 	}
 	for i := range src {
-		CopyResourceSpans(&newDest[i], &src[i])
+		CopyResourceSpans(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyResourceSpansPtrSlice(dest, src []*ResourceSpans) []*ResourceSpans {
+func CopyResourceSpansPtrSlice(dest, src []*ResourceSpans, st *State) []*ResourceSpans {
 	var newDest []*ResourceSpans
 	if cap(dest) < len(src) {
-		newDest = make([]*ResourceSpans, len(src))
+		newDest = AllocSlice[*ResourceSpans](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewResourceSpans()
+			newDest[i] = Alloc[ResourceSpans](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -123,11 +110,11 @@ func CopyResourceSpansPtrSlice(dest, src []*ResourceSpans) []*ResourceSpans {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewResourceSpans()
+			newDest[i] = Alloc[ResourceSpans](st)
 		}
 	}
 	for i := range src {
-		CopyResourceSpans(newDest[i], src[i])
+		CopyResourceSpans(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -170,23 +157,29 @@ func (orig *ResourceSpans) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *ResourceSpans) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *ResourceSpans) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resource":
 
-			orig.Resource.UnmarshalJSON(iter)
+			orig.Resource.UnmarshalJSONState(iter, st)
 		case "scopeSpans", "scope_spans":
 			for iter.ReadArray() {
-				orig.ScopeSpans = append(orig.ScopeSpans, NewScopeSpans())
-				orig.ScopeSpans[len(orig.ScopeSpans)-1].UnmarshalJSON(iter)
+				orig.ScopeSpans = Append(st, orig.ScopeSpans, Alloc[ScopeSpans](st))
+				orig.ScopeSpans[len(orig.ScopeSpans)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "schemaUrl", "schema_url":
-			orig.SchemaUrl = iter.ReadString()
+
+			orig.SchemaUrl = CopyString(st, iter.ReadString())
 		case "deprecatedScopeSpans", "deprecated_scope_spans":
 			for iter.ReadArray() {
-				orig.DeprecatedScopeSpans = append(orig.DeprecatedScopeSpans, NewScopeSpans())
-				orig.DeprecatedScopeSpans[len(orig.DeprecatedScopeSpans)-1].UnmarshalJSON(iter)
+				orig.DeprecatedScopeSpans = Append(st, orig.DeprecatedScopeSpans, Alloc[ScopeSpans](st))
+				orig.DeprecatedScopeSpans[len(orig.DeprecatedScopeSpans)-1].UnmarshalJSONState(iter, st)
 			}
 
 		default:
@@ -255,6 +248,10 @@ func (orig *ResourceSpans) MarshalProto(buf []byte) int {
 }
 
 func (orig *ResourceSpans) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *ResourceSpans) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -280,7 +277,7 @@ func (orig *ResourceSpans) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Resource.UnmarshalProto(buf[startPos:pos])
+			err = orig.Resource.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -295,8 +292,8 @@ func (orig *ResourceSpans) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ScopeSpans = append(orig.ScopeSpans, NewScopeSpans())
-			err = orig.ScopeSpans[len(orig.ScopeSpans)-1].UnmarshalProto(buf[startPos:pos])
+			orig.ScopeSpans = AppendEstimated(st, orig.ScopeSpans, Alloc[ScopeSpans](st), len(buf)-pos, length+2)
+			err = orig.ScopeSpans[len(orig.ScopeSpans)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -311,7 +308,7 @@ func (orig *ResourceSpans) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.SchemaUrl = string(buf[startPos:pos])
+			orig.SchemaUrl = BorrowString(st, buf, startPos, pos)
 
 		case 1000:
 			if wireType != proto.WireTypeLen {
@@ -323,8 +320,8 @@ func (orig *ResourceSpans) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.DeprecatedScopeSpans = append(orig.DeprecatedScopeSpans, NewScopeSpans())
-			err = orig.DeprecatedScopeSpans[len(orig.DeprecatedScopeSpans)-1].UnmarshalProto(buf[startPos:pos])
+			orig.DeprecatedScopeSpans = AppendEstimated(st, orig.DeprecatedScopeSpans, Alloc[ScopeSpans](st), len(buf)-pos, length+2)
+			err = orig.DeprecatedScopeSpans[len(orig.DeprecatedScopeSpans)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -339,21 +336,21 @@ func (orig *ResourceSpans) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestResourceSpans() *ResourceSpans {
-	orig := NewResourceSpans()
+	orig := Alloc[ResourceSpans](nil)
 	orig.Resource = *GenTestResource()
-	orig.ScopeSpans = []*ScopeSpans{{}, GenTestScopeSpans()}
+	orig.ScopeSpans = []*ScopeSpans{&ScopeSpans{}, GenTestScopeSpans()}
 	orig.SchemaUrl = "test_schemaurl"
-	orig.DeprecatedScopeSpans = []*ScopeSpans{{}, GenTestScopeSpans()}
+	orig.DeprecatedScopeSpans = []*ScopeSpans{&ScopeSpans{}, GenTestScopeSpans()}
 	return orig
 }
 
 func GenTestResourceSpansPtrSlice() []*ResourceSpans {
 	orig := make([]*ResourceSpans, 5)
-	orig[0] = NewResourceSpans()
+	orig[0] = Alloc[ResourceSpans](nil)
 	orig[1] = GenTestResourceSpans()
-	orig[2] = NewResourceSpans()
+	orig[2] = Alloc[ResourceSpans](nil)
 	orig[3] = GenTestResourceSpans()
-	orig[4] = NewResourceSpans()
+	orig[4] = Alloc[ResourceSpans](nil)
 	return orig
 }
 

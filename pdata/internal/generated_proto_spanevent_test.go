@@ -31,9 +31,9 @@ func TestCopySpanEvent(t *testing.T) {
 				}()
 
 				dest := NewSpanEvent()
-				CopySpanEvent(dest, src)
+				CopySpanEvent(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopySpanEvent(dest, dest)
+				CopySpanEvent(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopySpanEventSlice(t *testing.T) {
 	src := []SpanEvent{}
 	dest := []SpanEvent{}
 	// Test CopyTo empty
-	dest = CopySpanEventSlice(dest, src)
+	dest = CopySpanEventSlice(dest, src, nil)
 	assert.Equal(t, []SpanEvent{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSpanEventSlice()
-	dest = CopySpanEventSlice(dest, src)
+	dest = CopySpanEventSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanEventSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySpanEventSlice(dest, src)
+	dest = CopySpanEventSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanEventSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySpanEventSlice(dest, []SpanEvent{})
+	dest = CopySpanEventSlice(dest, []SpanEvent{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySpanEventSlice(dest, src)
+	dest = CopySpanEventSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanEventSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopySpanEventPtrSlice(t *testing.T) {
 	src := []*SpanEvent{}
 	dest := []*SpanEvent{}
 	// Test CopyTo empty
-	dest = CopySpanEventPtrSlice(dest, src)
+	dest = CopySpanEventPtrSlice(dest, src, nil)
 	assert.Equal(t, []*SpanEvent{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestSpanEventPtrSlice()
-	dest = CopySpanEventPtrSlice(dest, src)
+	dest = CopySpanEventPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanEventPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopySpanEventPtrSlice(dest, src)
+	dest = CopySpanEventPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanEventPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopySpanEventPtrSlice(dest, []*SpanEvent{})
+	dest = CopySpanEventPtrSlice(dest, []*SpanEvent{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopySpanEventPtrSlice(dest, src)
+	dest = CopySpanEventPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestSpanEventPtrSlice(), dest)
 }
 
@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufSpanEvent(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesSpanEvent() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                          {0x02},
-		"TimeUnixNano/wrong_wire_type":           {0xc},
-		"TimeUnixNano/missing_value":             {0x9},
-		"Name/wrong_wire_type":                   {0x14},
-		"Name/missing_value":                     {0x12},
-		"Attributes/wrong_wire_type":             {0x1c},
-		"Attributes/missing_value":               {0x1a},
-		"DroppedAttributesCount/wrong_wire_type": {0x24},
-		"DroppedAttributesCount/missing_value":   {0x20},
+		"TimeUnixNano/wrong_wire_type":           []byte{0xc},
+		"TimeUnixNano/missing_value":             []byte{0x9},
+		"Name/wrong_wire_type":                   []byte{0x14},
+		"Name/missing_value":                     []byte{0x12},
+		"Attributes/wrong_wire_type":             []byte{0x1c},
+		"Attributes/missing_value":               []byte{0x1a},
+		"DroppedAttributesCount/wrong_wire_type": []byte{0x24},
+		"DroppedAttributesCount/missing_value":   []byte{0x20},
 	}
 }
 
@@ -206,7 +206,7 @@ func genTestEncodingValuesSpanEvent() map[string]*SpanEvent {
 		"empty":                       NewSpanEvent(),
 		"TimeUnixNano/test":           {TimeUnixNano: uint64(13)},
 		"Name/test":                   {Name: "test_name"},
-		"Attributes/test":             {Attributes: []KeyValue{{}, *GenTestKeyValue()}},
+		"Attributes/test":             {Attributes: []KeyValue{KeyValue{}, *GenTestKeyValue()}},
 		"DroppedAttributesCount/test": {DroppedAttributesCount: uint32(13)},
 	}
 }

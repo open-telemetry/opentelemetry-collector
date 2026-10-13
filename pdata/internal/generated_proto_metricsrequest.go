@@ -9,7 +9,6 @@ package internal
 import (
 	"encoding/binary"
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -22,19 +21,8 @@ type MetricsRequest struct {
 	FormatVersion  uint32
 }
 
-var (
-	protoPoolMetricsRequest = sync.Pool{
-		New: func() any {
-			return &MetricsRequest{}
-		},
-	}
-)
-
 func NewMetricsRequest() *MetricsRequest {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &MetricsRequest{}
-	}
-	return protoPoolMetricsRequest.Get().(*MetricsRequest)
+	return Alloc[MetricsRequest](nil)
 }
 
 func DeleteMetricsRequest(orig *MetricsRequest, nullable bool) {
@@ -50,12 +38,10 @@ func DeleteMetricsRequest(orig *MetricsRequest, nullable bool) {
 	DeleteMetricsData(&orig.MetricsData, false)
 
 	orig.Reset()
-	if nullable {
-		protoPoolMetricsRequest.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyMetricsRequest(dest, src *MetricsRequest) *MetricsRequest {
+func CopyMetricsRequest(dest, src *MetricsRequest, st *State) *MetricsRequest {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -66,21 +52,21 @@ func CopyMetricsRequest(dest, src *MetricsRequest) *MetricsRequest {
 	}
 
 	if dest == nil {
-		dest = NewMetricsRequest()
+		dest = Alloc[MetricsRequest](st)
 	}
-	dest.RequestContext = CopyRequestContext(dest.RequestContext, src.RequestContext)
+	dest.RequestContext = CopyRequestContext(dest.RequestContext, src.RequestContext, st)
 
-	CopyMetricsData(&dest.MetricsData, &src.MetricsData)
+	CopyMetricsData(&dest.MetricsData, &src.MetricsData, st)
 
 	dest.FormatVersion = src.FormatVersion
 
 	return dest
 }
 
-func CopyMetricsRequestSlice(dest, src []MetricsRequest) []MetricsRequest {
+func CopyMetricsRequestSlice(dest, src []MetricsRequest, st *State) []MetricsRequest {
 	var newDest []MetricsRequest
 	if cap(dest) < len(src) {
-		newDest = make([]MetricsRequest, len(src))
+		newDest = AllocSlice[MetricsRequest](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -90,20 +76,20 @@ func CopyMetricsRequestSlice(dest, src []MetricsRequest) []MetricsRequest {
 		}
 	}
 	for i := range src {
-		CopyMetricsRequest(&newDest[i], &src[i])
+		CopyMetricsRequest(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyMetricsRequestPtrSlice(dest, src []*MetricsRequest) []*MetricsRequest {
+func CopyMetricsRequestPtrSlice(dest, src []*MetricsRequest, st *State) []*MetricsRequest {
 	var newDest []*MetricsRequest
 	if cap(dest) < len(src) {
-		newDest = make([]*MetricsRequest, len(src))
+		newDest = AllocSlice[*MetricsRequest](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewMetricsRequest()
+			newDest[i] = Alloc[MetricsRequest](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -116,11 +102,11 @@ func CopyMetricsRequestPtrSlice(dest, src []*MetricsRequest) []*MetricsRequest {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewMetricsRequest()
+			newDest[i] = Alloc[MetricsRequest](st)
 		}
 	}
 	for i := range src {
-		CopyMetricsRequest(newDest[i], src[i])
+		CopyMetricsRequest(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -147,15 +133,21 @@ func (orig *MetricsRequest) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *MetricsRequest) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *MetricsRequest) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "requestContext", "request_context":
-			orig.RequestContext = NewRequestContext()
-			orig.RequestContext.UnmarshalJSON(iter)
+			orig.RequestContext = Alloc[RequestContext](st)
+			orig.RequestContext.UnmarshalJSONState(iter, st)
 		case "metricsData", "metrics_data":
 
-			orig.MetricsData.UnmarshalJSON(iter)
+			orig.MetricsData.UnmarshalJSONState(iter, st)
 		case "formatVersion", "format_version":
+
 			orig.FormatVersion = iter.ReadUint32()
 		default:
 			iter.HandleUnknownField(f)
@@ -206,6 +198,10 @@ func (orig *MetricsRequest) MarshalProto(buf []byte) int {
 }
 
 func (orig *MetricsRequest) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *MetricsRequest) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -231,8 +227,8 @@ func (orig *MetricsRequest) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			orig.RequestContext = NewRequestContext()
-			err = orig.RequestContext.UnmarshalProto(buf[startPos:pos])
+			orig.RequestContext = Alloc[RequestContext](st)
+			err = orig.RequestContext.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -248,7 +244,7 @@ func (orig *MetricsRequest) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.MetricsData.UnmarshalProto(buf[startPos:pos])
+			err = orig.MetricsData.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -275,7 +271,7 @@ func (orig *MetricsRequest) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestMetricsRequest() *MetricsRequest {
-	orig := NewMetricsRequest()
+	orig := Alloc[MetricsRequest](nil)
 	orig.RequestContext = GenTestRequestContext()
 	orig.MetricsData = *GenTestMetricsData()
 	orig.FormatVersion = uint32(13)
@@ -284,11 +280,11 @@ func GenTestMetricsRequest() *MetricsRequest {
 
 func GenTestMetricsRequestPtrSlice() []*MetricsRequest {
 	orig := make([]*MetricsRequest, 5)
-	orig[0] = NewMetricsRequest()
+	orig[0] = Alloc[MetricsRequest](nil)
 	orig[1] = GenTestMetricsRequest()
-	orig[2] = NewMetricsRequest()
+	orig[2] = Alloc[MetricsRequest](nil)
 	orig[3] = GenTestMetricsRequest()
-	orig[4] = NewMetricsRequest()
+	orig[4] = Alloc[MetricsRequest](nil)
 	return orig
 }
 

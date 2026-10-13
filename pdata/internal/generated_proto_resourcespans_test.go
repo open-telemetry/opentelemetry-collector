@@ -31,9 +31,9 @@ func TestCopyResourceSpans(t *testing.T) {
 				}()
 
 				dest := NewResourceSpans()
-				CopyResourceSpans(dest, src)
+				CopyResourceSpans(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyResourceSpans(dest, dest)
+				CopyResourceSpans(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyResourceSpansSlice(t *testing.T) {
 	src := []ResourceSpans{}
 	dest := []ResourceSpans{}
 	// Test CopyTo empty
-	dest = CopyResourceSpansSlice(dest, src)
+	dest = CopyResourceSpansSlice(dest, src, nil)
 	assert.Equal(t, []ResourceSpans{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestResourceSpansSlice()
-	dest = CopyResourceSpansSlice(dest, src)
+	dest = CopyResourceSpansSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceSpansSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyResourceSpansSlice(dest, src)
+	dest = CopyResourceSpansSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceSpansSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyResourceSpansSlice(dest, []ResourceSpans{})
+	dest = CopyResourceSpansSlice(dest, []ResourceSpans{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyResourceSpansSlice(dest, src)
+	dest = CopyResourceSpansSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceSpansSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyResourceSpansPtrSlice(t *testing.T) {
 	src := []*ResourceSpans{}
 	dest := []*ResourceSpans{}
 	// Test CopyTo empty
-	dest = CopyResourceSpansPtrSlice(dest, src)
+	dest = CopyResourceSpansPtrSlice(dest, src, nil)
 	assert.Equal(t, []*ResourceSpans{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestResourceSpansPtrSlice()
-	dest = CopyResourceSpansPtrSlice(dest, src)
+	dest = CopyResourceSpansPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceSpansPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyResourceSpansPtrSlice(dest, src)
+	dest = CopyResourceSpansPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceSpansPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyResourceSpansPtrSlice(dest, []*ResourceSpans{})
+	dest = CopyResourceSpansPtrSlice(dest, []*ResourceSpans{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyResourceSpansPtrSlice(dest, src)
+	dest = CopyResourceSpansPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestResourceSpansPtrSlice(), dest)
 }
 
@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufResourceSpans(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesResourceSpans() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                        {0x02},
-		"Resource/wrong_wire_type":             {0xc},
-		"Resource/missing_value":               {0xa},
-		"ScopeSpans/wrong_wire_type":           {0x14},
-		"ScopeSpans/missing_value":             {0x12},
-		"SchemaUrl/wrong_wire_type":            {0x1c},
-		"SchemaUrl/missing_value":              {0x1a},
-		"DeprecatedScopeSpans/wrong_wire_type": {0xc4, 0x3e},
-		"DeprecatedScopeSpans/missing_value":   {0xc2, 0x3e},
+		"Resource/wrong_wire_type":             []byte{0xc},
+		"Resource/missing_value":               []byte{0xa},
+		"ScopeSpans/wrong_wire_type":           []byte{0x14},
+		"ScopeSpans/missing_value":             []byte{0x12},
+		"SchemaUrl/wrong_wire_type":            []byte{0x1c},
+		"SchemaUrl/missing_value":              []byte{0x1a},
+		"DeprecatedScopeSpans/wrong_wire_type": []byte{0xc4, 0x3e},
+		"DeprecatedScopeSpans/missing_value":   []byte{0xc2, 0x3e},
 	}
 }
 
@@ -205,8 +205,8 @@ func genTestEncodingValuesResourceSpans() map[string]*ResourceSpans {
 	return map[string]*ResourceSpans{
 		"empty":                     NewResourceSpans(),
 		"Resource/test":             {Resource: *GenTestResource()},
-		"ScopeSpans/test":           {ScopeSpans: []*ScopeSpans{{}, GenTestScopeSpans()}},
+		"ScopeSpans/test":           {ScopeSpans: []*ScopeSpans{&ScopeSpans{}, GenTestScopeSpans()}},
 		"SchemaUrl/test":            {SchemaUrl: "test_schemaurl"},
-		"DeprecatedScopeSpans/test": {DeprecatedScopeSpans: []*ScopeSpans{{}, GenTestScopeSpans()}},
+		"DeprecatedScopeSpans/test": {DeprecatedScopeSpans: []*ScopeSpans{&ScopeSpans{}, GenTestScopeSpans()}},
 	}
 }

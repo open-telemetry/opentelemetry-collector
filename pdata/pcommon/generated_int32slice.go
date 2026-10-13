@@ -36,13 +36,13 @@ func NewInt32Slice() Int32Slice {
 
 // AsRaw returns a copy of the []int32 slice.
 func (ms Int32Slice) AsRaw() []int32 {
-	return copyInt32Slice(nil, *ms.getOrig())
+	return slices.Clone(*ms.getOrig())
 }
 
 // FromRaw copies raw []int32 into the slice Int32Slice.
 func (ms Int32Slice) FromRaw(val []int32) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = copyInt32Slice(*ms.getOrig(), val)
+	*ms.getOrig() = internal.CopySlice(ms.getState(), *ms.getOrig(), val)
 }
 
 // Len returns length of the []int32 slice value.
@@ -88,7 +88,7 @@ func (ms Int32Slice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]int32, len(*ms.getOrig()), newCap)
+	newOrig := internal.AllocSlice[int32](ms.getState(), len(*ms.getOrig()), newCap)
 	copy(newOrig, *ms.getOrig())
 	*ms.getOrig() = newOrig
 }
@@ -97,7 +97,7 @@ func (ms Int32Slice) EnsureCapacity(newCap int) {
 // Equivalent of int32Slice = append(int32Slice, elms...)
 func (ms Int32Slice) Append(elms ...int32) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = append(*ms.getOrig(), elms...)
+	*ms.getOrig() = internal.AppendSeq(ms.getState(), *ms.getOrig(), elms)
 }
 
 // MoveTo moves all elements from the current slice overriding the destination and
@@ -109,6 +109,11 @@ func (ms Int32Slice) MoveTo(dest Int32Slice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
+	if ms.getState() != dest.getState() {
+		ms.CopyTo(dest)
+		*ms.getOrig() = nil
+		return
+	}
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = nil
 }
@@ -118,11 +123,16 @@ func (ms Int32Slice) MoveTo(dest Int32Slice) {
 func (ms Int32Slice) MoveAndAppendTo(dest Int32Slice) {
 	ms.getState().AssertMutable()
 	dest.getState().AssertMutable()
+	if ms.getState() != dest.getState() {
+		dest.Append(*ms.getOrig()...)
+		*ms.getOrig() = nil
+		return
+	}
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *ms.getOrig()
 	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *ms.getOrig()...)
+		*dest.getOrig() = internal.AppendSeq(dest.getState(), *dest.getOrig(), *ms.getOrig())
 	}
 	*ms.getOrig() = nil
 }
@@ -155,7 +165,7 @@ func (ms Int32Slice) CopyTo(dest Int32Slice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = copyInt32Slice(*dest.getOrig(), *ms.getOrig())
+	*dest.getOrig() = internal.CopySlice(dest.getState(), *dest.getOrig(), *ms.getOrig())
 }
 
 // Equal checks equality with another Int32Slice

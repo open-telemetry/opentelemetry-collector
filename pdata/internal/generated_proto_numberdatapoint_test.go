@@ -31,9 +31,9 @@ func TestCopyNumberDataPoint(t *testing.T) {
 				}()
 
 				dest := NewNumberDataPoint()
-				CopyNumberDataPoint(dest, src)
+				CopyNumberDataPoint(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyNumberDataPoint(dest, dest)
+				CopyNumberDataPoint(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyNumberDataPointSlice(t *testing.T) {
 	src := []NumberDataPoint{}
 	dest := []NumberDataPoint{}
 	// Test CopyTo empty
-	dest = CopyNumberDataPointSlice(dest, src)
+	dest = CopyNumberDataPointSlice(dest, src, nil)
 	assert.Equal(t, []NumberDataPoint{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestNumberDataPointSlice()
-	dest = CopyNumberDataPointSlice(dest, src)
+	dest = CopyNumberDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestNumberDataPointSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyNumberDataPointSlice(dest, src)
+	dest = CopyNumberDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestNumberDataPointSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyNumberDataPointSlice(dest, []NumberDataPoint{})
+	dest = CopyNumberDataPointSlice(dest, []NumberDataPoint{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyNumberDataPointSlice(dest, src)
+	dest = CopyNumberDataPointSlice(dest, src, nil)
 	assert.Equal(t, GenTestNumberDataPointSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyNumberDataPointPtrSlice(t *testing.T) {
 	src := []*NumberDataPoint{}
 	dest := []*NumberDataPoint{}
 	// Test CopyTo empty
-	dest = CopyNumberDataPointPtrSlice(dest, src)
+	dest = CopyNumberDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, []*NumberDataPoint{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestNumberDataPointPtrSlice()
-	dest = CopyNumberDataPointPtrSlice(dest, src)
+	dest = CopyNumberDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestNumberDataPointPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyNumberDataPointPtrSlice(dest, src)
+	dest = CopyNumberDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestNumberDataPointPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyNumberDataPointPtrSlice(dest, []*NumberDataPoint{})
+	dest = CopyNumberDataPointPtrSlice(dest, []*NumberDataPoint{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyNumberDataPointPtrSlice(dest, src)
+	dest = CopyNumberDataPointPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestNumberDataPointPtrSlice(), dest)
 }
 
@@ -190,34 +190,34 @@ func TestMarshalAndUnmarshalProtoViaProtobufNumberDataPoint(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesNumberDataPoint() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                     {0x02},
-		"Attributes/wrong_wire_type":        {0x3c},
-		"Attributes/missing_value":          {0x3a},
-		"StartTimeUnixNano/wrong_wire_type": {0x14},
-		"StartTimeUnixNano/missing_value":   {0x11},
-		"TimeUnixNano/wrong_wire_type":      {0x1c},
-		"TimeUnixNano/missing_value":        {0x19},
+		"Attributes/wrong_wire_type":        []byte{0x3c},
+		"Attributes/missing_value":          []byte{0x3a},
+		"StartTimeUnixNano/wrong_wire_type": []byte{0x14},
+		"StartTimeUnixNano/missing_value":   []byte{0x11},
+		"TimeUnixNano/wrong_wire_type":      []byte{0x1c},
+		"TimeUnixNano/missing_value":        []byte{0x19},
 
-		"AsDouble/wrong_wire_type":  {0x24},
-		"AsDouble/missing_value":    {0x21},
-		"AsInt/wrong_wire_type":     {0x34},
-		"AsInt/missing_value":       {0x31},
-		"Exemplars/wrong_wire_type": {0x2c},
-		"Exemplars/missing_value":   {0x2a},
-		"Flags/wrong_wire_type":     {0x44},
-		"Flags/missing_value":       {0x40},
+		"AsDouble/wrong_wire_type":  []byte{0x24},
+		"AsDouble/missing_value":    []byte{0x21},
+		"AsInt/wrong_wire_type":     []byte{0x34},
+		"AsInt/missing_value":       []byte{0x31},
+		"Exemplars/wrong_wire_type": []byte{0x2c},
+		"Exemplars/missing_value":   []byte{0x2a},
+		"Flags/wrong_wire_type":     []byte{0x44},
+		"Flags/missing_value":       []byte{0x40},
 	}
 }
 
 func genTestEncodingValuesNumberDataPoint() map[string]*NumberDataPoint {
 	return map[string]*NumberDataPoint{
 		"empty":                  NewNumberDataPoint(),
-		"Attributes/test":        {Attributes: []KeyValue{{}, *GenTestKeyValue()}},
+		"Attributes/test":        {Attributes: []KeyValue{KeyValue{}, *GenTestKeyValue()}},
 		"StartTimeUnixNano/test": {StartTimeUnixNano: uint64(13)},
 		"TimeUnixNano/test":      {TimeUnixNano: uint64(13)},
 		"AsDouble/default":       {Value: &NumberDataPoint_AsDouble{AsDouble: float64(0)}},
 		"AsDouble/test":          {Value: &NumberDataPoint_AsDouble{AsDouble: float64(3.1415926)}}, "AsInt/default": {Value: &NumberDataPoint_AsInt{AsInt: int64(0)}},
 		"AsInt/test":     {Value: &NumberDataPoint_AsInt{AsInt: int64(13)}},
-		"Exemplars/test": {Exemplars: []Exemplar{{}, *GenTestExemplar()}},
+		"Exemplars/test": {Exemplars: []Exemplar{Exemplar{}, *GenTestExemplar()}},
 		"Flags/test":     {Flags: uint32(13)},
 	}
 }

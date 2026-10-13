@@ -31,9 +31,9 @@ func TestCopyExportTracePartialSuccess(t *testing.T) {
 				}()
 
 				dest := NewExportTracePartialSuccess()
-				CopyExportTracePartialSuccess(dest, src)
+				CopyExportTracePartialSuccess(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyExportTracePartialSuccess(dest, dest)
+				CopyExportTracePartialSuccess(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyExportTracePartialSuccessSlice(t *testing.T) {
 	src := []ExportTracePartialSuccess{}
 	dest := []ExportTracePartialSuccess{}
 	// Test CopyTo empty
-	dest = CopyExportTracePartialSuccessSlice(dest, src)
+	dest = CopyExportTracePartialSuccessSlice(dest, src, nil)
 	assert.Equal(t, []ExportTracePartialSuccess{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExportTracePartialSuccessSlice()
-	dest = CopyExportTracePartialSuccessSlice(dest, src)
+	dest = CopyExportTracePartialSuccessSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportTracePartialSuccessSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExportTracePartialSuccessSlice(dest, src)
+	dest = CopyExportTracePartialSuccessSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportTracePartialSuccessSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExportTracePartialSuccessSlice(dest, []ExportTracePartialSuccess{})
+	dest = CopyExportTracePartialSuccessSlice(dest, []ExportTracePartialSuccess{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExportTracePartialSuccessSlice(dest, src)
+	dest = CopyExportTracePartialSuccessSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportTracePartialSuccessSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyExportTracePartialSuccessPtrSlice(t *testing.T) {
 	src := []*ExportTracePartialSuccess{}
 	dest := []*ExportTracePartialSuccess{}
 	// Test CopyTo empty
-	dest = CopyExportTracePartialSuccessPtrSlice(dest, src)
+	dest = CopyExportTracePartialSuccessPtrSlice(dest, src, nil)
 	assert.Equal(t, []*ExportTracePartialSuccess{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExportTracePartialSuccessPtrSlice()
-	dest = CopyExportTracePartialSuccessPtrSlice(dest, src)
+	dest = CopyExportTracePartialSuccessPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportTracePartialSuccessPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExportTracePartialSuccessPtrSlice(dest, src)
+	dest = CopyExportTracePartialSuccessPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportTracePartialSuccessPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExportTracePartialSuccessPtrSlice(dest, []*ExportTracePartialSuccess{})
+	dest = CopyExportTracePartialSuccessPtrSlice(dest, []*ExportTracePartialSuccess{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExportTracePartialSuccessPtrSlice(dest, src)
+	dest = CopyExportTracePartialSuccessPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportTracePartialSuccessPtrSlice(), dest)
 }
 
@@ -190,10 +190,10 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportTracePartialSuccess(t *testing
 func genTestFailingUnmarshalProtoValuesExportTracePartialSuccess() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                 {0x02},
-		"RejectedSpans/wrong_wire_type": {0xc},
-		"RejectedSpans/missing_value":   {0x8},
-		"ErrorMessage/wrong_wire_type":  {0x14},
-		"ErrorMessage/missing_value":    {0x12},
+		"RejectedSpans/wrong_wire_type": []byte{0xc},
+		"RejectedSpans/missing_value":   []byte{0x8},
+		"ErrorMessage/wrong_wire_type":  []byte{0x14},
+		"ErrorMessage/missing_value":    []byte{0x12},
 	}
 }
 

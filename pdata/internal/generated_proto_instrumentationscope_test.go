@@ -31,9 +31,9 @@ func TestCopyInstrumentationScope(t *testing.T) {
 				}()
 
 				dest := NewInstrumentationScope()
-				CopyInstrumentationScope(dest, src)
+				CopyInstrumentationScope(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyInstrumentationScope(dest, dest)
+				CopyInstrumentationScope(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyInstrumentationScopeSlice(t *testing.T) {
 	src := []InstrumentationScope{}
 	dest := []InstrumentationScope{}
 	// Test CopyTo empty
-	dest = CopyInstrumentationScopeSlice(dest, src)
+	dest = CopyInstrumentationScopeSlice(dest, src, nil)
 	assert.Equal(t, []InstrumentationScope{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestInstrumentationScopeSlice()
-	dest = CopyInstrumentationScopeSlice(dest, src)
+	dest = CopyInstrumentationScopeSlice(dest, src, nil)
 	assert.Equal(t, GenTestInstrumentationScopeSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyInstrumentationScopeSlice(dest, src)
+	dest = CopyInstrumentationScopeSlice(dest, src, nil)
 	assert.Equal(t, GenTestInstrumentationScopeSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyInstrumentationScopeSlice(dest, []InstrumentationScope{})
+	dest = CopyInstrumentationScopeSlice(dest, []InstrumentationScope{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyInstrumentationScopeSlice(dest, src)
+	dest = CopyInstrumentationScopeSlice(dest, src, nil)
 	assert.Equal(t, GenTestInstrumentationScopeSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyInstrumentationScopePtrSlice(t *testing.T) {
 	src := []*InstrumentationScope{}
 	dest := []*InstrumentationScope{}
 	// Test CopyTo empty
-	dest = CopyInstrumentationScopePtrSlice(dest, src)
+	dest = CopyInstrumentationScopePtrSlice(dest, src, nil)
 	assert.Equal(t, []*InstrumentationScope{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestInstrumentationScopePtrSlice()
-	dest = CopyInstrumentationScopePtrSlice(dest, src)
+	dest = CopyInstrumentationScopePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestInstrumentationScopePtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyInstrumentationScopePtrSlice(dest, src)
+	dest = CopyInstrumentationScopePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestInstrumentationScopePtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyInstrumentationScopePtrSlice(dest, []*InstrumentationScope{})
+	dest = CopyInstrumentationScopePtrSlice(dest, []*InstrumentationScope{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyInstrumentationScopePtrSlice(dest, src)
+	dest = CopyInstrumentationScopePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestInstrumentationScopePtrSlice(), dest)
 }
 
@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufInstrumentationScope(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesInstrumentationScope() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                          {0x02},
-		"Name/wrong_wire_type":                   {0xc},
-		"Name/missing_value":                     {0xa},
-		"Version/wrong_wire_type":                {0x14},
-		"Version/missing_value":                  {0x12},
-		"Attributes/wrong_wire_type":             {0x1c},
-		"Attributes/missing_value":               {0x1a},
-		"DroppedAttributesCount/wrong_wire_type": {0x24},
-		"DroppedAttributesCount/missing_value":   {0x20},
+		"Name/wrong_wire_type":                   []byte{0xc},
+		"Name/missing_value":                     []byte{0xa},
+		"Version/wrong_wire_type":                []byte{0x14},
+		"Version/missing_value":                  []byte{0x12},
+		"Attributes/wrong_wire_type":             []byte{0x1c},
+		"Attributes/missing_value":               []byte{0x1a},
+		"DroppedAttributesCount/wrong_wire_type": []byte{0x24},
+		"DroppedAttributesCount/missing_value":   []byte{0x20},
 	}
 }
 
@@ -206,7 +206,7 @@ func genTestEncodingValuesInstrumentationScope() map[string]*InstrumentationScop
 		"empty":                       NewInstrumentationScope(),
 		"Name/test":                   {Name: "test_name"},
 		"Version/test":                {Version: "test_version"},
-		"Attributes/test":             {Attributes: []KeyValue{{}, *GenTestKeyValue()}},
+		"Attributes/test":             {Attributes: []KeyValue{KeyValue{}, *GenTestKeyValue()}},
 		"DroppedAttributesCount/test": {DroppedAttributesCount: uint32(13)},
 	}
 }

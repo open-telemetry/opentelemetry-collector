@@ -31,9 +31,9 @@ func TestCopyMetricsRequest(t *testing.T) {
 				}()
 
 				dest := NewMetricsRequest()
-				CopyMetricsRequest(dest, src)
+				CopyMetricsRequest(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyMetricsRequest(dest, dest)
+				CopyMetricsRequest(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyMetricsRequestSlice(t *testing.T) {
 	src := []MetricsRequest{}
 	dest := []MetricsRequest{}
 	// Test CopyTo empty
-	dest = CopyMetricsRequestSlice(dest, src)
+	dest = CopyMetricsRequestSlice(dest, src, nil)
 	assert.Equal(t, []MetricsRequest{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestMetricsRequestSlice()
-	dest = CopyMetricsRequestSlice(dest, src)
+	dest = CopyMetricsRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestMetricsRequestSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyMetricsRequestSlice(dest, src)
+	dest = CopyMetricsRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestMetricsRequestSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyMetricsRequestSlice(dest, []MetricsRequest{})
+	dest = CopyMetricsRequestSlice(dest, []MetricsRequest{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyMetricsRequestSlice(dest, src)
+	dest = CopyMetricsRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestMetricsRequestSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyMetricsRequestPtrSlice(t *testing.T) {
 	src := []*MetricsRequest{}
 	dest := []*MetricsRequest{}
 	// Test CopyTo empty
-	dest = CopyMetricsRequestPtrSlice(dest, src)
+	dest = CopyMetricsRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, []*MetricsRequest{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestMetricsRequestPtrSlice()
-	dest = CopyMetricsRequestPtrSlice(dest, src)
+	dest = CopyMetricsRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestMetricsRequestPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyMetricsRequestPtrSlice(dest, src)
+	dest = CopyMetricsRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestMetricsRequestPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyMetricsRequestPtrSlice(dest, []*MetricsRequest{})
+	dest = CopyMetricsRequestPtrSlice(dest, []*MetricsRequest{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyMetricsRequestPtrSlice(dest, src)
+	dest = CopyMetricsRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestMetricsRequestPtrSlice(), dest)
 }
 
@@ -190,12 +190,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufMetricsRequest(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesMetricsRequest() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                  {0x02},
-		"RequestContext/wrong_wire_type": {0x14},
-		"RequestContext/missing_value":   {0x12},
-		"MetricsData/wrong_wire_type":    {0x1c},
-		"MetricsData/missing_value":      {0x1a},
-		"FormatVersion/wrong_wire_type":  {0xc},
-		"FormatVersion/missing_value":    {0xd},
+		"RequestContext/wrong_wire_type": []byte{0x14},
+		"RequestContext/missing_value":   []byte{0x12},
+		"MetricsData/wrong_wire_type":    []byte{0x1c},
+		"MetricsData/missing_value":      []byte{0x1a},
+		"FormatVersion/wrong_wire_type":  []byte{0xc},
+		"FormatVersion/missing_value":    []byte{0xd},
 	}
 }
 

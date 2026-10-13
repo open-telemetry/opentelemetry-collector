@@ -36,7 +36,8 @@ type ProtoUnmarshaler struct{}
 
 func (d *ProtoUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
 	ld := NewLogs()
-	err := ld.getOrig().UnmarshalProto(buf)
+	ld.getState().RetainWire(buf)
+	err := ld.getOrig().UnmarshalProtoState(buf, ld.getState())
 	if err != nil {
 		return Logs{}, err
 	}

@@ -89,7 +89,7 @@ func (es ExponentialHistogramDataPointSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]*internal.ExponentialHistogramDataPoint, len(*es.orig), newCap)
+	newOrig := internal.AllocSlice[*internal.ExponentialHistogramDataPoint](es.state, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -98,7 +98,7 @@ func (es ExponentialHistogramDataPointSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ExponentialHistogramDataPoint.
 func (es ExponentialHistogramDataPointSlice) AppendEmpty() ExponentialHistogramDataPoint {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, internal.NewExponentialHistogramDataPoint())
+	*es.orig = internal.Append(es.state, *es.orig, internal.Alloc[internal.ExponentialHistogramDataPoint](es.state))
 	return es.At(es.Len() - 1)
 }
 
@@ -111,11 +111,22 @@ func (es ExponentialHistogramDataPointSlice) MoveAndAppendTo(dest ExponentialHis
 	if es.orig == dest.orig {
 		return
 	}
+	if internal.MoveNeedsCopy(es.state, dest.state) {
+		for i := 0; i < es.Len(); i++ {
+			es.At(i).CopyTo(dest.AppendEmpty())
+		}
+		for i := range *es.orig {
+			internal.DeleteExponentialHistogramDataPoint((*es.orig)[i], true)
+
+		}
+		*es.orig = nil
+		return
+	}
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
 	} else {
-		*dest.orig = append(*dest.orig, *es.orig...)
+		*dest.orig = internal.AppendSeq(dest.state, *dest.orig, *es.orig)
 	}
 	*es.orig = nil
 }
@@ -151,7 +162,7 @@ func (es ExponentialHistogramDataPointSlice) CopyTo(dest ExponentialHistogramDat
 	if es.orig == dest.orig {
 		return
 	}
-	*dest.orig = internal.CopyExponentialHistogramDataPointPtrSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyExponentialHistogramDataPointPtrSlice(*dest.orig, *es.orig, dest.state)
 }
 
 // Sort sorts the ExponentialHistogramDataPoint elements within ExponentialHistogramDataPointSlice given the

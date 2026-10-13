@@ -10,7 +10,6 @@ import (
 const deleteOther = `{{ if ne .oneOfGroup "" -}}
 	if metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 		ov.{{ .fieldName }} = {{ .defaultValue }}
-		ProtoPool{{ .oneOfMessageName }}.Put(ov)
 	}
 {{- end -}}`
 
@@ -25,7 +24,6 @@ const deleteMessage = `{{ if .repeated -}}
 {{- else if ne .oneOfGroup "" -}}
 	Delete{{ .messageName }}(ov.{{ .fieldName }}, true)
 	ov.{{ .fieldName }} = nil
-	ProtoPool{{ .oneOfMessageName }}.Put(ov)
 {{- else if .nullable -}}
 	Delete{{ .messageName }}(orig.{{ .fieldName }}, true)
 {{- else -}}

@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -21,19 +20,8 @@ type ExportLogsPartialSuccess struct {
 	ErrorMessage       string
 }
 
-var (
-	protoPoolExportLogsPartialSuccess = sync.Pool{
-		New: func() any {
-			return &ExportLogsPartialSuccess{}
-		},
-	}
-)
-
 func NewExportLogsPartialSuccess() *ExportLogsPartialSuccess {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &ExportLogsPartialSuccess{}
-	}
-	return protoPoolExportLogsPartialSuccess.Get().(*ExportLogsPartialSuccess)
+	return Alloc[ExportLogsPartialSuccess](nil)
 }
 
 func DeleteExportLogsPartialSuccess(orig *ExportLogsPartialSuccess, nullable bool) {
@@ -47,12 +35,10 @@ func DeleteExportLogsPartialSuccess(orig *ExportLogsPartialSuccess, nullable boo
 	}
 
 	orig.Reset()
-	if nullable {
-		protoPoolExportLogsPartialSuccess.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyExportLogsPartialSuccess(dest, src *ExportLogsPartialSuccess) *ExportLogsPartialSuccess {
+func CopyExportLogsPartialSuccess(dest, src *ExportLogsPartialSuccess, st *State) *ExportLogsPartialSuccess {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -63,18 +49,18 @@ func CopyExportLogsPartialSuccess(dest, src *ExportLogsPartialSuccess) *ExportLo
 	}
 
 	if dest == nil {
-		dest = NewExportLogsPartialSuccess()
+		dest = Alloc[ExportLogsPartialSuccess](st)
 	}
 	dest.RejectedLogRecords = src.RejectedLogRecords
-	dest.ErrorMessage = src.ErrorMessage
+	dest.ErrorMessage = CopyString(st, src.ErrorMessage)
 
 	return dest
 }
 
-func CopyExportLogsPartialSuccessSlice(dest, src []ExportLogsPartialSuccess) []ExportLogsPartialSuccess {
+func CopyExportLogsPartialSuccessSlice(dest, src []ExportLogsPartialSuccess, st *State) []ExportLogsPartialSuccess {
 	var newDest []ExportLogsPartialSuccess
 	if cap(dest) < len(src) {
-		newDest = make([]ExportLogsPartialSuccess, len(src))
+		newDest = AllocSlice[ExportLogsPartialSuccess](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -84,20 +70,20 @@ func CopyExportLogsPartialSuccessSlice(dest, src []ExportLogsPartialSuccess) []E
 		}
 	}
 	for i := range src {
-		CopyExportLogsPartialSuccess(&newDest[i], &src[i])
+		CopyExportLogsPartialSuccess(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyExportLogsPartialSuccessPtrSlice(dest, src []*ExportLogsPartialSuccess) []*ExportLogsPartialSuccess {
+func CopyExportLogsPartialSuccessPtrSlice(dest, src []*ExportLogsPartialSuccess, st *State) []*ExportLogsPartialSuccess {
 	var newDest []*ExportLogsPartialSuccess
 	if cap(dest) < len(src) {
-		newDest = make([]*ExportLogsPartialSuccess, len(src))
+		newDest = AllocSlice[*ExportLogsPartialSuccess](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewExportLogsPartialSuccess()
+			newDest[i] = Alloc[ExportLogsPartialSuccess](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -110,11 +96,11 @@ func CopyExportLogsPartialSuccessPtrSlice(dest, src []*ExportLogsPartialSuccess)
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewExportLogsPartialSuccess()
+			newDest[i] = Alloc[ExportLogsPartialSuccess](st)
 		}
 	}
 	for i := range src {
-		CopyExportLogsPartialSuccess(newDest[i], src[i])
+		CopyExportLogsPartialSuccess(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -139,12 +125,19 @@ func (orig *ExportLogsPartialSuccess) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *ExportLogsPartialSuccess) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *ExportLogsPartialSuccess) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "rejectedLogRecords", "rejected_log_records":
+
 			orig.RejectedLogRecords = iter.ReadInt64()
 		case "errorMessage", "error_message":
-			orig.ErrorMessage = iter.ReadString()
+
+			orig.ErrorMessage = CopyString(st, iter.ReadString())
 		default:
 			iter.HandleUnknownField(f)
 		}
@@ -187,6 +180,10 @@ func (orig *ExportLogsPartialSuccess) MarshalProto(buf []byte) int {
 }
 
 func (orig *ExportLogsPartialSuccess) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *ExportLogsPartialSuccess) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -222,7 +219,7 @@ func (orig *ExportLogsPartialSuccess) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ErrorMessage = string(buf[startPos:pos])
+			orig.ErrorMessage = BorrowString(st, buf, startPos, pos)
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -234,7 +231,7 @@ func (orig *ExportLogsPartialSuccess) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestExportLogsPartialSuccess() *ExportLogsPartialSuccess {
-	orig := NewExportLogsPartialSuccess()
+	orig := Alloc[ExportLogsPartialSuccess](nil)
 	orig.RejectedLogRecords = int64(13)
 	orig.ErrorMessage = "test_errormessage"
 	return orig
@@ -242,11 +239,11 @@ func GenTestExportLogsPartialSuccess() *ExportLogsPartialSuccess {
 
 func GenTestExportLogsPartialSuccessPtrSlice() []*ExportLogsPartialSuccess {
 	orig := make([]*ExportLogsPartialSuccess, 5)
-	orig[0] = NewExportLogsPartialSuccess()
+	orig[0] = Alloc[ExportLogsPartialSuccess](nil)
 	orig[1] = GenTestExportLogsPartialSuccess()
-	orig[2] = NewExportLogsPartialSuccess()
+	orig[2] = Alloc[ExportLogsPartialSuccess](nil)
 	orig[3] = GenTestExportLogsPartialSuccess()
-	orig[4] = NewExportLogsPartialSuccess()
+	orig[4] = Alloc[ExportLogsPartialSuccess](nil)
 	return orig
 }
 

@@ -20,7 +20,7 @@ type SpanID [spanIDSize]byte
 
 func DeleteSpanID(*SpanID, bool) {}
 
-func CopySpanID(dest, src *SpanID) {
+func CopySpanID(dest, src *SpanID, _ *State) {
 	*dest = *src
 }
 
@@ -48,6 +48,10 @@ func (sid SpanID) MarshalProto(buf []byte) int {
 
 // UnmarshalProto inflates this span ID from binary representation. Called by Protobuf serialization.
 func (sid *SpanID) UnmarshalProto(data []byte) error {
+	return sid.UnmarshalProtoState(data, nil)
+}
+
+func (sid *SpanID) UnmarshalProtoState(data []byte, _ *State) error {
 	if len(data) == 0 {
 		*sid = [spanIDSize]byte{}
 		return nil
@@ -72,6 +76,10 @@ func (sid SpanID) MarshalJSON(dest *json.Stream) {
 //
 //nolint:govet
 func (sid *SpanID) UnmarshalJSON(iter *json.Iterator) {
+	sid.UnmarshalJSONState(iter, nil)
+}
+
+func (sid *SpanID) UnmarshalJSONState(iter *json.Iterator, _ *State) {
 	*sid = [spanIDSize]byte{}
 	unmarshalJSON(sid[:], iter)
 }

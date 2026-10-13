@@ -9,7 +9,7 @@ import (
 var PdataUseProtoPoolingFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"pdata.useProtoPooling",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, enable using local memory pools for underlying data that the pdata messages are pushed to."),
+	featuregate.WithRegisterDescription("When enabled, allocate pdata proto graphs from a request-scoped typed arena and borrow string/bytes from the protobuf wire buffer."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/13631"),
 	featuregate.WithRegisterFromVersion("v0.133.0"),
 )

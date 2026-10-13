@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -23,19 +22,8 @@ type ProfilesData struct {
 	Dictionary       ProfilesDictionary
 }
 
-var (
-	protoPoolProfilesData = sync.Pool{
-		New: func() any {
-			return &ProfilesData{}
-		},
-	}
-)
-
 func NewProfilesData() *ProfilesData {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &ProfilesData{}
-	}
-	return protoPoolProfilesData.Get().(*ProfilesData)
+	return Alloc[ProfilesData](nil)
 }
 
 func DeleteProfilesData(orig *ProfilesData, nullable bool) {
@@ -52,12 +40,10 @@ func DeleteProfilesData(orig *ProfilesData, nullable bool) {
 	}
 	DeleteProfilesDictionary(&orig.Dictionary, false)
 	orig.Reset()
-	if nullable {
-		protoPoolProfilesData.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyProfilesData(dest, src *ProfilesData) *ProfilesData {
+func CopyProfilesData(dest, src *ProfilesData, st *State) *ProfilesData {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -68,19 +54,19 @@ func CopyProfilesData(dest, src *ProfilesData) *ProfilesData {
 	}
 
 	if dest == nil {
-		dest = NewProfilesData()
+		dest = Alloc[ProfilesData](st)
 	}
-	dest.ResourceProfiles = CopyResourceProfilesPtrSlice(dest.ResourceProfiles, src.ResourceProfiles)
+	dest.ResourceProfiles = CopyResourceProfilesPtrSlice(dest.ResourceProfiles, src.ResourceProfiles, st)
 
-	CopyProfilesDictionary(&dest.Dictionary, &src.Dictionary)
+	CopyProfilesDictionary(&dest.Dictionary, &src.Dictionary, st)
 
 	return dest
 }
 
-func CopyProfilesDataSlice(dest, src []ProfilesData) []ProfilesData {
+func CopyProfilesDataSlice(dest, src []ProfilesData, st *State) []ProfilesData {
 	var newDest []ProfilesData
 	if cap(dest) < len(src) {
-		newDest = make([]ProfilesData, len(src))
+		newDest = AllocSlice[ProfilesData](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -90,20 +76,20 @@ func CopyProfilesDataSlice(dest, src []ProfilesData) []ProfilesData {
 		}
 	}
 	for i := range src {
-		CopyProfilesData(&newDest[i], &src[i])
+		CopyProfilesData(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyProfilesDataPtrSlice(dest, src []*ProfilesData) []*ProfilesData {
+func CopyProfilesDataPtrSlice(dest, src []*ProfilesData, st *State) []*ProfilesData {
 	var newDest []*ProfilesData
 	if cap(dest) < len(src) {
-		newDest = make([]*ProfilesData, len(src))
+		newDest = AllocSlice[*ProfilesData](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewProfilesData()
+			newDest[i] = Alloc[ProfilesData](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -116,11 +102,11 @@ func CopyProfilesDataPtrSlice(dest, src []*ProfilesData) []*ProfilesData {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewProfilesData()
+			newDest[i] = Alloc[ProfilesData](st)
 		}
 	}
 	for i := range src {
-		CopyProfilesData(newDest[i], src[i])
+		CopyProfilesData(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -149,17 +135,22 @@ func (orig *ProfilesData) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *ProfilesData) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *ProfilesData) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resourceProfiles", "resource_profiles":
 			for iter.ReadArray() {
-				orig.ResourceProfiles = append(orig.ResourceProfiles, NewResourceProfiles())
-				orig.ResourceProfiles[len(orig.ResourceProfiles)-1].UnmarshalJSON(iter)
+				orig.ResourceProfiles = Append(st, orig.ResourceProfiles, Alloc[ResourceProfiles](st))
+				orig.ResourceProfiles[len(orig.ResourceProfiles)-1].UnmarshalJSONState(iter, st)
 			}
 
 		case "dictionary":
 
-			orig.Dictionary.UnmarshalJSON(iter)
+			orig.Dictionary.UnmarshalJSONState(iter, st)
 		default:
 			iter.HandleUnknownField(f)
 		}
@@ -200,6 +191,10 @@ func (orig *ProfilesData) MarshalProto(buf []byte) int {
 }
 
 func (orig *ProfilesData) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *ProfilesData) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -224,8 +219,8 @@ func (orig *ProfilesData) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceProfiles = append(orig.ResourceProfiles, NewResourceProfiles())
-			err = orig.ResourceProfiles[len(orig.ResourceProfiles)-1].UnmarshalProto(buf[startPos:pos])
+			orig.ResourceProfiles = AppendEstimated(st, orig.ResourceProfiles, Alloc[ResourceProfiles](st), len(buf)-pos, length+2)
+			err = orig.ResourceProfiles[len(orig.ResourceProfiles)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -241,7 +236,7 @@ func (orig *ProfilesData) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Dictionary.UnmarshalProto(buf[startPos:pos])
+			err = orig.Dictionary.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -256,19 +251,19 @@ func (orig *ProfilesData) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestProfilesData() *ProfilesData {
-	orig := NewProfilesData()
-	orig.ResourceProfiles = []*ResourceProfiles{{}, GenTestResourceProfiles()}
+	orig := Alloc[ProfilesData](nil)
+	orig.ResourceProfiles = []*ResourceProfiles{&ResourceProfiles{}, GenTestResourceProfiles()}
 	orig.Dictionary = *GenTestProfilesDictionary()
 	return orig
 }
 
 func GenTestProfilesDataPtrSlice() []*ProfilesData {
 	orig := make([]*ProfilesData, 5)
-	orig[0] = NewProfilesData()
+	orig[0] = Alloc[ProfilesData](nil)
 	orig[1] = GenTestProfilesData()
-	orig[2] = NewProfilesData()
+	orig[2] = Alloc[ProfilesData](nil)
 	orig[3] = GenTestProfilesData()
-	orig[4] = NewProfilesData()
+	orig[4] = Alloc[ProfilesData](nil)
 	return orig
 }
 

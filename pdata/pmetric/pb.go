@@ -50,7 +50,8 @@ type ProtoUnmarshaler struct{}
 
 func (d *ProtoUnmarshaler) UnmarshalMetrics(buf []byte) (Metrics, error) {
 	md := NewMetrics()
-	err := md.getOrig().UnmarshalProto(buf)
+	md.getState().RetainWire(buf)
+	err := md.getOrig().UnmarshalProtoState(buf, md.getState())
 	if err != nil {
 		return Metrics{}, err
 	}

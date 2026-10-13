@@ -31,9 +31,9 @@ func TestCopyExportProfilesPartialSuccess(t *testing.T) {
 				}()
 
 				dest := NewExportProfilesPartialSuccess()
-				CopyExportProfilesPartialSuccess(dest, src)
+				CopyExportProfilesPartialSuccess(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyExportProfilesPartialSuccess(dest, dest)
+				CopyExportProfilesPartialSuccess(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyExportProfilesPartialSuccessSlice(t *testing.T) {
 	src := []ExportProfilesPartialSuccess{}
 	dest := []ExportProfilesPartialSuccess{}
 	// Test CopyTo empty
-	dest = CopyExportProfilesPartialSuccessSlice(dest, src)
+	dest = CopyExportProfilesPartialSuccessSlice(dest, src, nil)
 	assert.Equal(t, []ExportProfilesPartialSuccess{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExportProfilesPartialSuccessSlice()
-	dest = CopyExportProfilesPartialSuccessSlice(dest, src)
+	dest = CopyExportProfilesPartialSuccessSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportProfilesPartialSuccessSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExportProfilesPartialSuccessSlice(dest, src)
+	dest = CopyExportProfilesPartialSuccessSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportProfilesPartialSuccessSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExportProfilesPartialSuccessSlice(dest, []ExportProfilesPartialSuccess{})
+	dest = CopyExportProfilesPartialSuccessSlice(dest, []ExportProfilesPartialSuccess{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExportProfilesPartialSuccessSlice(dest, src)
+	dest = CopyExportProfilesPartialSuccessSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportProfilesPartialSuccessSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyExportProfilesPartialSuccessPtrSlice(t *testing.T) {
 	src := []*ExportProfilesPartialSuccess{}
 	dest := []*ExportProfilesPartialSuccess{}
 	// Test CopyTo empty
-	dest = CopyExportProfilesPartialSuccessPtrSlice(dest, src)
+	dest = CopyExportProfilesPartialSuccessPtrSlice(dest, src, nil)
 	assert.Equal(t, []*ExportProfilesPartialSuccess{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExportProfilesPartialSuccessPtrSlice()
-	dest = CopyExportProfilesPartialSuccessPtrSlice(dest, src)
+	dest = CopyExportProfilesPartialSuccessPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportProfilesPartialSuccessPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExportProfilesPartialSuccessPtrSlice(dest, src)
+	dest = CopyExportProfilesPartialSuccessPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportProfilesPartialSuccessPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExportProfilesPartialSuccessPtrSlice(dest, []*ExportProfilesPartialSuccess{})
+	dest = CopyExportProfilesPartialSuccessPtrSlice(dest, []*ExportProfilesPartialSuccess{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExportProfilesPartialSuccessPtrSlice(dest, src)
+	dest = CopyExportProfilesPartialSuccessPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportProfilesPartialSuccessPtrSlice(), dest)
 }
 
@@ -190,10 +190,10 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportProfilesPartialSuccess(t *test
 func genTestFailingUnmarshalProtoValuesExportProfilesPartialSuccess() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                    {0x02},
-		"RejectedProfiles/wrong_wire_type": {0xc},
-		"RejectedProfiles/missing_value":   {0x8},
-		"ErrorMessage/wrong_wire_type":     {0x14},
-		"ErrorMessage/missing_value":       {0x12},
+		"RejectedProfiles/wrong_wire_type": []byte{0xc},
+		"RejectedProfiles/missing_value":   []byte{0x8},
+		"ErrorMessage/wrong_wire_type":     []byte{0x14},
+		"ErrorMessage/missing_value":       []byte{0x12},
 	}
 }
 

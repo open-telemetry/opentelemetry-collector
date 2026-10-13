@@ -23,9 +23,9 @@ func TestCopy{{ .messageName }}(t *testing.T) {
                 }()
 
                 dest := New{{ .messageName }}()
-                Copy{{ .messageName }}(dest, src)
+                Copy{{ .messageName }}(dest, src, nil)
                 assert.Equal(t, src, dest)
-                Copy{{ .messageName }}(dest, dest)
+                Copy{{ .messageName }}(dest, dest, nil)
                 assert.Equal(t, src, dest)
             })
         }
@@ -36,24 +36,24 @@ func TestCopy{{ .messageName }}Slice(t *testing.T) {
     src := []{{ .messageName }}{}
     dest := []{{ .messageName }}{}
     // Test CopyTo empty
-    dest = Copy{{ .messageName }}Slice(dest, src)
+    dest = Copy{{ .messageName }}Slice(dest, src, nil)
     assert.Equal(t, []{{ .messageName }}{}, dest)
 
     // Test CopyTo larger slice
     src = GenTest{{ .messageName }}Slice()
-    dest = Copy{{ .messageName }}Slice(dest, src)
+    dest = Copy{{ .messageName }}Slice(dest, src, nil)
     assert.Equal(t, GenTest{{ .messageName }}Slice(), dest)
 
     // Test CopyTo same size slice
-    dest = Copy{{ .messageName }}Slice(dest, src)
+    dest = Copy{{ .messageName }}Slice(dest, src, nil)
     assert.Equal(t, GenTest{{ .messageName }}Slice(), dest)
 
     // Test CopyTo smaller size slice
-    dest = Copy{{ .messageName }}Slice(dest, []{{ .messageName }}{})
+    dest = Copy{{ .messageName }}Slice(dest, []{{ .messageName }}{}, nil)
     assert.Len(t, dest, 0)
 
     // Test CopyTo larger slice with enough capacity
-    dest = Copy{{ .messageName }}Slice(dest, src)
+    dest = Copy{{ .messageName }}Slice(dest, src, nil)
     assert.Equal(t, GenTest{{ .messageName }}Slice(), dest)
 }
 
@@ -61,24 +61,24 @@ func TestCopy{{ .messageName }}PtrSlice(t *testing.T) {
     src := []*{{ .messageName }}{}
     dest := []*{{ .messageName }}{}
     // Test CopyTo empty
-    dest = Copy{{ .messageName }}PtrSlice(dest, src)
+    dest = Copy{{ .messageName }}PtrSlice(dest, src, nil)
     assert.Equal(t, []*{{ .messageName }}{}, dest)
 
     // Test CopyTo larger slice
     src = GenTest{{ .messageName }}PtrSlice()
-    dest = Copy{{ .messageName }}PtrSlice(dest, src)
+    dest = Copy{{ .messageName }}PtrSlice(dest, src, nil)
     assert.Equal(t, GenTest{{ .messageName }}PtrSlice(), dest)
 
     // Test CopyTo same size slice
-    dest = Copy{{ .messageName }}PtrSlice(dest, src)
+    dest = Copy{{ .messageName }}PtrSlice(dest, src, nil)
     assert.Equal(t, GenTest{{ .messageName }}PtrSlice(), dest)
 
     // Test CopyTo smaller size slice
-    dest = Copy{{ .messageName }}PtrSlice(dest, []*{{ .messageName }}{})
+    dest = Copy{{ .messageName }}PtrSlice(dest, []*{{ .messageName }}{}, nil)
     assert.Len(t, dest, 0)
 
     // Test CopyTo larger slice with enough capacity
-    dest = Copy{{ .messageName }}PtrSlice(dest, src)
+    dest = Copy{{ .messageName }}PtrSlice(dest, src, nil)
     assert.Equal(t, GenTest{{ .messageName }}PtrSlice(), dest)
 }
 

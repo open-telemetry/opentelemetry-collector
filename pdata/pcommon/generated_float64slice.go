@@ -36,13 +36,13 @@ func NewFloat64Slice() Float64Slice {
 
 // AsRaw returns a copy of the []float64 slice.
 func (ms Float64Slice) AsRaw() []float64 {
-	return copyFloat64Slice(nil, *ms.getOrig())
+	return slices.Clone(*ms.getOrig())
 }
 
 // FromRaw copies raw []float64 into the slice Float64Slice.
 func (ms Float64Slice) FromRaw(val []float64) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = copyFloat64Slice(*ms.getOrig(), val)
+	*ms.getOrig() = internal.CopySlice(ms.getState(), *ms.getOrig(), val)
 }
 
 // Len returns length of the []float64 slice value.
@@ -88,7 +88,7 @@ func (ms Float64Slice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]float64, len(*ms.getOrig()), newCap)
+	newOrig := internal.AllocSlice[float64](ms.getState(), len(*ms.getOrig()), newCap)
 	copy(newOrig, *ms.getOrig())
 	*ms.getOrig() = newOrig
 }
@@ -97,7 +97,7 @@ func (ms Float64Slice) EnsureCapacity(newCap int) {
 // Equivalent of float64Slice = append(float64Slice, elms...)
 func (ms Float64Slice) Append(elms ...float64) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = append(*ms.getOrig(), elms...)
+	*ms.getOrig() = internal.AppendSeq(ms.getState(), *ms.getOrig(), elms)
 }
 
 // MoveTo moves all elements from the current slice overriding the destination and
@@ -109,6 +109,11 @@ func (ms Float64Slice) MoveTo(dest Float64Slice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
+	if ms.getState() != dest.getState() {
+		ms.CopyTo(dest)
+		*ms.getOrig() = nil
+		return
+	}
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = nil
 }
@@ -118,11 +123,16 @@ func (ms Float64Slice) MoveTo(dest Float64Slice) {
 func (ms Float64Slice) MoveAndAppendTo(dest Float64Slice) {
 	ms.getState().AssertMutable()
 	dest.getState().AssertMutable()
+	if ms.getState() != dest.getState() {
+		dest.Append(*ms.getOrig()...)
+		*ms.getOrig() = nil
+		return
+	}
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *ms.getOrig()
 	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *ms.getOrig()...)
+		*dest.getOrig() = internal.AppendSeq(dest.getState(), *dest.getOrig(), *ms.getOrig())
 	}
 	*ms.getOrig() = nil
 }
@@ -155,7 +165,7 @@ func (ms Float64Slice) CopyTo(dest Float64Slice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = copyFloat64Slice(*dest.getOrig(), *ms.getOrig())
+	*dest.getOrig() = internal.CopySlice(dest.getState(), *dest.getOrig(), *ms.getOrig())
 }
 
 // Equal checks equality with another Float64Slice

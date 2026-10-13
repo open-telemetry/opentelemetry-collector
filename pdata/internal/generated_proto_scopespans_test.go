@@ -31,9 +31,9 @@ func TestCopyScopeSpans(t *testing.T) {
 				}()
 
 				dest := NewScopeSpans()
-				CopyScopeSpans(dest, src)
+				CopyScopeSpans(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyScopeSpans(dest, dest)
+				CopyScopeSpans(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyScopeSpansSlice(t *testing.T) {
 	src := []ScopeSpans{}
 	dest := []ScopeSpans{}
 	// Test CopyTo empty
-	dest = CopyScopeSpansSlice(dest, src)
+	dest = CopyScopeSpansSlice(dest, src, nil)
 	assert.Equal(t, []ScopeSpans{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestScopeSpansSlice()
-	dest = CopyScopeSpansSlice(dest, src)
+	dest = CopyScopeSpansSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeSpansSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyScopeSpansSlice(dest, src)
+	dest = CopyScopeSpansSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeSpansSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyScopeSpansSlice(dest, []ScopeSpans{})
+	dest = CopyScopeSpansSlice(dest, []ScopeSpans{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyScopeSpansSlice(dest, src)
+	dest = CopyScopeSpansSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeSpansSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyScopeSpansPtrSlice(t *testing.T) {
 	src := []*ScopeSpans{}
 	dest := []*ScopeSpans{}
 	// Test CopyTo empty
-	dest = CopyScopeSpansPtrSlice(dest, src)
+	dest = CopyScopeSpansPtrSlice(dest, src, nil)
 	assert.Equal(t, []*ScopeSpans{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestScopeSpansPtrSlice()
-	dest = CopyScopeSpansPtrSlice(dest, src)
+	dest = CopyScopeSpansPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeSpansPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyScopeSpansPtrSlice(dest, src)
+	dest = CopyScopeSpansPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeSpansPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyScopeSpansPtrSlice(dest, []*ScopeSpans{})
+	dest = CopyScopeSpansPtrSlice(dest, []*ScopeSpans{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyScopeSpansPtrSlice(dest, src)
+	dest = CopyScopeSpansPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestScopeSpansPtrSlice(), dest)
 }
 
@@ -190,12 +190,12 @@ func TestMarshalAndUnmarshalProtoViaProtobufScopeSpans(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesScopeSpans() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":             {0x02},
-		"Scope/wrong_wire_type":     {0xc},
-		"Scope/missing_value":       {0xa},
-		"Spans/wrong_wire_type":     {0x14},
-		"Spans/missing_value":       {0x12},
-		"SchemaUrl/wrong_wire_type": {0x1c},
-		"SchemaUrl/missing_value":   {0x1a},
+		"Scope/wrong_wire_type":     []byte{0xc},
+		"Scope/missing_value":       []byte{0xa},
+		"Spans/wrong_wire_type":     []byte{0x14},
+		"Spans/missing_value":       []byte{0x12},
+		"SchemaUrl/wrong_wire_type": []byte{0x1c},
+		"SchemaUrl/missing_value":   []byte{0x1a},
 	}
 }
 
@@ -203,7 +203,7 @@ func genTestEncodingValuesScopeSpans() map[string]*ScopeSpans {
 	return map[string]*ScopeSpans{
 		"empty":          NewScopeSpans(),
 		"Scope/test":     {Scope: *GenTestInstrumentationScope()},
-		"Spans/test":     {Spans: []*Span{{}, GenTestSpan()}},
+		"Spans/test":     {Spans: []*Span{&Span{}, GenTestSpan()}},
 		"SchemaUrl/test": {SchemaUrl: "test_schemaurl"},
 	}
 }

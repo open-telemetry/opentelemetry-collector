@@ -83,6 +83,6 @@ type rawMetricsServer struct {
 
 func (s rawMetricsServer) Export(ctx context.Context, request *internal.ExportMetricsServiceRequest) (*internal.ExportMetricsServiceResponse, error) {
 	otlp.MigrateMetrics(request.ResourceMetrics)
-	rsp, err := s.srv.Export(ctx, ExportRequest{orig: request, state: internal.NewState()})
+	rsp, err := s.srv.Export(ctx, ExportRequest{orig: request, state: otelgrpc.TakeGRPCState(request)})
 	return rsp.orig, err
 }

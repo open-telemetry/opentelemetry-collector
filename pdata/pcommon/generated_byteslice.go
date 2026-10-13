@@ -36,13 +36,14 @@ func NewByteSlice() ByteSlice {
 
 // AsRaw returns a copy of the []byte slice.
 func (ms ByteSlice) AsRaw() []byte {
-	return copyByteSlice(nil, *ms.getOrig())
+	return slices.Clone(*ms.getOrig())
 }
 
 // FromRaw copies raw []byte into the slice ByteSlice.
 func (ms ByteSlice) FromRaw(val []byte) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = copyByteSlice(*ms.getOrig(), val)
+	ms.getState().CopyOnWriteBytes(ms.getOrig())
+	*ms.getOrig() = internal.CopyBytes(ms.getState(), val)
 }
 
 // Len returns length of the []byte slice value.
@@ -72,6 +73,7 @@ func (ms ByteSlice) All() iter.Seq2[int, byte] {
 // Equivalent of byteSlice[i] = val
 func (ms ByteSlice) SetAt(i int, val byte) {
 	ms.getState().AssertMutable()
+	ms.getState().CopyOnWriteBytes(ms.getOrig())
 	(*ms.getOrig())[i] = val
 }
 
@@ -88,7 +90,7 @@ func (ms ByteSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]byte, len(*ms.getOrig()), newCap)
+	newOrig := internal.AllocSlice[byte](ms.getState(), len(*ms.getOrig()), newCap)
 	copy(newOrig, *ms.getOrig())
 	*ms.getOrig() = newOrig
 }
@@ -97,7 +99,8 @@ func (ms ByteSlice) EnsureCapacity(newCap int) {
 // Equivalent of byteSlice = append(byteSlice, elms...)
 func (ms ByteSlice) Append(elms ...byte) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = append(*ms.getOrig(), elms...)
+	ms.getState().CopyOnWriteBytes(ms.getOrig())
+	*ms.getOrig() = internal.AppendSeq(ms.getState(), *ms.getOrig(), elms)
 }
 
 // MoveTo moves all elements from the current slice overriding the destination and
@@ -109,6 +112,11 @@ func (ms ByteSlice) MoveTo(dest ByteSlice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
+	if ms.getState() != dest.getState() {
+		ms.CopyTo(dest)
+		*ms.getOrig() = nil
+		return
+	}
 	*dest.getOrig() = *ms.getOrig()
 	*ms.getOrig() = nil
 }
@@ -118,11 +126,16 @@ func (ms ByteSlice) MoveTo(dest ByteSlice) {
 func (ms ByteSlice) MoveAndAppendTo(dest ByteSlice) {
 	ms.getState().AssertMutable()
 	dest.getState().AssertMutable()
+	if ms.getState() != dest.getState() {
+		dest.Append(*ms.getOrig()...)
+		*ms.getOrig() = nil
+		return
+	}
 	if *dest.getOrig() == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.getOrig() = *ms.getOrig()
 	} else {
-		*dest.getOrig() = append(*dest.getOrig(), *ms.getOrig()...)
+		*dest.getOrig() = internal.AppendSeq(dest.getState(), *dest.getOrig(), *ms.getOrig())
 	}
 	*ms.getOrig() = nil
 }
@@ -131,6 +144,7 @@ func (ms ByteSlice) MoveAndAppendTo(dest ByteSlice) {
 // If f returns true, the element is removed from the slice.
 func (ms ByteSlice) RemoveIf(f func(byte) bool) {
 	ms.getState().AssertMutable()
+	ms.getState().CopyOnWriteBytes(ms.getOrig())
 	newLen := 0
 	for i := 0; i < len(*ms.getOrig()); i++ {
 		if f((*ms.getOrig())[i]) {
@@ -155,7 +169,7 @@ func (ms ByteSlice) CopyTo(dest ByteSlice) {
 	if ms.getOrig() == dest.getOrig() {
 		return
 	}
-	*dest.getOrig() = copyByteSlice(*dest.getOrig(), *ms.getOrig())
+	*dest.getOrig() = internal.CopySlice(dest.getState(), *dest.getOrig(), *ms.getOrig())
 }
 
 // Equal checks equality with another ByteSlice

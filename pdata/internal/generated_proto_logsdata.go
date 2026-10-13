@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -22,19 +21,8 @@ type LogsData struct {
 	ResourceLogs []*ResourceLogs
 }
 
-var (
-	protoPoolLogsData = sync.Pool{
-		New: func() any {
-			return &LogsData{}
-		},
-	}
-)
-
 func NewLogsData() *LogsData {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &LogsData{}
-	}
-	return protoPoolLogsData.Get().(*LogsData)
+	return Alloc[LogsData](nil)
 }
 
 func DeleteLogsData(orig *LogsData, nullable bool) {
@@ -50,12 +38,10 @@ func DeleteLogsData(orig *LogsData, nullable bool) {
 		DeleteResourceLogs(orig.ResourceLogs[i], true)
 	}
 	orig.Reset()
-	if nullable {
-		protoPoolLogsData.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyLogsData(dest, src *LogsData) *LogsData {
+func CopyLogsData(dest, src *LogsData, st *State) *LogsData {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -66,17 +52,17 @@ func CopyLogsData(dest, src *LogsData) *LogsData {
 	}
 
 	if dest == nil {
-		dest = NewLogsData()
+		dest = Alloc[LogsData](st)
 	}
-	dest.ResourceLogs = CopyResourceLogsPtrSlice(dest.ResourceLogs, src.ResourceLogs)
+	dest.ResourceLogs = CopyResourceLogsPtrSlice(dest.ResourceLogs, src.ResourceLogs, st)
 
 	return dest
 }
 
-func CopyLogsDataSlice(dest, src []LogsData) []LogsData {
+func CopyLogsDataSlice(dest, src []LogsData, st *State) []LogsData {
 	var newDest []LogsData
 	if cap(dest) < len(src) {
-		newDest = make([]LogsData, len(src))
+		newDest = AllocSlice[LogsData](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -86,20 +72,20 @@ func CopyLogsDataSlice(dest, src []LogsData) []LogsData {
 		}
 	}
 	for i := range src {
-		CopyLogsData(&newDest[i], &src[i])
+		CopyLogsData(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyLogsDataPtrSlice(dest, src []*LogsData) []*LogsData {
+func CopyLogsDataPtrSlice(dest, src []*LogsData, st *State) []*LogsData {
 	var newDest []*LogsData
 	if cap(dest) < len(src) {
-		newDest = make([]*LogsData, len(src))
+		newDest = AllocSlice[*LogsData](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewLogsData()
+			newDest[i] = Alloc[LogsData](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -112,11 +98,11 @@ func CopyLogsDataPtrSlice(dest, src []*LogsData) []*LogsData {
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewLogsData()
+			newDest[i] = Alloc[LogsData](st)
 		}
 	}
 	for i := range src {
-		CopyLogsData(newDest[i], src[i])
+		CopyLogsData(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -143,12 +129,17 @@ func (orig *LogsData) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *LogsData) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *LogsData) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "resourceLogs", "resource_logs":
 			for iter.ReadArray() {
-				orig.ResourceLogs = append(orig.ResourceLogs, NewResourceLogs())
-				orig.ResourceLogs[len(orig.ResourceLogs)-1].UnmarshalJSON(iter)
+				orig.ResourceLogs = Append(st, orig.ResourceLogs, Alloc[ResourceLogs](st))
+				orig.ResourceLogs[len(orig.ResourceLogs)-1].UnmarshalJSONState(iter, st)
 			}
 
 		default:
@@ -183,6 +174,10 @@ func (orig *LogsData) MarshalProto(buf []byte) int {
 }
 
 func (orig *LogsData) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *LogsData) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -207,8 +202,8 @@ func (orig *LogsData) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.ResourceLogs = append(orig.ResourceLogs, NewResourceLogs())
-			err = orig.ResourceLogs[len(orig.ResourceLogs)-1].UnmarshalProto(buf[startPos:pos])
+			orig.ResourceLogs = AppendEstimated(st, orig.ResourceLogs, Alloc[ResourceLogs](st), len(buf)-pos, length+2)
+			err = orig.ResourceLogs[len(orig.ResourceLogs)-1].UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -223,18 +218,18 @@ func (orig *LogsData) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestLogsData() *LogsData {
-	orig := NewLogsData()
-	orig.ResourceLogs = []*ResourceLogs{{}, GenTestResourceLogs()}
+	orig := Alloc[LogsData](nil)
+	orig.ResourceLogs = []*ResourceLogs{&ResourceLogs{}, GenTestResourceLogs()}
 	return orig
 }
 
 func GenTestLogsDataPtrSlice() []*LogsData {
 	orig := make([]*LogsData, 5)
-	orig[0] = NewLogsData()
+	orig[0] = Alloc[LogsData](nil)
 	orig[1] = GenTestLogsData()
-	orig[2] = NewLogsData()
+	orig[2] = Alloc[LogsData](nil)
 	orig[3] = GenTestLogsData()
-	orig[4] = NewLogsData()
+	orig[4] = Alloc[LogsData](nil)
 	return orig
 }
 

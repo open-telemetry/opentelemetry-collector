@@ -31,9 +31,9 @@ func TestCopyExportLogsServiceRequest(t *testing.T) {
 				}()
 
 				dest := NewExportLogsServiceRequest()
-				CopyExportLogsServiceRequest(dest, src)
+				CopyExportLogsServiceRequest(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyExportLogsServiceRequest(dest, dest)
+				CopyExportLogsServiceRequest(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyExportLogsServiceRequestSlice(t *testing.T) {
 	src := []ExportLogsServiceRequest{}
 	dest := []ExportLogsServiceRequest{}
 	// Test CopyTo empty
-	dest = CopyExportLogsServiceRequestSlice(dest, src)
+	dest = CopyExportLogsServiceRequestSlice(dest, src, nil)
 	assert.Equal(t, []ExportLogsServiceRequest{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExportLogsServiceRequestSlice()
-	dest = CopyExportLogsServiceRequestSlice(dest, src)
+	dest = CopyExportLogsServiceRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportLogsServiceRequestSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExportLogsServiceRequestSlice(dest, src)
+	dest = CopyExportLogsServiceRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportLogsServiceRequestSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExportLogsServiceRequestSlice(dest, []ExportLogsServiceRequest{})
+	dest = CopyExportLogsServiceRequestSlice(dest, []ExportLogsServiceRequest{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExportLogsServiceRequestSlice(dest, src)
+	dest = CopyExportLogsServiceRequestSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportLogsServiceRequestSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyExportLogsServiceRequestPtrSlice(t *testing.T) {
 	src := []*ExportLogsServiceRequest{}
 	dest := []*ExportLogsServiceRequest{}
 	// Test CopyTo empty
-	dest = CopyExportLogsServiceRequestPtrSlice(dest, src)
+	dest = CopyExportLogsServiceRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, []*ExportLogsServiceRequest{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExportLogsServiceRequestPtrSlice()
-	dest = CopyExportLogsServiceRequestPtrSlice(dest, src)
+	dest = CopyExportLogsServiceRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportLogsServiceRequestPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExportLogsServiceRequestPtrSlice(dest, src)
+	dest = CopyExportLogsServiceRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportLogsServiceRequestPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExportLogsServiceRequestPtrSlice(dest, []*ExportLogsServiceRequest{})
+	dest = CopyExportLogsServiceRequestPtrSlice(dest, []*ExportLogsServiceRequest{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExportLogsServiceRequestPtrSlice(dest, src)
+	dest = CopyExportLogsServiceRequestPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExportLogsServiceRequestPtrSlice(), dest)
 }
 
@@ -190,14 +190,14 @@ func TestMarshalAndUnmarshalProtoViaProtobufExportLogsServiceRequest(t *testing.
 func genTestFailingUnmarshalProtoValuesExportLogsServiceRequest() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                {0x02},
-		"ResourceLogs/wrong_wire_type": {0xc},
-		"ResourceLogs/missing_value":   {0xa},
+		"ResourceLogs/wrong_wire_type": []byte{0xc},
+		"ResourceLogs/missing_value":   []byte{0xa},
 	}
 }
 
 func genTestEncodingValuesExportLogsServiceRequest() map[string]*ExportLogsServiceRequest {
 	return map[string]*ExportLogsServiceRequest{
 		"empty":             NewExportLogsServiceRequest(),
-		"ResourceLogs/test": {ResourceLogs: []*ResourceLogs{{}, GenTestResourceLogs()}},
+		"ResourceLogs/test": {ResourceLogs: []*ResourceLogs{&ResourceLogs{}, GenTestResourceLogs()}},
 	}
 }

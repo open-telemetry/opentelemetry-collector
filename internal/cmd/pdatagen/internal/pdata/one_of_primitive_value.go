@@ -18,13 +18,12 @@ func (ms {{ .structName }}) {{ .accessorFieldName }}() {{ .returnType }} {
 // Set{{ .accessorFieldName }} replaces the {{ .lowerFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) Set{{ .accessorFieldName }}(v {{ .returnType }}) {
 	ms.state.AssertMutable()
-	var ov *internal.{{ .originStructType }}
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		ov = &internal.{{ .originStructType }}{}
-	} else {
-		ov = internal.ProtoPool{{ .oneOfName }}.Get().(*internal.{{ .originStructType }})
-	}
+	ov := internal.Alloc[internal.{{ .originStructType }}](ms.state)
+	{{- if eq .returnType "string" }}
+	ov.{{ .originFieldName }} = internal.CopyString(ms.state, v)
+	{{- else }}
 	ov.{{ .originFieldName }} = v
+	{{- end }}
 	ms.orig.{{ .originOneOfFieldName }} = ov
 }`
 

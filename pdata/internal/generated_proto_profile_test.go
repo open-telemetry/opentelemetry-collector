@@ -31,9 +31,9 @@ func TestCopyProfile(t *testing.T) {
 				}()
 
 				dest := NewProfile()
-				CopyProfile(dest, src)
+				CopyProfile(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyProfile(dest, dest)
+				CopyProfile(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyProfileSlice(t *testing.T) {
 	src := []Profile{}
 	dest := []Profile{}
 	// Test CopyTo empty
-	dest = CopyProfileSlice(dest, src)
+	dest = CopyProfileSlice(dest, src, nil)
 	assert.Equal(t, []Profile{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestProfileSlice()
-	dest = CopyProfileSlice(dest, src)
+	dest = CopyProfileSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfileSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyProfileSlice(dest, src)
+	dest = CopyProfileSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfileSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyProfileSlice(dest, []Profile{})
+	dest = CopyProfileSlice(dest, []Profile{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyProfileSlice(dest, src)
+	dest = CopyProfileSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfileSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyProfilePtrSlice(t *testing.T) {
 	src := []*Profile{}
 	dest := []*Profile{}
 	// Test CopyTo empty
-	dest = CopyProfilePtrSlice(dest, src)
+	dest = CopyProfilePtrSlice(dest, src, nil)
 	assert.Equal(t, []*Profile{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestProfilePtrSlice()
-	dest = CopyProfilePtrSlice(dest, src)
+	dest = CopyProfilePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilePtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyProfilePtrSlice(dest, src)
+	dest = CopyProfilePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilePtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyProfilePtrSlice(dest, []*Profile{})
+	dest = CopyProfilePtrSlice(dest, []*Profile{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyProfilePtrSlice(dest, src)
+	dest = CopyProfilePtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestProfilePtrSlice(), dest)
 }
 
@@ -190,28 +190,28 @@ func TestMarshalAndUnmarshalProtoViaProtobufProfile(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesProfile() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                          {0x02},
-		"SampleType/wrong_wire_type":             {0xc},
-		"SampleType/missing_value":               {0xa},
-		"Samples/wrong_wire_type":                {0x14},
-		"Samples/missing_value":                  {0x12},
-		"TimeUnixNano/wrong_wire_type":           {0x1c},
-		"TimeUnixNano/missing_value":             {0x19},
-		"DurationNano/wrong_wire_type":           {0x24},
-		"DurationNano/missing_value":             {0x20},
-		"PeriodType/wrong_wire_type":             {0x2c},
-		"PeriodType/missing_value":               {0x2a},
-		"Period/wrong_wire_type":                 {0x34},
-		"Period/missing_value":                   {0x30},
-		"ProfileId/wrong_wire_type":              {0x3c},
-		"ProfileId/missing_value":                {0x3a},
-		"DroppedAttributesCount/wrong_wire_type": {0x44},
-		"DroppedAttributesCount/missing_value":   {0x40},
-		"OriginalPayloadFormat/wrong_wire_type":  {0x4c},
-		"OriginalPayloadFormat/missing_value":    {0x4a},
-		"OriginalPayload/wrong_wire_type":        {0x54},
-		"OriginalPayload/missing_value":          {0x52},
-		"AttributeIndices/wrong_wire_type":       {0x5c},
-		"AttributeIndices/missing_value":         {0x5a},
+		"SampleType/wrong_wire_type":             []byte{0xc},
+		"SampleType/missing_value":               []byte{0xa},
+		"Samples/wrong_wire_type":                []byte{0x14},
+		"Samples/missing_value":                  []byte{0x12},
+		"TimeUnixNano/wrong_wire_type":           []byte{0x1c},
+		"TimeUnixNano/missing_value":             []byte{0x19},
+		"DurationNano/wrong_wire_type":           []byte{0x24},
+		"DurationNano/missing_value":             []byte{0x20},
+		"PeriodType/wrong_wire_type":             []byte{0x2c},
+		"PeriodType/missing_value":               []byte{0x2a},
+		"Period/wrong_wire_type":                 []byte{0x34},
+		"Period/missing_value":                   []byte{0x30},
+		"ProfileId/wrong_wire_type":              []byte{0x3c},
+		"ProfileId/missing_value":                []byte{0x3a},
+		"DroppedAttributesCount/wrong_wire_type": []byte{0x44},
+		"DroppedAttributesCount/missing_value":   []byte{0x40},
+		"OriginalPayloadFormat/wrong_wire_type":  []byte{0x4c},
+		"OriginalPayloadFormat/missing_value":    []byte{0x4a},
+		"OriginalPayload/wrong_wire_type":        []byte{0x54},
+		"OriginalPayload/missing_value":          []byte{0x52},
+		"AttributeIndices/wrong_wire_type":       []byte{0x5c},
+		"AttributeIndices/missing_value":         []byte{0x5a},
 	}
 }
 
@@ -219,7 +219,7 @@ func genTestEncodingValuesProfile() map[string]*Profile {
 	return map[string]*Profile{
 		"empty":                       NewProfile(),
 		"SampleType/test":             {SampleType: *GenTestValueType()},
-		"Samples/test":                {Samples: []*Sample{{}, GenTestSample()}},
+		"Samples/test":                {Samples: []*Sample{&Sample{}, GenTestSample()}},
 		"TimeUnixNano/test":           {TimeUnixNano: uint64(13)},
 		"DurationNano/test":           {DurationNano: uint64(13)},
 		"PeriodType/test":             {PeriodType: *GenTestValueType()},

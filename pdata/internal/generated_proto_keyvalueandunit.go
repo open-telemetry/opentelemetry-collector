@@ -8,7 +8,6 @@ package internal
 
 import (
 	"fmt"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
@@ -24,19 +23,8 @@ type KeyValueAndUnit struct {
 	UnitStrindex int32
 }
 
-var (
-	protoPoolKeyValueAndUnit = sync.Pool{
-		New: func() any {
-			return &KeyValueAndUnit{}
-		},
-	}
-)
-
 func NewKeyValueAndUnit() *KeyValueAndUnit {
-	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-		return &KeyValueAndUnit{}
-	}
-	return protoPoolKeyValueAndUnit.Get().(*KeyValueAndUnit)
+	return Alloc[KeyValueAndUnit](nil)
 }
 
 func DeleteKeyValueAndUnit(orig *KeyValueAndUnit, nullable bool) {
@@ -52,12 +40,10 @@ func DeleteKeyValueAndUnit(orig *KeyValueAndUnit, nullable bool) {
 	DeleteAnyValue(&orig.Value, false)
 
 	orig.Reset()
-	if nullable {
-		protoPoolKeyValueAndUnit.Put(orig)
-	}
+	_ = nullable
 }
 
-func CopyKeyValueAndUnit(dest, src *KeyValueAndUnit) *KeyValueAndUnit {
+func CopyKeyValueAndUnit(dest, src *KeyValueAndUnit, st *State) *KeyValueAndUnit {
 	// If copying to same object, just return.
 	if src == dest {
 		return dest
@@ -68,20 +54,20 @@ func CopyKeyValueAndUnit(dest, src *KeyValueAndUnit) *KeyValueAndUnit {
 	}
 
 	if dest == nil {
-		dest = NewKeyValueAndUnit()
+		dest = Alloc[KeyValueAndUnit](st)
 	}
 	dest.KeyStrindex = src.KeyStrindex
-	CopyAnyValue(&dest.Value, &src.Value)
+	CopyAnyValue(&dest.Value, &src.Value, st)
 
 	dest.UnitStrindex = src.UnitStrindex
 
 	return dest
 }
 
-func CopyKeyValueAndUnitSlice(dest, src []KeyValueAndUnit) []KeyValueAndUnit {
+func CopyKeyValueAndUnitSlice(dest, src []KeyValueAndUnit, st *State) []KeyValueAndUnit {
 	var newDest []KeyValueAndUnit
 	if cap(dest) < len(src) {
-		newDest = make([]KeyValueAndUnit, len(src))
+		newDest = AllocSlice[KeyValueAndUnit](st, len(src), len(src))
 	} else {
 		newDest = dest[:len(src)]
 		// Cleanup the rest of the elements so GC can free the memory.
@@ -91,20 +77,20 @@ func CopyKeyValueAndUnitSlice(dest, src []KeyValueAndUnit) []KeyValueAndUnit {
 		}
 	}
 	for i := range src {
-		CopyKeyValueAndUnit(&newDest[i], &src[i])
+		CopyKeyValueAndUnit(&newDest[i], &src[i], st)
 	}
 	return newDest
 }
 
-func CopyKeyValueAndUnitPtrSlice(dest, src []*KeyValueAndUnit) []*KeyValueAndUnit {
+func CopyKeyValueAndUnitPtrSlice(dest, src []*KeyValueAndUnit, st *State) []*KeyValueAndUnit {
 	var newDest []*KeyValueAndUnit
 	if cap(dest) < len(src) {
-		newDest = make([]*KeyValueAndUnit, len(src))
+		newDest = AllocSlice[*KeyValueAndUnit](st, len(src), len(src))
 		// Copy old pointers to re-use.
 		copy(newDest, dest)
 		// Add new pointers for missing elements from len(dest) to len(srt).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewKeyValueAndUnit()
+			newDest[i] = Alloc[KeyValueAndUnit](st)
 		}
 	} else {
 		newDest = dest[:len(src)]
@@ -117,11 +103,11 @@ func CopyKeyValueAndUnitPtrSlice(dest, src []*KeyValueAndUnit) []*KeyValueAndUni
 		// Add new pointers for missing elements.
 		// This can happen when len(dest) < len(src) < cap(dest).
 		for i := len(dest); i < len(src); i++ {
-			newDest[i] = NewKeyValueAndUnit()
+			newDest[i] = Alloc[KeyValueAndUnit](st)
 		}
 	}
 	for i := range src {
-		CopyKeyValueAndUnit(newDest[i], src[i])
+		CopyKeyValueAndUnit(newDest[i], src[i], st)
 	}
 	return newDest
 }
@@ -148,14 +134,21 @@ func (orig *KeyValueAndUnit) MarshalJSON(dest *json.Stream) {
 
 // UnmarshalJSON unmarshals all properties from the current struct from the source iterator.
 func (orig *KeyValueAndUnit) UnmarshalJSON(iter *json.Iterator) {
+	orig.UnmarshalJSONState(iter, nil)
+}
+
+// UnmarshalJSONState unmarshals using st for nested allocations when an arena is attached.
+func (orig *KeyValueAndUnit) UnmarshalJSONState(iter *json.Iterator, st *State) {
 	for f := iter.ReadObject(); f != ""; f = iter.ReadObject() {
 		switch f {
 		case "keyStrindex", "key_strindex":
+
 			orig.KeyStrindex = iter.ReadInt32()
 		case "value":
 
-			orig.Value.UnmarshalJSON(iter)
+			orig.Value.UnmarshalJSONState(iter, st)
 		case "unitStrindex", "unit_strindex":
+
 			orig.UnitStrindex = iter.ReadInt32()
 		default:
 			iter.HandleUnknownField(f)
@@ -202,6 +195,10 @@ func (orig *KeyValueAndUnit) MarshalProto(buf []byte) int {
 }
 
 func (orig *KeyValueAndUnit) UnmarshalProto(buf []byte) error {
+	return orig.UnmarshalProtoState(buf, nil)
+}
+
+func (orig *KeyValueAndUnit) UnmarshalProtoState(buf []byte, st *State) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -238,7 +235,7 @@ func (orig *KeyValueAndUnit) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Value.UnmarshalProto(buf[startPos:pos])
+			err = orig.Value.UnmarshalProtoState(buf[startPos:pos], st)
 			if err != nil {
 				return err
 			}
@@ -264,7 +261,7 @@ func (orig *KeyValueAndUnit) UnmarshalProto(buf []byte) error {
 }
 
 func GenTestKeyValueAndUnit() *KeyValueAndUnit {
-	orig := NewKeyValueAndUnit()
+	orig := Alloc[KeyValueAndUnit](nil)
 	orig.KeyStrindex = int32(13)
 	orig.Value = *GenTestAnyValue()
 	orig.UnitStrindex = int32(13)
@@ -273,11 +270,11 @@ func GenTestKeyValueAndUnit() *KeyValueAndUnit {
 
 func GenTestKeyValueAndUnitPtrSlice() []*KeyValueAndUnit {
 	orig := make([]*KeyValueAndUnit, 5)
-	orig[0] = NewKeyValueAndUnit()
+	orig[0] = Alloc[KeyValueAndUnit](nil)
 	orig[1] = GenTestKeyValueAndUnit()
-	orig[2] = NewKeyValueAndUnit()
+	orig[2] = Alloc[KeyValueAndUnit](nil)
 	orig[3] = GenTestKeyValueAndUnit()
-	orig[4] = NewKeyValueAndUnit()
+	orig[4] = Alloc[KeyValueAndUnit](nil)
 	return orig
 }
 

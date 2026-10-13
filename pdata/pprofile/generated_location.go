@@ -32,7 +32,8 @@ func newLocation(orig *internal.Location, state *internal.State) Location {
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func NewLocation() Location {
-	return newLocation(internal.NewLocation(), internal.NewState())
+	st := internal.NewState()
+	return newLocation(internal.Alloc[internal.Location](st), st)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -42,6 +43,11 @@ func (ms Location) MoveTo(dest Location) {
 	dest.state.AssertMutable()
 	// If they point to the same data, they are the same, nothing to do.
 	if ms.orig == dest.orig {
+		return
+	}
+	if internal.MoveNeedsCopy(ms.state, dest.state) {
+		ms.CopyTo(dest)
+		internal.DeleteLocation(ms.orig, false)
 		return
 	}
 	internal.DeleteLocation(dest.orig, false)
@@ -83,5 +89,5 @@ func (ms Location) AttributeIndices() pcommon.Int32Slice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Location) CopyTo(dest Location) {
 	dest.state.AssertMutable()
-	internal.CopyLocation(dest.orig, ms.orig)
+	internal.CopyLocation(dest.orig, ms.orig, dest.state)
 }

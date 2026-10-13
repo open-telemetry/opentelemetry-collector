@@ -31,9 +31,9 @@ func TestCopyExponentialHistogram(t *testing.T) {
 				}()
 
 				dest := NewExponentialHistogram()
-				CopyExponentialHistogram(dest, src)
+				CopyExponentialHistogram(dest, src, nil)
 				assert.Equal(t, src, dest)
-				CopyExponentialHistogram(dest, dest)
+				CopyExponentialHistogram(dest, dest, nil)
 				assert.Equal(t, src, dest)
 			})
 		}
@@ -44,24 +44,24 @@ func TestCopyExponentialHistogramSlice(t *testing.T) {
 	src := []ExponentialHistogram{}
 	dest := []ExponentialHistogram{}
 	// Test CopyTo empty
-	dest = CopyExponentialHistogramSlice(dest, src)
+	dest = CopyExponentialHistogramSlice(dest, src, nil)
 	assert.Equal(t, []ExponentialHistogram{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExponentialHistogramSlice()
-	dest = CopyExponentialHistogramSlice(dest, src)
+	dest = CopyExponentialHistogramSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExponentialHistogramSlice(dest, src)
+	dest = CopyExponentialHistogramSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExponentialHistogramSlice(dest, []ExponentialHistogram{})
+	dest = CopyExponentialHistogramSlice(dest, []ExponentialHistogram{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExponentialHistogramSlice(dest, src)
+	dest = CopyExponentialHistogramSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramSlice(), dest)
 }
 
@@ -69,24 +69,24 @@ func TestCopyExponentialHistogramPtrSlice(t *testing.T) {
 	src := []*ExponentialHistogram{}
 	dest := []*ExponentialHistogram{}
 	// Test CopyTo empty
-	dest = CopyExponentialHistogramPtrSlice(dest, src)
+	dest = CopyExponentialHistogramPtrSlice(dest, src, nil)
 	assert.Equal(t, []*ExponentialHistogram{}, dest)
 
 	// Test CopyTo larger slice
 	src = GenTestExponentialHistogramPtrSlice()
-	dest = CopyExponentialHistogramPtrSlice(dest, src)
+	dest = CopyExponentialHistogramPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramPtrSlice(), dest)
 
 	// Test CopyTo same size slice
-	dest = CopyExponentialHistogramPtrSlice(dest, src)
+	dest = CopyExponentialHistogramPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramPtrSlice(), dest)
 
 	// Test CopyTo smaller size slice
-	dest = CopyExponentialHistogramPtrSlice(dest, []*ExponentialHistogram{})
+	dest = CopyExponentialHistogramPtrSlice(dest, []*ExponentialHistogram{}, nil)
 	assert.Len(t, dest, 0)
 
 	// Test CopyTo larger slice with enough capacity
-	dest = CopyExponentialHistogramPtrSlice(dest, src)
+	dest = CopyExponentialHistogramPtrSlice(dest, src, nil)
 	assert.Equal(t, GenTestExponentialHistogramPtrSlice(), dest)
 }
 
@@ -190,17 +190,17 @@ func TestMarshalAndUnmarshalProtoViaProtobufExponentialHistogram(t *testing.T) {
 func genTestFailingUnmarshalProtoValuesExponentialHistogram() map[string][]byte {
 	return map[string][]byte{
 		"invalid_field":                          {0x02},
-		"DataPoints/wrong_wire_type":             {0xc},
-		"DataPoints/missing_value":               {0xa},
-		"AggregationTemporality/wrong_wire_type": {0x14},
-		"AggregationTemporality/missing_value":   {0x10},
+		"DataPoints/wrong_wire_type":             []byte{0xc},
+		"DataPoints/missing_value":               []byte{0xa},
+		"AggregationTemporality/wrong_wire_type": []byte{0x14},
+		"AggregationTemporality/missing_value":   []byte{0x10},
 	}
 }
 
 func genTestEncodingValuesExponentialHistogram() map[string]*ExponentialHistogram {
 	return map[string]*ExponentialHistogram{
 		"empty":                       NewExponentialHistogram(),
-		"DataPoints/test":             {DataPoints: []*ExponentialHistogramDataPoint{{}, GenTestExponentialHistogramDataPoint()}},
+		"DataPoints/test":             {DataPoints: []*ExponentialHistogramDataPoint{&ExponentialHistogramDataPoint{}, GenTestExponentialHistogramDataPoint()}},
 		"AggregationTemporality/test": {AggregationTemporality: AggregationTemporality(13)},
 	}
 }
