@@ -4,7 +4,6 @@
 package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 
 import (
-	"cmp"
 	"errors"
 	"fmt"
 	"maps"
@@ -95,17 +94,8 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return call
 		},
-		"embeddedProps": func(props map[string]*ConfigMetadata) map[string]*ConfigMetadata {
-			return filterProps(props, func(prop *ConfigMetadata) bool {
-				return prop.Embed
-			})
-		},
-		"namedProps": func(props map[string]*ConfigMetadata) map[string]*ConfigMetadata {
-			return filterProps(props, func(prop *ConfigMetadata) bool {
-				return !prop.Embed
-			})
-		},
-		"isRequired": isRequired,
+		"orderedProps": orderedProps,
+		"isRequired":   isRequired,
 		"shouldOmitEmpty": func(md *ConfigMetadata, propName string, prop *ConfigMetadata) bool {
 			return !isRequired(md, propName) && !hasNonZeroDefault(prop)
 		},
@@ -131,6 +121,23 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 
 func isRequired(md *ConfigMetadata, propName string) bool {
 	return slices.Contains(md.Required, propName)
+}
+
+type NamedProp struct {
+	Name string
+	Prop *ConfigMetadata
+}
+
+func orderedProps(md *ConfigMetadata) []NamedProp {
+	if md == nil {
+		return nil
+	}
+	names := OrderedPropNames(md)
+	props := make([]NamedProp, 0, len(names))
+	for _, name := range names {
+		props = append(props, NamedProp{Name: name, Prop: md.Properties[name]})
+	}
+	return props
 }
 
 // ExternalDefaultCall returns the Go expression that delegates to the upstream package's
@@ -520,9 +527,6 @@ func ExtractValidators(name string, md *ConfigMetadata) []Validator {
 		return validators
 	}
 	collectValidators(name, md, &validators)
-	slices.SortFunc(validators, func(a, b Validator) int {
-		return cmp.Compare(a.FieldName, b.FieldName)
-	})
 
 	return validators
 }
@@ -618,7 +622,7 @@ func collectValidators(name string, md *ConfigMetadata, validators *[]Validator)
 		return
 	}
 	createValidator(validators, name, md, true, false)
-	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
+	for _, propName := range OrderedPropNames(md) {
 		prop := md.Properties[propName]
 
 		if prop.Embed {
@@ -1045,14 +1049,4 @@ func invalidTestValue(fieldType SchemaType) string {
 	default:
 		return `"__invalid__"`
 	}
-}
-
-func filterProps(props map[string]*ConfigMetadata, pred func(value *ConfigMetadata) bool) map[string]*ConfigMetadata {
-	result := make(map[string]*ConfigMetadata)
-	for k, v := range props {
-		if pred(v) {
-			result[k] = v
-		}
-	}
-	return result
 }

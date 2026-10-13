@@ -66,6 +66,9 @@ type ConfigMetadata struct {
 	Embed      bool           `mapstructure:"embed,omitempty" json:"-" yaml:"embed,omitempty"`
 	// internal
 	InternalOnly bool `mapstructure:"-" json:"-" yaml:"-"`
+	// propOrder records property names in the order they were declared in the YAML
+	// source, so generated output can preserve it instead of the alphabetical order
+	propOrder []string
 }
 
 type ConfigsMetadata struct {
@@ -229,6 +232,21 @@ func (md *ConfigMetadata) mergeFrom(other *ConfigMetadata, isRef bool) {
 			}
 		}
 	}
+	// property declaration order: keep md's own order first, then append any names
+	// inherited from other that aren't already present
+	if other.propOrder != nil {
+		seen := make(map[string]bool, len(md.propOrder))
+		for _, name := range md.propOrder {
+			seen[name] = true
+		}
+		for _, name := range other.propOrder {
+			if !seen[name] {
+				md.propOrder = append(md.propOrder, name)
+				seen[name] = true
+			}
+		}
+	}
+
 	// *ConfigMetadata
 	if md.Values == nil {
 		md.Values = other.Values.Clone()

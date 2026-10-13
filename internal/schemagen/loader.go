@@ -110,6 +110,10 @@ func unmarshalSchema(body []byte) (*ConfigsMetadata, error) {
 		return nil, err
 	}
 
+	if err := ApplyConfigsOrder(body, &metadata); err != nil {
+		return nil, err
+	}
+
 	return &metadata, nil
 }
 
