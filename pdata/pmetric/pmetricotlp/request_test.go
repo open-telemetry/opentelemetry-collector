@@ -126,6 +126,19 @@ func TestRejectInvalidUTF8(t *testing.T) {
 		assert.Equal(t, 0, md.DataPointCount())
 	})
 
+	t.Run("invalid metric metadata", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		metric := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		metric.SetName("valid")
+		metric.Metadata().PutStr("bad", string([]byte{0xff}))
+		metric.SetEmptyGauge().DataPoints().AppendEmpty()
+		metric.Gauge().DataPoints().AppendEmpty()
+
+		assert.False(t, NewExportRequestFromMetrics(md).ValidateUTF8())
+		assert.Equal(t, 2, NewExportRequestFromMetrics(md).RejectInvalidUTF8())
+		assert.Equal(t, 0, md.DataPointCount())
+	})
+
 	for _, tc := range []struct {
 		name  string
 		build func(pmetric.Metric)

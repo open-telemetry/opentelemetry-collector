@@ -100,7 +100,8 @@ func (ms ExportRequest) RejectInvalidUTF8() int {
 				return false
 			}
 			sm.Metrics().RemoveIf(func(metric pmetric.Metric) bool {
-				if !internal.ValidateUTF8(metric.Name()) || !internal.ValidateUTF8(metric.Description()) || !internal.ValidateUTF8(metric.Unit()) {
+				if !internal.ValidateUTF8(metric.Name()) || !internal.ValidateUTF8(metric.Description()) ||
+					!internal.ValidateUTF8(metric.Unit()) || !internal.ValidateUTF8(metric.Metadata()) {
 					rejected += countMetricDataPoints(metric)
 					return true
 				}

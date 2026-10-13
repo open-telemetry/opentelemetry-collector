@@ -19,6 +19,7 @@ subtext: |
   This behavior is behind the `receiver.otlp.rejectInvalidUTF8` feature gate.
   When enabled, the OTLP receiver validates incoming traces, metrics, logs, and profiles for invalid UTF-8.
   Invalid items are rejected at the smallest supported signal unit and reported through OTLP partial success counts.
+  For profiles, an invalid string in the shared profiles dictionary rejects every profile in the request because the dictionary cannot be attributed to a single profile.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

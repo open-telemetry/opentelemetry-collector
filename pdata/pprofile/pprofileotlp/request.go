@@ -72,6 +72,12 @@ func (ms ExportRequest) ValidateUTF8() bool {
 }
 
 // RejectInvalidUTF8 removes profiles containing invalid UTF-8 and returns the number removed.
+//
+// The profiles dictionary is shared by every profile in the request and the
+// profiles reference it only by index, so a single invalid entry cannot be
+// attributed to one profile. When the dictionary contains invalid UTF-8 the
+// whole request is rejected, including profiles that would otherwise be valid,
+// and the returned count is the total number of profiles in the request.
 func (ms ExportRequest) RejectInvalidUTF8() int {
 	pd := ms.Profiles()
 	rejected := 0
