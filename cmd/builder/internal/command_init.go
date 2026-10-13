@@ -56,7 +56,7 @@ func initCommand() *cobra.Command {
 		Long:  `ocb init initializes a new repository in the provided folder with a manifest to start building a custom Collector. This command is experimental and very likely to change.`,
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return run(outputPath, initOptions{fromConfig: fromConfig, stderr: cmd.ErrOrStderr()})
+			return run(cmd.Context(), outputPath, initOptions{fromConfig: fromConfig, stderr: cmd.ErrOrStderr()})
 		},
 	}
 
@@ -66,19 +66,20 @@ func initCommand() *cobra.Command {
 	return cmd
 }
 
-func run(path string, opts initOptions) error {
-	if path == "" {
+// run initializes the repository in outputPath.
+func run(ctx context.Context, outputPath string, opts initOptions) error {
+	if outputPath == "" {
 		return errors.New("argument must be a folder")
 	}
-	path, err := filepath.Abs(path)
+	path, err := filepath.Abs(outputPath)
 	if err != nil {
-		return fmt.Errorf("failed to get absolute path for %v: %w", path, err)
+		return fmt.Errorf("failed to get absolute path for %v: %w", outputPath, err)
 	}
 
 	// Resolve the components before writing anything, so that a failure leaves no files behind.
 	var source *configSource
 	if opts.fromConfig != "" {
-		source, err = resolveConfig(context.Background(), opts)
+		source, err = resolveConfig(ctx, opts)
 		if err != nil {
 			return err
 		}
@@ -172,7 +173,7 @@ func resolveConfig(ctx context.Context, opts initOptions) (*configSource, error)
 		stderr = io.Discard
 	}
 	for _, r := range result.Resolved {
-		fmt.Fprintf(stderr, "ocb: resolved %s %s \u2192 %s\n", r.Class, r.Type, r.GoMod())
+		fmt.Fprintf(stderr, "ocb: resolved %s %s -> %s\n", r.Class, r.Type, r.GoMod())
 	}
 	for _, u := range result.Unresolved {
 		fmt.Fprintf(stderr, "ocb: warning: %s; add its gomod to manifest.yaml manually\n", u.Reason)

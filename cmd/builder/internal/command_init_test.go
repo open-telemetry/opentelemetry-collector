@@ -57,7 +57,7 @@ func TestRunInit(t *testing.T) {
 				os.RemoveAll(path)
 			})
 
-			err := run(path, initOptions{})
+			err := run(t.Context(), path, initOptions{})
 
 			if tt.wantErr == "" {
 				require.NoError(t, err)
@@ -145,7 +145,7 @@ func TestRunInitFromConfig(t *testing.T) {
 	path := filepath.Join(t.TempDir(), distributionName)
 
 	var stderr bytes.Buffer
-	require.NoError(t, run(path, initOptions{fromConfig: configPath, resolver: fakeResolver(), stderr: &stderr}))
+	require.NoError(t, run(t.Context(), path, initOptions{fromConfig: configPath, resolver: fakeResolver(), stderr: &stderr}))
 	validateCollector(t, path)
 
 	manifest, err := os.ReadFile(filepath.Join(path, "manifest.yaml")) //nolint:gosec // G304: path is test-controlled
@@ -180,7 +180,7 @@ receivers:
 	require.NoError(t, err)
 	assert.Equal(t, fromConfigExample, string(config))
 
-	assert.Contains(t, stderr.String(), "ocb: resolved receiver otlp \u2192 "+corePrefix+"receiver/otlpreceiver v0.1.0\n")
+	assert.Contains(t, stderr.String(), "ocb: resolved receiver otlp -> "+corePrefix+"receiver/otlpreceiver v0.1.0\n")
 	assert.Contains(t, stderr.String(), `ocb: warning: no Go module found for extension "myvendor"; add its gomod to manifest.yaml manually`+"\n")
 	assert.Contains(t, stderr.String(), "ocb: resolved 6 of 7 components referenced by "+configPath+"\n")
 }
@@ -190,7 +190,7 @@ func TestRunInitFromConfigAllResolved(t *testing.T) {
 	require.NoError(t, os.WriteFile(configPath, []byte("receivers:\n  otlp:\n"), 0o600))
 	path := filepath.Join(t.TempDir(), distributionName)
 
-	require.NoError(t, run(path, initOptions{fromConfig: configPath, resolver: fakeResolver()}))
+	require.NoError(t, run(t.Context(), path, initOptions{fromConfig: configPath, resolver: fakeResolver()}))
 
 	manifest, err := os.ReadFile(filepath.Join(path, "manifest.yaml")) //nolint:gosec // G304: path is test-controlled
 	require.NoError(t, err)
@@ -212,7 +212,7 @@ func TestRunInitFromConfigErrors(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			path := filepath.Join(t.TempDir(), distributionName)
-			err := run(path, initOptions{fromConfig: tt.fromConfig, resolver: fakeResolver()})
+			err := run(t.Context(), path, initOptions{fromConfig: tt.fromConfig, resolver: fakeResolver()})
 			require.ErrorContains(t, err, tt.wantErr)
 			// Nothing is written on failure.
 			assert.NoDirExists(t, path)
