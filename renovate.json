@@ -13,13 +13,6 @@
   ],
   "customManagers": [
     {
-      "description": "Ensure source compatibility with Go version used by this project",
-      "matchManagers": [
-        "gomod"
-      ],
-      "constraintsFiltering": "strict"
-    },
-    {
       "customType": "regex",
       "description": "Update Docker images pinned by digest in the Makefile",
       "managerFilePatterns": [
@@ -34,6 +27,13 @@
     "on tuesday"
   ],
   "packageRules": [
+    {
+      "description": "Ensure source compatibility with Go version used by this project",
+      "matchManagers": [
+        "gomod"
+      ],
+      "constraintsFiltering": "strict"
+    },
     {
       "matchManagers": [
         "gomod"
