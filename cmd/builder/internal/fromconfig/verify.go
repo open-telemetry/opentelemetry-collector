@@ -77,23 +77,7 @@ func verify(ctx context.Context, list ListFunc, components []Component, accept f
 
 	needSentinel := len(levels) > 0
 	for _, level := range levels {
-		// Each component has at most one candidate per level.
-		byPath := map[string][]Component{}
-		var paths []string
-		for _, c := range components {
-			if _, done := result.modules[c]; done {
-				continue
-			}
-			for _, cand := range cands[c] {
-				if cand.level != level {
-					continue
-				}
-				if _, ok := byPath[cand.path]; !ok {
-					paths = append(paths, cand.path)
-				}
-				byPath[cand.path] = append(byPath[cand.path], c)
-			}
-		}
+		paths, byPath := levelPaths(level, components, cands, result.modules)
 		if len(paths) == 0 {
 			continue
 		}
@@ -133,6 +117,32 @@ func verify(ctx context.Context, list ListFunc, components []Component, accept f
 	return result, nil
 }
 
+// levelPaths returns the distinct module paths to look up for the candidates of
+// the given level, and the components each path is a candidate for. Components
+// that are already resolved are skipped.
+func levelPaths(level int, components []Component, cands map[Component][]candidate, resolved map[Component]ListedModule) ([]string, map[string][]Component) {
+	byPath := map[string][]Component{}
+	var paths []string
+	for _, c := range components {
+		if _, done := resolved[c]; done {
+			continue
+		}
+		// Each component has at most one candidate per level.
+		for _, cand := range cands[c] {
+			if cand.level != level {
+				continue
+			}
+			if _, ok := byPath[cand.path]; !ok {
+				paths = append(paths, cand.path)
+			}
+			byPath[cand.path] = append(byPath[cand.path], c)
+		}
+	}
+	return paths, byPath
+}
+
+// checkSentinel fails if the sentinel module is missing from the first batch,
+// which means module lookups do not work at all.
 func checkSentinel(listed []ListedModule) error {
 	for _, m := range listed {
 		if m.Path != sentinelModule {
@@ -152,6 +162,7 @@ func checkSentinel(listed []ListedModule) error {
 	return fmt.Errorf("failed to verify component modules: %w: no result for %s", errLookupUnavailable, sentinelModule)
 }
 
+// firstLine returns the first line of s.
 func firstLine(s string) string {
 	line, _, _ := strings.Cut(s, "\n")
 	return line
