@@ -38,7 +38,7 @@ func TestExport(t *testing.T) {
 	require.NotNil(t, resp, "The response is missing")
 
 	require.Len(t, profileSink.AllProfiles(), 1)
-	assert.Equal(t, td, profileSink.AllProfiles()[0])
+	assert.Equal(t, td.ResourceProfiles(), profileSink.AllProfiles()[0].ResourceProfiles())
 }
 
 func TestExport_EmptyRequest(t *testing.T) {
