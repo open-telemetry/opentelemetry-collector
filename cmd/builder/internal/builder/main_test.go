@@ -35,13 +35,11 @@ require (
 	go.opentelemetry.io/collector/otelcol v0.94.1
 	go.opentelemetry.io/collector/processor v0.94.1
 	go.opentelemetry.io/collector/receiver v0.94.1
-	go.opentelemetry.io/collector v0.96.0
 )`
 	modulePrefix = "go.opentelemetry.io/collector"
 )
 
 var replaceModules = []string{
-	"",
 	"/component",
 	"/component/componentstatus",
 	"/component/componenttest",
@@ -97,6 +95,7 @@ var replaceModules = []string{
 	"/internal/sharedcomponent",
 	"/internal/telemetry",
 	"/internal/testutil",
+	"/internal/statusutil",
 	"/otelcol",
 	"/pdata",
 	"/pdata/testdata",

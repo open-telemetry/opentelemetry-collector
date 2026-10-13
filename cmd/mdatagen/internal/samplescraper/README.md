@@ -28,6 +28,7 @@ This scraper is used for testing purposes to check the output of mdatagen.
 | `job_name` | string | test_job | **yes** | Name of the scrape job, used to identify the source in telemetry. |
 | `log_level` | string (one of: debug, info, warn, error) | info | no | Logging level for the scraper. |
 | `metrics` | object (see [metrics](#metrics)) |  | no | MetricsConfig provides config for sample metrics. |
+| `protocol` | string (one of: http, tcp, smtp, ftp) | http | no | Protocol used when connecting to scrape targets, reused from samplepkg. |
 | `resource_attributes` | object (see [resource_attributes](#resource_attributes)) |  | no | ResourceAttributesConfig provides config for sample resource attributes. |
 | `targets` | []object | [{}] | **yes** | List of targets to scrape metrics from. |
 | `timeout` | duration | 0 | no | An optional value used to set scraper's context deadline. |

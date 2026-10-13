@@ -214,6 +214,33 @@ also accepted and flow into `config.schema.json` (so IDEs and other JSON-Schema-
 enforce them), but mdatagen does not yet generate a corresponding check in the Go `Validate()`
 method — only the constraints listed above do.
 
+## Deprecating a property
+
+Mark a property, a named definition (`exported_configs` entry), or the whole `config:` block as
+deprecated with a `deprecated:` block giving both `since` and `note` — both are required:
+
+```yaml
+config:
+  properties:
+    interval:
+      type: duration
+      default: 10s
+      deprecated:
+        since: v0.160.0
+        note: Support for this property will be dropped soon.
+```
+
+This flows into every generated artifact:
+
+- a `// Deprecated: [<since>] <note>` Go doc comment above the field (or struct/type, if set at
+  the `config:` or `exported_configs` level);
+- `"deprecated": true` in `config.schema.json`;
+- "(**deprecated**)" next to the property's description in the generated README table.
+
+`mdatagen` rejects a `deprecated:` block that's missing `since` or `note` — both are required so
+that generated comments and release notes always say when a property was deprecated and what
+users should do about it.
+
 ## References and reuse (`$ref`, `exported_configs`)
 
 Instead of inlining a schema, point at another one with `$ref`. Three flavors:
@@ -552,6 +579,113 @@ property; at the object level there is no property name to derive from, so the g
 name collapses to the unhelpful, literal `validate` — and two unnamed object-level validators in
 the same package (say, one on `config:` and one on an `exported_configs` entry) would collide.
 
+#### custom_default
+
+Hooks a hand-written function into the generated default-value expression, for defaults that
+can't be written as a Go literal, where the YAML `default` can't be converted into the custom
+Go type without real code.
+
+Add `go_struct.custom_default` and `mdatagen` calls a function instead of rendering a literal.
+Which function it calls depends on *where* you put it:
+
+* On an object schema, or on a definition referenced from one or more properties via `$ref`:
+  `NewDefault<TypeName>()` — the same exported naming convention `mdatagen` already uses for its
+  own generated default constructors (`NewDefaultClientConfig()` and so on). Every property that
+  `$ref`s the definition calls the same function, no matter what the property itself is called,
+  and an external `$ref` gets the same package qualifier an ordinary default would
+  (`confighttp.NewDefaultClientConfig()`).
+* On an inline scalar property with no `$ref`: `getDefault<PropName>()` — unexported, and scoped
+  to that one field; nothing else is expected to call it.
+
+Override either derivation with `go_struct.custom_default.name` if you need something else — for
+example to resolve a collision between two unrelated types that happen to derive the same name.
+
+```yaml
+exported_configs:
+  protocol:
+    type: string
+    x-customType: int
+    enum: [http, tcp, smtp, ftp]
+    default: http
+    go_struct:
+      custom_default:          # reusable definition -> calls NewDefaultProtocol()
+properties:
+  proto:
+    $ref: protocol             # still calls NewDefaultProtocol()
+  source_protocol:
+    $ref: protocol             # also calls NewDefaultProtocol()
+  retry_delay:
+    type: int
+    go_struct:
+      custom_default:          # inline scalar, no $ref -> calls getDefaultRetryDelay()
+```
+
+```go
+// protocol.go
+func NewDefaultProtocol() Protocol {
+    return Protocol(ProtocolHTTP)
+}
+
+func getDefaultRetryDelay() int {
+    return 500
+}
+```
+
+You implement the function yourself, in a regular (non-generated) file in the same package. It
+takes no arguments and returns the field's own Go type.
+
+The literal `default` in the YAML (if present) is unaffected and still appears as-is in
+`config.schema.json` and generated docs — `custom_default` only changes how the Go default
+*expression* is rendered, the same way `custom_validator` only changes `Validate()`.
+
+This works across components too: another component's `metadata.yaml` can `$ref` your definition
+directly, and `custom_default` carries over with it, qualified with your package automatically —
+same as the derivation itself, whether the name is derived or set explicitly:
+
+```yaml
+# samplescraper/metadata.yaml
+config:
+  properties:
+    protocol:
+      $ref: ../samplepkg.protocol   # calls samplepkg.NewDefaultProtocol()
+```
+
+#### Custom go type
+
+Use `go_struct.type` in a config property when the generated Go field should  use a specific Go type.
+The schema `type` still describes the configuration value; `go_struct.type` overrides the Go type used
+in the generated struct.
+
+For a type from another package, write its import path followed by the exported type name:
+
+```yaml
+config:
+  properties:
+    id:
+      type: string
+      go_struct:
+        type: github.com/example/types.ID
+```
+
+This generates the field using `types.ID` and adds the package import. For a custom type defined
+in the same package as the generated struct, use its name directly:
+
+```yaml
+    mode:
+      type: string
+      go_struct:
+        type: Mode
+```
+
+The override also works for primitive schema types when a named Go type is needed. For example,
+`type: int64` with `go_struct.type: github.com/example/types.Counter` generates a `types.Counter`
+field while retaining the integer schema. The same setting can be used on slice elements or map
+values by placing it in their `values` schema.
+
+Prefer the built-in metadata aliases when they already describe the intended type. For example,
+use `type: duration` or `type: time` for `time.Duration` and `time.Time`; reserve `go_struct.type`
+for a Go type that the schema type alone cannot express.
+
 ## Metrics and resource-attribute config are wired in automatically
 
 If your `metadata.yaml` also has `metrics`, `events`, or `resource_attributes` sections (the
@@ -605,7 +739,8 @@ Once the markers are in place, the generated table, for every run of `mdatagen m
 - recurses into nested `object` properties, including a plain, non-embedded `$ref`, as their own
   `### <a id="...">` sub-section linked from the parent row — this is how `samplereceiver`'s
   README ends up with `## Configuration`, `### metrics`, `### metrics.default.metric`, and so on;
-- marks properties with `deprecated: true` with "(**deprecated**)" next to their description.
+- marks deprecated properties (see [Deprecating a property](#deprecating-a-property)) with
+  "(**deprecated**)" next to their description.
 
 There's no separate flag or command for the docs step beyond the usual `mdatagen metadata.yaml` —
 it runs as part of the same pass that writes `generated_config.go` and `config.schema.json`.

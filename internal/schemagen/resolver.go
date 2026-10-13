@@ -57,7 +57,7 @@ func (r *Resolver) resolveSchema(root *ConfigsMetadata, target *ConfigMetadata, 
 		}
 
 		// merge resolved node
-		target.MergeFrom(resolved)
+		target.mergeResolvedRef(resolved)
 
 		return nil
 	}
@@ -105,7 +105,7 @@ func (r *Resolver) resolveRef(root *ConfigsMetadata, md *ConfigMetadata, origin 
 	}
 
 	// fallback to type "any"
-	md.GoType = md.Ref
+	md.GoStruct.Type = md.Ref
 	return md, nil
 }
 
