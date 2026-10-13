@@ -167,37 +167,53 @@ func TestConsumeRefused(t *testing.T) {
 			require.Len(t, data.DataPoints, 1)
 			require.Equal(t, int64(1), data.DataPoints[0].Value)
 			attrs := data.DataPoints[0].Attributes
-			require.Equal(t, 1, attrs.Len())
+
 			val, ok := attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 			require.True(t, ok)
 			require.Equal(t, "failure", val.String())
+
+			errorType, ok := attrs.Value(attribute.Key(obsconsumer.ComponentErrorType))
+			require.True(t, ok)
+			require.Equal(t, "unspecified", errorType.String())
 
 			data = receivedSizeMetric.Data.(metricdata.Sum[int64])
 			require.Len(t, data.DataPoints, 1)
 			require.Positive(t, data.DataPoints[0].Value)
 			attrs = data.DataPoints[0].Attributes
-			require.Equal(t, 1, attrs.Len())
 			val, ok = attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 			require.True(t, ok)
 			require.Equal(t, "failure", val.String())
 
+			errorType, ok = attrs.Value(attribute.Key(obsconsumer.ComponentErrorType))
+			require.True(t, ok)
+			require.Equal(t, "unspecified", errorType.String())
+
 			data = producedItemMetric.Data.(metricdata.Sum[int64])
 			require.Len(t, data.DataPoints, 1)
 			require.Equal(t, int64(1), data.DataPoints[0].Value)
+
 			attrs = data.DataPoints[0].Attributes
-			require.Equal(t, 1, attrs.Len())
+
 			val, ok = attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 			require.True(t, ok)
 			require.Equal(t, "refused", val.String())
+
+			errorType, ok = attrs.Value(attribute.Key(obsconsumer.ComponentErrorType))
+			require.True(t, ok)
+			require.Equal(t, "unspecified", errorType.String())
 
 			data = producedSizeMetric.Data.(metricdata.Sum[int64])
 			require.Len(t, data.DataPoints, 1)
 			require.Positive(t, data.DataPoints[0].Value)
 			attrs = data.DataPoints[0].Attributes
-			require.Equal(t, 1, attrs.Len())
+
 			val, ok = attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 			require.True(t, ok)
 			require.Equal(t, "refused", val.String())
+
+			errorType, ok = attrs.Value(attribute.Key(obsconsumer.ComponentErrorType))
+			require.True(t, ok)
+			require.Equal(t, "unspecified", errorType.String())
 		})
 	}
 }
