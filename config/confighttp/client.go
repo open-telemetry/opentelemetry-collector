@@ -11,7 +11,6 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"slices"
-	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
@@ -19,12 +18,10 @@ import (
 	"golang.org/x/net/publicsuffix"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
-	"go.opentelemetry.io/collector/config/configmiddleware"
+	"go.opentelemetry.io/collector/config/confighttp/internal/metadata"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -32,113 +29,14 @@ const (
 	headerContentEncoding = "Content-Encoding"
 )
 
-// ClientConfig defines settings for creating an HTTP client.
-type ClientConfig struct {
-	// The target URL to send data to (e.g.: http://some.url:9411/v1/traces).
-	Endpoint string `mapstructure:"endpoint,omitempty"`
-
-	// ProxyURL setting for the collector
-	ProxyURL string `mapstructure:"proxy_url,omitempty"`
-
-	// TLS struct exposes TLS client configuration.
-	TLS configtls.ClientConfig `mapstructure:"tls,omitempty"`
-
-	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
-	// Default is 0.
-	ReadBufferSize int `mapstructure:"read_buffer_size,omitempty"`
-
-	// WriteBufferSize for HTTP client. See http.Transport.WriteBufferSize.
-	// Default is 0.
-	WriteBufferSize int `mapstructure:"write_buffer_size,omitempty"`
-
-	// Timeout parameter configures `http.Client.Timeout`.
-	// Default is 0 (unlimited).
-	Timeout time.Duration `mapstructure:"timeout,omitempty"`
-
-	// Additional headers attached to each HTTP request sent by the client.
-	// Existing header values are overwritten if collision happens.
-	// Header values are opaque since they may be sensitive.
-	Headers configopaque.MapList `mapstructure:"headers,omitempty"`
-
-	// Auth configuration for outgoing HTTP calls.
-	Auth configoptional.Optional[configauth.Config] `mapstructure:"auth,omitempty"`
-
-	// The compression key for supported compression types within collector.
-	Compression configcompression.Type `mapstructure:"compression,omitempty"`
-
-	// Advanced configuration options for the Compression
-	CompressionParams configcompression.CompressionParams `mapstructure:"compression_params,omitempty"`
-
-	// MaxConnsPerHost limits the total number of connections per host, including connections in the dialing,
-	// active, and idle states. Default is 0 (unlimited).
-	MaxConnsPerHost int `mapstructure:"max_conns_per_host,omitempty"`
-
-	// This is needed in case you run into
-	// https://github.com/golang/go/issues/59690
-	// https://github.com/golang/go/issues/36026
-	// HTTP2ReadIdleTimeout if the connection has been idle for the configured value send a ping frame for health check
-	// 0s means no health check will be performed.
-	HTTP2ReadIdleTimeout time.Duration `mapstructure:"http2_read_idle_timeout,omitempty"`
-	// HTTP2PingTimeout if there's no response to the ping within the configured value, the connection will be closed.
-	// If not set or set to 0, it defaults to 15s.
-	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout,omitempty"`
-	// Cookies configures the cookie management of the HTTP client.
-	Cookies configoptional.Optional[CookiesConfig] `mapstructure:"cookies,omitempty"`
-
-	// Enabling ForceAttemptHTTP2 forces the HTTP transport to use the HTTP/2 protocol.
-	// By default, this is set to true.
-	// NOTE: HTTP/2 does not support settings such as MaxConnsPerHost, MaxIdleConnsPerHost and MaxIdleConns.
-	ForceAttemptHTTP2 bool `mapstructure:"force_attempt_http2,omitempty"`
-
-	// Middlewares are used to add custom functionality to the HTTP client.
-	// Middleware handlers are called in the order they appear in this list,
-	// with the first middleware becoming the outermost handler.
-	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
-
-	// Keepalive configuration. Unmarshal folds this section into the deprecated
-	// fields below, which remain the source of truth during their deprecation
-	// window, and always resets it to None. A value visible to ToClient was
-	// therefore set programmatically after unmarshaling (or the config was
-	// never unmarshaled) and takes precedence over the deprecated fields.
-	Keepalive configoptional.Optional[KeepaliveClientConfig] `mapstructure:"keepalive,omitempty"`
-
-	// Deprecated: [v0.160.0] use Keepalive.IdleConnTimeout instead.
-	IdleConnTimeout time.Duration `mapstructure:"idle_conn_timeout,omitempty"`
-	// Deprecated: [v0.160.0] use Keepalive.MaxIdleConns instead.
-	MaxIdleConns int `mapstructure:"max_idle_conns,omitempty"`
-	// Deprecated: [v0.160.0] use Keepalive.MaxIdleConnsPerHost instead.
-	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host,omitempty"`
-	// Deprecated: [v0.160.0] set 'keepalive::enabled' to false to disable keep-alives.
-	DisableKeepAlives bool `mapstructure:"disable_keep_alives,omitempty"`
-
+type privateClientConfigFields struct {
 	// deprecationWarnings records use of deprecated fields observed while
 	// unmarshaling; ToClient logs them, as no logger is available here.
 	deprecationWarnings []string
-
-	// prevent unkeyed literal initialization
-	_ struct{}
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
 type CookiesConfig struct {
-	_ struct{}
-}
-
-// KeepaliveClientConfig describes the keepalive configuration.
-type KeepaliveClientConfig struct {
-	// IdleConnTimeout is the maximum amount of time an idle (keep-alive) connection will remain open before closing itself.
-	// By default, it is set to 90 seconds.
-	IdleConnTimeout time.Duration `mapstructure:"idle_conn_timeout"`
-
-	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
-	// By default, it is set to 100. Zero means no limit.
-	MaxIdleConns int `mapstructure:"max_idle_conns"`
-
-	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
-	// If zero, [net/http.DefaultMaxIdleConnsPerHost] is used.
-	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host,omitempty"`
-
-	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
@@ -159,6 +57,13 @@ func NewDefaultKeepaliveClientConfig() KeepaliveClientConfig {
 // Other config options are not added as they are initialized with 'zero value' by GoLang as default.
 // We encourage to use this function to create an object of ClientConfig.
 func NewDefaultClientConfig() ClientConfig {
+	if metadata.PkgConfighttpPrioritizeNewKeepaliveFeatureGate.IsEnabled() {
+		return ClientConfig{
+			Keepalive:         configoptional.Some(NewDefaultKeepaliveClientConfig()),
+			ForceAttemptHTTP2: true,
+		}
+	}
+
 	// The default values are taken from the values of 'DefaultTransport' of 'http' package.
 	defaultTransport := http.DefaultTransport.(*http.Transport)
 
@@ -174,10 +79,17 @@ func NewDefaultClientConfig() ClientConfig {
 
 var _ confmap.Unmarshaler = (*ClientConfig)(nil)
 
-// Unmarshal implements confmap.Unmarshaler. The keepalive settings can arrive
+func (cc *ClientConfig) Unmarshal(conf *confmap.Conf) error {
+	if metadata.PkgConfighttpPrioritizeNewKeepaliveFeatureGate.IsEnabled() {
+		return cc.unmarshalPrioritizeKeepalive(conf)
+	}
+	return cc.unmarshalPrioritizeDeprecatedFields(conf)
+}
+
+// unmarshalPrioritizeKeepalive implements confmap.Unmarshaler. The keepalive settings can arrive
 // through two representations (the deprecated flat fields and the 'keepalive'
 // section) and two channels (programmatic changes to the struct and the
-// configuration). Unmarshal resolves them by folding everything into the
+// configuration). unmarshalPrioritizeKeepalive resolves them by folding everything into the
 // deprecated fields, in order of increasing precedence:
 //
 //  1. programmatic values already on the struct, in either representation;
@@ -193,7 +105,88 @@ var _ confmap.Unmarshaler = (*ClientConfig)(nil)
 // The deprecated fields end up holding the effective settings and remain the
 // sole source of truth for ToClient during their deprecation window; Keepalive
 // is always left as None.
-func (cc *ClientConfig) Unmarshal(conf *confmap.Conf) error {
+func (cc *ClientConfig) unmarshalPrioritizeKeepalive(conf *confmap.Conf) error {
+	// Step 1: decode the configuration. Deprecated keys overwrite their
+	// fields directly; the 'keepalive' section decodes into Keepalive and is
+	// folded in step 4. WithIgnoreUnused is needed because ClientConfig is
+	// commonly squash-embedded into component configs, in which case conf
+	// also holds the parent's sibling fields.
+	if err := conf.Unmarshal(cc, confmap.WithIgnoreUnused()); err != nil {
+		return err
+	}
+
+	// A null 'keepalive' key carries no settings, but decodes as an enabled
+	// section. Marshaling produces it for an unset Keepalive, so treat it as
+	// unset to keep marshaled configurations loadable.
+	keepaliveSet := conf.IsSet("keepalive") && conf.Get("keepalive") != nil
+
+	// Step 2: with the decoded values at hand, reject configurations mixing
+	// both representations, and record uses of the deprecated keys for
+	// ToClient to warn about. Values which match the field's zero value are
+	// no-ops in the legacy logic, so they neither conflict with the
+	// 'keepalive' section nor deserve a warning. Additionally, set the values
+	// on the keepalive struct if it exists
+	var deprecated []string
+	if conf.IsSet("idle_conn_timeout") && cc.IdleConnTimeout != 0 {
+		cc.Keepalive.GetOrInsertDefault().IdleConnTimeout = cc.IdleConnTimeout
+		deprecated = append(deprecated, "'idle_conn_timeout' is deprecated; use 'keepalive::idle_conn_timeout' instead")
+	}
+	if conf.IsSet("max_idle_conns") && cc.MaxIdleConns != 0 {
+		cc.Keepalive.GetOrInsertDefault().MaxIdleConns = cc.MaxIdleConns
+		deprecated = append(deprecated, "'max_idle_conns' is deprecated; use 'keepalive::max_idle_conns' instead")
+	}
+	if conf.IsSet("max_idle_conns_per_host") && cc.MaxIdleConnsPerHost != 0 {
+		cc.Keepalive.GetOrInsertDefault().MaxIdleConnsPerHost = cc.MaxIdleConnsPerHost
+		deprecated = append(deprecated, "'max_idle_conns_per_host' is deprecated; use 'keepalive::max_idle_conns_per_host' instead")
+	}
+	if conf.IsSet("disable_keep_alives") && cc.DisableKeepAlives {
+		cc.Keepalive = configoptional.None[KeepaliveClientConfig]()
+		deprecated = append(deprecated, "'disable_keep_alives' is deprecated; set 'keepalive::enabled' to false to disable keep-alives")
+	}
+	if keepaliveSet && len(deprecated) > 0 {
+		return errors.New("confighttp.ClientConfig: cannot use deprecated keepalive fields (idle_conn_timeout, max_idle_conns, max_idle_conns_per_host, disable_keep_alives) alongside the 'keepalive' section; migrate to the 'keepalive' section")
+	}
+	cc.deprecationWarnings = deprecated
+
+	if ka := cc.Keepalive.Get(); ka != nil {
+		if conf.IsSet("idle_conn_timeout") {
+			cc.Keepalive.Get().IdleConnTimeout = cc.IdleConnTimeout
+			cc.IdleConnTimeout = 0
+		}
+		if conf.IsSet("max_idle_conns") {
+			cc.Keepalive.Get().MaxIdleConns = cc.MaxIdleConns
+			cc.MaxIdleConns = 0
+		}
+		if conf.IsSet("max_idle_conns_per_host") {
+			cc.Keepalive.Get().MaxIdleConnsPerHost = cc.MaxIdleConnsPerHost
+			cc.MaxIdleConnsPerHost = 0
+		}
+	}
+	cc.DisableKeepAlives = false
+
+	return nil
+}
+
+// unmarshalPrioritizeDeprecatedFields implements confmap.Unmarshaler. The keepalive settings can arrive
+// through two representations (the deprecated flat fields and the 'keepalive'
+// section) and two channels (programmatic changes to the struct and the
+// configuration). unmarshalPrioritizeDeprecatedFields resolves them by folding everything into the
+// deprecated fields, in order of increasing precedence:
+//
+//  1. programmatic values already on the struct, in either representation;
+//  2. deprecated keys present in the configuration;
+//  3. the 'keepalive' section present in the configuration.
+//
+// Mixing 2 and 3 is rejected, so their relative precedence never matters in
+// practice. Deprecated keys in the configuration are also recorded as warnings
+// for ToClient to log. Only keys present in the configuration count for the
+// error and the warnings: programmatic values are neither deprecated usage nor
+// a conflict.
+//
+// The deprecated fields end up holding the effective settings and remain the
+// sole source of truth for ToClient during their deprecation window; Keepalive
+// is always left as None.
+func (cc *ClientConfig) unmarshalPrioritizeDeprecatedFields(conf *confmap.Conf) error {
 	// Step 1: fold a programmatically set Keepalive into the deprecated
 	// fields. This must precede decoding so that the configuration overrides
 	// it. A present value can only mean keep-alives enabled with these

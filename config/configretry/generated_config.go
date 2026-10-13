@@ -36,6 +36,7 @@ type BackOffConfig struct {
 }
 
 // Validate validates the BackOffConfig fields according to schema annotations.
+// Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
 func (c *BackOffConfig) Validate() error {
 	var err error
 
@@ -69,7 +70,8 @@ func (c *BackOffConfig) Validate() error {
 	return err
 }
 
-// NewDefaultBackOffConfig returns a new BackOffConfig with default values consistent with the annotations in the schema.
+// NewDefaultBackOffConfig returns a new BackOffConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultBackOffConfig() BackOffConfig {
 	return BackOffConfig{
 		Enabled:             true,

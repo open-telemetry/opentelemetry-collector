@@ -8,6 +8,16 @@
       "minimum": 1,
       "maximum": 65535
     },
+    "protocol": {
+      "type": "string",
+      "default": "http",
+      "enum": [
+        "http",
+        "tcp",
+        "smtp",
+        "ftp"
+      ]
+    },
     "sample_config": {
       "type": "object",
       "properties": {
@@ -23,6 +33,17 @@
           "default": 8080,
           "minimum": 1,
           "maximum": 10000
+        },
+        "proto": {
+          "type": "string",
+          "description": "The protocol to connect with.",
+          "default": "http",
+          "enum": [
+            "http",
+            "tcp",
+            "smtp",
+            "ftp"
+          ]
         }
       },
       "required": [
