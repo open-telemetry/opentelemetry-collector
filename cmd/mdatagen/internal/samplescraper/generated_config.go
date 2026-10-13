@@ -18,7 +18,8 @@ import (
 
 type SamplePkg = samplepkg.SampleConfig
 
-// NewDefaultSamplePkg returns a new SamplePkg with default values consistent with the annotations in the schema.
+// NewDefaultSamplePkg returns a new SamplePkg with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultSamplePkg() SamplePkg {
 	return samplepkg.NewDefaultSampleConfig()
 }
@@ -73,7 +74,8 @@ func (c *TargetsItem) Validate() error {
 	return err
 }
 
-// NewDefaultTargetsItem returns a new TargetsItem with default values consistent with the annotations in the schema.
+// NewDefaultTargetsItem returns a new TargetsItem with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultTargetsItem() TargetsItem {
 	endpoint := confignet.NewDefaultAddrConfig()
 	endpoint.Transport = "ip4"

@@ -124,7 +124,7 @@ require (
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.162.0 // indirect
 	go.opentelemetry.io/collector/internal/memorylimiter v0.162.0 // indirect
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.162.0 // indirect
-	go.opentelemetry.io/collector/internal/statusutil v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/internal/statusutil v0.0.0-20261008222028-cee245c32ca5 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.162.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.68.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.162.0 // indirect
@@ -179,7 +179,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/exp v0.0.0-20260727155853-b88d891fe743 // indirect
-	golang.org/x/net v0.59.0 // indirect
+	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/term v0.46.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
