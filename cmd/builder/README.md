@@ -125,6 +125,7 @@ Components that cannot be matched, such as third-party ones, produce a warning a
 `manifest.yaml` to complete by hand.
 Check the `ocb: resolved ...` lines printed to stderr, as a third-party component named like an official one is matched to it.
 
+The configuration is read as is: environment variables, such as `${env:NAME}`, are not expanded, so component IDs must be written literally.
 The configuration file is copied to `config.yaml` in the distribution.
 Use absolute paths for the files it references, as relative paths are no longer resolved from the same folder.
 
