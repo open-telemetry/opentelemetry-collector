@@ -202,21 +202,7 @@ func buildManifest(path string, meta metadata, source *configSource) error {
 			{GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver " + meta.BetaVersion},
 		}
 	} else {
-		for _, r := range source.result.Resolved {
-			module := builder.Module{GoMod: r.GoMod()}
-			switch r.Class {
-			case fromconfig.Receiver:
-				cfg.Receivers = append(cfg.Receivers, module)
-			case fromconfig.Processor:
-				cfg.Processors = append(cfg.Processors, module)
-			case fromconfig.Exporter:
-				cfg.Exporters = append(cfg.Exporters, module)
-			case fromconfig.Extension:
-				cfg.Extensions = append(cfg.Extensions, module)
-			case fromconfig.Connector:
-				cfg.Connectors = append(cfg.Connectors, module)
-			}
-		}
+		addResolved(&cfg, source.result.Resolved)
 	}
 
 	data, err := yaml.Marshal(cfg)
@@ -228,6 +214,25 @@ func buildManifest(path string, meta metadata, source *configSource) error {
 	}
 
 	return os.WriteFile(filepath.Join(path, "manifest.yaml"), data, 0o600)
+}
+
+// addResolved adds the resolved components to the sections of the manifest.
+func addResolved(cfg *builder.Config, resolved []fromconfig.Resolved) {
+	for _, r := range resolved {
+		module := builder.Module{GoMod: r.GoMod()}
+		switch r.Class {
+		case fromconfig.Receiver:
+			cfg.Receivers = append(cfg.Receivers, module)
+		case fromconfig.Processor:
+			cfg.Processors = append(cfg.Processors, module)
+		case fromconfig.Exporter:
+			cfg.Exporters = append(cfg.Exporters, module)
+		case fromconfig.Extension:
+			cfg.Extensions = append(cfg.Extensions, module)
+		case fromconfig.Connector:
+			cfg.Connectors = append(cfg.Connectors, module)
+		}
+	}
 }
 
 // unresolvedPlaceholders returns a commented-out block listing the components
