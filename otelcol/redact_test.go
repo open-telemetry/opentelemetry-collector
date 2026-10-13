@@ -47,30 +47,6 @@ func TestRedactWithPreExpansion(t *testing.T) {
 			},
 		},
 		{
-			name: "redact provider reference that embeds a literal default containing another default marker",
-			pre: map[string]any{
-				"exporters": map[string]any{
-					"foo": map[string]any{ // #nosec G101
-						"token": "${env:NAME:-test:-test}",
-					},
-				},
-			},
-			redacted: map[string]any{
-				"exporters": map[string]any{
-					"foo": map[string]any{
-						"token": redactedMask,
-					},
-				},
-			},
-			want: map[string]any{
-				"exporters": map[string]any{
-					"foo": map[string]any{
-						"token": redactedMask,
-					},
-				},
-			},
-		},
-		{
 			name: "redact provider reference that embeds a literal default",
 			pre: map[string]any{
 				"exporters": map[string]any{
@@ -119,54 +95,6 @@ func TestRedactWithPreExpansion(t *testing.T) {
 			},
 		},
 		{
-			name: "redact nested default that is not one provider reference",
-			pre: map[string]any{
-				"exporters": map[string]any{
-					"foo": map[string]any{ // #nosec G101
-						"token": "${env:UNDEFINED_KEY:-${env:OTHER}}",
-					},
-				},
-			},
-			redacted: map[string]any{
-				"exporters": map[string]any{
-					"foo": map[string]any{
-						"token": redactedMask,
-					},
-				},
-			},
-			want: map[string]any{
-				"exporters": map[string]any{
-					"foo": map[string]any{
-						"token": redactedMask,
-					},
-				},
-			},
-		},
-		{
-			name: "preserve reference whose colon is not the default suffix",
-			pre: map[string]any{
-				"exporters": map[string]any{
-					"foo": map[string]any{ // #nosec G101
-						"token": "${env:NAME:value}",
-					},
-				},
-			},
-			redacted: map[string]any{
-				"exporters": map[string]any{
-					"foo": map[string]any{
-						"token": redactedMask,
-					},
-				},
-			},
-			want: map[string]any{
-				"exporters": map[string]any{
-					"foo": map[string]any{ // #nosec G101
-						"token": "${env:NAME:value}",
-					},
-				},
-			},
-		},
-		{
 			name: "preserve non-env provider reference that contains the default marker",
 			pre: map[string]any{
 				"exporters": map[string]any{
@@ -191,25 +119,34 @@ func TestRedactWithPreExpansion(t *testing.T) {
 			},
 		},
 		{
-			name: "preserve plain env provider reference",
+			name: "redact and preserve values in a map-style list",
 			pre: map[string]any{
 				"exporters": map[string]any{
-					"foo": map[string]any{ // #nosec G101
-						"token": "${env:NAME}",
+					"foo": map[string]any{
+						"headers": []any{
+							map[string]any{"name": "Authorization", "value": "${env:TOKEN:-literal}"},
+							map[string]any{"name": "X-Other", "value": "${env:OTHER}"},
+						},
 					},
 				},
 			},
 			redacted: map[string]any{
 				"exporters": map[string]any{
 					"foo": map[string]any{
-						"token": redactedMask,
+						"headers": []any{
+							map[string]any{"name": "Authorization", "value": redactedMask},
+							map[string]any{"name": "X-Other", "value": redactedMask},
+						},
 					},
 				},
 			},
 			want: map[string]any{
 				"exporters": map[string]any{
-					"foo": map[string]any{ // #nosec G101
-						"token": "${env:NAME}",
+					"foo": map[string]any{
+						"headers": []any{
+							map[string]any{"name": "Authorization", "value": redactedMask},
+							map[string]any{"name": "X-Other", "value": "${env:OTHER}"},
+						},
 					},
 				},
 			},

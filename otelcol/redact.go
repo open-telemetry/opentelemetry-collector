@@ -62,25 +62,21 @@ func applyMask(raw, redacted any) any {
 // Nested braces, such as ${env:A:-${env:B}}, do not match and stay masked.
 var providerReferenceRegexp = regexp.MustCompile(`^\$\{[^}]*\}$`)
 
-// providerURIRegexp splits a provider URI into scheme and opaque value.
-// The scheme pattern matches confmap's unexported uriRegexp in confmap/expand.go.
-var providerURIRegexp = regexp.MustCompile(`(?s:^(?P<Scheme>[A-Za-z][A-Za-z0-9+.-]+):(?P<OpaqueValue>.*)$)`)
-
 // preserveUnexpandedProviderReference reports whether an unexpanded opaque leaf
 // should stay visible. A whole ${...} reference is preserved unless its scheme is
 // env and the opaque value uses the env provider's ":-" default suffix with a
 // non-empty literal. An empty default (${env:NAME:-}) embeds no literal and is
 // preserved. Other schemes, including a file path that happens to contain ":-",
-// are left unchanged.
+// are left unchanged. The scheme cannot contain ":", so the first colon is the split.
 func preserveUnexpandedProviderReference(raw string) bool {
 	if !providerReferenceRegexp.MatchString(raw) {
 		return false
 	}
 	uri := raw[2 : len(raw)-1]
-	sub := providerURIRegexp.FindStringSubmatch(uri)
-	if len(sub) != 3 || sub[1] != "env" {
+	scheme, opaque, ok := strings.Cut(uri, ":")
+	if !ok || scheme != "env" {
 		return true
 	}
-	_, def, hasDefault := strings.Cut(sub[2], ":-")
+	_, def, hasDefault := strings.Cut(opaque, ":-")
 	return !hasDefault || def == ""
 }
