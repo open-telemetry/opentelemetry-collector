@@ -222,24 +222,85 @@ func TestProfilesConsumeFailure(t *testing.T) {
 	require.Equal(t, int64(1), itemData.DataPoints[0].Value)
 
 	itemAttrs := itemData.DataPoints[0].Attributes
-	require.Equal(t, 1, itemAttrs.Len())
+
 	val, ok := itemAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "failure", val.String())
+
+	errorType, ok := itemAttrs.Value(attribute.Key(obsconsumer.ComponentErrorType))
+	require.True(t, ok)
+	require.Equal(t, "unspecified", errorType.String())
 
 	sizeData := sizeMetric.Data.(metricdata.Sum[int64])
 	require.Len(t, sizeData.DataPoints, 1)
 	require.Positive(t, sizeData.DataPoints[0].Value)
 
 	sizeAttrs := sizeData.DataPoints[0].Attributes
-	require.Equal(t, 1, sizeAttrs.Len())
+
 	val, ok = sizeAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "failure", val.String())
 
+	errorType, ok = sizeAttrs.Value(attribute.Key(obsconsumer.ComponentErrorType))
+	require.True(t, ok)
+	require.Equal(t, "unspecified", errorType.String())
+
 	// Check that the logger was called with an error
 	require.Len(t, logs.All(), 1)
 	assert.Contains(t, logs.All()[0].Message, "Profiles pipeline component had an error")
+}
+
+func TestProfilesConsumeRefused(t *testing.T) {
+	setGateForTest(t, true)
+
+	ctx := context.Background()
+	mockConsumer := &mockProfilesConsumer{
+		err: consumererror.NewDownstream(context.Canceled),
+	}
+
+	reader := sdkmetric.NewManualReader()
+	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	meter := mp.Meter("test")
+
+	itemCounter, err := meter.Int64Counter("item_counter")
+	require.NoError(t, err)
+	sizeCounter, err := meter.Int64Counter("size_counter")
+	require.NoError(t, err)
+
+	consumer := obsconsumer.NewProfiles(mockConsumer, obsconsumer.Settings{
+		ItemCounter: itemCounter,
+		SizeCounter: sizeCounter,
+		Logger:      zap.NewNop(),
+	})
+
+	pd := pprofile.NewProfiles()
+	r := pd.ResourceProfiles().AppendEmpty()
+	sp := r.ScopeProfiles().AppendEmpty()
+	sp.Profiles().AppendEmpty().Samples().AppendEmpty()
+
+	consumeErr := consumer.ConsumeProfiles(ctx, pd)
+	require.Error(t, consumeErr)
+	require.True(t, consumererror.IsDownstream(consumeErr))
+
+	var metrics metricdata.ResourceMetrics
+	require.NoError(t, reader.Collect(ctx, &metrics))
+	require.Len(t, metrics.ScopeMetrics, 1)
+	require.Len(t, metrics.ScopeMetrics[0].Metrics, 2)
+
+	for _, metric := range metrics.ScopeMetrics[0].Metrics {
+		data := metric.Data.(metricdata.Sum[int64])
+		require.Len(t, data.DataPoints, 1)
+
+		attrs := data.DataPoints[0].Attributes
+
+		outcome, ok := attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
+		require.True(t, ok)
+		require.Equal(t, "refused", outcome.String())
+
+		errorType, ok := attrs.Value(attribute.Key(obsconsumer.ComponentErrorType))
+		require.True(t, ok)
+		require.Equal(t, "cancelled", errorType.String())
+	}
 }
 
 func TestProfilesWithStaticAttributes(t *testing.T) {
