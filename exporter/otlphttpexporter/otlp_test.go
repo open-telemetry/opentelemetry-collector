@@ -1133,19 +1133,30 @@ func TestEncoding(t *testing.T) {
 		for _, test := range tests {
 			t.Run(test.name, func(t *testing.T) {
 				srv := createBackend("/v1development/profiles", func(writer http.ResponseWriter, request *http.Request) {
+					assert.Equal(t, []string{pprofileotlp.DevelopmentVersion}, request.Header.Values(pprofileotlp.DevelopmentVersionHeader))
 					assert.Contains(t, request.Header.Get("content-type"), test.expectedEncoding)
 					writer.WriteHeader(http.StatusOK)
 				})
 				defer srv.Close()
 
+				version, err := strconv.Atoi(pprofileotlp.DevelopmentVersion)
+				require.NoError(t, err)
+				configuredVersion := configopaque.String(strconv.Itoa(version + 1))
+				otherConfiguredVersion := configopaque.String(strconv.Itoa(version + 2))
 				cfg := &Config{
 					ClientConfig: confighttp.ClientConfig{
 						Endpoint: srv.URL,
+						Headers: configopaque.MapList{
+							{Name: pprofileotlp.DevelopmentVersionHeader, Value: configuredVersion},
+							{Name: "OTLP-Profiles-Development-Version", Value: otherConfiguredVersion},
+						},
 					},
 					Encoding: test.encoding,
 				}
 				exp, err := createProfiles(context.Background(), set, cfg)
 				require.NoError(t, err)
+				assert.Equal(t, configuredVersion, cfg.ClientConfig.Headers[0].Value)
+				assert.Equal(t, otherConfiguredVersion, cfg.ClientConfig.Headers[1].Value)
 
 				// start the exporter
 				err = exp.Start(context.Background(), componenttest.NewNopHost())
