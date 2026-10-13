@@ -34,7 +34,7 @@ const otelcolPath = "go.opentelemetry.io/collector/otelcol"
 
 type builderDeps struct {
 	runGoCommand                  func(*Config, ...string) ([]byte, error)
-	writeEmbeddedSchemaSourceFile func(string, []byte) error
+	writeEmbeddedSchemaSourceFile func(*Config, []byte) error
 	downloadModules               func(*Config) error
 	readGoModFile                 func(*Config) (string, map[string]string, error)
 	selectedComponentSchemaRefs   func(*Config) []componentSchemaRef
@@ -133,8 +133,8 @@ func generateWithDeps(cfg *Config, deps builderDeps) error {
 		}
 	}
 
-	if err := deps.writeEmbeddedSchemaSourceFile(cfg.Distribution.OutputPath, nil); err != nil {
-		return fmt.Errorf("failed to generate source file %q: %w", embeddedSchemaFileName, err)
+	if err := deps.writeEmbeddedSchemaSourceFile(cfg, nil); err != nil {
+		return fmt.Errorf("failed to generate source file %q: %w", schemaTemplate.Name(), err)
 	}
 
 	cfg.Logger.Info("Sources created", zap.String("path", cfg.Distribution.OutputPath))

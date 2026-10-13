@@ -149,7 +149,7 @@ func TestGenerateWritesEmbeddedSchemaStub(t *testing.T) {
 
 	require.NoError(t, Generate(cfg))
 
-	schemaSource, err := os.ReadFile(filepath.Join(cfg.Distribution.OutputPath, embeddedSchemaFileName))
+	schemaSource, err := os.ReadFile(filepath.Join(cfg.Distribution.OutputPath, schemaTemplate.Name()))
 	require.NoError(t, err)
 	require.Contains(t, string(schemaSource), "var embeddedConfigSchema = []byte(nil)")
 
@@ -184,7 +184,7 @@ func TestGenerateEmbeddedSchemaStubWriteError(t *testing.T) {
 	cfg.Distribution.OutputPath = t.TempDir()
 
 	deps := defaultBuilderDeps()
-	deps.writeEmbeddedSchemaSourceFile = func(string, []byte) error { return assert.AnError }
+	deps.writeEmbeddedSchemaSourceFile = func(*Config, []byte) error { return assert.AnError }
 
 	err := generateWithDeps(cfg, deps)
 	require.ErrorContains(t, err, `failed to generate source file "schema.go"`)
@@ -447,7 +447,7 @@ func TestGetModulesErrorPaths(t *testing.T) {
 		cfg.Distribution.OutputPath = t.TempDir()
 
 		deps := defaultBuilderDeps()
-		deps.writeEmbeddedSchemaSourceFile = func(string, []byte) error {
+		deps.writeEmbeddedSchemaSourceFile = func(*Config, []byte) error {
 			return assert.AnError
 		}
 
@@ -704,10 +704,12 @@ func TestWriteEmbeddedSchemaSourceFile(t *testing.T) {
 	t.Parallel()
 
 	dir := t.TempDir()
-	require.NoError(t, writeEmbeddedSchemaSourceFile(dir, []byte(`{"type":"object"}`)))
+	cfg := newTestConfig(t)
+	cfg.Distribution.OutputPath = dir
+	require.NoError(t, writeEmbeddedSchemaSourceFile(cfg, []byte(`{"type":"object"}`)))
 
 	// #nosec G304 -- dir is a test temporary directory
-	schemaSource, err := os.ReadFile(filepath.Join(dir, embeddedSchemaFileName))
+	schemaSource, err := os.ReadFile(filepath.Join(dir, schemaTemplate.Name()))
 	require.NoError(t, err)
 	require.Contains(t, string(schemaSource), `var embeddedConfigSchema = []byte("{\"type\":\"object\"}")`)
 }
@@ -715,7 +717,9 @@ func TestWriteEmbeddedSchemaSourceFile(t *testing.T) {
 func TestWriteEmbeddedSchemaSourceFileError(t *testing.T) {
 	t.Parallel()
 
-	err := writeEmbeddedSchemaSourceFile(filepath.Join(t.TempDir(), "missing"), []byte(`{}`))
+	cfg := newTestConfig(t)
+	cfg.Distribution.OutputPath = filepath.Join(t.TempDir(), "missing")
+	err := writeEmbeddedSchemaSourceFile(cfg, []byte(`{}`))
 	require.Error(t, err)
 }
 
@@ -904,7 +908,7 @@ func TestGenerateEmbeddedSchema(t *testing.T) {
 	require.NoError(t, generateEmbeddedSchemaWithDeps(cfg, defaultBuilderDeps()))
 
 	// #nosec G304 -- outputDir is a test temporary directory
-	schemaSource, err := os.ReadFile(filepath.Join(outputDir, embeddedSchemaFileName))
+	schemaSource, err := os.ReadFile(filepath.Join(outputDir, schemaTemplate.Name()))
 	require.NoError(t, err)
 	require.Contains(t, string(schemaSource), "endpoint")
 }
@@ -945,7 +949,7 @@ func TestGenerateEmbeddedSchemaWriteError(t *testing.T) {
 	cfg.Receivers = []Module{{GoMod: "example.com/receiver v0.0.1"}}
 
 	deps := defaultBuilderDeps()
-	deps.writeEmbeddedSchemaSourceFile = func(string, []byte) error { return assert.AnError }
+	deps.writeEmbeddedSchemaSourceFile = func(*Config, []byte) error { return assert.AnError }
 
 	err := generateEmbeddedSchemaWithDeps(cfg, deps)
 	require.ErrorContains(t, err, "failed to write embedded schema source")
