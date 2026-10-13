@@ -205,7 +205,7 @@ func newGoRunner() (*goRunner, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module ocb.invalid/lookup\n\ngo 1.25\n"), 0o600)
+	err = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module ocb.invalid/lookup\n"), 0o600)
 	if err != nil {
 		return nil, errors.Join(err, os.RemoveAll(dir))
 	}
