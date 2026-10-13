@@ -58,6 +58,7 @@ require (
 	github.com/tklauser/numcpus v0.12.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
+	go.opentelemetry.io/collector v0.162.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.162.0 // indirect
 	go.opentelemetry.io/collector/component/componenttest v0.162.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.68.0 // indirect
@@ -242,3 +243,5 @@ replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testut
 replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
 
 replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
+
+replace go.opentelemetry.io/collector => ../..

@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
+	internalexporterhelper "go.opentelemetry.io/collector/internal/exporterhelper"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -29,6 +30,7 @@ type Option func(*BaseExporter) error
 type BaseExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
+	internalexporterhelper.ExporterHelper
 
 	Set exporter.Settings
 
@@ -82,6 +84,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 
 	var err error
 	batchEnabled := be.queueCfg.HasValue() && be.queueCfg.Get().Batch.HasValue()
+	be.ExporterHelper = internalexporterhelper.NewExporterHelper(batchEnabled)
 	be.firstSender, err = newObsReportSender(set, signal, be.ExtraAttrs, batchEnabled, be.firstSender)
 	if err != nil {
 		return nil, err
