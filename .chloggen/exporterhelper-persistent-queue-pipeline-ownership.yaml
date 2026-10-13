@@ -1,0 +1,12 @@
+change_type: bug_fix
+
+component: pkg/exporterhelper
+
+note: Preserve pipeline ownership for telemetry restored from persistent sending queues
+
+issues: [15256]
+
+subtext: |
+  Prevents reference-count underflow when telemetry dequeued from persistent storage is forwarded to another pipeline.
+
+change_logs: [user]
