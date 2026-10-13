@@ -1,6 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Package xhash provides fast hashing of pdata values for use as in-memory identity keys.
+//
+// The hash values are not stable across collector versions. The encoding and hash algorithm
+// may change in any release without notice. Do not persist the values or use them where
+// they must stay the same across restarts, upgrades, or instances running different versions.
 package xhash // import "go.opentelemetry.io/collector/pdata/xpdata/xhash"
 
 import (

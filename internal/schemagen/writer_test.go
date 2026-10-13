@@ -35,8 +35,8 @@ func TestWriteJSONSchema_OmitsInternalFields(t *testing.T) {
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"endpoint": {
-				Type:   "string",
-				GoType: "string",
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "string"},
 			},
 		},
 	}}
@@ -46,7 +46,7 @@ func TestWriteJSONSchema_OmitsInternalFields(t *testing.T) {
 
 	content, err := os.ReadFile(filepath.Join(dir, fileName)) // #nosec G304
 	require.NoError(t, err)
-	require.NotContains(t, string(content), "x-customType")
+	require.NotContains(t, string(content), "go_struct")
 }
 
 func TestWriteJSONSchema_InvalidDir(t *testing.T) {

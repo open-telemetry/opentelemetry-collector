@@ -200,7 +200,7 @@ func TestConfigMetadata_Validate_Valid(t *testing.T) {
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
 					"endpoint": {Type: "string"},
-					"timeout":  {Type: "string", GoType: "time.Duration"},
+					"timeout":  {Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 					"port":     {Type: "integer"},
 				},
 			},
@@ -249,6 +249,53 @@ func TestConfigMetadata_Validate_EmptyConfig(t *testing.T) {
 	assert.Contains(t, err.Error(), "config must specify at least one property")
 }
 
+func TestConfigMetadata_Validate_Deprecated(t *testing.T) {
+	tests := []struct {
+		name    string
+		md      *ConfigMetadata
+		wantErr string
+	}{
+		{
+			name: "missing since",
+			md: &ConfigMetadata{
+				Type:       "object",
+				Properties: map[string]*ConfigMetadata{"endpoint": {Type: "string"}},
+				Deprecated: &DeprecatedConfig{Note: "no since set"},
+			},
+			wantErr: "deprecated.since must be set",
+		},
+		{
+			name: "missing note",
+			md: &ConfigMetadata{
+				Type:       "object",
+				Properties: map[string]*ConfigMetadata{"endpoint": {Type: "string"}},
+				Deprecated: &DeprecatedConfig{Since: "v0.160.0"},
+			},
+			wantErr: "deprecated.note must be set",
+		},
+		{
+			name: "since set is valid",
+			md: &ConfigMetadata{
+				Type:       "object",
+				Properties: map[string]*ConfigMetadata{"endpoint": {Type: "string"}},
+				Deprecated: &DeprecatedConfig{Since: "v0.160.0", Note: "will be removed"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.md.Validate()
+			if tt.wantErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.wantErr)
+		})
+	}
+}
+
 func TestConfigMetadata_Validate_NilMetadata(t *testing.T) {
 	var md *ConfigMetadata
 	// The current implementation panics on nil receiver
@@ -280,6 +327,32 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 			want:  GoStructConfig{},
 		},
 		{
+			name:  "custom_default present with empty map",
+			input: map[string]any{"custom_default": map[string]any{}},
+			want:  GoStructConfig{CustomDefault: &CustomDefaultConfig{}},
+		},
+		{
+			name:  "custom_default present with nil value",
+			input: map[string]any{"custom_default": nil},
+			want:  GoStructConfig{CustomDefault: &CustomDefaultConfig{}},
+		},
+		{
+			name:  "custom_default absent",
+			input: map[string]any{},
+			want:  GoStructConfig{},
+		},
+		{
+			name: "custom_validator and custom_default both present",
+			input: map[string]any{
+				"custom_validator": map[string]any{"name": "validateConfig"},
+				"custom_default":   map[string]any{"name": "defaultConfig"},
+			},
+			want: GoStructConfig{
+				CustomValidator: &CustomValidatorConfig{Name: "validateConfig"},
+				CustomDefault:   &CustomDefaultConfig{Name: "defaultConfig"},
+			},
+		},
+		{
 			name: "go_struct fields decode through mapstructure",
 			input: map[string]any{
 				"anonymous":      true,
@@ -289,6 +362,9 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 				"custom_validator": map[string]any{
 					"name": "validateConfig",
 				},
+				"custom_default": map[string]any{
+					"name": "defaultConfig",
+				},
 			},
 			want: GoStructConfig{
 				Anonymous:       true,
@@ -296,6 +372,7 @@ func TestGoStructConfig_Unmarshal(t *testing.T) {
 				OptionalMode:    OptionalModeDefault,
 				PrivateFields:   true,
 				CustomValidator: &CustomValidatorConfig{Name: "validateConfig"},
+				CustomDefault:   &CustomDefaultConfig{Name: "defaultConfig"},
 			},
 		},
 		{
@@ -602,12 +679,11 @@ func TestConfigMetadata_Clone(t *testing.T) {
 		MinProperties: &minProps,
 		Maximum:       &maximum,
 		UniqueItems:   true,
-		Deprecated:    true,
+		Deprecated:    &DeprecatedConfig{Since: "v0.160.0", Note: "The note"},
 		IsPointer:     true,
 		IsOptional:    true,
 		Embed:         true,
 		InternalOnly:  true,
-		GoType:        "time.Duration",
 		Pattern:       "^a$",
 		Format:        "duration",
 		Properties: map[string]*ConfigMetadata{
@@ -619,6 +695,8 @@ func TestConfigMetadata_Clone(t *testing.T) {
 			IgnoreDefault:   true,
 			FieldName:       "Endpoint",
 			CustomValidator: &CustomValidatorConfig{Name: "validate"},
+			CustomDefault:   &CustomDefaultConfig{Name: "defaultEndpoint"},
+			Type:            "time.Duration",
 		},
 	}
 
@@ -636,6 +714,7 @@ func TestConfigMetadata_Clone(t *testing.T) {
 	clone.Default.(map[string]any)["flag"] = false
 	clone.Default.(map[string]any)["nested"].([]any)[0] = "changed"
 	clone.GoStruct.CustomValidator.Name = "other"
+	clone.GoStruct.CustomDefault.Name = "other"
 	clone.Values.Type = "changed"
 
 	assert.Equal(t, "root", orig.Description)
@@ -646,6 +725,7 @@ func TestConfigMetadata_Clone(t *testing.T) {
 	assert.Equal(t, true, orig.Default.(map[string]any)["flag"])
 	assert.Equal(t, "a", orig.Default.(map[string]any)["nested"].([]any)[0])
 	assert.Equal(t, "validate", orig.GoStruct.CustomValidator.Name)
+	assert.Equal(t, "defaultEndpoint", orig.GoStruct.CustomDefault.Name)
 	assert.Equal(t, SchemaType("string"), orig.Values.Type)
 }
 
@@ -726,7 +806,7 @@ func TestConfigMetadata_MergeFrom(t *testing.T) {
 		md := &ConfigMetadata{}
 		other := &ConfigMetadata{
 			Description: "theirs",
-			Deprecated:  true,
+			Deprecated:  &DeprecatedConfig{Since: "v0.160.0"},
 			UniqueItems: true,
 			IsPointer:   true,
 			IsOptional:  true,
@@ -743,7 +823,7 @@ func TestConfigMetadata_MergeFrom(t *testing.T) {
 		md.MergeFrom(other)
 
 		assert.Equal(t, "theirs", md.Description)
-		assert.True(t, md.Deprecated)
+		assert.NotNil(t, md.Deprecated)
 		assert.True(t, md.UniqueItems)
 		assert.True(t, md.IsPointer)
 		assert.True(t, md.IsOptional)
@@ -766,5 +846,24 @@ func TestConfigMetadata_MergeFrom(t *testing.T) {
 		md.MergeFrom(other)
 
 		assert.Equal(t, OptionalModeSome, md.GoStruct.OptionalMode)
+	})
+
+	t.Run("existing deprecated is preserved", func(t *testing.T) {
+		md := &ConfigMetadata{Deprecated: &DeprecatedConfig{Since: "v0.100.0", Note: "mine"}}
+		other := &ConfigMetadata{Deprecated: &DeprecatedConfig{Since: "v0.200.0", Note: "theirs"}}
+
+		md.MergeFrom(other)
+
+		assert.Equal(t, &DeprecatedConfig{Since: "v0.100.0", Note: "mine"}, md.Deprecated)
+	})
+
+	t.Run("merged deprecated is a deep copy", func(t *testing.T) {
+		md := &ConfigMetadata{}
+		other := &ConfigMetadata{Deprecated: &DeprecatedConfig{Since: "v0.160.0", Note: "theirs"}}
+
+		md.MergeFrom(other)
+		require.NotSame(t, other.Deprecated, md.Deprecated)
+		md.Deprecated.Note = "mutated"
+		assert.Equal(t, "theirs", other.Deprecated.Note)
 	})
 }

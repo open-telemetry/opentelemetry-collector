@@ -12,9 +12,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
+permissions: {}
+
 jobs:
   changelog:
     permissions:
       contents: read
       pull-requests: read
-    uses:  open-telemetry/shared-workflows/.github/workflows/chloggen.yml@0a92ab98860089055203c35516beb30ac55dce0a
+    uses: open-telemetry/shared-workflows/.github/workflows/chloggen.yml@c717adbcb56efc45c5dea293accfc6c3462bcdd1 # v0.19.0

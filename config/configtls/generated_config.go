@@ -31,7 +31,8 @@ type ClientConfig struct {
 	_ struct{}
 }
 
-// NewDefaultClientConfig returns a new ClientConfig with default values consistent with the annotations in the schema.
+// NewDefaultClientConfig returns a new ClientConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
 		Config: NewDefaultConfig(),
@@ -93,7 +94,8 @@ type Config struct {
 	_ struct{}
 }
 
-// NewDefaultConfig returns a new Config with default values consistent with the annotations in the schema.
+// NewDefaultConfig returns a new Config with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultConfig() Config {
 	return Config{}
 }
@@ -117,7 +119,8 @@ type ServerConfig struct {
 	_ struct{}
 }
 
-// NewDefaultServerConfig returns a new ServerConfig with default values consistent with the annotations in the schema.
+// NewDefaultServerConfig returns a new ServerConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultServerConfig() ServerConfig {
 	return ServerConfig{
 		Config: NewDefaultConfig(),
