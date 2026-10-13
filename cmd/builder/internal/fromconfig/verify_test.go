@@ -126,7 +126,7 @@ func TestVerifySentinelFailure(t *testing.T) {
 			list: func(_ context.Context, modules []string) ([]ListedModule, error) {
 				out := make([]ListedModule, 0, len(modules))
 				for _, m := range modules {
-					out = append(out, ListedModule{Path: m, Error: &struct{ Err string }{"module lookup disabled by GOPROXY=off"}})
+					out = append(out, ListedModule{Path: m, Error: &ListError{"module lookup disabled by GOPROXY=off"}})
 				}
 				return out, nil
 			},

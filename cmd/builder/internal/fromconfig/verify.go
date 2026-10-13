@@ -25,11 +25,16 @@ const sentinelModule = corePrefix + "receiver/otlpreceiver"
 // invocation, to stay well within the Windows command-line limit.
 const maxArgBytes = 6000
 
+// ListError is the error reported by `go list` for a module.
+type ListError struct {
+	Err string
+}
+
 // ListedModule is the subset of `go list -m -json` output used for verification.
 type ListedModule struct {
 	Path     string
 	Versions []string
-	Error    *struct{ Err string }
+	Error    *ListError
 }
 
 // exists reports whether the module was found, with at least one version.
