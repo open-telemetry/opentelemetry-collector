@@ -11,13 +11,14 @@ import (
 
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/internal"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/metadata"
 )
 
 func TestResolveProfilesReferencesEmpty(t *testing.T) {
 	profiles := NewProfiles()
 	// Should not panic on empty profiles
-	resolveProfilesReferences(profiles)
+	require.NoError(t, resolveProfilesReferences(profiles))
 	assert.Equal(t, 0, profiles.ResourceProfiles().Len())
 }
 
@@ -32,7 +33,7 @@ func TestResolveProfilesReferencesWithInlineKey(t *testing.T) {
 	require.Len(t, *kvs, 1)
 	require.Zero(t, (*kvs)[0].KeyStrindex)
 
-	resolveProfilesReferences(profiles)
+	require.NoError(t, resolveProfilesReferences(profiles))
 
 	assert.Equal(t, "service.name", (*kvs)[0].Key,
 		"an unset key_strindex must not replace an inline key with string_table[0]")
@@ -59,7 +60,7 @@ func TestResolveProfilesReferencesWithKeyRef(t *testing.T) {
 		},
 	})
 
-	resolveProfilesReferences(profiles)
+	require.NoError(t, resolveProfilesReferences(profiles))
 
 	// Verify key_ref was resolved
 	kv := &(*mapOrig)[0]
@@ -82,7 +83,6 @@ func TestResolveProfilesReferencesInvalidIndices(t *testing.T) {
 
 	mapOrig := internal.GetMapOrig(internal.MapWrapper(attrs))
 	*mapOrig = append(*mapOrig, internal.KeyValue{
-		Key:         "fallback-key",
 		KeyStrindex: 999, // invalid index
 		Value: internal.AnyValue{
 			Value: &internal.AnyValue_StringValueStrindex{
@@ -91,11 +91,12 @@ func TestResolveProfilesReferencesInvalidIndices(t *testing.T) {
 		},
 	})
 
-	resolveProfilesReferences(profiles)
+	require.EqualError(t, resolveProfilesReferences(profiles),
+		"resource profiles 0 resource attributes: attribute 0 has invalid key_strindex 999")
 
-	// Key should remain unchanged since ref is invalid
+	// Invalid input is rejected before its attributes are changed.
 	kv := &(*mapOrig)[0]
-	assert.Equal(t, "fallback-key", kv.Key)
+	assert.Empty(t, kv.Key)
 
 	// Value should remain as StringValueStrindex since index is invalid
 	_, ok := kv.Value.Value.(*internal.AnyValue_StringValueStrindex)
@@ -119,10 +120,63 @@ func TestResolveProfilesReferencesWithBothKeyAndKeyStrindex(t *testing.T) {
 		KeyStrindex: 1, // references "other-key"
 	})
 
-	resolveProfilesReferences(profiles)
+	require.EqualError(t, resolveProfilesReferences(profiles),
+		"resource profiles 0 resource attributes: attribute 0 has both key and key_strindex set")
 
 	kv := &(*mapOrig)[0]
 	assert.Equal(t, "inline-key", kv.Key, "inline key must not be overwritten by key_strindex")
+}
+
+func TestUnmarshalProfilesRejectsInvalidDictionaryReferences(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		attribute internal.KeyValue
+		wantError string
+	}{
+		{
+			name:      "conflicting key representations",
+			attribute: internal.KeyValue{Key: "inline", KeyStrindex: 1},
+			wantError: "attribute 0 has both key and key_strindex set",
+		},
+		{
+			name:      "invalid key reference",
+			attribute: internal.KeyValue{KeyStrindex: 2},
+			wantError: "attribute 0 has invalid key_strindex 2",
+		},
+		{
+			name: "invalid value reference",
+			attribute: internal.KeyValue{Key: "inline", Value: internal.AnyValue{
+				Value: &internal.AnyValue_StringValueStrindex{StringValueStrindex: 2},
+			}},
+			wantError: "attribute 0 value: invalid string_value_strindex 2",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			request := &internal.ExportProfilesServiceRequest{
+				Dictionary: internal.ProfilesDictionary{StringTable: []string{"", "key"}},
+				ResourceProfiles: []*internal.ResourceProfiles{{Resource: internal.Resource{
+					Attributes: []internal.KeyValue{tc.attribute},
+				}}},
+			}
+			wantError := "resource profiles 0 resource attributes: " + tc.wantError
+			t.Run("protobuf", func(t *testing.T) {
+				buf := make([]byte, request.SizeProto())
+				request.MarshalProto(buf)
+				got, err := (&ProtoUnmarshaler{}).UnmarshalProfiles(buf)
+				require.EqualError(t, err, wantError)
+				assert.Equal(t, Profiles{}, got)
+			})
+			t.Run("JSON", func(t *testing.T) {
+				stream := json.BorrowStream(nil)
+				defer json.ReturnStream(stream)
+				request.MarshalJSON(stream)
+				require.NoError(t, stream.Error())
+				got, err := (&JSONUnmarshaler{}).UnmarshalProfiles(stream.Buffer())
+				require.EqualError(t, err, wantError)
+				assert.Equal(t, Profiles{}, got)
+			})
+		})
+	}
 }
 
 func TestResolveAnyValueReferenceWithPooling(t *testing.T) {
@@ -144,7 +198,7 @@ func TestResolveAnyValueReferenceWithPooling(t *testing.T) {
 		},
 	}
 
-	resolveAnyValueReference(dict, anyVal)
+	require.NoError(t, resolveAnyValueReference(dict, anyVal))
 
 	strVal, ok := anyVal.Value.(*internal.AnyValue_StringValue)
 	assert.True(t, ok)
@@ -177,7 +231,7 @@ func TestResolveAnyValueReferenceNestedKvList(t *testing.T) {
 		},
 	}
 
-	resolveAnyValueReference(dict, anyVal)
+	require.NoError(t, resolveAnyValueReference(dict, anyVal))
 
 	// Verify nested key_ref was resolved
 	assert.Equal(t, "nested-key", kvList.Values[0].Key)
@@ -216,7 +270,7 @@ func TestResolveAnyValueReferenceNestedArray(t *testing.T) {
 		},
 	}
 
-	resolveAnyValueReference(dict, anyVal)
+	require.NoError(t, resolveAnyValueReference(dict, anyVal))
 
 	// Verify both array items were resolved
 	strVal1, ok := arrVal.Values[0].Value.(*internal.AnyValue_StringValue)
@@ -233,7 +287,7 @@ func TestConvertProfilesToReferencesEmpty(t *testing.T) {
 	dict := profiles.Dictionary()
 	dict.StringTable().Append("")
 
-	convertProfilesToReferences(profiles)
+	require.NoError(t, convertProfilesToReferences(profiles))
 
 	// Should only have the initial empty string
 	assert.Equal(t, 1, dict.StringTable().Len())
@@ -249,7 +303,7 @@ func TestConvertProfilesToReferencesDeduplication(t *testing.T) {
 	rp.Resource().Attributes().PutStr("key2", "duplicated-value")
 	rp.Resource().Attributes().PutStr("key3", "unique-value")
 
-	convertProfilesToReferences(profiles)
+	require.NoError(t, convertProfilesToReferences(profiles))
 
 	// Should have: "", "key1", "duplicated-value", "key2", "key3", "unique-value"
 	// But key1, key2, key3 might share indices if they're also deduplicated
@@ -293,7 +347,7 @@ func TestConvertAnyValueToReferenceWithPooling(t *testing.T) {
 		},
 	}
 
-	convertAnyValueToReference(getStringIndex, anyVal)
+	require.NoError(t, convertAnyValueToReference(getStringIndex, anyVal))
 
 	refVal, ok := anyVal.Value.(*internal.AnyValue_StringValueStrindex)
 	assert.True(t, ok)
@@ -315,15 +369,15 @@ func TestConvertAnyValueToReferenceEmptyString(t *testing.T) {
 
 	anyVal := &internal.AnyValue{
 		Value: &internal.AnyValue_StringValue{
-			StringValue: "", // empty string should not be converted
+			StringValue: "",
 		},
 	}
 
-	convertAnyValueToReference(getStringIndex, anyVal)
+	require.NoError(t, convertAnyValueToReference(getStringIndex, anyVal))
 
-	// Empty string should remain as StringValue, not converted to ref
-	_, ok := anyVal.Value.(*internal.AnyValue_StringValue)
-	assert.True(t, ok)
+	ref, ok := anyVal.Value.(*internal.AnyValue_StringValueStrindex)
+	require.True(t, ok)
+	assert.Zero(t, ref.StringValueStrindex)
 }
 
 func TestConvertAnyValueToReferenceNestedKvList(t *testing.T) {
@@ -360,7 +414,7 @@ func TestConvertAnyValueToReferenceNestedKvList(t *testing.T) {
 		},
 	}
 
-	convertAnyValueToReference(getStringIndex, anyVal)
+	require.NoError(t, convertAnyValueToReference(getStringIndex, anyVal))
 
 	// Verify nested key was converted
 	assert.NotEqual(t, int32(0), kvList.Values[0].KeyStrindex)
@@ -400,7 +454,7 @@ func TestConvertAnyValueToReferenceNestedArray(t *testing.T) {
 		},
 	}
 
-	convertAnyValueToReference(getStringIndex, anyVal)
+	require.NoError(t, convertAnyValueToReference(getStringIndex, anyVal))
 
 	// Verify array item was converted
 	_, ok := arrVal.Values[0].Value.(*internal.AnyValue_StringValueStrindex)
@@ -427,23 +481,22 @@ func TestConvertMapToReferencesEmptyKey(t *testing.T) {
 		return 1
 	}
 
-	convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs))
+	require.NoError(t, convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs)))
 
 	// Empty key should not have KeyStrindex set
 	kv := &(*mapOrig)[0]
 	assert.Equal(t, int32(0), kv.KeyStrindex)
 }
 
-func TestConvertMapToReferencesExistingKeyRef(t *testing.T) {
+func TestConvertMapToReferencesRejectsKeyAndKeyRef(t *testing.T) {
 	profiles := NewProfiles()
 	rp := profiles.ResourceProfiles().AppendEmpty()
 	attrs := rp.Resource().Attributes()
 
-	// Manually add a KeyValue with existing KeyStrindex
 	mapOrig := internal.GetMapOrig(internal.MapWrapper(attrs))
 	*mapOrig = append(*mapOrig, internal.KeyValue{
 		Key:         "test-key",
-		KeyStrindex: 5, // already has a ref
+		KeyStrindex: 5,
 		Value: internal.AnyValue{
 			Value: &internal.AnyValue_StringValue{
 				StringValue: "value",
@@ -455,13 +508,12 @@ func TestConvertMapToReferencesExistingKeyRef(t *testing.T) {
 		return 99
 	}
 
-	convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs))
+	err := convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs))
 
-	// Key is set, so KeyStrindex must be updated to the new index
+	require.EqualError(t, err, "attribute 0 has both key and key_strindex set")
 	kv := &(*mapOrig)[0]
-	assert.Equal(t, int32(99), kv.KeyStrindex)
-	// Key must be cleared when KeyStrindex is set
-	assert.Empty(t, kv.Key)
+	assert.Equal(t, "test-key", kv.Key)
+	assert.Equal(t, int32(5), kv.KeyStrindex)
 }
 
 func TestResolveAnyValueReferenceNonStringTypes(t *testing.T) {
@@ -476,7 +528,7 @@ func TestResolveAnyValueReferenceNonStringTypes(t *testing.T) {
 		},
 	}
 
-	resolveAnyValueReference(dict, anyVal)
+	require.NoError(t, resolveAnyValueReference(dict, anyVal))
 
 	// Should remain as IntValue
 	intVal, ok := anyVal.Value.(*internal.AnyValue_IntValue)
@@ -506,7 +558,7 @@ func TestConvertMapToReferencesClearsKey(t *testing.T) {
 		return 2
 	}
 
-	convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs))
+	require.NoError(t, convertKeyValueToReferences(getStringIndex, mapKeyValues(attrs)))
 
 	kv := &(*mapOrig)[0]
 	// key_ref should be set
@@ -547,7 +599,7 @@ func TestConvertAnyValueToReferenceNestedKvListClearsKey(t *testing.T) {
 		},
 	}
 
-	convertAnyValueToReference(getStringIndex, anyVal)
+	require.NoError(t, convertAnyValueToReference(getStringIndex, anyVal))
 
 	// key_ref should be set
 	assert.NotEqual(t, int32(0), kvList.Values[0].KeyStrindex)
@@ -567,7 +619,7 @@ func TestConvertAnyValueToReferenceNonStringTypes(t *testing.T) {
 		},
 	}
 
-	convertAnyValueToReference(getStringIndex, anyVal)
+	require.NoError(t, convertAnyValueToReference(getStringIndex, anyVal))
 
 	// Should remain as BoolValue
 	boolVal, ok := anyVal.Value.(*internal.AnyValue_BoolValue)

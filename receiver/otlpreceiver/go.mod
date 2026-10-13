@@ -3,9 +3,8 @@ module go.opentelemetry.io/collector/receiver/otlpreceiver
 go 1.26.0
 
 require (
-	github.com/klauspost/compress v1.20.1
+	github.com/klauspost/compress v1.20.3
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector v0.162.0
 	go.opentelemetry.io/collector/component v1.68.0
 	go.opentelemetry.io/collector/component/componentstatus v0.162.0
 	go.opentelemetry.io/collector/component/componenttest v0.162.0
@@ -21,6 +20,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.162.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.162.0
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.162.0
+	go.opentelemetry.io/collector/internal/statusutil v0.0.0-20261008222028-cee245c32ca5
 	go.opentelemetry.io/collector/internal/telemetry v0.162.0
 	go.opentelemetry.io/collector/internal/testutil v0.162.0
 	go.opentelemetry.io/collector/pdata v1.68.0
@@ -30,8 +30,8 @@ require (
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.162.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.162.0
 	go.opentelemetry.io/collector/receiver/xreceiver v0.162.0
-	go.opentelemetry.io/otel v1.46.0
-	go.opentelemetry.io/otel/sdk/metric v1.46.0
+	go.opentelemetry.io/otel v1.47.0
+	go.opentelemetry.io/otel/sdk/metric v1.47.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260803160001-6ac0973c030d
@@ -75,18 +75,17 @@ require (
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.162.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.70.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.70.0 // indirect
-	go.opentelemetry.io/otel/metric v1.46.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.46.0 // indirect
-	go.opentelemetry.io/otel/trace v1.46.0 // indirect
+	go.opentelemetry.io/otel/log v1.47.0 // indirect
+	go.opentelemetry.io/otel/metric v1.47.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.47.0 // indirect
+	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
-	golang.org/x/net v0.59.0 // indirect
+	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 )
-
-replace go.opentelemetry.io/collector => ../../
 
 replace go.opentelemetry.io/collector/component => ../../component
 
@@ -166,3 +165,5 @@ replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testut
 replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipeline
 
 replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
+
+replace go.opentelemetry.io/collector/internal/statusutil => ../../internal/statusutil
