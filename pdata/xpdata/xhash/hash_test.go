@@ -4,6 +4,7 @@
 package xhash
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -147,6 +148,50 @@ func TestMapHash(t *testing.T) {
 					}
 				}
 			}
+		})
+	}
+}
+
+// TestMapHashNoBoundaryCollisions checks that the end of a variable-length key or value can't be
+// shifted into the next entry to make distinct maps encode to the same bytes.
+func TestMapHashNoBoundaryCollisions(t *testing.T) {
+	tests := []struct {
+		name string
+		m1   func(pcommon.Map)
+		m2   func(pcommon.Map)
+	}{
+		{
+			name: "bytes",
+			m1:   func(m pcommon.Map) { m.PutEmptyBytes("a").Append(0xf4, 'b', 0xf6, 0xbb) },
+			m2: func(m pcommon.Map) {
+				m.PutEmptyBytes("a")
+				m.PutEmptyBytes("b").Append(0xbb)
+			},
+		},
+		{
+			name: "string",
+			m1:   func(m pcommon.Map) { m.PutStr("a", "x\xf4b\xf7y") },
+			m2: func(m pcommon.Map) {
+				m.PutStr("a", "x")
+				m.PutStr("b", "y")
+			},
+		},
+		{
+			name: "key",
+			m1:   func(m pcommon.Map) { m.PutStr("a\xf7x\xf4b", "y") },
+			m2: func(m pcommon.Map) {
+				m.PutStr("a", "x")
+				m.PutStr("b", "y")
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m1, m2 := pcommon.NewMap(), pcommon.NewMap()
+			tt.m1(m1)
+			tt.m2(m2)
+			assert.NotEqual(t, MapHash(m1), MapHash(m2),
+				"maps %v and %v must have different hashes", m1.AsRaw(), m2.AsRaw())
 		})
 	}
 }
@@ -350,6 +395,7 @@ func TestHash(t *testing.T) {
 	stringHashA, stringHashB := Hash(WithString("s")), Hash(WithString("s"))
 	assert.Equal(t, stringHashA, stringHashB)
 	assert.NotEqual(t, Hash(WithString("s1")), Hash(WithString("s2")))
+	assert.NotEqual(t, Hash(WithString("a\xf7b")), Hash(WithString("a"), WithString("b")))
 
 	assert.NotEqual(t, mapHashA, valueHashA)
 	assert.NotEqual(t, Hash(), Hash(WithString("")))
@@ -422,4 +468,85 @@ func BenchmarkMapHashWithEmbeddedSliceAndMap(b *testing.B) {
 	for b.Loop() {
 		MapHash(m)
 	}
+}
+
+// newWideMap builds a deterministic map with size scalar entries plus one nested map.
+// Entries are inserted in reverse key order so hashing has to sort them.
+func newWideMap(size int) pcommon.Map {
+	m := pcommon.NewMap()
+	for i := size - 1; i >= 0; i-- {
+		key := fmt.Sprintf("key-%04d", i)
+		switch i % 3 {
+		case 0:
+			m.PutStr(key, fmt.Sprintf("value-%d", i))
+		case 1:
+			m.PutInt(key, int64(i))
+		default:
+			m.PutBool(key, i%2 == 0)
+		}
+	}
+	nested := m.PutEmptyMap("nested")
+	nested.PutStr("b", "2")
+	nested.PutStr("a", "1")
+	return m
+}
+
+func BenchmarkMapHashWideMap(b *testing.B) {
+	m := newWideMap(256)
+
+	b.ReportAllocs()
+	for b.Loop() {
+		MapHash(m)
+	}
+}
+
+// TestMapHashWideMapGolden pins the hash of a wide map so that changes to how map entries are
+// collected and ordered cannot silently change the produced hashes.
+func TestMapHashWideMapGolden(t *testing.T) {
+	want := [16]byte{0x73, 0x91, 0xb1, 0x8e, 0xc5, 0xe3, 0x13, 0xac, 0x78, 0xe9, 0x0e, 0x50, 0xdc, 0x4c, 0x57, 0xc5}
+
+	assert.Equal(t, want, MapHash(newWideMap(256)))
+}
+
+// newNestedMap builds a map that covers every value type, maps nested in maps and in slices, and
+// keys that sort after a nested value, so the entries an outer call has collected must survive
+// the nested calls. Keys are inserted out of order on purpose. The "kilo" map is wide enough to
+// grow the writer's entry buffer while an outer call is still iterating over its own entries.
+func newNestedMap() pcommon.Map {
+	m := pcommon.NewMap()
+	m.PutStr("zulu", "last")
+	m.PutInt("alpha", -42)
+	m.PutDouble("mike", 3.25)
+	m.PutBool("bravo", true)
+	m.PutEmptyBytes("yankee").FromRaw([]byte{0x00, 0x01, 0xfe})
+	m.PutEmpty("charlie")
+
+	kilo := m.PutEmptyMap("kilo")
+	for i := 39; i >= 0; i-- {
+		kilo.PutInt(fmt.Sprintf("k%02d", i), int64(i))
+	}
+	deep := kilo.PutEmptyMap("deep")
+	deep.PutInt("2", 2)
+	deep.PutInt("1", 1)
+	kilo.PutBool("z-after-deep", false)
+
+	juliet := m.PutEmptySlice("juliet")
+	juliet.AppendEmpty().SetStr("s")
+	inSlice := juliet.AppendEmpty().SetEmptyMap()
+	inSlice.PutStr("q", "1")
+	inSlice.PutStr("p", "2")
+	juliet.AppendEmpty().SetInt(7)
+
+	m.PutStr("delta", "after-nested")
+	return m
+}
+
+// TestMapHashNestedGolden pins the hash of a map with nested maps and slices, which goes through the
+// recursive path of writeMapHash. The value was last updated when keys, strings and bytes became
+// length-prefixed; any other change to the hash must be deliberate.
+func TestMapHashNestedGolden(t *testing.T) {
+	want := [16]byte{0x52, 0xcc, 0xe7, 0xd6, 0x27, 0x42, 0x9d, 0x41, 0xaa, 0x39, 0xbb, 0x69, 0xf1, 0x00, 0xad, 0xad}
+
+	assert.Equal(t, want, MapHash(newNestedMap()))
+	assert.Equal(t, want, MapHash(newNestedMap()), "hashing must not leave state in the pooled writer")
 }

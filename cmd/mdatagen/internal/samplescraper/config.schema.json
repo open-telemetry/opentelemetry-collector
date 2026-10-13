@@ -24,6 +24,17 @@
         "error"
       ]
     },
+    "protocol": {
+      "type": "string",
+      "description": "Protocol used when connecting to scrape targets, reused from samplepkg.",
+      "default": "http",
+      "enum": [
+        "http",
+        "tcp",
+        "smtp",
+        "ftp"
+      ]
+    },
     "targets": {
       "type": "array",
       "items": {
@@ -60,7 +71,9 @@
           },
           "interval": {
             "type": "string",
+            "description": "Polling interval for the scraper target.",
             "default": "10s",
+            "deprecated": true,
             "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
           },
           "labels": {
@@ -117,6 +130,17 @@
           "default": 8080,
           "minimum": 1,
           "maximum": 10000
+        },
+        "proto": {
+          "type": "string",
+          "description": "The protocol to connect with.",
+          "default": "http",
+          "enum": [
+            "http",
+            "tcp",
+            "smtp",
+            "ftp"
+          ]
         }
       },
       "required": [
