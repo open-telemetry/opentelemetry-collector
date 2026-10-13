@@ -5,6 +5,7 @@ package fromconfig
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -204,4 +205,23 @@ func TestGoRunnerModule(t *testing.T) {
 
 	require.NoError(t, g.close())
 	assert.NoDirExists(t, g.dir)
+}
+
+func TestVerifySentinelInFirstChunk(t *testing.T) {
+	// Enough components to span several chunks, with the sentinel candidate last.
+	var components []Component
+	modules := map[string][]string{sentinelModule: {"v0.1.0"}}
+	for i := range 300 {
+		c := Component{Exporter, fmt.Sprintf("component%03d", i)}
+		components = append(components, c)
+		modules[candidates(c)[0].path] = []string{"v0.1.0"}
+	}
+	components = append(components, Component{Receiver, "otlp"})
+	proxy := &fakeProxy{modules: modules}
+
+	got, err := verify(t.Context(), proxy.list, components, acceptAll)
+	require.NoError(t, err)
+	assert.Len(t, got.modules, len(components))
+	require.Greater(t, len(proxy.calls), 1)
+	assert.Equal(t, sentinelModule, proxy.calls[0][0])
 }

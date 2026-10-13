@@ -93,8 +93,9 @@ func verify(ctx context.Context, list ListFunc, components []Component, choose f
 			continue
 		}
 
-		if needSentinel && !slices.Contains(paths, sentinelModule) {
-			paths = append([]string{sentinelModule}, paths...)
+		if needSentinel {
+			// The sentinel must be in the first chunk, which is the one checked.
+			paths = append([]string{sentinelModule}, slices.DeleteFunc(paths, func(p string) bool { return p == sentinelModule })...)
 		}
 
 		for i, chunk := range chunkArgs(paths) {
