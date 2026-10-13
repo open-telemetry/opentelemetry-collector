@@ -193,38 +193,34 @@ func chunkArgs(args []string) [][]string {
 	return chunks
 }
 
-// goList is the ListFunc backed by the Go toolchain.
-func goList(ctx context.Context, modules []string) ([]ListedModule, error) {
-	out, err := runGo(ctx, append([]string{"list", "-m", "-e", "-mod=mod", "-versions", "-json"}, modules...)...)
-	if err != nil {
-		return nil, err
-	}
-	return decodeListed(bytes.NewReader(out))
+// goRunner runs go commands from within a throwaway module, so that they do
+// not depend on the module of the working directory.
+type goRunner struct {
+	dir string
 }
 
-// newLookupModule creates a throwaway module to run go commands from.
-func newLookupModule() (string, error) {
+// newGoRunner creates the throwaway module. The caller must close the runner.
+func newGoRunner() (*goRunner, error) {
 	dir, err := os.MkdirTemp("", "ocb-from-config")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	err = os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module ocb.invalid/lookup\n\ngo 1.25\n"), 0o600)
 	if err != nil {
-		return "", errors.Join(err, os.RemoveAll(dir))
+		return nil, errors.Join(err, os.RemoveAll(dir))
 	}
-	return dir, nil
+	return &goRunner{dir: dir}, nil
 }
 
-// runGo runs the go command from within a throwaway module, and returns its output.
-func runGo(ctx context.Context, args ...string) ([]byte, error) {
-	dir, err := newLookupModule()
-	if err != nil {
-		return nil, err
-	}
-	defer os.RemoveAll(dir)
+// close removes the throwaway module.
+func (g *goRunner) close() error {
+	return os.RemoveAll(g.dir)
+}
 
+// run runs the go command and returns its output.
+func (g *goRunner) run(ctx context.Context, args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, "go", args...) //nolint:gosec // G204: the arguments are built from validated module paths
-	cmd.Dir = dir
+	cmd.Dir = g.dir
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()
@@ -232,6 +228,15 @@ func runGo(ctx context.Context, args ...string) ([]byte, error) {
 		return nil, fmt.Errorf("go %s failed: %w (%s)", args[0], err, strings.TrimSpace(stderr.String()))
 	}
 	return out, nil
+}
+
+// list is the ListFunc backed by the Go toolchain.
+func (g *goRunner) list(ctx context.Context, modules []string) ([]ListedModule, error) {
+	out, err := g.run(ctx, append([]string{"list", "-m", "-e", "-mod=mod", "-versions", "-json"}, modules...)...)
+	if err != nil {
+		return nil, err
+	}
+	return decodeListed(bytes.NewReader(out))
 }
 
 // decodeListed decodes the stream of concatenated JSON objects printed by `go list -json`.

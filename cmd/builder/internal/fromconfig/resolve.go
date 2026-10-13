@@ -57,11 +57,18 @@ func (r *Resolver) Resolve(ctx context.Context, config []byte) (Result, error) {
 	}
 
 	list, versionsOf := r.List, r.Versions
-	if list == nil {
-		list = goList
-	}
-	if versionsOf == nil {
-		versionsOf = goVersions
+	if list == nil || versionsOf == nil {
+		g, err := newGoRunner()
+		if err != nil {
+			return Result{}, fmt.Errorf("failed to prepare module lookups: %w", err)
+		}
+		defer g.close()
+		if list == nil {
+			list = g.list
+		}
+		if versionsOf == nil {
+			versionsOf = g.versions
+		}
 	}
 
 	versions, err := versionsOf(ctx, r.Release)

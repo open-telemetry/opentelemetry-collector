@@ -30,10 +30,10 @@ type Versions struct {
 // VersionsFunc returns the versions of a Collector release.
 type VersionsFunc func(ctx context.Context, release string) (Versions, error)
 
-// goVersions is the VersionsFunc reading the go.mod of the otelcol module at
+// versions is the VersionsFunc reading the go.mod of the otelcol module at
 // the given release, which requires one module of each series.
-func goVersions(ctx context.Context, release string) (Versions, error) {
-	out, err := runGo(ctx, "mod", "download", "-json", otelcolModule+"@"+release)
+func (g *goRunner) versions(ctx context.Context, release string) (Versions, error) {
+	out, err := g.run(ctx, "mod", "download", "-json", otelcolModule+"@"+release)
 	if err != nil {
 		return Versions{}, fmt.Errorf("failed to download %s@%s: %w", otelcolModule, release, err)
 	}
