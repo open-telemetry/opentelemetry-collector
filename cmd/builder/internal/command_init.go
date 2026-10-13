@@ -14,7 +14,6 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"slices"
 	"strings"
 	"text/template"
 
@@ -235,6 +234,15 @@ func addResolved(cfg *builder.Config, resolved []fromconfig.Resolved) {
 	}
 }
 
+// manifestClasses lists the component classes in the order of the manifest sections.
+var manifestClasses = []fromconfig.Class{
+	fromconfig.Exporter,
+	fromconfig.Extension,
+	fromconfig.Receiver,
+	fromconfig.Processor,
+	fromconfig.Connector,
+}
+
 // unresolvedPlaceholders returns a commented-out block listing the components
 // that could not be matched to a module, or nothing if all were.
 func unresolvedPlaceholders(source *configSource) []byte {
@@ -252,10 +260,7 @@ func unresolvedPlaceholders(source *configSource) []byte {
 #
 `, source.name)
 
-	// Sections are sorted like the manifest ones.
-	classes := slices.Clone(fromconfig.Classes)
-	slices.Sort(classes)
-	for _, class := range classes {
+	for _, class := range manifestClasses {
 		first := true
 		for _, u := range source.result.Unresolved {
 			if u.Class != class {
