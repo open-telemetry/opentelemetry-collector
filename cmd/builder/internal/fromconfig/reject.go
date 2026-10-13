@@ -29,14 +29,10 @@ func isNotComponent(class Class, modulePath string) bool {
 		return true
 	}
 
-	last := path.Base(modulePath)
-	if strings.HasSuffix(last, "test") || strings.HasSuffix(last, "helper") {
-		return true
-	}
-	if last == "x"+string(class) {
-		return true
-	}
-	if strings.HasPrefix(last, "x") && (strings.HasSuffix(last, string(class)) || strings.HasSuffix(last, "helper")) {
+	// The helper, test and experimental modules of a class sit next to its components.
+	kind := string(class)
+	switch path.Base(modulePath) {
+	case kind + "helper", kind + "test", "x" + kind, "x" + kind + "helper":
 		return true
 	}
 
