@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/golang/snappy v1.0.0
-	github.com/klauspost/compress v1.20.1
+	github.com/klauspost/compress v1.20.3
 	github.com/pierrec/lz4/v4 v4.1.33
 	github.com/rs/cors v1.11.1
 	github.com/stretchr/testify v1.12.1
@@ -33,7 +33,7 @@ require (
 )
 
 require (
-	github.com/Microsoft/go-winio v0.6.2 // indirect
+	github.com/Microsoft/go-winio v0.6.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.162.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect

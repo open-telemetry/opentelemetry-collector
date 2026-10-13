@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/golang/snappy v1.0.0
-	github.com/klauspost/compress v1.20.1
+	github.com/klauspost/compress v1.20.3
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/client v1.68.0
 	go.opentelemetry.io/collector/component v1.68.0
@@ -31,7 +31,7 @@ require (
 )
 
 require (
-	github.com/Microsoft/go-winio v0.6.2 // indirect
+	github.com/Microsoft/go-winio v0.6.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20251226215517-609e4778396f // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
