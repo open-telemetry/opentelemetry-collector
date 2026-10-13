@@ -5,6 +5,7 @@ package fromconfig
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -25,6 +26,17 @@ func (f *fakeProxy) list(_ context.Context, modules []string) ([]ListedModule, e
 		out = append(out, ListedModule{Path: m, Versions: f.modules[m]})
 	}
 	return out, nil
+}
+
+// listEach is a ListFunc answering every module with the result of answer.
+func listEach(answer func(path string) ListedModule) ListFunc {
+	return func(_ context.Context, modules []string) ([]ListedModule, error) {
+		out := make([]ListedModule, 0, len(modules))
+		for _, m := range modules {
+			out = append(out, answer(m))
+		}
+		return out, nil
+	}
 }
 
 func acceptAll(ListedModule) (string, bool) { return "", true }
@@ -123,24 +135,14 @@ func TestVerifySentinelFailure(t *testing.T) {
 	}{
 		{
 			name: "error reported",
-			list: func(_ context.Context, modules []string) ([]ListedModule, error) {
-				out := make([]ListedModule, 0, len(modules))
-				for _, m := range modules {
-					out = append(out, ListedModule{Path: m, Error: &ListError{"module lookup disabled by GOPROXY=off"}})
-				}
-				return out, nil
-			},
+			list: listEach(func(path string) ListedModule {
+				return ListedModule{Path: path, Error: &ListError{Err: "module lookup disabled by GOPROXY=off"}}
+			}),
 			want: "module lookup disabled by GOPROXY=off",
 		},
 		{
 			name: "no versions",
-			list: func(_ context.Context, modules []string) ([]ListedModule, error) {
-				out := make([]ListedModule, 0, len(modules))
-				for _, m := range modules {
-					out = append(out, ListedModule{Path: m})
-				}
-				return out, nil
-			},
+			list: listEach(func(path string) ListedModule { return ListedModule{Path: path} }),
 			want: "module not found",
 		},
 	} {
@@ -193,4 +195,13 @@ func TestDecodeListed(t *testing.T) {
 
 	_, err = decodeListed(strings.NewReader(`{"Path":`))
 	require.Error(t, err)
+}
+
+func TestGoRunnerModule(t *testing.T) {
+	g, err := newGoRunner()
+	require.NoError(t, err)
+	assert.FileExists(t, filepath.Join(g.dir, "go.mod"))
+
+	require.NoError(t, g.close())
+	assert.NoDirExists(t, g.dir)
 }
