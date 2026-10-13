@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 
 	"github.com/hashicorp/go-version"
+	"go.uber.org/zap"
 )
 
 var (
@@ -35,6 +36,9 @@ func GlobalRegistry() *Registry {
 
 type Registry struct {
 	gates sync.Map
+
+	loggerMu sync.Mutex
+	logger   *zap.Logger
 }
 
 // NewRegistry returns a new empty Registry.
@@ -185,16 +189,37 @@ func (r *Registry) Set(id string, enabled bool) error {
 		if !enabled {
 			return fmt.Errorf("feature gate %q is stable, can not be disabled", id)
 		}
-		fmt.Printf("Feature gate %q is stable and already enabled. It will be removed in version %v and continued use of the gate after version %v will result in an error.\n", id, g.toVersion, g.toVersion)
+		r.warn(fmt.Sprintf("Feature gate %q is stable and already enabled. It will be removed in version %v and continued use of the gate after version %v will result in an error.", id, g.toVersion, g.toVersion))
 	case StageDeprecated:
 		if enabled {
 			return fmt.Errorf("feature gate %q is deprecated, can not be enabled", id)
 		}
-		fmt.Printf("Feature gate %q is deprecated and already disabled. It will be removed in version %v and continued use of the gate after version %v will result in an error.\n", id, g.toVersion, g.toVersion)
+		r.warn(fmt.Sprintf("Feature gate %q is deprecated and already disabled. It will be removed in version %v and continued use of the gate after version %v will result in an error.", id, g.toVersion, g.toVersion))
 	default:
 		g.enabled.Store(enabled)
 	}
 	return nil
+}
+
+// SetLogger sets the logger used to emit warnings from calls to Set, such as
+// those produced when setting a stable or deprecated Gate. Set is typically
+// called before a logger is available (for example, during CLI flag
+// parsing), so warnings are printed to stdout until SetLogger is called.
+func (r *Registry) SetLogger(logger *zap.Logger) {
+	r.loggerMu.Lock()
+	defer r.loggerMu.Unlock()
+	r.logger = logger
+}
+
+func (r *Registry) warn(msg string) {
+	r.loggerMu.Lock()
+	logger := r.logger
+	r.loggerMu.Unlock()
+	if logger != nil {
+		logger.Warn(msg)
+		return
+	}
+	fmt.Println(msg)
 }
 
 // VisitAll visits all the gates in lexicographical order, calling fn for each.
