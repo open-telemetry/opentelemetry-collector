@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: pkg/exporterhelper
-note: Fix sending queue deadlocks when blocked offers are cancelled with block_on_overflow enabled.
-issues: [15700]
-change_logs: [user]
