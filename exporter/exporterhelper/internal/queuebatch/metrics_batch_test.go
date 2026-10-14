@@ -519,12 +519,9 @@ func TestExtractGaugeDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSize := extractGaugeDataPoints(gauge, destMetric, tt.capacity, tt.capacity, sz)
+			extractGaugeDataPoints(gauge, destMetric, tt.capacity, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Gauge().DataPoints().Len())
-			if tt.expectedPoints > 0 {
-				assert.Equal(t, tt.expectedPoints, removedSize)
-			}
 		})
 	}
 }
@@ -568,12 +565,9 @@ func TestExtractSumDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSize := extractSumDataPoints(sum, destMetric, tt.capacity, tt.capacity, sz)
+			extractSumDataPoints(sum, destMetric, tt.capacity, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Sum().DataPoints().Len())
-			if tt.expectedPoints > 0 {
-				assert.Equal(t, tt.expectedPoints, removedSize)
-			}
 		})
 	}
 }
@@ -618,12 +612,9 @@ func TestExtractHistogramDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSize := extractHistogramDataPoints(histogram, destMetric, tt.capacity, tt.capacity, sz)
+			extractHistogramDataPoints(histogram, destMetric, tt.capacity, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Histogram().DataPoints().Len())
-			if tt.expectedPoints > 0 {
-				assert.Equal(t, tt.expectedPoints, removedSize)
-			}
 		})
 	}
 }
@@ -667,12 +658,9 @@ func TestExtractExponentialHistogramDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSize := extractExponentialHistogramDataPoints(expHistogram, destMetric, tt.capacity, tt.capacity, sz)
+			extractExponentialHistogramDataPoints(expHistogram, destMetric, tt.capacity, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.ExponentialHistogram().DataPoints().Len())
-			if tt.expectedPoints > 0 {
-				assert.Equal(t, tt.expectedPoints, removedSize)
-			}
 		})
 	}
 }
@@ -716,12 +704,9 @@ func TestExtractSummaryDataPoints(t *testing.T) {
 			sz := &mockMetricsSizer{dpSize: 1}
 
 			destMetric := pmetric.NewMetric()
-			removedSize := extractSummaryDataPoints(summary, destMetric, tt.capacity, tt.capacity, sz)
+			extractSummaryDataPoints(summary, destMetric, tt.capacity, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Summary().DataPoints().Len())
-			if tt.expectedPoints > 0 {
-				assert.Equal(t, tt.expectedPoints, removedSize)
-			}
 		})
 	}
 }
@@ -1041,11 +1026,10 @@ func TestMergeSplitMetricsEmptyOversizedResourceDoesNotStopSplitting(t *testing.
 	assert.Equal(t, 12, survived, "every data point must survive")
 }
 
-func TestMergeSplitMetricsDropsDataPointsBehindHeaderThatFillsMaxSize(t *testing.T) {
+func TestMergeSplitMetricsStopsWhenNoProgressIsPossible(t *testing.T) {
 	// The resource attributes alone fill max size exactly, so no scope, metric or data point
-	// of that resource can be added to any batch. Those data points are dropped and counted,
-	// splitting must not loop or return a batch larger than max size, and the data points of
-	// the next resource must still be exported.
+	// can be added to any batch. Splitting must stop instead of looping, and must not return
+	// a batch larger than max size.
 	const maxSize = 300
 	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
@@ -1059,16 +1043,10 @@ func TestMergeSplitMetricsDropsDataPointsBehindHeaderThatFillsMaxSize(t *testing
 	m.SetEmptyGauge()
 	addDataPoint(m, "first")
 	addDataPoint(m, "second")
-	next := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	next.SetEmptyGauge()
-	addDataPoint(next, "next_resource")
 
 	res, err := newMetricsRequest(md).MergeSplit(context.Background(), maxSize, request.SizerTypeBytes, nil)
-	require.ErrorContains(t, err, "single data point exceeds the max size limit, dropping items: 2")
-	assert.Equal(t, []string{"next_resource"}, dataPointLabels(res), "data points behind the blocked resource must survive")
-	for _, r := range res {
-		assert.LessOrEqual(t, r.BytesSize(), maxSize, "no returned batch may exceed max size")
-	}
+	require.ErrorContains(t, err, "request size is greater than max size and cannot be split further, dropping items: 2")
+	assert.Empty(t, res, "data points that cannot fit any batch must not be returned")
 }
 
 func TestMergeSplitMetricsNeverExceedsMaxSizeWhenDataPrefixGrows(t *testing.T) {
