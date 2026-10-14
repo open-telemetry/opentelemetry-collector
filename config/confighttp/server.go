@@ -99,10 +99,9 @@ func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
 func (sc *ServerConfig) unmarshalPrioritizeKeepalive(conf *confmap.Conf) error {
 	// Step 1: decode the configuration. Deprecated keys overwrite their
 	// fields directly; the 'keepalive' section decodes into Keepalive and is
-	// folded in step 4. WithIgnoreUnused is needed because ServerConfig is
-	// commonly squash-embedded into component configs, in which case conf
-	// also holds the parent's sibling fields.
-	if err := conf.Unmarshal(sc, confmap.WithIgnoreUnused()); err != nil {
+	// folded in step 4. Strict unmarshaling rejects unknown keys so that
+	// user typos surface at config load time.
+	if err := conf.Unmarshal(sc); err != nil {
 		return err
 	}
 
@@ -176,10 +175,9 @@ func (sc *ServerConfig) unmarshalPrioritizeDeprecatedFields(conf *confmap.Conf) 
 
 	// Step 2: decode the configuration. Deprecated keys overwrite their
 	// fields directly; the 'keepalive' section decodes into Keepalive and is
-	// folded in step 4. WithIgnoreUnused is needed because ServerConfig is
-	// commonly squash-embedded into component configs, in which case conf
-	// also holds the parent's sibling fields.
-	if err := conf.Unmarshal(sc, confmap.WithIgnoreUnused()); err != nil {
+	// folded in step 4. Strict unmarshaling rejects unknown keys so that
+	// user typos surface at config load time.
+	if err := conf.Unmarshal(sc); err != nil {
 		return err
 	}
 
