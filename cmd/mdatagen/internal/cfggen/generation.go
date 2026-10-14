@@ -697,6 +697,10 @@ func generateDefaultCall(md *ConfigMetadata, name, rootPackage, componentPackage
 	return baseName + "()"
 }
 
+func isStructSchema(md *ConfigMetadata) bool {
+	return (md.Ref != "" && !IsPrimitiveSchema(md)) || md.Type == ObjectType
+}
+
 func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, componentPackage string) []string {
 	if schema.GoStruct.IgnoreDefault {
 		return nil
@@ -712,6 +716,23 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 					panic("schema does not contain required property: " + key)
 				}
 				varName, _ := helpers.FormatIdentifier(key, true)
+
+				if value == nil {
+					cleared := clearedValueExpr(propSchema, key, rootPackage, componentPackage)
+					if cleared == "" {
+						panic(fmt.Sprintf("cannot represent an explicit null default for required, non-optional field %q", key))
+					}
+					exps = append(exps, fmt.Sprintf(".%s = %s", varName, cleared))
+					continue
+				}
+
+				if nestedValue, ok := value.(map[string]any); ok && isStructSchema(propSchema) {
+					for _, nestedExp := range MapCustomDefaults(propSchema, nestedValue, rootPackage, componentPackage) {
+						exps = append(exps, fmt.Sprintf(".%s%s", varName, nestedExp))
+					}
+					continue
+				}
+
 				exp := fmt.Sprintf(".%s = %s", varName, FormatDefaultValue(propSchema, key, value, rootPackage, componentPackage))
 				exps = append(exps, exp)
 			}
@@ -734,6 +755,17 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 	return exps
 }
 
+func clearedValueExpr(md *ConfigMetadata, name, rootPackage, componentPackage string) string {
+	if md.IsPointer {
+		return "nil"
+	}
+	if md.IsOptional {
+		t, _ := resolveGoType(md, name, rootPackage, componentPackage)
+		return fmt.Sprintf("configoptional.None[%s]()", t)
+	}
+	return ""
+}
+
 func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
 	validateOptionalMode(md)
 	if md.IsOptional && md.GoStruct.OptionalMode == OptionalModeDefault {
@@ -741,14 +773,7 @@ func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootP
 	}
 
 	if md.GoStruct.IgnoreDefault || (defaultValue == nil && !hasDefaultValue(md)) {
-		if md.IsPointer {
-			return "nil"
-		}
-		if md.IsOptional {
-			t, _ := resolveGoType(md, name, rootPackage, componentPackage)
-			return fmt.Sprintf("configoptional.None[%s]()", t)
-		}
-		return ""
+		return clearedValueExpr(md, name, rootPackage, componentPackage)
 	}
 	exp := formatSimpleValue(md, name, defaultValue, rootPackage, componentPackage)
 	if md.IsPointer {
@@ -884,8 +909,7 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 
 	// handle references
 	isReference := md.Ref != ""
-	isSubStruct := md.Type == ObjectType
-	if (isReference && !IsPrimitiveSchema(md)) || isSubStruct {
+	if isStructSchema(md) {
 		if hasDefaultValue(md) {
 			if isReference {
 				refType, err := ResolveGoTypeRef(md.Ref, rootPackage, componentPackage)
