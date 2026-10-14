@@ -103,6 +103,11 @@ func NewMountPointFromLine(line string) (*MountPoint, error) {
 		}
 		fsTypeStart := _miFieldIDOptionalFields + i + 1
 
+		// Once the end of the optional fields is known, re-split the line with a
+		// limit so that spaces inside the super options, as emitted by the 9p
+		// drvfs mounts Docker Desktop adds under WSL2, stay in the last field.
+		// This mirrors the fix in uber-go/automaxprocs for the same parser.
+		fields = strings.SplitN(line, _mountInfoSep, fsTypeStart+_miFieldCountSecondHalf)
 		if len(fields) != fsTypeStart+_miFieldCountSecondHalf {
 			return nil, mountPointFormatInvalidError{line}
 		}

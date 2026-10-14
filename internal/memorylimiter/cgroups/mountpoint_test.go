@@ -72,6 +72,42 @@ func TestNewMountPointFromLine(t *testing.T) {
 				SuperOptions:   []string{"rw", "cpu"},
 			},
 		},
+		{
+			// Regression test for #16174: Docker Desktop on WSL2 adds a 9p
+			// drvfs mount whose super options contain raw spaces, e.g.
+			// aname=drvfs;path=C:\Program Files\Docker\Docker\resources.
+			// The super options must stay in the last field.
+			name: "drvfs mount with spaces in super options",
+			line: `2619 80 0:302 / /Docker/host rw,noatime - 9p drvfs rw,dirsync,aname=drvfs;path=C:\Program Files\Docker\Docker\resources;symlinkroot=/mnt/,mmap,access=client,msize=262144,trans=virtio`,
+			expected: &MountPoint{
+				MountID:        2619,
+				ParentID:       80,
+				DeviceID:       "0:302",
+				Root:           "/",
+				MountPoint:     "/Docker/host",
+				Options:        []string{"rw", "noatime"},
+				OptionalFields: []string{},
+				FSType:         "9p",
+				MountSource:    "drvfs",
+				SuperOptions:   []string{"rw", "dirsync", `aname=drvfs;path=C:\Program Files\Docker\Docker\resources;symlinkroot=/mnt/`, "mmap", "access=client", "msize=262144", "trans=virtio"},
+			},
+		},
+		{
+			name: "drvfs mount with optional fields and spaces in super options",
+			line: `2619 80 0:302 / /Docker/host rw,noatime shared:123 - 9p drvfs rw,dirsync,aname=drvfs;path=C:\Program Files\Docker\Docker\resources;symlinkroot=/mnt/,mmap`,
+			expected: &MountPoint{
+				MountID:        2619,
+				ParentID:       80,
+				DeviceID:       "0:302",
+				Root:           "/",
+				MountPoint:     "/Docker/host",
+				Options:        []string{"rw", "noatime"},
+				OptionalFields: []string{"shared:123"},
+				FSType:         "9p",
+				MountSource:    "drvfs",
+				SuperOptions:   []string{"rw", "dirsync", `aname=drvfs;path=C:\Program Files\Docker\Docker\resources;symlinkroot=/mnt/`, "mmap"},
+			},
+		},
 	}
 
 	for _, tt := range testTable {
