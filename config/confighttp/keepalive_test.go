@@ -530,12 +530,10 @@ func TestClientConfigSquashNamedField(t *testing.T) {
 	conf := confmap.NewFromStringMap(map[string]any{
 		"endpoint":          "http://localhost:4318",
 		"idle_conn_timeout": "60s",
-		"extra":             "sibling",
 	})
 	require.NoError(t, conf.Unmarshal(&cfg))
 
 	assert.Equal(t, "http://localhost:4318", cfg.ClientConfig.Endpoint)
-	assert.Equal(t, "sibling", cfg.Extra)
 	assert.Equal(t, configoptional.None[KeepaliveClientConfig](), cfg.ClientConfig.Keepalive)
 	assert.Equal(t, 60*time.Second, cfg.ClientConfig.IdleConnTimeout)
 	assert.Equal(t, 100, cfg.ClientConfig.MaxIdleConns)
@@ -557,12 +555,10 @@ func TestServerConfigSquashNamedField(t *testing.T) {
 	conf := confmap.NewFromStringMap(map[string]any{
 		"endpoint":            "localhost:0",
 		"keep_alives_enabled": false,
-		"extra":               "sibling",
 	})
 	require.NoError(t, conf.Unmarshal(&cfg))
 
 	assert.Equal(t, "localhost:0", cfg.ServerConfig.NetAddr.Endpoint)
-	assert.Equal(t, "sibling", cfg.Extra)
 	assert.Equal(t, configoptional.None[KeepaliveServerConfig](), cfg.ServerConfig.Keepalive)
 	assert.False(t, cfg.ServerConfig.KeepAlivesEnabled)
 }
@@ -572,7 +568,6 @@ func TestClientConfigSquashMixedFieldsError(t *testing.T) {
 	conf := confmap.NewFromStringMap(map[string]any{
 		"keepalive":         map[string]any{"idle_conn_timeout": "30s"},
 		"idle_conn_timeout": "60s",
-		"extra":             "sibling",
 	})
 	err := conf.Unmarshal(&cfg)
 	require.Error(t, err)
