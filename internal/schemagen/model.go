@@ -285,7 +285,7 @@ func (md *ConfigMetadata) mergeFrom(other *ConfigMetadata, isRef bool) {
 	if !md.GoStruct.Anonymous {
 		md.GoStruct.Anonymous = other.GoStruct.Anonymous
 	}
-	if !md.GoStruct.IgnoreDefault {
+	if !isRef && !md.GoStruct.IgnoreDefault {
 		md.GoStruct.IgnoreDefault = other.GoStruct.IgnoreDefault
 	}
 	if md.GoStruct.FieldName == "" {
