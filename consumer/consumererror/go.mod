@@ -5,8 +5,8 @@ go 1.26.0
 require (
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/pdata v1.69.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.162.0
-	go.opentelemetry.io/collector/pdata/testdata v0.162.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.163.0
+	go.opentelemetry.io/collector/pdata/testdata v0.163.0
 	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.84.0
 )

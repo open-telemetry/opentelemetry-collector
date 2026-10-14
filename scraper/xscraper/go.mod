@@ -5,11 +5,11 @@ go 1.26.0
 require (
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.69.0
-	go.opentelemetry.io/collector/component/componenttest v0.162.0
+	go.opentelemetry.io/collector/component/componenttest v0.163.0
 	go.opentelemetry.io/collector/pdata v1.69.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.162.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.163.0
 	go.opentelemetry.io/collector/pipeline v1.69.0
-	go.opentelemetry.io/collector/scraper v0.162.0
+	go.opentelemetry.io/collector/scraper v0.163.0
 	go.uber.org/goleak v1.3.0
 )
 
