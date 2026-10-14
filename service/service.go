@@ -15,6 +15,7 @@ import (
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
@@ -90,18 +91,24 @@ type Settings struct {
 
 	// TelemetryFactory is the factory for creating internal telemetry providers.
 	TelemetryFactory telemetry.Factory
+
+	// ComponentLogLevelOverrides holds per-component log level overrides
+	// extracted from component configs (e.g. `telemetry.logs.level`).
+	// When non-nil for a component, it overrides the service-level default log level.
+	ComponentLogLevelOverrides map[component.ID]*zapcore.Level
 }
 
 // Service represents the implementation of a component.Host.
 type Service struct {
-	buildInfo          component.BuildInfo
-	telemetrySettings  component.TelemetrySettings
-	host               *graph.Host
-	configSnapshot     extensioncapabilities.ConfigSnapshot
-	loggerShutdownFunc component.ShutdownFunc
-	meterProvider      telemetry.MeterProvider
-	tracerProvider     telemetry.TracerProvider
-	graphSettings      graph.Settings
+	buildInfo                  component.BuildInfo
+	telemetrySettings          component.TelemetrySettings
+	host                       *graph.Host
+	configSnapshot             extensioncapabilities.ConfigSnapshot
+	loggerShutdownFunc         component.ShutdownFunc
+	meterProvider              telemetry.MeterProvider
+	tracerProvider             telemetry.TracerProvider
+	graphSettings              graph.Settings
+	componentLogLevelOverrides map[component.ID]*zapcore.Level
 }
 
 // New creates a new Service, its telemetry, and Components.
@@ -119,7 +126,8 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 			BuildInfo:         set.BuildInfo,
 			AsyncErrorChannel: set.AsyncErrorChannel,
 		},
-		configSnapshot: set.ConfigSnapshot,
+		configSnapshot:             set.ConfigSnapshot,
+		componentLogLevelOverrides: set.ComponentLogLevelOverrides,
 	}
 
 	if set.TelemetryFactory == nil {
@@ -326,9 +334,10 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 func (srv *Service) initExtensions(ctx context.Context, cfg extensions.Config) error {
 	var err error
 	extensionsSettings := extensions.Settings{
-		Telemetry:  srv.telemetrySettings,
-		BuildInfo:  srv.buildInfo,
-		Extensions: srv.host.Extensions,
+		Telemetry:                  srv.telemetrySettings,
+		BuildInfo:                  srv.buildInfo,
+		Extensions:                 srv.host.Extensions,
+		ComponentLogLevelOverrides: srv.componentLogLevelOverrides,
 	}
 	if srv.host.ServiceExtensions, err = extensions.New(ctx, extensionsSettings, cfg, extensions.WithReporter(srv.host.Reporter)); err != nil {
 		return fmt.Errorf("failed to build extensions: %w", err)
@@ -339,14 +348,15 @@ func (srv *Service) initExtensions(ctx context.Context, cfg extensions.Config) e
 // Creates the pipeline graph.
 func (srv *Service) initGraph(ctx context.Context, cfg Config) error {
 	srv.graphSettings = graph.Settings{
-		Telemetry:        srv.telemetrySettings,
-		BuildInfo:        srv.buildInfo,
-		ReceiverBuilder:  srv.host.Receivers,
-		ProcessorBuilder: srv.host.Processors,
-		ExporterBuilder:  srv.host.Exporters,
-		ConnectorBuilder: srv.host.Connectors,
-		PipelineConfigs:  cfg.Pipelines,
-		ReportStatus:     srv.host.Reporter.ReportStatus,
+		Telemetry:                  srv.telemetrySettings,
+		BuildInfo:                  srv.buildInfo,
+		ReceiverBuilder:            srv.host.Receivers,
+		ProcessorBuilder:           srv.host.Processors,
+		ExporterBuilder:            srv.host.Exporters,
+		ConnectorBuilder:           srv.host.Connectors,
+		PipelineConfigs:            cfg.Pipelines,
+		ReportStatus:               srv.host.Reporter.ReportStatus,
+		ComponentLogLevelOverrides: srv.componentLogLevelOverrides,
 	}
 	var err error
 	if srv.host.Pipelines, err = graph.Build(ctx, srv.graphSettings); err != nil {

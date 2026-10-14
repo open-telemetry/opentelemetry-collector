@@ -6,6 +6,9 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 import (
 	"errors"
 
+	"go.uber.org/zap/zapcore"
+
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
@@ -25,6 +28,10 @@ type configSettings struct {
 	Connectors *configunmarshaler.Configs[connector.Factory] `mapstructure:"connectors"`
 	Extensions *configunmarshaler.Configs[extension.Factory] `mapstructure:"extensions"`
 	Service    service.Config                                `mapstructure:"service"`
+
+	// ComponentLogLevelOverrides collects per-component log level overrides
+	// from all component configs. Populated after Unmarshal.
+	ComponentLogLevelOverrides map[component.ID]*zapcore.Level `mapstructure:"-"`
 }
 
 // unmarshal the configSettings from a confmap.Conf.
@@ -47,5 +54,51 @@ func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 		},
 	}
 	err := v.Unmarshal(&cfg)
-	return cfg, err
+	if err != nil {
+		return cfg, err
+	}
+
+	// Collect per-component log level overrides from all component kinds.
+	for id, ov := range cfg.Receivers.TelemetryOverrides() {
+		if ov.LogLevel != nil {
+			if cfg.ComponentLogLevelOverrides == nil {
+				cfg.ComponentLogLevelOverrides = make(map[component.ID]*zapcore.Level)
+			}
+			cfg.ComponentLogLevelOverrides[id] = ov.LogLevel
+		}
+	}
+	for id, ov := range cfg.Processors.TelemetryOverrides() {
+		if ov.LogLevel != nil {
+			if cfg.ComponentLogLevelOverrides == nil {
+				cfg.ComponentLogLevelOverrides = make(map[component.ID]*zapcore.Level)
+			}
+			cfg.ComponentLogLevelOverrides[id] = ov.LogLevel
+		}
+	}
+	for id, ov := range cfg.Exporters.TelemetryOverrides() {
+		if ov.LogLevel != nil {
+			if cfg.ComponentLogLevelOverrides == nil {
+				cfg.ComponentLogLevelOverrides = make(map[component.ID]*zapcore.Level)
+			}
+			cfg.ComponentLogLevelOverrides[id] = ov.LogLevel
+		}
+	}
+	for id, ov := range cfg.Connectors.TelemetryOverrides() {
+		if ov.LogLevel != nil {
+			if cfg.ComponentLogLevelOverrides == nil {
+				cfg.ComponentLogLevelOverrides = make(map[component.ID]*zapcore.Level)
+			}
+			cfg.ComponentLogLevelOverrides[id] = ov.LogLevel
+		}
+	}
+	for id, ov := range cfg.Extensions.TelemetryOverrides() {
+		if ov.LogLevel != nil {
+			if cfg.ComponentLogLevelOverrides == nil {
+				cfg.ComponentLogLevelOverrides = make(map[component.ID]*zapcore.Level)
+			}
+			cfg.ComponentLogLevelOverrides[id] = ov.LogLevel
+		}
+	}
+
+	return cfg, nil
 }

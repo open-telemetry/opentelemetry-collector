@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/internal/telemetry"
 )
 
@@ -78,4 +79,50 @@ func (cwa coreWithAttributes) DropInjectedAttributes(droppedAttrs ...string) zap
 	})
 	cwa.Core = cwa.sourceCore.With(append([]zap.Field{makeScopeField(cwa.attrs)}, cwa.withFields...))
 	return cwa
+}
+
+// levelOverrideCore wraps a zapcore.Core to override its level so that
+// ALL messages at or above the override level are passed through,
+// regardless of the underlying core's configured level.
+type levelOverrideCore struct {
+	zapcore.Core
+	overrideLevel zapcore.Level
+}
+
+func (loc levelOverrideCore) Enabled(l zapcore.Level) bool {
+	// We only check against our override level, NOT the underlying core's level.
+	// This is intentional: the override is meant to take full control.
+	return l >= loc.overrideLevel
+}
+
+func (loc levelOverrideCore) Check(e zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	// Use our own Enabled, then delegate Write to underlying core.
+	if loc.Enabled(e.Level) {
+		return ce.AddCore(e, loc.Core)
+	}
+	return ce
+}
+
+// LoggerWithLevel returns a new *zap.Logger that logs at the given level
+// or above, regardless of the underlying logger's configured level.
+// This is used for per-component log level overrides.
+func LoggerWithLevel(logger *zap.Logger, level zapcore.Level) *zap.Logger {
+	return logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
+		return levelOverrideCore{Core: c, overrideLevel: level}
+	}))
+}
+
+// ApplyLogLevelOverride returns a copy of TelemetrySettings with the logger's
+// log level overridden if a per-component override exists for the given component ID.
+// If no override exists, the original TelemetrySettings is returned unchanged.
+func ApplyLogLevelOverride(tel component.TelemetrySettings, overrides map[component.ID]*zapcore.Level, id component.ID) component.TelemetrySettings {
+	if overrides == nil {
+		return tel
+	}
+	level, ok := overrides[id]
+	if !ok || level == nil {
+		return tel
+	}
+	tel.Logger = LoggerWithLevel(tel.Logger, *level)
+	return tel
 }
