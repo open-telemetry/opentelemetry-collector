@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: service
+
+note: Process self-telemetry now resolves the Collector's own process against `/proc`, independent of the `HOST_PROC` environment variable.
+
+issues: []
+
+subtext:
+
+change_logs: [user]
