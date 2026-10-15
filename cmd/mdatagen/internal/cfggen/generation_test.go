@@ -2997,6 +2997,71 @@ func TestMapCustomDefaults_NestedObjectOverrides(t *testing.T) {
 	}, exprs)
 }
 
+func TestMapCustomDefaults_NestedStructFieldOverride(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"server_config": {
+				Type: "object",
+				Ref:  "go.opentelemetry.io/collector/config/confighttp.server_config",
+				Properties: map[string]*ConfigMetadata{
+					"read_header_timeout": {
+						Type:     "string",
+						Default:  "1m",
+						GoStruct: GoStructConfig{Type: "time.Duration"},
+					},
+					"write_timeout": {
+						Type:     "string",
+						Default:  "30s",
+						GoStruct: GoStructConfig{Type: "time.Duration"},
+					},
+				},
+			},
+		},
+	}
+
+	exprs := MapCustomDefaults(md, defaultValue(map[string]any{
+		"server_config": map[string]any{"read_header_timeout": "0s"},
+	}), "go.opentelemetry.io/collector", "")
+
+	require.Equal(t, []string{
+		".ServerConfig.ReadHeaderTimeout = 0",
+	}, exprs)
+}
+
+func TestMapCustomDefaults_ExplicitNullOverride(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"tls": {
+				Type:       "object",
+				Ref:        "go.opentelemetry.io/collector/config/configtls.server_config",
+				IsOptional: true,
+				Properties: map[string]*ConfigMetadata{
+					"min_version": {Type: "string", Default: "1.2"},
+				},
+			},
+		},
+	}
+
+	exprs := MapCustomDefaults(md, defaultValue(map[string]any{"tls": nil}), "go.opentelemetry.io/collector", "")
+
+	require.Equal(t, []string{".TLS = configoptional.None[configtls.ServerConfig]()"}, exprs)
+}
+
+func TestMapCustomDefaults_ExplicitNullOverride_RequiredFieldPanics(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"host": {Type: "string"},
+		},
+	}
+
+	require.Panics(t, func() {
+		MapCustomDefaults(md, defaultValue(map[string]any{"host": nil}), "", "")
+	})
+}
+
 func TestMapCustomDefaults_SliceOfObjectsOverrides(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "slice",
