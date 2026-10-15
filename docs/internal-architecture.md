@@ -58,7 +58,7 @@ The partial reload path (`Collector.tryPartialReceiverReload`) delegates to `Gra
 
 1. **Collect** all current receiver nodes from pipelines (skipping connectors-as-receivers)
 2. **Determine** the desired receiver set from the new pipeline configs
-3. **Categorize** receivers into add, remove, and rebuild sets
+3. **Categorize** receivers into add, remove, and rebuild sets; a node that holds the same component instance as a removed or rebuilt node (a receiver shared across signals, such as `otlp`) is rebuilt as well
 4. **Shutdown** receivers that are being removed or rebuilt
 5. **Remove** old receiver nodes and edges from the graph
 6. **Create** new receiver nodes for added and rebuilt receivers
