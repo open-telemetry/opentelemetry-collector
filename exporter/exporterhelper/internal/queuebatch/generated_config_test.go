@@ -21,13 +21,6 @@ func TestBatchConfigValidate_ExclusiveMinimumFlushTimeout(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "flush_timeout value must be greater than 0")
 }
 
-func TestBatchConfigValidate_MinimumMaxSize(t *testing.T) {
-	cfg := NewDefaultBatchConfig()
-	cfg.MaxSize = 0 - 1
-
-	require.ErrorContains(t, cfg.Validate(), "max_size value must be greater than or equal to 0")
-}
-
 func TestBatchConfigValidate_MinimumMinSize(t *testing.T) {
 	cfg := NewDefaultBatchConfig()
 	cfg.MinSize = 0 - 1
@@ -35,11 +28,11 @@ func TestBatchConfigValidate_MinimumMinSize(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "min_size value must be greater than or equal to 0")
 }
 
-func TestConfigValidate_ExclusiveMinimumNumConsumers(t *testing.T) {
-	cfg := Config{}
-	cfg.NumConsumers = 0
+func TestBatchConfigValidate_MinimumMaxSize(t *testing.T) {
+	cfg := NewDefaultBatchConfig()
+	cfg.MaxSize = 0 - 1
 
-	require.ErrorContains(t, cfg.Validate(), "num_consumers value must be greater than 0")
+	require.ErrorContains(t, cfg.Validate(), "max_size value must be greater than or equal to 0")
 }
 
 func TestConfigValidate_ExclusiveMinimumQueueSize(t *testing.T) {
@@ -47,6 +40,13 @@ func TestConfigValidate_ExclusiveMinimumQueueSize(t *testing.T) {
 	cfg.QueueSize = 0
 
 	require.ErrorContains(t, cfg.Validate(), "queue_size value must be greater than 0")
+}
+
+func TestConfigValidate_ExclusiveMinimumNumConsumers(t *testing.T) {
+	cfg := Config{}
+	cfg.NumConsumers = 0
+
+	require.ErrorContains(t, cfg.Validate(), "num_consumers value must be greater than 0")
 }
 
 func TestPartitionConfigValidate_DefaultValid(t *testing.T) {

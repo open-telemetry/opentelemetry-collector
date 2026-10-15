@@ -16,19 +16,19 @@ type BatchConfig struct {
 	// FlushTimeout sets the time after which a batch will be sent regardless of its size.
 	FlushTimeout time.Duration `mapstructure:"flush_timeout"`
 
-	// MaxSize defines the configuration for the maximum size of a batch.
-	MaxSize int64 `mapstructure:"max_size,omitempty"`
-
-	// MinSize defines the configuration for the minimum size of a batch.
-	MinSize int64 `mapstructure:"min_size"`
-
-	// Partition defines the partitioning of the batches configuration.
-	Partition PartitionConfig `mapstructure:"partition"`
-
 	// Sizer determines the type of size measurement used by the batch.
 	// If not configured, use the same configuration as the queue.
 	// It accepts "requests", "items", or "bytes".
 	Sizer request.SizerType `mapstructure:"sizer"`
+
+	// MinSize defines the configuration for the minimum size of a batch.
+	MinSize int64 `mapstructure:"min_size"`
+
+	// MaxSize defines the configuration for the maximum size of a batch.
+	MaxSize int64 `mapstructure:"max_size,omitempty"`
+
+	// Partition defines the partitioning of the batches configuration.
+	Partition PartitionConfig `mapstructure:"partition"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -47,12 +47,12 @@ func (c *BatchConfig) Validate() error {
 		err = errors.Join(err, errors.New("flush_timeout value must be greater than 0"))
 	}
 
-	if c.MaxSize < 0 {
-		err = errors.Join(err, errors.New("max_size value must be greater than or equal to 0"))
-	}
-
 	if c.MinSize < 0 {
 		err = errors.Join(err, errors.New("min_size value must be greater than or equal to 0"))
+	}
+
+	if c.MaxSize < 0 {
+		err = errors.Join(err, errors.New("max_size value must be greater than or equal to 0"))
 	}
 
 	return err
@@ -63,40 +63,40 @@ func (c *BatchConfig) Validate() error {
 func NewDefaultBatchConfig() BatchConfig {
 	return BatchConfig{
 		FlushTimeout: 200 * time.Millisecond,
+		Sizer:        getDefaultSizer(),
 		MinSize:      8192,
 		Partition:    NewDefaultPartitionConfig(),
-		Sizer:        getDefaultSizer(),
 	}
 }
 
 // Config defines configuration for queueing and batching incoming requests.
 type Config struct {
-	// Batch it configures how the requests are consumed from the queue and batch together during consumption.
-	Batch configoptional.Optional[BatchConfig] `mapstructure:"batch,omitempty"`
+	// WaitForResult determines if incoming requests are blocked until the request is processed or not.
+	// Currently, this option is not available when persistent queue is configured using the storage configuration.
+	WaitForResult bool `mapstructure:"wait_for_result,omitempty"`
+
+	// Sizer determines the type of size measurement used by this component.
+	// It accepts "requests", "items", or "bytes".
+	Sizer request.SizerType `mapstructure:"sizer,omitempty"`
+
+	// QueueSize represents the maximum data size allowed for concurrent storage and processing.
+	QueueSize int64 `mapstructure:"queue_size,omitempty"`
 
 	// BlockOnOverflow determines the behavior when the component's TotalSize limit is reached.
 	// If true, the component will wait for space; otherwise, operations will immediately return a retryable error.
 	BlockOnOverflow bool `mapstructure:"block_on_overflow,omitempty"`
+
+	// StorageID if not empty, enables the persistent storage and uses the component specified
+	// as a storage extension for the persistent queue.
+	StorageID *component.ID `mapstructure:"storage,omitempty"`
 
 	// NumConsumers is the maximum number of concurrent consumers from the queue.
 	// This applies across all different optional configurations from above
 	// (e.g. wait_for_result, block_on_overflow, storage, etc.).
 	NumConsumers int `mapstructure:"num_consumers,omitempty"`
 
-	// QueueSize represents the maximum data size allowed for concurrent storage and processing.
-	QueueSize int64 `mapstructure:"queue_size,omitempty"`
-
-	// Sizer determines the type of size measurement used by this component.
-	// It accepts "requests", "items", or "bytes".
-	Sizer request.SizerType `mapstructure:"sizer,omitempty"`
-
-	// StorageID if not empty, enables the persistent storage and uses the component specified
-	// as a storage extension for the persistent queue.
-	StorageID *component.ID `mapstructure:"storage,omitempty"`
-
-	// WaitForResult determines if incoming requests are blocked until the request is processed or not.
-	// Currently, this option is not available when persistent queue is configured using the storage configuration.
-	WaitForResult bool `mapstructure:"wait_for_result,omitempty"`
+	// Batch it configures how the requests are consumed from the queue and batch together during consumption.
+	Batch configoptional.Optional[BatchConfig] `mapstructure:"batch,omitempty"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -111,12 +111,12 @@ func (c *Config) Validate() error {
 		err = errors.Join(err, inner_err)
 	}
 
-	if c.NumConsumers <= 0 {
-		err = errors.Join(err, errors.New("num_consumers value must be greater than 0"))
-	}
-
 	if c.QueueSize <= 0 {
 		err = errors.Join(err, errors.New("queue_size value must be greater than 0"))
+	}
+
+	if c.NumConsumers <= 0 {
+		err = errors.Join(err, errors.New("num_consumers value must be greater than 0"))
 	}
 
 	return err
@@ -124,16 +124,6 @@ func (c *Config) Validate() error {
 
 // PartitionConfig defines a configuration for partitioning requests based on metadata keys.
 type PartitionConfig struct {
-	// CacheSize is the maximum number of active partition batchers kept in the LRU
-	// cache when partitioning is enabled. When the limit is reached, the least
-	// recently used partition is flushed and removed. Default is 10000. Must be positive.
-	CacheSize int `mapstructure:"cache_size"`
-
-	// IdleTimeout is the duration a partition may stay empty before it is removed.
-	// Keep it above the data arrival interval to avoid churning partitions. Default is 90s.
-	// Must be positive.
-	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
-
 	// MetadataKeys is a list of client.Metadata keys that will be used to partition
 	// the data into batches. If this setting is empty, a single batcher instance
 	// will be used. When this setting is not empty, one batcher will be used per
@@ -144,6 +134,16 @@ type PartitionConfig struct {
 	// Entries are case-insensitive. Duplicated entries will trigger a validation error.
 	MetadataKeys []string `mapstructure:"metadata_keys,omitempty"`
 
+	// CacheSize is the maximum number of active partition batchers kept in the LRU
+	// cache when partitioning is enabled. When the limit is reached, the least
+	// recently used partition is flushed and removed. Default is 10000. Must be positive.
+	CacheSize int `mapstructure:"cache_size"`
+
+	// IdleTimeout is the duration a partition may stay empty before it is removed.
+	// Keep it above the data arrival interval to avoid churning partitions. Default is 90s.
+	// Must be positive.
+	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -153,16 +153,16 @@ type PartitionConfig struct {
 func (c *PartitionConfig) Validate() error {
 	var err error
 
+	if inner_err := validateMetadataKeys(c.MetadataKeys); inner_err != nil {
+		err = errors.Join(err, inner_err)
+	}
+
 	if c.CacheSize <= 0 {
 		err = errors.Join(err, errors.New("cache_size value must be greater than 0"))
 	}
 
 	if c.IdleTimeout <= 0 {
 		err = errors.Join(err, errors.New("idle_timeout value must be greater than 0"))
-	}
-
-	if inner_err := validateMetadataKeys(c.MetadataKeys); inner_err != nil {
-		err = errors.Join(err, inner_err)
 	}
 
 	return err

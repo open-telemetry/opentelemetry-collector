@@ -24,6 +24,8 @@ exported_configs:
   queue_batch_config:
     $ref: ./internal/queuebatch.config
     description: Defines configuration for queueing and batching for the exporter.
+    go_struct:
+      ignore_default: true
   batch_config:
     $ref: ./internal/queuebatch.batch_config
     description: Defines a configuration for batching requests based on a timeout and a minimum number of items.
