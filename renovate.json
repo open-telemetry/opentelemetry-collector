@@ -28,6 +28,13 @@
   ],
   "packageRules": [
     {
+      "description": "Ensure source compatibility with Go version used by this project",
+      "matchManagers": [
+        "gomod"
+      ],
+      "constraintsFiltering": "strict"
+    },
+    {
       "matchManagers": [
         "gomod"
       ],
@@ -175,6 +182,7 @@
   "prConcurrentLimit": 200,
   "prHourlyLimit": 5,
   "postUpdateOptions": [
-    "gomodTidy"
+    "gomodTidyAll",
+    "gomodUpdateImportPaths"
   ]
 }

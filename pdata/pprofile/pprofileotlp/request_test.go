@@ -45,7 +45,7 @@ var profilesRequestJSON = []byte(`
 				]
 			}
 		],
-		"dictionary": {}
+		"dictionary": {"stringTable": [""]}
 	}`)
 
 func TestRequestToPData(t *testing.T) {
