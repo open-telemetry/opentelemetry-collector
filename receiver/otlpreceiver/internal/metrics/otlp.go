@@ -5,8 +5,10 @@ package metrics // import "go.opentelemetry.io/collector/receiver/otlpreceiver/i
 
 import (
 	"context"
+	stderrors "errors"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
@@ -17,6 +19,10 @@ const (
 	dataFormatProtobuf = "protobuf"
 	invalidUTF8Message = "request contains invalid UTF-8"
 )
+
+// errInvalidUTF8 is reported to obsreport so that data rejected for invalid UTF-8
+// is accounted for in the receiver metrics and spans.
+var errInvalidUTF8 = consumererror.NewPermanent(stderrors.New(invalidUTF8Message))
 
 // Receiver is the type used to handle metrics from OpenTelemetry exporters.
 type Receiver struct {
@@ -43,6 +49,7 @@ func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (p
 	if rejectedDataPoints > 0 {
 		resp.PartialSuccess().SetRejectedDataPoints(int64(rejectedDataPoints))
 		resp.PartialSuccess().SetErrorMessage(invalidUTF8Message)
+		r.recordRejected(ctx, rejectedDataPoints)
 	}
 	md := req.Metrics()
 	dataPointCount := md.DataPointCount()
@@ -65,4 +72,12 @@ func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (p
 	}
 
 	return resp, nil
+}
+
+// recordRejected accounts for data points rejected by the receiver itself so they
+// show up in the receiver telemetry (e.g. otelcol_receiver_refused_metric_points) and
+// not only in the partial-success response.
+func (r *Receiver) recordRejected(ctx context.Context, rejected int) {
+	ctx = r.obsreport.StartMetricsOp(ctx)
+	r.obsreport.EndMetricsOp(ctx, dataFormatProtobuf, rejected, errInvalidUTF8)
 }

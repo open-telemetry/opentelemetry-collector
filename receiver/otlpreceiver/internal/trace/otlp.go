@@ -5,8 +5,10 @@ package trace // import "go.opentelemetry.io/collector/receiver/otlpreceiver/int
 
 import (
 	"context"
+	stderrors "errors"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
@@ -17,6 +19,10 @@ const (
 	dataFormatProtobuf = "protobuf"
 	invalidUTF8Message = "request contains invalid UTF-8"
 )
+
+// errInvalidUTF8 is reported to obsreport so that data rejected for invalid UTF-8
+// is accounted for in the receiver metrics and spans.
+var errInvalidUTF8 = consumererror.NewPermanent(stderrors.New(invalidUTF8Message))
 
 // Receiver is the type used to handle spans from OpenTelemetry exporters.
 type Receiver struct {
@@ -43,6 +49,7 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 	if rejectedSpans > 0 {
 		resp.PartialSuccess().SetRejectedSpans(int64(rejectedSpans))
 		resp.PartialSuccess().SetErrorMessage(invalidUTF8Message)
+		r.recordRejected(ctx, rejectedSpans)
 	}
 	td := req.Traces()
 	// We need to ensure that it propagates the receiver name as a tag
@@ -66,4 +73,12 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 	}
 
 	return resp, nil
+}
+
+// recordRejected accounts for spans rejected by the receiver itself so they show
+// up in the receiver telemetry (e.g. otelcol_receiver_refused_spans) and not only in
+// the partial-success response.
+func (r *Receiver) recordRejected(ctx context.Context, rejected int) {
+	ctx = r.obsreport.StartTracesOp(ctx)
+	r.obsreport.EndTracesOp(ctx, dataFormatProtobuf, rejected, errInvalidUTF8)
 }
