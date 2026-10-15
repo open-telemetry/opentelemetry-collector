@@ -7,7 +7,7 @@ change_type: bug_fix
 component: pkg/service
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Drop a component's status state machine once it reports `StatusStopped`, so that instances replaced by partial reloads no longer accumulate in the status reporter.
+note: Release status reporter entries for stopped component instances without recreating them for invalid late events.
 
 # One or more tracking issues or pull requests related to the change
 issues: [5966]
