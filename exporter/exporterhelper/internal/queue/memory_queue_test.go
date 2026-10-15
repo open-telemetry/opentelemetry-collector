@@ -241,3 +241,63 @@ func consume[T any](q readableQueue[T], consumeFunc func(context.Context, T) err
 	done.OnDone(consumeFunc(ctx, req))
 	return true
 }
+
+func TestMemoryQueueOnFullOnlyWhenNothingUnread(t *testing.T) {
+	var calls atomic.Int32
+	set := newSettings(request.SizerTypeItems, 2)
+	set.OnFull = func() { calls.Add(1) }
+	q := newMemoryQueue[intRequest](set)
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, q.Offer(context.Background(), 1))
+	require.NoError(t, q.Offer(context.Background(), 1))
+
+	require.ErrorIs(t, q.Offer(context.Background(), 1), ErrQueueIsFull)
+	assert.EqualValues(t, 0, calls.Load())
+
+	_, _, done1, ok := q.Read(context.Background())
+	require.True(t, ok)
+	_, _, done2, ok := q.Read(context.Background())
+	require.True(t, ok)
+	assert.EqualValues(t, 0, calls.Load(), "no producer was waiting, so the read side must not signal")
+
+	require.ErrorIs(t, q.Offer(context.Background(), 1), ErrQueueIsFull)
+	assert.EqualValues(t, 1, calls.Load())
+
+	done1.OnDone(nil)
+	done2.OnDone(nil)
+	require.NoError(t, q.Offer(context.Background(), 1))
+	assert.EqualValues(t, 1, calls.Load())
+	require.NoError(t, q.Shutdown(context.Background()))
+}
+
+func TestMemoryQueueOnFullWhenBlockedProducerWaits(t *testing.T) {
+	var calls atomic.Int32
+	set := newSettings(request.SizerTypeItems, 2)
+	set.BlockOnOverflow = true
+	set.OnFull = func() { calls.Add(1) }
+	q := newMemoryQueue[intRequest](set).(*memoryQueue[intRequest])
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, q.Offer(context.Background(), 1))
+	require.NoError(t, q.Offer(context.Background(), 1))
+
+	offered := make(chan error, 1)
+	go func() { offered <- q.Offer(context.Background(), 1) }()
+	assert.Eventually(t, func() bool {
+		q.mu.Lock()
+		defer q.mu.Unlock()
+		return q.hasMoreSpace.waiting == 1
+	}, time.Second, time.Millisecond)
+	assert.EqualValues(t, 0, calls.Load())
+
+	_, _, done1, ok := q.Read(context.Background())
+	require.True(t, ok)
+	assert.EqualValues(t, 0, calls.Load())
+	_, _, done2, ok := q.Read(context.Background())
+	require.True(t, ok)
+	assert.EqualValues(t, 1, calls.Load())
+
+	done1.OnDone(nil)
+	require.NoError(t, <-offered)
+	done2.OnDone(nil)
+	require.NoError(t, q.Shutdown(context.Background()))
+}
