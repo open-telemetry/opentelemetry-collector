@@ -7,44 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
-
-// Config defines configuration for queueing and batching incoming requests.
-type Config struct {
-	// WaitForResult determines if incoming requests are blocked until the request is processed or not.
-	// Currently, this option is not available when persistent queue is configured using the storage configuration.
-	WaitForResult bool `mapstructure:"wait_for_result"`
-
-	// Sizer determines the type of size measurement used by this component.
-	// It accepts "requests", "items", or "bytes".
-	Sizer request.SizerType `mapstructure:"sizer"`
-
-	// QueueSize represents the maximum data size allowed for concurrent storage and processing.
-	QueueSize int64 `mapstructure:"queue_size"`
-
-	// BlockOnOverflow determines the behavior when the component's TotalSize limit is reached.
-	// If true, the component will wait for space; otherwise, operations will immediately return a retryable error.
-	BlockOnOverflow bool `mapstructure:"block_on_overflow"`
-
-	// StorageID if not empty, enables the persistent storage and uses the component specified
-	// as a storage extension for the persistent queue.
-	// TODO: This will be changed to Optional when available.
-	// See https://github.com/open-telemetry/opentelemetry-collector/issues/13822
-	StorageID *component.ID `mapstructure:"storage"`
-
-	// NumConsumers is the maximum number of concurrent consumers from the queue.
-	// This applies across all different optional configurations from above (e.g. wait_for_result, block_on_overflow, storage, etc.).
-	NumConsumers int `mapstructure:"num_consumers"`
-
-	// BatchConfig it configures how the requests are consumed from the queue and batch together during consumption.
-	Batch configoptional.Optional[BatchConfig] `mapstructure:"batch"`
-}
 
 func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	if err := conf.Unmarshal(cfg); err != nil {
@@ -64,15 +30,7 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 }
 
 // Validate checks if the Config is valid
-func (cfg *Config) Validate() error {
-	if cfg.NumConsumers <= 0 {
-		return errors.New("`num_consumers` must be positive")
-	}
-
-	if cfg.QueueSize <= 0 {
-		return errors.New("`queue_size` must be positive")
-	}
-
+func validateConfig(cfg *Config) error {
 	// Only support request sizer for persistent queue at this moment.
 	if cfg.StorageID != nil && cfg.WaitForResult {
 		return errors.New("`wait_for_result` is not supported with a persistent queue configured with `storage`")
@@ -88,88 +46,14 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
-// BatchConfig defines a configuration for batching requests based on a timeout and a minimum number of items.
-type BatchConfig struct {
-	// FlushTimeout sets the time after which a batch will be sent regardless of its size.
-	FlushTimeout time.Duration `mapstructure:"flush_timeout"`
-
-	// Sizer determines the type of size measurement used by the batch.
-	// If not configured, use the same configuration as the queue.
-	// It accepts "requests", "items", or "bytes".
-	Sizer request.SizerType `mapstructure:"sizer"`
-
-	// MinSize defines the configuration for the minimum size of a batch.
-	MinSize int64 `mapstructure:"min_size"`
-
-	// MaxSize defines the configuration for the maximum size of a batch.
-	MaxSize int64 `mapstructure:"max_size"`
-
-	// Partition defines the partitioning of the batches configuration.
-	Partition PartitionConfig `mapstructure:"partition"`
+func getDefaultSizer() request.SizerType {
+	return request.SizerTypeItems
 }
 
-// NewDefaultBatchConfig returns the default BatchConfig.
-func NewDefaultBatchConfig() BatchConfig {
-	return BatchConfig{
-		FlushTimeout: 200 * time.Millisecond,
-		Sizer:        request.SizerTypeItems,
-		MinSize:      8192,
-		Partition:    NewDefaultPartitionConfig(),
-	}
-}
-
-// PartitionConfig defines a configuration for partitioning requests based on metadata keys.
-type PartitionConfig struct {
-	// MetadataKeys is a list of client.Metadata keys that will be used to partition
-	// the data into batches. If this setting is empty, a single batcher instance
-	// will be used. When this setting is not empty, one batcher will be used per
-	// distinct combination of values for the listed metadata keys.
-	//
-	// Empty value and unset metadata are treated as distinct cases.
-	//
-	// Entries are case-insensitive. Duplicated entries will trigger a validation error.
-	MetadataKeys []string `mapstructure:"metadata_keys"`
-
-	// CacheSize is the maximum number of active partition batchers kept in the LRU
-	// cache when partitioning is enabled. When the limit is reached, the least
-	// recently used partition is flushed and removed. Default is 10000. Must be positive.
-	CacheSize int `mapstructure:"cache_size"`
-
-	// IdleTimeout is the duration a partition may stay empty before it is removed.
-	// Keep it above the data arrival interval to avoid churning partitions. Default is 90s.
-	// Must be positive.
-	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
-}
-
-// NewDefaultPartitionConfig returns the default PartitionConfig.
-func NewDefaultPartitionConfig() PartitionConfig {
-	return PartitionConfig{
-		CacheSize: 10000,
-		// Large enough to keep a partition alive across common metrics scrape intervals (up to 60s).
-		IdleTimeout: 90 * time.Second,
-	}
-}
-
-func (cfg *BatchConfig) Validate() error {
-	if cfg == nil {
-		return nil
-	}
-
+func validateBatchConfig(cfg *BatchConfig) error {
 	// Only support items or bytes sizer for batch at this moment.
 	if cfg.Sizer != request.SizerTypeItems && cfg.Sizer != request.SizerTypeBytes {
 		return fmt.Errorf("`batch` supports only `items` or `bytes` sizer, found %q", cfg.Sizer.String())
-	}
-
-	if cfg.FlushTimeout <= 0 {
-		return fmt.Errorf("`flush_timeout` must be positive, found %d", cfg.FlushTimeout)
-	}
-
-	if cfg.MinSize < 0 {
-		return fmt.Errorf("`min_size` must be non-negative, found %d", cfg.MinSize)
-	}
-
-	if cfg.MaxSize < 0 {
-		return fmt.Errorf("`max_size` must be non-negative, found %d", cfg.MaxSize)
 	}
 
 	if cfg.MaxSize > 0 && cfg.MaxSize < cfg.MinSize {
@@ -179,28 +63,15 @@ func (cfg *BatchConfig) Validate() error {
 	return nil
 }
 
-func (cfg *PartitionConfig) Validate() error {
-	if cfg == nil {
-		return nil
-	}
-
-	if cfg.IdleTimeout <= 0 {
-		return fmt.Errorf("`idle_timeout` must be positive, found %s", cfg.IdleTimeout)
-	}
-
-	// Validate metadata_keys for duplicates (case-insensitive)
+// Validate metadata_keys for duplicates (case-insensitive)
+func validateMetadataKeys(metadataKeys []string) error {
 	uniq := map[string]bool{}
-	for _, k := range cfg.MetadataKeys {
+	for _, k := range metadataKeys {
 		l := strings.ToLower(k)
 		if _, has := uniq[l]; has {
 			return fmt.Errorf("duplicate entry in metadata_keys: %q (case-insensitive)", l)
 		}
 		uniq[l] = true
 	}
-
-	if cfg.CacheSize <= 0 {
-		return fmt.Errorf("`cache_size` must be positive, found %d", cfg.CacheSize)
-	}
-
 	return nil
 }
