@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: cmd/mdatagen
+note: Report an error when an existing README is missing the generated status section markers or has them in the wrong order.
+issues: [12344]
+subtext: Configuration section markers remain optional.
+change_logs: [user]

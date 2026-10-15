@@ -184,7 +184,7 @@ func run(ymlPath string) error {
 			err = inlineReplaceWithFns(
 				filepath.Join(tmplDir, "readme.md.tmpl"),
 				filepath.Join(ymlDir, "README.md"),
-				md, statusStart, statusEnd, md.GeneratedPackageName, importRootPath, nil,
+				md, statusStart, statusEnd, md.GeneratedPackageName, importRootPath, nil, true,
 			)
 			if err != nil {
 				return err
@@ -562,7 +562,7 @@ func generateFile(tmplFile, outputFile string, md Metadata, goPackage, importRoo
 	return generateFileWithFns(tmplFile, outputFile, md, goPackage, importRootPath, getTemplateFuncMap(md, importRootPath))
 }
 
-func inlineReplaceWithFns(tmplFile, outputFile string, md Metadata, start, end, goPackage, importRootPath string, fns template.FuncMap) error {
+func inlineReplaceWithFns(tmplFile, outputFile string, md Metadata, start, end, goPackage, importRootPath string, fns template.FuncMap, required bool) error {
 	if fns == nil {
 		fns = getTemplateFuncMap(md, importRootPath)
 	}
@@ -574,6 +574,9 @@ func inlineReplaceWithFns(tmplFile, outputFile string, md Metadata, start, end, 
 
 	re := regexp.MustCompile(fmt.Sprintf("%s[\\s\\S]*%s", start, end))
 	if !re.Match(readmeContents) {
+		if required {
+			return fmt.Errorf("cannot update %s: ensure %q appears before %q", outputFile, start, end)
+		}
 		return nil
 	}
 
@@ -809,7 +812,7 @@ func injectConfigDocsToReadme(md Metadata, mdDir, importRootPath string) error {
 			filepath.Join("templates", "config_doc.md.tmpl"),
 			readmePath,
 			md, configDocStart, configDocEnd,
-			md.GeneratedPackageName, rootPkg, fns,
+			md.GeneratedPackageName, rootPkg, fns, false,
 		); err != nil {
 			return fmt.Errorf("failed to inject config doc into README: %w", err)
 		}

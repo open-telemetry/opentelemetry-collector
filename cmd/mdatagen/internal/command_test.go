@@ -1362,6 +1362,157 @@ func TestRun(t *testing.T) {
 	}
 }
 
+func TestRunReadmeStatus(t *testing.T) {
+	tests := []struct {
+		name        string
+		readme      string
+		statusClass string
+		noReadme    bool
+		noStatus    bool
+		wantErr     bool
+	}{
+		{
+			name:   "valid status section",
+			readme: "# Component\n\n" + statusStart + "\nstale status\n" + statusEnd + "\n\nComponent documentation\n",
+		},
+		{
+			name:    "missing status section",
+			readme:  "# Component\n\nComponent documentation\n",
+			wantErr: true,
+		},
+		{
+			name:    "empty readme",
+			wantErr: true,
+		},
+		{
+			name:        "package missing status section",
+			readme:      "# Package\n",
+			statusClass: "pkg",
+			wantErr:     true,
+		},
+		{
+			name:    "missing start marker",
+			readme:  "# Component\n\n" + statusEnd + "\n",
+			wantErr: true,
+		},
+		{
+			name:    "missing end marker",
+			readme:  "# Component\n\n" + statusStart + "\n",
+			wantErr: true,
+		},
+		{
+			name:    "reversed markers",
+			readme:  "# Component\n\n" + statusEnd + "\n" + statusStart + "\n",
+			wantErr: true,
+		},
+		{
+			name:    "config markers only",
+			readme:  "# Component\n\n" + configDocStart + "\n" + configDocEnd + "\n",
+			wantErr: true,
+		},
+		{
+			name:     "missing readme",
+			noReadme: true,
+		},
+		{
+			name:     "subcomponent without status",
+			readme:   "# Component\n\nComponent documentation\n",
+			noStatus: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := newTestModuleDir(t)
+			metadataFile := filepath.Join(dir, "metadata.yaml")
+			metadata, err := os.ReadFile(filepath.Join("testdata", "status_only.yaml"))
+			require.NoError(t, err)
+			if tt.statusClass != "" {
+				metadata = []byte(strings.Replace(string(metadata), "class: exporter", "class: "+tt.statusClass, 1))
+			}
+			if tt.noStatus {
+				metadata = []byte("type: subcomponent\nparent: parent\n")
+			}
+			require.NoError(t, os.WriteFile(metadataFile, metadata, 0o600)) // #nosec G703 -- path is inside the test's temporary module.
+			require.NoError(t, os.WriteFile(filepath.Join(dir, "empty.go"), []byte("package shortname\n"), 0o600))
+			readmeFile := filepath.Join(dir, "README.md")
+			if !tt.noReadme {
+				require.NoError(t, os.WriteFile(readmeFile, []byte(tt.readme), 0o600))
+			}
+
+			err = run(metadataFile)
+			if tt.wantErr {
+				require.Error(t, err)
+				require.ErrorContains(t, err, readmeFile)
+				require.ErrorContains(t, err, statusStart)
+				require.ErrorContains(t, err, statusEnd)
+				require.ErrorContains(t, err, "before")
+			} else {
+				require.NoError(t, err)
+			}
+
+			if tt.noReadme {
+				require.NoFileExists(t, readmeFile)
+				return
+			}
+			contents, err := os.ReadFile(filepath.Clean(readmeFile))
+			require.NoError(t, err)
+			if tt.wantErr || tt.noStatus {
+				assert.Equal(t, tt.readme, string(contents))
+				return
+			}
+			assert.Contains(t, string(contents), "| Stability")
+			assert.NotContains(t, string(contents), "stale status")
+			assert.Contains(t, string(contents), "# Component\n\n"+statusStart)
+			assert.Contains(t, string(contents), statusEnd+"\n\nComponent documentation\n")
+		})
+	}
+}
+
+func TestInjectConfigDocsToReadmeOptionalMarkers(t *testing.T) {
+	tests := []struct {
+		name     string
+		readme   string
+		noReadme bool
+		wantDocs bool
+	}{
+		{name: "missing readme", noReadme: true},
+		{name: "missing markers", readme: "# Component\n"},
+		{name: "missing start marker", readme: configDocEnd + "\n"},
+		{name: "missing end marker", readme: configDocStart + "\n"},
+		{name: "reversed markers", readme: configDocEnd + "\n" + configDocStart + "\n"},
+		{name: "valid markers", readme: configDocStart + "\nstale config\n" + configDocEnd + "\n", wantDocs: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			readmeFile := filepath.Join(dir, "README.md")
+			if !tt.noReadme {
+				require.NoError(t, os.WriteFile(readmeFile, []byte(tt.readme), 0o600))
+			}
+			md := Metadata{
+				Type: "test",
+				ConfigsMetadata: &cfggen.ConfigsMetadata{
+					Config: &cfggen.ConfigMetadata{Type: "object"},
+				},
+			}
+			require.NoError(t, injectConfigDocsToReadme(md, dir, "go.opentelemetry.io/collector"))
+
+			if tt.noReadme {
+				require.NoFileExists(t, readmeFile)
+				return
+			}
+			contents, err := os.ReadFile(filepath.Clean(readmeFile))
+			require.NoError(t, err)
+			if tt.wantDocs {
+				assert.Contains(t, string(contents), "## Configuration")
+				assert.NotContains(t, string(contents), "stale config")
+			} else {
+				assert.Equal(t, tt.readme, string(contents))
+			}
+		})
+	}
+}
+
 func TestInlineReplace(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -1377,6 +1528,7 @@ func TestInlineReplace(t *testing.T) {
 		semConvVersion string
 		semConvURL     string
 		githubLabel    string
+		wantErr        bool
 	}{
 		{
 			name: "readme with empty status",
@@ -1519,6 +1671,7 @@ Some info about a component
 `,
 			outputFile: "readme_without_status.md",
 			distros:    []string{"contrib"},
+			wantErr:    true,
 		},
 		{
 			name: "component with warnings",
@@ -1644,7 +1797,14 @@ Some info about a component
 			readmeFile := filepath.Join(tmpdir, "README.md")
 			require.NoError(t, os.WriteFile(readmeFile, []byte(tt.markdown), 0o600))
 
-			err := inlineReplaceWithFns("templates/readme.md.tmpl", readmeFile, md, statusStart, statusEnd, "metadata", "go.opentelemetry.io/collector", nil)
+			err := inlineReplaceWithFns("templates/readme.md.tmpl", readmeFile, md, statusStart, statusEnd, "metadata", "go.opentelemetry.io/collector", nil, true)
+			if tt.wantErr {
+				require.Error(t, err)
+				got, readErr := os.ReadFile(filepath.Clean(readmeFile))
+				require.NoError(t, readErr)
+				assert.Equal(t, tt.markdown, string(got))
+				return
+			}
 			require.NoError(t, err)
 
 			require.FileExists(t, filepath.Join(tmpdir, "README.md"))
