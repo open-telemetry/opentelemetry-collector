@@ -12,6 +12,12 @@ const (
 	ProtocolFTP
 )
 
+// NewDefaultProtocol returns the default Protocol, computed by hand because the enum's
+// string-typed default ("http") can't be rendered as a Go literal for its x-customType "int".
+func NewDefaultProtocol() Protocol {
+	return Protocol(ProtocolHTTP)
+}
+
 func (p *Protocol) UnmarshalText(text []byte) error {
 	str := string(text)
 	switch str {
