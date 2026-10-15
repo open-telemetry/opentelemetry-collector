@@ -141,6 +141,12 @@ func run(ymlPath string) error {
 		return fmt.Errorf("failed loading %v: %w", ymlPath, err)
 	}
 
+	if md.ConfigsMetadata != nil {
+		if err = cfggen.ApplyConfigsOrder(raw, md.ConfigsMetadata); err != nil {
+			return fmt.Errorf("failed to determine config field order: %w", err)
+		}
+	}
+
 	tmplDir := "templates"
 
 	codeDir := filepath.Join(ymlDir, "internal", md.GeneratedPackageName)
@@ -222,7 +228,7 @@ func run(ymlPath string) error {
 		}
 	}
 
-	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 || len(md.ResourceAttributes) != 0 || len(md.Events) != 0 || len(md.FeatureGates) != 0 { // if there's metrics or internal metrics or events or feature gates, generate documentation for them
+	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 || len(md.ResourceAttributes) != 0 || len(md.Events) != 0 || len(md.FeatureGates) != 0 || (md.SendingQueue != nil && !md.SendingQueue.IsImplicit()) { // if there's component metadata to document
 		toGenerate[filepath.Join(tmplDir, "documentation.md.tmpl")] = filepath.Join(ymlDir, "documentation.md")
 	} else {
 		if _, err = os.Stat(filepath.Join(ymlDir, "documentation.md")); err == nil {
@@ -700,6 +706,9 @@ func mergeInternalMetadataDefs(raw []byte, src *cfggen.ConfigsMetadata) error {
 
 	if len(configs) == 0 {
 		return nil
+	}
+	if err := cfggen.ApplyNamedDefsOrder(raw, configs); err != nil {
+		return fmt.Errorf("failed to determine internal metadata defs order: %w", err)
 	}
 	for _, cfg := range configs {
 		if cfg != nil {
