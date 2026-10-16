@@ -41,7 +41,7 @@ type ConfigMetadata struct {
 	Type             SchemaType                 `mapstructure:"type,omitempty" json:"type,omitempty" yaml:"type,omitempty"`
 	Ref              string                     `mapstructure:"$ref,omitempty" json:"-" yaml:"$ref,omitempty"`
 	Default          any                        `mapstructure:"default,omitempty" json:"default,omitempty" yaml:"default,omitempty"`
-	Deprecated       bool                       `mapstructure:"deprecated,omitempty" json:"deprecated,omitempty" yaml:"deprecated,omitempty"`
+	Deprecated       *DeprecatedConfig          `mapstructure:"deprecated,omitempty" json:"deprecated,omitempty" yaml:"deprecated,omitempty"`
 	Enum             []any                      `mapstructure:"enum,omitempty" json:"enum,omitempty" yaml:"enum,omitempty"`
 	Properties       map[string]*ConfigMetadata `mapstructure:"properties,omitempty" json:"properties,omitempty" yaml:"properties,omitempty"`
 	Values           *ConfigMetadata            `mapstructure:"values,omitempty" json:"values,omitempty" yaml:"values,omitempty"`
@@ -66,11 +66,19 @@ type ConfigMetadata struct {
 	Embed      bool           `mapstructure:"embed,omitempty" json:"-" yaml:"embed,omitempty"`
 	// internal
 	InternalOnly bool `mapstructure:"-" json:"-" yaml:"-"`
+	// propOrder records property names in the order they were declared in the YAML
+	// source, so generated output can preserve it instead of the alphabetical order
+	propOrder []string
 }
 
 type ConfigsMetadata struct {
 	Config          *ConfigMetadata            `mapstructure:"config,omitempty" json:"config,omitempty" yaml:"config,omitempty"`
 	ExportedConfigs map[string]*ConfigMetadata `mapstructure:"exported_configs,omitempty" json:"exported_configs,omitempty" yaml:"exported_configs,omitempty"`
+}
+
+type DeprecatedConfig struct {
+	Since string `mapstructure:"since,omitempty" yaml:"since,omitempty"`
+	Note  string `mapstructure:"note,omitempty" yaml:"note,omitempty"`
 }
 
 type GoStructConfig struct {
@@ -186,9 +194,6 @@ func (md *ConfigMetadata) mergeFrom(other *ConfigMetadata, isRef bool) {
 	}
 
 	// booleans — false is treated as "not set"
-	if !md.Deprecated {
-		md.Deprecated = other.Deprecated
-	}
 	if !md.UniqueItems {
 		md.UniqueItems = other.UniqueItems
 	}
@@ -227,6 +232,21 @@ func (md *ConfigMetadata) mergeFrom(other *ConfigMetadata, isRef bool) {
 			}
 		}
 	}
+	// property declaration order: keep md's own order first, then append any names
+	// inherited from other that aren't already present
+	if other.propOrder != nil {
+		seen := make(map[string]bool, len(md.propOrder))
+		for _, name := range md.propOrder {
+			seen[name] = true
+		}
+		for _, name := range other.propOrder {
+			if !seen[name] {
+				md.propOrder = append(md.propOrder, name)
+				seen[name] = true
+			}
+		}
+	}
+
 	// *ConfigMetadata
 	if md.Values == nil {
 		md.Values = other.Values.Clone()
@@ -266,6 +286,11 @@ func (md *ConfigMetadata) mergeFrom(other *ConfigMetadata, isRef bool) {
 		md.ExclusiveMinimum = clonePtr(other.ExclusiveMinimum)
 	}
 
+	// deprecated config
+	if md.Deprecated == nil && other.Deprecated != nil {
+		md.Deprecated = clonePtr(other.Deprecated)
+	}
+
 	// GoStructConfig — merge field by field
 	if !isRef && md.GoStruct.CustomValidator == nil && other.GoStruct.CustomValidator != nil {
 		cv := *other.GoStruct.CustomValidator
@@ -278,7 +303,7 @@ func (md *ConfigMetadata) mergeFrom(other *ConfigMetadata, isRef bool) {
 	if !md.GoStruct.Anonymous {
 		md.GoStruct.Anonymous = other.GoStruct.Anonymous
 	}
-	if !md.GoStruct.IgnoreDefault {
+	if !isRef && !md.GoStruct.IgnoreDefault {
 		md.GoStruct.IgnoreDefault = other.GoStruct.IgnoreDefault
 	}
 	if md.GoStruct.FieldName == "" {
@@ -387,6 +412,14 @@ func (md *ConfigMetadata) Validate() error {
 	if md.Values != nil {
 		if err := md.Values.Validate(); err != nil {
 			errs = errors.Join(errs, err)
+		}
+	}
+	if md.Deprecated != nil {
+		if md.Deprecated.Since == "" {
+			errs = errors.Join(errs, errors.New("deprecated.since must be set"))
+		}
+		if md.Deprecated.Note == "" {
+			errs = errors.Join(errs, errors.New("deprecated.note must be set"))
 		}
 	}
 	return errs

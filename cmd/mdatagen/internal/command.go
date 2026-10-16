@@ -141,6 +141,12 @@ func run(ymlPath string) error {
 		return fmt.Errorf("failed loading %v: %w", ymlPath, err)
 	}
 
+	if md.ConfigsMetadata != nil {
+		if err = cfggen.ApplyConfigsOrder(raw, md.ConfigsMetadata); err != nil {
+			return fmt.Errorf("failed to determine config field order: %w", err)
+		}
+	}
+
 	tmplDir := "templates"
 
 	codeDir := filepath.Join(ymlDir, "internal", md.GeneratedPackageName)
@@ -700,6 +706,9 @@ func mergeInternalMetadataDefs(raw []byte, src *cfggen.ConfigsMetadata) error {
 
 	if len(configs) == 0 {
 		return nil
+	}
+	if err := cfggen.ApplyNamedDefsOrder(raw, configs); err != nil {
+		return fmt.Errorf("failed to determine internal metadata defs order: %w", err)
 	}
 	for _, cfg := range configs {
 		if cfg != nil {

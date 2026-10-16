@@ -7,6 +7,37 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.69.0/v0.163.0
+
+### 💡 Enhancements 💡
+
+- `cmd/builder`: Add `dist.resource.detection.detectors` to the builder config, letting distributions opt into a smaller set of resourcedetectionprocessor detectors via generated go build tags. (#16075)
+- `cmd/mdatagen`: Generate exporter queue/batch sender defaults from an opt-in `sending_queue` field in metadata.yaml. See the [batching migration RFC](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/batching-migration.md). (#15963)
+  Declaring `sending_queue` is opt-in; an exporter that omits it is unaffected until it explicitly opts in one at a time during Phase 2 of the migration. Set MDATAGEN_SENDING_QUEUE_OPT_OUT=true to generate the standard default for every undeclared exporter while auditing a whole repository.
+- `pkg/pprofile`: Implement Profiles development-version metadata in the OTLP receiver and exporters. (#16147, #16009)
+  The receiver rejects malformed, repeated, or unsupported versions before decoding.
+  OTLP exporters send the version associated with their compiled-in Profiles schema.
+  The version is not configurable, and existing clients without metadata identify
+  the initial development version.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Replace the O(n) scan in generated `recordDataPoint` with an O(1) hash lookup, fixing an O(n²) cost per scrape when many data points land on one resource. (#15912)
+- `cmd/mdatagen`: When both migration gates are enabled, only the latest metric with its v1 attributes is emitted (legacy attributes are no longer included). (#15979)
+- `pkg/exporterhelper`: Fix sending queue deadlocks when blocked offers are cancelled with block_on_overflow enabled. (#15700)
+- `pkg/exporterhelper`: Drop only the oversized profile when splitting a profiles batch, instead of discarding every profile queued behind it (#16087)
+  Same fix as
+- `pkg/exporterhelper`: Drop only the oversized span when splitting a traces batch, instead of discarding every span queued behind it (#16087)
+  Same fix as
+- `pkg/pprofile`: Use the profiles dictionary for resource and scope attribute strings sent over OTLP/gRPC. (#15861)
+  The OTLP/gRPC profiles client now interns attribute strings before transmission, matching the OTLP/HTTP path. The server resolves the references before exposing pdata to consumers.
+  
+- `pkg/xpdata`: Fix `xhash` producing the same hash for different maps by length-prefixing keys, strings and bytes. (#16048)
+  All hash values produced by `xhash` change.
+
+<!-- previous-version -->
+
 ## v1.68.0/v0.162.0
 
 ### 🛑 Breaking changes 🛑
