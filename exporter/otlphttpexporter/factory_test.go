@@ -40,6 +40,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, 30*time.Second, ocfg.RetryConfig.MaxInterval, "default retry MaxInterval")
 	assert.True(t, ocfg.QueueConfig.HasValue(), "default sending queue is enabled")
 	assert.Equal(t, EncodingProto, ocfg.Encoding)
+	assert.True(t, ocfg.LogFullURL, "full endpoint URL logging is enabled by default")
 	assert.Equal(t, configcompression.TypeGzip, ocfg.ClientConfig.Compression)
 }
 

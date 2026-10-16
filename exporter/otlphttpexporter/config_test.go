@@ -52,7 +52,8 @@ func TestUnmarshalConfig(t *testing.T) {
 				QueueSize:    10,
 				Batch:        configoptional.Default(exporterhelper.NewDefaultBatchConfig()),
 			}),
-			Encoding: EncodingProto,
+			Encoding:   EncodingProto,
+			LogFullURL: true,
 			ClientConfig: confighttp.ClientConfig{
 				Headers: configopaque.MapList{
 					{Name: "another", Value: "somevalue"},
@@ -80,6 +81,24 @@ func TestUnmarshalConfig(t *testing.T) {
 			},
 			ProfilesEndpoint: "https://custom.profiles.endpoint:8080/v1development/profiles",
 		}, cfg)
+}
+
+func TestUnmarshalLogFullURL(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		values map[string]any
+		want   bool
+	}{
+		{name: "default", values: map[string]any{}, want: true},
+		{name: "enabled", values: map[string]any{"log_full_url": true}, want: true},
+		{name: "disabled", values: map[string]any{"log_full_url": false}, want: false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := NewFactory().CreateDefaultConfig().(*Config)
+			require.NoError(t, confmap.NewFromStringMap(test.values).Unmarshal(cfg))
+			assert.Equal(t, test.want, cfg.LogFullURL)
+		})
+	}
 }
 
 func TestUnmarshalConfigInvalidEncoding(t *testing.T) {

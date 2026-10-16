@@ -1,0 +1,6 @@
+change_type: enhancement
+component: exporter/otlp_http
+note: Add log_full_url to omit sensitive endpoint URL components from exporter diagnostic logs and errors when disabled.
+issues: [11564]
+subtext: The default remains true.
+change_logs: [user, api]

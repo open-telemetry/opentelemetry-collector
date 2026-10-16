@@ -174,9 +174,15 @@ func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) e
 }
 
 func (e *baseExporter) export(ctx context.Context, requestURL string, request []byte, partialSuccessHandler partialSuccessHandler) error {
-	e.logger.Debug("Preparing to make HTTP request", zap.String("url", requestURL))
+	diagnosticURL := e.urlForLog(requestURL)
+	e.logger.Debug("Preparing to make HTTP request", zap.String("url", diagnosticURL))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, requestURL, bytes.NewReader(request))
 	if err != nil {
+		if !e.config.LogFullURL {
+			if urlErr, ok := errors.AsType[*url.Error](err); ok {
+				urlErr.URL = diagnosticURL
+			}
+		}
 		return consumererror.NewPermanent(err)
 	}
 
@@ -194,7 +200,7 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 	resp, err := e.client.Do(req)
 	if err != nil {
 		if urlErr, ok := errors.AsType[*url.Error](err); ok {
-			urlErr.URL = req.URL.String()
+			urlErr.URL = e.urlForLog(req.URL.String())
 		}
 		return fmt.Errorf("failed to make an HTTP request: %w", err)
 	}
@@ -220,12 +226,12 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 	if respStatus != nil {
 		errString = fmt.Sprintf(
 			"error exporting items, request to %s responded with HTTP Status Code %d, Message=%s, Details=%v",
-			requestURL, resp.StatusCode, respStatus.Message, respStatus.Details,
+			diagnosticURL, resp.StatusCode, respStatus.Message, respStatus.Details,
 		)
 	} else {
 		errString = fmt.Sprintf(
 			"error exporting items, request to %s responded with HTTP Status Code %d",
-			requestURL, resp.StatusCode,
+			diagnosticURL, resp.StatusCode,
 		)
 	}
 	formattedErr = statusutil.NewStatusFromMsgAndHTTPCode(errString, resp.StatusCode).Err()
@@ -257,6 +263,17 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 		}
 	}
 	return formattedErr
+}
+
+func (e *baseExporter) urlForLog(requestURL string) string {
+	if e.config.LogFullURL {
+		return requestURL
+	}
+	u, err := url.Parse(requestURL)
+	if err != nil || u.Host == "" {
+		return "[REDACTED]"
+	}
+	return (&url.URL{Scheme: u.Scheme, Host: u.Host}).String()
 }
 
 // Determine if the status code is retryable according to the specification.

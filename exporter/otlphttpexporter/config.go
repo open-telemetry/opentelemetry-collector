@@ -64,6 +64,10 @@ type Config struct {
 
 	// The encoding to export telemetry (default: "proto")
 	Encoding EncodingType `mapstructure:"encoding"`
+
+	// LogFullURL includes the full endpoint URL in exporter diagnostic logs and errors (default: true).
+	// When false, only the URL scheme and host, including any port, are included.
+	LogFullURL bool `mapstructure:"log_full_url"`
 }
 
 var _ component.Config = (*Config)(nil)

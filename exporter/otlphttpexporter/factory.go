@@ -53,6 +53,7 @@ func createDefaultConfig() component.Config {
 		QueueConfig:  metadata.NewDefaultSendingQueueConfig(),
 		Encoding:     EncodingProto,
 		ClientConfig: clientConfig,
+		LogFullURL:   true,
 	}
 }
 

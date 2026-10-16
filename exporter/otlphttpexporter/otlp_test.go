@@ -257,6 +257,7 @@ func TestErrorResponses(t *testing.T) {
 
 			cfg := &Config{
 				Encoding:       EncodingProto,
+				LogFullURL:     true,
 				TracesEndpoint: srv.URL + "/v1/traces",
 				// Create without QueueConfig and RetryConfig so that ConsumeTraces
 				// returns the errors that we want to check immediately.
@@ -1218,7 +1219,8 @@ func TestExport_ErrorShowsModifiedURL(t *testing.T) {
 		client: client,
 		logger: zap.New(logger),
 		config: &Config{
-			Encoding: EncodingProto,
+			Encoding:   EncodingProto,
+			LogFullURL: true,
 		},
 	}
 

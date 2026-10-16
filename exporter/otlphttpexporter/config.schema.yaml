@@ -8,6 +8,9 @@ properties:
   encoding:
     description: 'The encoding to export telemetry (default: "proto")'
     $ref: encoding_type
+  log_full_url:
+    description: 'LogFullURL includes the full endpoint URL in exporter diagnostic logs and errors (default: true). When false, only the URL scheme and host, including any port, are included.'
+    type: boolean
   logs_endpoint:
     description: The URL to send logs to. If omitted the Endpoint + "/v1/logs" will be used.
     type: string
