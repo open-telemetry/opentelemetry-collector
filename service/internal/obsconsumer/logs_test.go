@@ -221,10 +221,14 @@ func TestLogsConsumeFailure(t *testing.T) {
 	require.Equal(t, int64(1), itemData.DataPoints[0].Value)
 
 	itemAttrs := itemData.DataPoints[0].Attributes
-	require.Equal(t, 1, itemAttrs.Len())
+
 	val, ok := itemAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "failure", val.String())
+
+	errorType, ok := itemAttrs.Value(attribute.Key(obsconsumer.ComponentErrorType))
+	require.True(t, ok)
+	require.Equal(t, "unspecified", errorType.String())
 
 	require.NotNil(t, sizeMetric)
 	sizeData := sizeMetric.Data.(metricdata.Sum[int64])
@@ -232,14 +236,71 @@ func TestLogsConsumeFailure(t *testing.T) {
 	require.Positive(t, sizeData.DataPoints[0].Value)
 
 	sizeAttrs := sizeData.DataPoints[0].Attributes
-	require.Equal(t, 1, sizeAttrs.Len())
+
 	val, ok = sizeAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "failure", val.String())
 
+	errorType, ok = sizeAttrs.Value(attribute.Key(obsconsumer.ComponentErrorType))
+	require.True(t, ok)
+	require.Equal(t, "unspecified", errorType.String())
+
 	// Check that the logger was called with an error
 	require.Len(t, logs.All(), 1)
 	assert.Contains(t, logs.All()[0].Message, "Logs pipeline component had an error")
+}
+
+func TestLogsConsumeRefused(t *testing.T) {
+	setGateForTest(t, true)
+
+	ctx := context.Background()
+	mockConsumer := &mockLogsConsumer{
+		err: consumererror.NewDownstream(context.Canceled),
+	}
+
+	reader := sdkmetric.NewManualReader()
+	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	meter := mp.Meter("test")
+
+	itemCounter, err := meter.Int64Counter("item_counter")
+	require.NoError(t, err)
+	sizeCounter, err := meter.Int64Counter("size_counter")
+	require.NoError(t, err)
+
+	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{
+		ItemCounter: itemCounter,
+		SizeCounter: sizeCounter,
+		Logger:      zap.NewNop(),
+	})
+
+	ld := plog.NewLogs()
+	r := ld.ResourceLogs().AppendEmpty()
+	sl := r.ScopeLogs().AppendEmpty()
+	sl.LogRecords().AppendEmpty()
+
+	consumeErr := consumer.ConsumeLogs(ctx, ld)
+	require.Error(t, consumeErr)
+	require.True(t, consumererror.IsDownstream(consumeErr))
+
+	var metrics metricdata.ResourceMetrics
+	require.NoError(t, reader.Collect(ctx, &metrics))
+	require.Len(t, metrics.ScopeMetrics, 1)
+	require.Len(t, metrics.ScopeMetrics[0].Metrics, 2)
+
+	for _, metric := range metrics.ScopeMetrics[0].Metrics {
+		data := metric.Data.(metricdata.Sum[int64])
+		require.Len(t, data.DataPoints, 1)
+
+		attrs := data.DataPoints[0].Attributes
+
+		outcome, ok := attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
+		require.True(t, ok)
+		require.Equal(t, "refused", outcome.String())
+
+		errorType, ok := attrs.Value(attribute.Key(obsconsumer.ComponentErrorType))
+		require.True(t, ok)
+		require.Equal(t, "cancelled", errorType.String())
+	}
 }
 
 func TestLogsWithStaticAttributes(t *testing.T) {
