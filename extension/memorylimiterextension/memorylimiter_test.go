@@ -24,13 +24,16 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/tap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/extension/memorylimiterextension/internal/metadata"
 	"go.opentelemetry.io/collector/extension/memorylimiterextension/internal/metadatatest"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
 	"go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 type errorMeter struct {
@@ -404,7 +407,9 @@ func TestWrapHTTPHandler_Refused(t *testing.T) {
 	)
 }
 
-func TestGetGRPCServerOptions(t *testing.T) {
+func TestGetGRPCServerOptions_GateDisabled(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ExtensionMemorylimiterUseGRPCTapFeatureGate.ID(), false)
+
 	cfg := &Config{
 		CheckInterval:         time.Second,
 		MemoryLimitPercentage: 99,
@@ -418,4 +423,98 @@ func TestGetGRPCServerOptions(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Len(t, opts, 2)
+}
+
+func TestGetGRPCServerOptions_GateEnabled(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ExtensionMemorylimiterUseGRPCTapFeatureGate.ID(), true)
+
+	cfg := &Config{
+		CheckInterval:         time.Second,
+		MemoryLimitPercentage: 99,
+		MemorySpikePercentage: 99,
+	}
+
+	ml, err := newMemoryLimiter(cfg, zap.NewNop(), componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	opts, err := ml.GetGRPCServerOptions(context.Background())
+
+	require.NoError(t, err)
+	assert.Empty(t, opts)
+}
+
+func TestGetGRPCServerInTapHandle_GateDisabled(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ExtensionMemorylimiterUseGRPCTapFeatureGate.ID(), false)
+
+	cfg := &Config{
+		CheckInterval:         time.Second,
+		MemoryLimitPercentage: 99,
+		MemorySpikePercentage: 99,
+	}
+
+	ml, err := newMemoryLimiter(cfg, zap.NewNop(), componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	handle, err := ml.GetGRPCServerInTapHandle(context.Background())
+
+	require.NoError(t, err)
+	assert.Nil(t, handle)
+}
+
+func TestGRPCInTapHandle_Normal(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ExtensionMemorylimiterUseGRPCTapFeatureGate.ID(), true)
+	ctx := context.Background()
+
+	cfg := &Config{
+		CheckInterval:         time.Second,
+		MemoryLimitPercentage: 99,
+		MemorySpikePercentage: 99,
+	}
+
+	ml, err := newMemoryLimiter(cfg, zap.NewNop(), componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	handle, err := ml.GetGRPCServerInTapHandle(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, handle)
+
+	tapCtx, err := handle(ctx, &tap.Info{})
+
+	require.NoError(t, err)
+	assert.Equal(t, ctx, tapCtx)
+}
+
+func TestGRPCInTapHandle_Refused(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ExtensionMemorylimiterUseGRPCTapFeatureGate.ID(), true)
+	ctx := context.Background()
+
+	testTel := componenttest.NewTelemetry()
+	defer func() {
+		require.NoError(t, testTel.Shutdown(ctx))
+	}()
+
+	ml := newRefusingMemoryLimiter(t, testTel.NewTelemetrySettings())
+
+	handle, err := ml.GetGRPCServerInTapHandle(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, handle)
+
+	_, err = handle(ctx, &tap.Info{})
+
+	require.Error(t, err)
+	assert.Equal(t, codes.ResourceExhausted, status.Code(err))
+
+	metadatatest.AssertEqualMemorylimiterRefusedRequests(
+		t,
+		testTel,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value: 1,
+				Attributes: attribute.NewSet(
+					attribute.String("transport", "grpc"),
+				),
+			},
+		},
+		metricdatatest.IgnoreTimestamp(),
+	)
 }
