@@ -10,8 +10,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/xconnector"
@@ -20,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/xexporter"
-	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -316,19 +314,11 @@ func (e errComponent) Shutdown(context.Context) error {
 }
 
 func setObsConsumerGateForTest(t *testing.T, enabled bool) {
-	initial := metadata.TelemetryNewPipelineTelemetryFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TelemetryNewPipelineTelemetryFeatureGate.ID(), enabled))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TelemetryNewPipelineTelemetryFeatureGate.ID(), initial))
-	})
+	testutil.SetFeatureGate(t, metadata.TelemetryNewPipelineTelemetryFeatureGate.ID(), enabled)
 }
 
 func setProtoPoolingGateForTest(t *testing.T, enabled bool) {
-	initial := pref.UseProtoPooling.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(pref.UseProtoPooling.ID(), enabled))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(pref.UseProtoPooling.ID(), initial))
-	})
+	testutil.SetFeatureGate(t, pref.UseProtoPooling.ID(), enabled)
 }
 
 // recordingExporter records the number of items of every request at the time it is consumed.

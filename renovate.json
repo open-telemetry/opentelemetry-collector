@@ -28,6 +28,13 @@
   ],
   "packageRules": [
     {
+      "description": "Ensure source compatibility with Go version used by this project",
+      "matchManagers": [
+        "gomod"
+      ],
+      "constraintsFiltering": "strict"
+    },
+    {
       "matchManagers": [
         "gomod"
       ],
@@ -133,6 +140,15 @@
       "matchManagers": [
         "gomod"
       ],
+      "groupName": "All go.opentelemetry.io/proto packages",
+      "matchPackageNames": [
+        "go.opentelemetry.io/proto{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
       "groupName": "All go.opentelemetry.io/collector packages",
       "matchPackageNames": [
         "go.opentelemetry.io/collector{/,}**"
@@ -166,6 +182,7 @@
   "prConcurrentLimit": 200,
   "prHourlyLimit": 5,
   "postUpdateOptions": [
-    "gomodTidy"
+    "gomodTidyAll",
+    "gomodUpdateImportPaths"
   ]
 }

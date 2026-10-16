@@ -8,6 +8,7 @@ import (
 	"net"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -903,6 +904,10 @@ func TestSendProfiles(t *testing.T) {
 	logger, observed := observer.New(zap.DebugLevel)
 	set.Logger = zap.New(logger)
 
+	// A configured version must not override the schema used by the exporter.
+	version, err := strconv.Atoi(pprofileotlp.DevelopmentVersion)
+	require.NoError(t, err)
+	cfg.ClientConfig.Headers.Set("OTLP-Profiles-Development-Version", configopaque.String(strconv.Itoa(version+1)))
 	exp, err := factory.(xexporter.Factory).CreateProfiles(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -942,15 +947,18 @@ func TestSendProfiles(t *testing.T) {
 
 	expectedHeader := []string{"header-value"}
 
-	// Verify received span.
+	// Verify received profiles. The gRPC transport may extend the profiles
+	// dictionary while interning resource and scope attribute strings.
 	assert.EqualValues(t, 2, rcv.totalItems.Load())
 	assert.EqualValues(t, 2, rcv.requestCount.Load())
-	assert.Equal(t, td, rcv.getLastRequest())
+	assert.Equal(t, td.ResourceProfiles(), rcv.getLastRequest().ResourceProfiles())
 
 	md := rcv.getMetadata()
 	require.Equal(t, expectedHeader, md.Get("header"))
 	require.Len(t, md.Get("User-Agent"), 1)
 	require.Contains(t, md.Get("User-Agent")[0], "Collector/1.2.3test")
+
+	require.Equal(t, []string{pprofileotlp.DevelopmentVersion}, md.Get(pprofileotlp.DevelopmentVersionHeader))
 
 	// Return partial success
 	rcv.setExportResponse(func() pprofileotlp.ExportResponse {

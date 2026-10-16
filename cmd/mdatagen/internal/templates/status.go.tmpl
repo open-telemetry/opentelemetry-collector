@@ -6,6 +6,10 @@ package {{ .Package }}
 
 import (
 	"go.opentelemetry.io/collector/component"
+	{{- if and isExporter (not .SendingQueue.IsOmitted) }}
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	{{- end }}
 )
 
 var (
@@ -23,3 +27,64 @@ const (
 	{{- end }}
 	{{- end }}
 )
+
+{{ if and isExporter (not .SendingQueue.IsOmitted) -}}
+// NewDefaultSendingQueueConfig returns the sending queue default declared in metadata.yaml.
+func NewDefaultSendingQueueConfig() configoptional.Optional[exporterhelper.QueueBatchConfig] {
+	{{- if not .SendingQueue.HasOverrides }}
+	return configoptional.Some(exporterhelper.NewDefaultQueueConfig())
+	{{- else }}
+	{{- $cfg := .SendingQueue.TemplateData }}
+	cfg := exporterhelper.NewDefaultQueueConfig()
+	{{- if .SendingQueue.HasOverride "wait_for_result" }}
+	cfg.WaitForResult = {{ $cfg.WaitForResult }}
+	{{- end }}
+	{{- if .SendingQueue.HasOverride "sizer" }}
+	cfg.Sizer = {{ $cfg.QueueSizer }}
+	{{- end }}
+	{{- if .SendingQueue.HasOverride "queue_size" }}
+	cfg.QueueSize = {{ $cfg.QueueSize }}
+	{{- end }}
+	{{- if .SendingQueue.HasOverride "block_on_overflow" }}
+	cfg.BlockOnOverflow = {{ $cfg.BlockOnOverflow }}
+	{{- end }}
+	{{- if .SendingQueue.HasOverride "storage" }}
+	{{- if $cfg.StorageConstructor }}
+	storageID := {{ $cfg.StorageConstructor }}
+	cfg.StorageID = &storageID
+	{{- else }}
+	cfg.StorageID = nil
+	{{- end }}
+	{{- end }}
+	{{- if .SendingQueue.HasOverride "num_consumers" }}
+	cfg.NumConsumers = {{ $cfg.NumConsumers }}
+	{{- end }}
+	batchCfg := *cfg.Batch.GetOrInsertDefault()
+	{{- if .SendingQueue.HasOverride "batch" "flush_timeout" }}
+	batchCfg.FlushTimeout = {{ $cfg.FlushTimeout }}
+	{{- end }}
+	{{- if .SendingQueue.HasOverride "batch" "sizer" }}
+	batchCfg.Sizer = {{ $cfg.BatchSizer }}
+	{{- end }}
+	{{- if .SendingQueue.HasOverride "batch" "min_size" }}
+	batchCfg.MinSize = {{ $cfg.MinSize }}
+	{{- end }}
+	{{- if .SendingQueue.HasOverride "batch" "max_size" }}
+	batchCfg.MaxSize = {{ $cfg.MaxSize }}
+	{{- end }}
+	{{- if .SendingQueue.HasOverride "batch" "partition" "metadata_keys" }}
+	batchCfg.Partition.MetadataKeys = {{ $cfg.MetadataKeys }}
+	{{- end }}
+	{{- if $cfg.BatchEnabled }}
+	cfg.Batch = configoptional.Some(batchCfg)
+	{{- else }}
+	cfg.Batch = configoptional.Default(batchCfg)
+	{{- end }}
+	{{- if $cfg.QueueEnabled }}
+	return configoptional.Some(cfg)
+	{{- else }}
+	return configoptional.Default(cfg)
+	{{- end }}
+	{{- end }}
+}
+{{ end -}}
