@@ -100,26 +100,6 @@ exported_configs:
           window, and always resets it to None. A value visible to ToClient was
           therefore set programmatically after unmarshaling (or the config was
           never unmarshaled) and takes precedence over the deprecated fields.
-      idle_conn_timeout:
-        type: duration
-        deprecated:
-          since: v0.160.0
-          note: Use Keepalive.IdleConnTimeout instead.
-      max_idle_conns:
-        type: int
-        deprecated:
-          since: v0.160.0
-          note: Use Keepalive.MaxIdleConns instead.
-      max_idle_conns_per_host:
-        type: int
-        deprecated:
-          since: v0.160.0
-          note: Use Keepalive.MaxIdleConnsPerHost instead.
-      disable_keep_alives:
-        type: bool
-        deprecated:
-          since: v0.160.0
-          note: Set 'keepalive::enabled' to false to disable keep-alives.
     go_struct:
       private_fields: true
       ignore_default: true
@@ -236,22 +216,6 @@ exported_configs:
           resets it to None. A value visible to ToServer was therefore set
           programmatically after unmarshaling (or the config was never unmarshaled)
           and takes precedence over the deprecated fields.
-      idle_timeout:
-        type: duration
-        deprecated:
-          since: v0.160.0
-          note: Use Keepalive.IdleTimeout instead.
-        default: 1m
-        go_struct:
-          ignore_default: true
-      keep_alives_enabled:
-        type: bool
-        deprecated:
-          since: v0.160.0
-          note: Set 'keepalive::enabled' to false to disable keep-alives.
-        default: true
-        go_struct:
-          ignore_default: true
     go_struct:
       private_fields: true
       # can be removed with PkgConfighttpPrioritizeNewKeepaliveFeatureGate feature gate
@@ -321,7 +285,8 @@ exported_configs:
 feature_gates:
   - id: pkg.confighttp.PrioritizeNewKeepalive
     description: When enabled, the Keepalive configuration is prioritized over the deprecated configuration fields.
-    stage: beta
+    stage: stable
     from_version: v0.162.0
+    to_version: v0.166.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector/issues/9380
   

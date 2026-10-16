@@ -66,10 +66,6 @@
         "cookies": {
           "description": "Configures the cookie management of the HTTP client."
         },
-        "disable_keep_alives": {
-          "type": "boolean",
-          "deprecated": true
-        },
         "endpoint": {
           "type": "string",
           "description": "Is the target URL to send data to (e.g.: http://some.url:9411/v1/traces)."
@@ -96,11 +92,6 @@
           "description": "Is the duration after which, if the connection has been idle, a ping frame is sent for a health check.\n0s means no health check will be performed.\nThis is needed in case you run into\nhttps://github.com/golang/go/issues/59690\nhttps://github.com/golang/go/issues/36026\n",
           "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
         },
-        "idle_conn_timeout": {
-          "type": "string",
-          "deprecated": true,
-          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
-        },
         "keepalive": {
           "type": "object",
           "properties": {
@@ -125,14 +116,6 @@
         "max_conns_per_host": {
           "type": "integer",
           "description": "Limits the total number of connections per host, including connections in the dialing,\nactive, and idle states. Default is 0 (unlimited).\n"
-        },
-        "max_idle_conns": {
-          "type": "integer",
-          "deprecated": true
-        },
-        "max_idle_conns_per_host": {
-          "type": "integer",
-          "deprecated": true
         },
         "middlewares": {
           "type": "array",
@@ -404,20 +387,9 @@
           "description": "Configures the server for HTTP cross-origin resource sharing (CORS).",
           "default": {}
         },
-        "idle_timeout": {
-          "type": "string",
-          "default": "1m",
-          "deprecated": true,
-          "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
-        },
         "include_metadata": {
           "type": "boolean",
           "description": "Propagates the client metadata from the incoming requests to the downstream consumers."
-        },
-        "keep_alives_enabled": {
-          "type": "boolean",
-          "default": true,
-          "deprecated": true
         },
         "keepalive": {
           "type": "object",
