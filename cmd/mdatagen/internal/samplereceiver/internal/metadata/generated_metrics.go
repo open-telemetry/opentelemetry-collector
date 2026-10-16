@@ -146,6 +146,9 @@ var MetricsInfo = metricsInfo{
 		Name:       "system.memory.usage",
 		Attributes: []string{"state"},
 	},
+	TestHistogram: metricInfo{
+		Name: "test.histogram",
+	},
 }
 
 type metricsInfo struct {
@@ -158,6 +161,7 @@ type metricsInfo struct {
 	ReaggregateMetricWithRequired metricInfo
 	SystemCPUTime                 metricInfo
 	SystemMemoryUsage             metricInfo
+	TestHistogram                 metricInfo
 }
 
 type metricInfo struct {
@@ -1026,6 +1030,79 @@ func newMetricSystemMemoryUsage(cfg SystemMemoryUsageMetricConfig) metricSystemM
 	return m
 }
 
+type metricTestHistogram struct {
+	data     pmetric.Metric            // data buffer for generated metric.
+	config   TestHistogramMetricConfig // metric config provided by user.
+	capacity int                       // max observed number of data points added to the metric.
+}
+
+// init fills test.histogram metric with initial data.
+func (m *metricTestHistogram) init() {
+	m.data.SetName("test.histogram")
+	m.data.SetDescription("Test histogram metric")
+	m.data.SetUnit("s")
+	m.data.SetEmptyHistogram()
+	m.data.Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityUnspecified)
+}
+
+func (m *metricTestHistogram) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Histogram().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetCount(1)
+	dp.SetSum(val)
+	dp.ExplicitBounds().FromRaw([]float64{
+		1,
+		10,
+		100,
+	})
+
+	bucketCounts := make([]uint64, 3+1)
+	for i, boundary := range []float64{
+		1,
+		10,
+		100,
+	} {
+		if val <= boundary {
+			bucketCounts[i]++
+			break
+		}
+		if i == len(bucketCounts)-2 {
+			bucketCounts[i+1]++
+		}
+	}
+	dp.BucketCounts().FromRaw(bucketCounts)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricTestHistogram) updateCapacity() {
+	if m.data.Histogram().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Histogram().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricTestHistogram) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Histogram().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricTestHistogram(cfg TestHistogramMetricConfig) metricTestHistogram {
+	m := metricTestHistogram{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -1045,6 +1122,7 @@ type MetricsBuilder struct {
 	metricReaggregateMetricWithRequired metricReaggregateMetricWithRequired
 	metricSystemCPUTime                 metricSystemCPUTime
 	metricSystemMemoryUsage             metricSystemMemoryUsage
+	metricTestHistogram                 metricTestHistogram
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -1103,6 +1181,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricReaggregateMetricWithRequired: newMetricReaggregateMetricWithRequired(mbc.Metrics.ReaggregateMetricWithRequired),
 		metricSystemCPUTime:                 newMetricSystemCPUTime(mbc.Metrics.SystemCPUTime),
 		metricSystemMemoryUsage:             newMetricSystemMemoryUsage(mbc.Metrics.SystemMemoryUsage),
+		metricTestHistogram:                 newMetricTestHistogram(mbc.Metrics.TestHistogram),
 		resourceAttributeIncludeFilter:      make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:      make(map[string]filter.Filter),
 	}
@@ -1245,6 +1324,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricReaggregateMetricWithRequired.emit(ils.Metrics())
 	mb.metricSystemCPUTime.emit(ils.Metrics())
 	mb.metricSystemMemoryUsage.emit(ils.Metrics())
+	mb.metricTestHistogram.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -1324,6 +1404,11 @@ func (mb *MetricsBuilder) RecordSystemCPUTimeDataPoint(ts pcommon.Timestamp, val
 // RecordSystemMemoryUsageDataPoint adds a data point to system.memory.usage metric.
 func (mb *MetricsBuilder) RecordSystemMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, stateAttributeValue AttributeState) {
 	mb.metricSystemMemoryUsage.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
+}
+
+// RecordTestHistogramDataPoint adds a data point to test.histogram metric.
+func (mb *MetricsBuilder) RecordTestHistogramDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricTestHistogram.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
