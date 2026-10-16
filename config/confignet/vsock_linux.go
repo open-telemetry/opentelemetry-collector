@@ -69,5 +69,9 @@ func listenVsock(endpoint string) (net.Listener, error) {
 	if err != nil {
 		return nil, err
 	}
-	return vsock.ListenContextID(cid, port, nil)
+	ln, err := vsock.ListenContextID(cid, port, nil)
+	if err != nil {
+		return nil, err
+	}
+	return ln, nil
 }

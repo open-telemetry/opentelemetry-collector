@@ -43,7 +43,10 @@ func TestVsockDialErrors(t *testing.T) {
 			}
 			conn, err := nac.Dial(tt.ctx)
 			require.Error(t, err)
-			assert.Nil(t, conn)
+			// Compare directly: assert.Nil treats a typed-nil pointer as nil.
+			if conn != nil {
+				t.Errorf("expected nil connection, got %#v", conn)
+			}
 			if tt.errIs != nil {
 				assert.ErrorIs(t, err, tt.errIs)
 			}
@@ -93,7 +96,10 @@ func TestVsockDialHonorsContext(t *testing.T) {
 			}
 			conn, err := nac.Dial(ctx)
 			require.ErrorIs(t, err, tt.errIs)
-			assert.Nil(t, conn)
+			// Compare directly: assert.Nil treats a typed-nil pointer as nil.
+			if conn != nil {
+				t.Errorf("expected nil connection, got %#v", conn)
+			}
 
 			// A connection established after the context is done must be closed.
 			close(release)
@@ -133,7 +139,10 @@ func TestVsockListenErrors(t *testing.T) {
 			}
 			ln, err := nas.Listen(context.Background())
 			require.Error(t, err)
-			assert.Nil(t, ln)
+			// Compare directly: assert.Nil treats a typed-nil pointer as nil.
+			if ln != nil {
+				t.Errorf("expected nil listener, got %#v", ln)
+			}
 		})
 	}
 }
