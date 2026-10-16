@@ -252,6 +252,11 @@ func (orig *EntityRef) MarshalProto(buf []byte) int {
 }
 
 func (orig *EntityRef) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, 0)
+}
+
+func (orig *EntityRef) unmarshalProto(buf []byte, depth int) error {
+	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
