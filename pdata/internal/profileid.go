@@ -62,6 +62,10 @@ func (pid *ProfileID) UnmarshalProto(buf []byte) error {
 	return nil
 }
 
+func (pid *ProfileID) unmarshalProto(buf []byte, _ bool) error {
+	return pid.UnmarshalProto(buf)
+}
+
 // MarshalJSON converts ProfileID into a hex string.
 //
 //nolint:govet

@@ -444,6 +444,16 @@ func (orig *ExponentialHistogramDataPoint) MarshalProto(buf []byte) int {
 }
 
 func (orig *ExponentialHistogramDataPoint) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *ExponentialHistogramDataPoint) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *ExponentialHistogramDataPoint) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -468,8 +478,9 @@ func (orig *ExponentialHistogramDataPoint) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.Attributes = proto.GrowRepeated(orig.Attributes, buf, pos, fieldNum)
 			orig.Attributes = append(orig.Attributes, KeyValue{})
-			err = orig.Attributes[len(orig.Attributes)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Attributes[len(orig.Attributes)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -555,7 +566,7 @@ func (orig *ExponentialHistogramDataPoint) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Positive.UnmarshalProto(buf[startPos:pos])
+			err = orig.Positive.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -571,7 +582,7 @@ func (orig *ExponentialHistogramDataPoint) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Negative.UnmarshalProto(buf[startPos:pos])
+			err = orig.Negative.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -597,8 +608,9 @@ func (orig *ExponentialHistogramDataPoint) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.Exemplars = proto.GrowRepeated(orig.Exemplars, buf, pos, fieldNum)
 			orig.Exemplars = append(orig.Exemplars, Exemplar{})
-			err = orig.Exemplars[len(orig.Exemplars)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Exemplars[len(orig.Exemplars)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -698,7 +710,7 @@ func (m *ExponentialHistogramDataPoint) HasMax() bool {
 
 func GenTestExponentialHistogramDataPoint() *ExponentialHistogramDataPoint {
 	orig := NewExponentialHistogramDataPoint()
-	orig.Attributes = []KeyValue{{}, *GenTestKeyValue()}
+	orig.Attributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	orig.StartTimeUnixNano = uint64(13)
 	orig.TimeUnixNano = uint64(13)
 	orig.Count = uint64(13)
@@ -708,7 +720,7 @@ func GenTestExponentialHistogramDataPoint() *ExponentialHistogramDataPoint {
 	orig.Positive = *GenTestExponentialHistogramDataPointBuckets()
 	orig.Negative = *GenTestExponentialHistogramDataPointBuckets()
 	orig.Flags = uint32(13)
-	orig.Exemplars = []Exemplar{{}, *GenTestExemplar()}
+	orig.Exemplars = []Exemplar{Exemplar{}, *GenTestExemplar()}
 	orig.SetMin(float64(3.1415926))
 	orig.SetMax(float64(3.1415926))
 	orig.ZeroThreshold = float64(3.1415926)

@@ -636,6 +636,16 @@ func (orig *AnyValue) MarshalProto(buf []byte) int {
 }
 
 func (orig *AnyValue) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *AnyValue) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *AnyValue) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -666,7 +676,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 			} else {
 				ov = ProtoPoolAnyValue_StringValue.Get().(*AnyValue_StringValue)
 			}
-			ov.StringValue = string(buf[startPos:pos])
+			ov.StringValue = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 			orig.Value = ov
 
 		case 2:
@@ -740,7 +750,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 				ov = ProtoPoolAnyValue_ArrayValue.Get().(*AnyValue_ArrayValue)
 			}
 			ov.ArrayValue = NewArrayValue()
-			err = ov.ArrayValue.UnmarshalProto(buf[startPos:pos])
+			err = ov.ArrayValue.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -763,7 +773,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 				ov = ProtoPoolAnyValue_KvlistValue.Get().(*AnyValue_KvlistValue)
 			}
 			ov.KvlistValue = NewKeyValueList()
-			err = ov.KvlistValue.UnmarshalProto(buf[startPos:pos])
+			err = ov.KvlistValue.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -786,8 +796,7 @@ func (orig *AnyValue) UnmarshalProto(buf []byte) error {
 				ov = ProtoPoolAnyValue_BytesValue.Get().(*AnyValue_BytesValue)
 			}
 			if length != 0 {
-				ov.BytesValue = make([]byte, length)
-				copy(ov.BytesValue, buf[startPos:pos])
+				ov.BytesValue = proto.BytesToBytes(buf[startPos:pos], unsafeUnmarshal)
 			}
 			orig.Value = ov
 

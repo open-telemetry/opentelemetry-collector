@@ -181,6 +181,16 @@ func (orig *Gauge) MarshalProto(buf []byte) int {
 }
 
 func (orig *Gauge) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *Gauge) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *Gauge) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -205,8 +215,9 @@ func (orig *Gauge) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.DataPoints = proto.GrowRepeated(orig.DataPoints, buf, pos, fieldNum)
 			orig.DataPoints = append(orig.DataPoints, NewNumberDataPoint())
-			err = orig.DataPoints[len(orig.DataPoints)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.DataPoints[len(orig.DataPoints)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -222,7 +233,7 @@ func (orig *Gauge) UnmarshalProto(buf []byte) error {
 
 func GenTestGauge() *Gauge {
 	orig := NewGauge()
-	orig.DataPoints = []*NumberDataPoint{{}, GenTestNumberDataPoint()}
+	orig.DataPoints = []*NumberDataPoint{&NumberDataPoint{}, GenTestNumberDataPoint()}
 	return orig
 }
 

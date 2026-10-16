@@ -252,6 +252,16 @@ func (orig *Location) MarshalProto(buf []byte) int {
 }
 
 func (orig *Location) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *Location) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *Location) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -298,8 +308,9 @@ func (orig *Location) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.Lines = proto.GrowRepeated(orig.Lines, buf, pos, fieldNum)
 			orig.Lines = append(orig.Lines, NewLine())
-			err = orig.Lines[len(orig.Lines)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.Lines[len(orig.Lines)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -313,6 +324,7 @@ func (orig *Location) UnmarshalProto(buf []byte) error {
 				}
 				startPos := pos - length
 				var num uint64
+				orig.AttributeIndices = proto.GrowCap(orig.AttributeIndices, length)
 				for startPos < pos {
 					num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
 					if err != nil {
@@ -329,6 +341,7 @@ func (orig *Location) UnmarshalProto(buf []byte) error {
 				if err != nil {
 					return err
 				}
+				orig.AttributeIndices = proto.GrowRepeated(orig.AttributeIndices, buf, pos, fieldNum)
 				orig.AttributeIndices = append(orig.AttributeIndices, int32(num))
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field AttributeIndices", wireType)
@@ -347,7 +360,7 @@ func GenTestLocation() *Location {
 	orig := NewLocation()
 	orig.MappingIndex = int32(13)
 	orig.Address = uint64(13)
-	orig.Lines = []*Line{{}, GenTestLine()}
+	orig.Lines = []*Line{&Line{}, GenTestLine()}
 	orig.AttributeIndices = []int32{int32(0), int32(13)}
 	return orig
 }

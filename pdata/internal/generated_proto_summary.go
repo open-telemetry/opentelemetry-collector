@@ -181,6 +181,16 @@ func (orig *Summary) MarshalProto(buf []byte) int {
 }
 
 func (orig *Summary) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *Summary) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *Summary) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -205,8 +215,9 @@ func (orig *Summary) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.DataPoints = proto.GrowRepeated(orig.DataPoints, buf, pos, fieldNum)
 			orig.DataPoints = append(orig.DataPoints, NewSummaryDataPoint())
-			err = orig.DataPoints[len(orig.DataPoints)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.DataPoints[len(orig.DataPoints)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -222,7 +233,7 @@ func (orig *Summary) UnmarshalProto(buf []byte) error {
 
 func GenTestSummary() *Summary {
 	orig := NewSummary()
-	orig.DataPoints = []*SummaryDataPoint{{}, GenTestSummaryDataPoint()}
+	orig.DataPoints = []*SummaryDataPoint{&SummaryDataPoint{}, GenTestSummaryDataPoint()}
 	return orig
 }
 

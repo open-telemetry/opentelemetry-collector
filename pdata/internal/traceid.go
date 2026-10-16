@@ -62,6 +62,10 @@ func (tid *TraceID) UnmarshalProto(buf []byte) error {
 	return nil
 }
 
+func (tid *TraceID) unmarshalProto(buf []byte, _ bool) error {
+	return tid.UnmarshalProto(buf)
+}
+
 // MarshalJSON converts TraceID into a hex string.
 //
 //nolint:govet

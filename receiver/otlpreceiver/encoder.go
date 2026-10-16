@@ -20,8 +20,9 @@ const (
 )
 
 var (
-	pbEncoder = &protoEncoder{}
-	jsEncoder = &jsonEncoder{}
+	pbEncoder       = &protoEncoder{}
+	pbUnsafeEncoder = &protoEncoder{unsafeUnmarshal: true}
+	jsEncoder       = &jsonEncoder{}
 )
 
 type encoder interface {
@@ -40,29 +41,51 @@ type encoder interface {
 	contentType() string
 }
 
-type protoEncoder struct{}
+type protoEncoder struct {
+	unsafeUnmarshal bool
+}
 
-func (protoEncoder) unmarshalTracesRequest(buf []byte) (ptraceotlp.ExportRequest, error) {
+func (e protoEncoder) unmarshalTracesRequest(buf []byte) (ptraceotlp.ExportRequest, error) {
 	req := ptraceotlp.NewExportRequest()
-	err := req.UnmarshalProto(buf)
+	var err error
+	if e.unsafeUnmarshal {
+		err = req.UnmarshalProtoUnsafe(buf)
+	} else {
+		err = req.UnmarshalProto(buf)
+	}
 	return req, err
 }
 
-func (protoEncoder) unmarshalMetricsRequest(buf []byte) (pmetricotlp.ExportRequest, error) {
+func (e protoEncoder) unmarshalMetricsRequest(buf []byte) (pmetricotlp.ExportRequest, error) {
 	req := pmetricotlp.NewExportRequest()
-	err := req.UnmarshalProto(buf)
+	var err error
+	if e.unsafeUnmarshal {
+		err = req.UnmarshalProtoUnsafe(buf)
+	} else {
+		err = req.UnmarshalProto(buf)
+	}
 	return req, err
 }
 
-func (protoEncoder) unmarshalLogsRequest(buf []byte) (plogotlp.ExportRequest, error) {
+func (e protoEncoder) unmarshalLogsRequest(buf []byte) (plogotlp.ExportRequest, error) {
 	req := plogotlp.NewExportRequest()
-	err := req.UnmarshalProto(buf)
+	var err error
+	if e.unsafeUnmarshal {
+		err = req.UnmarshalProtoUnsafe(buf)
+	} else {
+		err = req.UnmarshalProto(buf)
+	}
 	return req, err
 }
 
-func (protoEncoder) unmarshalProfilesRequest(buf []byte) (pprofileotlp.ExportRequest, error) {
+func (e protoEncoder) unmarshalProfilesRequest(buf []byte) (pprofileotlp.ExportRequest, error) {
 	req := pprofileotlp.NewExportRequest()
-	err := req.UnmarshalProto(buf)
+	var err error
+	if e.unsafeUnmarshal {
+		err = req.UnmarshalProtoUnsafe(buf)
+	} else {
+		err = req.UnmarshalProto(buf)
+	}
 	return req, err
 }
 

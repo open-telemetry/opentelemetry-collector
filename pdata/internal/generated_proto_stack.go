@@ -187,6 +187,16 @@ func (orig *Stack) MarshalProto(buf []byte) int {
 }
 
 func (orig *Stack) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *Stack) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *Stack) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -210,6 +220,7 @@ func (orig *Stack) UnmarshalProto(buf []byte) error {
 				}
 				startPos := pos - length
 				var num uint64
+				orig.LocationIndices = proto.GrowCap(orig.LocationIndices, length)
 				for startPos < pos {
 					num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
 					if err != nil {
@@ -226,6 +237,7 @@ func (orig *Stack) UnmarshalProto(buf []byte) error {
 				if err != nil {
 					return err
 				}
+				orig.LocationIndices = proto.GrowRepeated(orig.LocationIndices, buf, pos, fieldNum)
 				orig.LocationIndices = append(orig.LocationIndices, int32(num))
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field LocationIndices", wireType)
