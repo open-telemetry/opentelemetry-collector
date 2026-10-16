@@ -18,12 +18,19 @@ optional and requires additional configuration (see examples below).
   When set to true, no TLS is used at all. See
   [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure)
   for gRPC.
-- `curve_preferences` (default = []): specify your curve preferences that will
-  be used in an ECDHE handshake, in preference order. Accepted values are:
-  - X25519
-  - P521
+- `curve_preferences` (default = []): the key exchange mechanisms the handshake
+  may use. The order is ignored; `crypto/tls` selects from the list using its own
+  preference order. When empty, the `crypto/tls` defaults are used. Accepted
+  values are:
   - P256
   - P384
+  - P521
+  - X25519
+  - X25519MLKEM768
+  - SecP256r1MLKEM768
+  - SecP384r1MLKEM1024
+
+  Builds using the `requirefips` tag accept the same list without `X25519`.
 
 The following certificate parameters can be configured:
 
