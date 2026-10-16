@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/collector/pdata/xpdata/pref"
 )
 
 // NewProfiles wraps multiple profile consumers in a single one.
@@ -46,6 +47,13 @@ func (tsc *profilesConsumer) Capabilities() consumer.Capabilities {
 
 // ConsumeProfiles exports the pprofile.Profiles to all consumers wrapped by the current one.
 func (tsc *profilesConsumer) ConsumeProfiles(ctx context.Context, td pprofile.Profiles) error {
+	// Own the data until all consumers received it, unless it is already owned upstream.
+	// Otherwise, the first consumer that takes ownership releases the data when it returns,
+	// before the other consumers receive it.
+	if pref.MarkPipelineOwnedProfiles(td) {
+		defer pref.UnrefProfiles(td)
+	}
+
 	var errs error
 
 	if len(tsc.mutable) > 0 {

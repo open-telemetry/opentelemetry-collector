@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/xpdata/pref"
 )
 
 // NewLogs wraps multiple log consumers in a single one.
@@ -47,6 +48,13 @@ func (lsc *logsConsumer) Capabilities() consumer.Capabilities {
 
 // ConsumeLogs exports the plog.Logs to all consumers wrapped by the current one.
 func (lsc *logsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	// Own the data until all consumers received it, unless it is already owned upstream.
+	// Otherwise, the first consumer that takes ownership releases the data when it returns,
+	// before the other consumers receive it.
+	if pref.MarkPipelineOwnedLogs(ld) {
+		defer pref.UnrefLogs(ld)
+	}
+
 	var errs error
 
 	if len(lsc.mutable) > 0 {
