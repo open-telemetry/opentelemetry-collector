@@ -477,10 +477,11 @@ func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error
 	var errs error
 	for i := range nodes {
 		node := nodes[i]
-		comp, ok := node.(component.Component)
+		comp := builtComponent(node)
 
-		if !ok {
-			// Skip capabilities/fanout nodes
+		if comp == nil {
+			// Skip capabilities/fanout nodes and nodes whose component was
+			// never built.
 			continue
 		}
 
@@ -505,6 +506,27 @@ func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error
 		)
 	}
 	return errs
+}
+
+// builtComponent returns the component held by a node, or nil when the node
+// holds none: the virtual capabilities and fanout nodes never do, and a
+// receiver, processor, exporter or connector node does not when its build
+// failed. A partial reload that fails while building a component leaves its
+// node in the graph; the fallback full reload then shuts the whole graph down
+// and must not call Shutdown through a nil embedded component.
+func builtComponent(node graph.Node) component.Component {
+	switch n := node.(type) {
+	case *receiverNode:
+		return n.Component
+	case *processorNode:
+		return n.Component
+	case *exporterNode:
+		return n.Component
+	case *connectorNode:
+		return n.Component
+	}
+	comp, _ := node.(component.Component)
+	return comp
 }
 
 // UpdateReceivers performs a partial reload of receiver nodes in the graph.
