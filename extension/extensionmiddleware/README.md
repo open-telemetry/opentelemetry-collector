@@ -38,6 +38,8 @@ by adding new interfaces.  Note that for each interface, there is a
 corresponding method to locate a named middleware extension that
 satisfies the interface in
 [the `configmiddleware` package](../../config/configmiddleware/README.md) .
+The optional `GRPCServerInTap` interface is the exception: `configgrpc`
+checks for it directly on the middleware extensions it resolves.
 
 ### HTTP
 
@@ -54,3 +56,10 @@ server-side middleware object.
 
 - **GRPCClient**: The extension returns `[]grpc.DialOption`.
 - **GRPCServer**: The extension returns `[]grpc.ServerOption`.
+- **GRPCServerInTap**: Optional interface for gRPC server middleware. The
+  extension returns a `tap.ServerInHandle` that runs before the server
+  reads the request message. A gRPC server accepts only one tap handle, so
+  extensions must use this interface instead of returning
+  `grpc.InTapHandle` from `GRPCServer`. The tap handles of all configured
+  middlewares are called in the configured order, and the first error
+  rejects the request.
