@@ -4,6 +4,7 @@
 package internal
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/internal/schemagen"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -75,6 +77,18 @@ func TestValidate(t *testing.T) {
 		{
 			name:    "testdata/no_type_rattr.yaml",
 			wantErr: "empty type for resource attribute: string.resource.attr",
+		},
+		{
+			name:    "testdata/template_rattr_enum.yaml",
+			wantErr: "enum is not supported for template resource attribute: process.environment_variable",
+		},
+		{
+			name:    "testdata/template_attr.yaml",
+			wantErr: "template type is only supported for resource attributes: template_attr",
+		},
+		{
+			name:    "testdata/template_rattr_entity.yaml",
+			wantErr: `entity "host": template resource attribute host.label cannot be used in entities`,
 		},
 		{
 			name:    "testdata/rattr_stability_valid.yaml",
@@ -378,6 +392,106 @@ func TestAttributeRequirementLevel(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			attr := Attribute{RequirementLevel: tt.requirementLevel}
 			assert.Equal(t, tt.wantConditional, attr.IsConditional())
+		})
+	}
+}
+
+func TestValueTypeUnmarshalText(t *testing.T) {
+	tests := []struct {
+		input   string
+		want    ValueType
+		wantErr bool
+	}{
+		{input: "string", want: ValueType{ValueType: pcommon.ValueTypeStr}},
+		{input: "template[string]", want: ValueType{ValueType: pcommon.ValueTypeStr, Template: true}},
+		{input: "template[int]", want: ValueType{ValueType: pcommon.ValueTypeInt, Template: true}},
+		{input: "template[double]", want: ValueType{ValueType: pcommon.ValueTypeDouble, Template: true}},
+		{input: "template[bool]", want: ValueType{ValueType: pcommon.ValueTypeBool, Template: true}},
+		{input: "template[bytes]", want: ValueType{ValueType: pcommon.ValueTypeBytes, Template: true}},
+		{input: "template[slice]", want: ValueType{ValueType: pcommon.ValueTypeSlice, Template: true}},
+		{input: "template[map]", want: ValueType{ValueType: pcommon.ValueTypeMap, Template: true}},
+		{input: "template", wantErr: true},
+		{input: "template[]", wantErr: true},
+		{input: "template[string", wantErr: true},
+		{input: "template[invalid]", wantErr: true},
+		{input: "template[template[string]]", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			var vt ValueType
+			err := vt.UnmarshalText([]byte(tt.input))
+			if tt.wantErr {
+				require.EqualError(t, err, fmt.Sprintf("invalid type: %q", tt.input))
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, vt)
+		})
+	}
+}
+
+func TestTemplateAttributeTestHelpers(t *testing.T) {
+	tmpl := Attribute{FullName: "process.environment_variable", Type: ValueType{ValueType: pcommon.ValueTypeStr, Template: true}}
+	assert.Equal(t, "process.environment_variable.test_key", tmpl.TestName())
+	assert.Equal(t, `"test_key", "process.environment_variable-val"`, tmpl.TestSetterArgs())
+	assert.Equal(t, "Str", tmpl.Type.String())
+	assert.Equal(t, "string", tmpl.Type.Primitive())
+
+	plain := Attribute{FullName: "host.name", Type: ValueType{ValueType: pcommon.ValueTypeStr}}
+	assert.Equal(t, "host.name", plain.TestName())
+	assert.Equal(t, `"host.name-val"`, plain.TestSetterArgs())
+	assert.Equal(t, "test_key", plain.TestKey())
+}
+
+func TestTemplateResourceAttributes(t *testing.T) {
+	tmpl := Attribute{Type: ValueType{ValueType: pcommon.ValueTypeStr, Template: true}}
+	plain := Attribute{Type: ValueType{ValueType: pcommon.ValueTypeStr}}
+
+	tests := []struct {
+		name            string
+		attrs           map[AttributeName]Attribute
+		overrideEnabled bool
+		wantTemplate    bool
+		wantNonTemplate bool
+		wantConfigTypes map[AttributeName]string
+	}{
+		{
+			name:            "plain only",
+			attrs:           map[AttributeName]Attribute{"host.name": plain},
+			wantNonTemplate: true,
+			wantConfigTypes: map[AttributeName]string{"host.name": "ResourceAttributeConfig"},
+		},
+		{
+			name:            "template only",
+			attrs:           map[AttributeName]Attribute{"process.environment_variable": tmpl},
+			overrideEnabled: true,
+			wantTemplate:    true,
+			wantConfigTypes: map[AttributeName]string{"process.environment_variable": "TemplateResourceAttributeConfig"},
+		},
+		{
+			name:            "mixed with override",
+			attrs:           map[AttributeName]Attribute{"host.name": plain, "process.environment_variable": tmpl},
+			overrideEnabled: true,
+			wantTemplate:    true,
+			wantNonTemplate: true,
+			wantConfigTypes: map[AttributeName]string{
+				"host.name":                    "HostNameResourceAttributeConfig",
+				"process.environment_variable": "TemplateResourceAttributeConfig",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := Metadata{ResourceAttributes: tt.attrs, OverrideValueEnabled: tt.overrideEnabled}
+			assert.Equal(t, tt.wantTemplate, md.HasTemplateResourceAttributes())
+			assert.Equal(t, tt.wantNonTemplate, md.HasNonTemplateResourceAttributes())
+			configType := getTemplateFuncMap(md, "")["resourceAttributeConfigType"].(func(AttributeName) (string, error))
+			for name, want := range tt.wantConfigTypes {
+				got, err := configType(name)
+				require.NoError(t, err)
+				assert.Equal(t, want, got)
+			}
 		})
 	}
 }

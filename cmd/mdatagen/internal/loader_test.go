@@ -227,6 +227,17 @@ func TestLoadMetadata(t *testing.T) {
 						FullName:         "string.resource.disabled_attr_to_be_removed",
 						RequirementLevel: AttributeRequirementLevelRecommended,
 					},
+					"template.resource.attr": {
+						Description: "Resource attribute with a template name, suffixed with a configured key.",
+						EnabledPtr:  new(true),
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+							Template:  true,
+						},
+						FullName:         "template.resource.attr",
+						RequirementLevel: AttributeRequirementLevelRecommended,
+						Stability:        component.StabilityLevelDevelopment,
+					},
 				},
 
 				Attributes: map[AttributeName]Attribute{

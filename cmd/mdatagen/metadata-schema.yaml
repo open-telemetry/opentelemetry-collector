@@ -216,9 +216,14 @@ resource_attributes:
     # Required: description of the attribute.
     description:
     # Optional: array of attribute values if they are static values (currently, only string type is supported).
+    # Not supported for template types.
     enum: [string]
     # Required: attribute value type.
-    type: <string|int|double|bool|bytes|slice|map>
+    # A template type (e.g. template[string]) makes the attribute name a prefix: the attribute is
+    # recorded as "<attribute.name>.<key>" for each key listed in the user's `keys` config option.
+    # Template resource attributes cannot be used in entities and do not support override_value
+    # or the metrics/events include/exclude filters.
+    type: <string|int|double|bool|bytes|slice|map|template[string|int|double|bool|bytes|slice|map]>
     # Optional: the stability level of the resource attribute.
     stability: <development|alpha|beta|release_candidate|stable>
     # Optional: warnings that will be shown to user under specified conditions.

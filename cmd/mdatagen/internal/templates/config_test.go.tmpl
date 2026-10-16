@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	{{- if and .OverrideValueEnabled .ResourceAttributes }}
+	{{- if and .OverrideValueEnabled .HasNonTemplateResourceAttributes }}
 	"github.com/stretchr/testify/assert"
 	{{- end }}
 	"github.com/stretchr/testify/require"
@@ -46,8 +46,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				},
 				{{- if .ResourceAttributes }}
 				ResourceAttributes: ResourceAttributesConfig{
-					{{- range $name, $_ := .ResourceAttributes }}
-					{{ $name.Render }}: {{ if $.OverrideValueEnabled }}{{ $name.Render }}{{ end }}ResourceAttributeConfig{Enabled: true},
+					{{- range $name, $attr := .ResourceAttributes }}
+					{{ $name.Render }}: {{ resourceAttributeConfigType $name }}{Enabled: true{{ if $attr.Type.Template }}, Keys: []string{"{{ $attr.TestKey }}"}{{ end }}},
 					{{- end }}
 				},
 				{{- end }}
@@ -71,7 +71,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				{{- if .ResourceAttributes }}
 				ResourceAttributes: ResourceAttributesConfig{
 					{{- range $name, $_ := .ResourceAttributes }}
-					{{ $name.Render }}: {{ if $.OverrideValueEnabled }}{{ $name.Render }}{{ end }}ResourceAttributeConfig{Enabled: false},
+					{{ $name.Render }}: {{ resourceAttributeConfigType $name }}{Enabled: false},
 					{{- end }}
 				},
 				{{- end }}
@@ -84,10 +84,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(
 				{{- range $name, $metric := .Metrics }}{{ $name.Render }}MetricConfig{}, {{ end }}
 				{{- if $.OverrideValueEnabled }}
-				{{- range $name, $_ := .ResourceAttributes }}{{ $name.Render }}ResourceAttributeConfig{}, {{ end }}
+				{{- range $name, $attr := .ResourceAttributes }}{{ if not $attr.Type.Template }}{{ $name.Render }}ResourceAttributeConfig{}, {{ end }}{{ end }}
 				{{- else }}
 				{{- if .ResourceAttributes }}ResourceAttributeConfig{},{{ end }}
 				{{- end }}
+				{{- if .HasTemplateResourceAttributes }}TemplateResourceAttributeConfig{},{{ end }}
 			))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
@@ -146,8 +147,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				{{- range $name, $_ := .ResourceAttributes }}
-				{{ $name.Render }}: {{ if $.OverrideValueEnabled }}{{ $name.Render }}{{ end }}ResourceAttributeConfig{Enabled: true},
+				{{- range $name, $attr := .ResourceAttributes }}
+				{{ $name.Render }}: {{ resourceAttributeConfigType $name }}{Enabled: true{{ if $attr.Type.Template }}, Keys: []string{"{{ $attr.TestKey }}"}{{ end }}},
 				{{- end }}
 			},
 		},
@@ -155,7 +156,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "none_set",
 			want: ResourceAttributesConfig{
 				{{- range $name, $_ := .ResourceAttributes }}
-				{{ $name.Render }}: {{ if $.OverrideValueEnabled }}{{ $name.Render }}{{ end }}ResourceAttributeConfig{Enabled: false},
+				{{ $name.Render }}: {{ resourceAttributeConfigType $name }}{Enabled: false},
 				{{- end }}
 			},
 		},
@@ -165,20 +166,23 @@ func TestResourceAttributesConfig(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
 			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(
 				{{- if $.OverrideValueEnabled }}
-				{{- range $name, $_ := .ResourceAttributes }}{{ $name.Render }}ResourceAttributeConfig{}, {{ end }}
+				{{- range $name, $attr := .ResourceAttributes }}{{ if not $attr.Type.Template }}{{ $name.Render }}ResourceAttributeConfig{}, {{ end }}{{ end }}
 				{{- else }}ResourceAttributeConfig{}, {{ end }}
+				{{- if .HasTemplateResourceAttributes }}TemplateResourceAttributeConfig{}, {{ end }}
 			))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }
 
-{{- if $.OverrideValueEnabled }}
+{{- if and $.OverrideValueEnabled $.HasNonTemplateResourceAttributes }}
 
 func TestResourceAttributesOverrideConfig(t *testing.T) {
 	cfg := loadResourceAttributesConfig(t, "override_set")
-	{{- range $name, $_ := .ResourceAttributes }}
+	{{- range $name, $attr := .ResourceAttributes }}
+	{{- if not $attr.Type.Template }}
 	assert.NotNil(t, cfg.{{ $name.Render }}.OverrideValue, "override_value should be set for {{ $name }}")
+	{{- end }}
 	{{- end }}
 }
 
