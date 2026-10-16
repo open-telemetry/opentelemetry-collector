@@ -94,3 +94,39 @@ func TestTracesProtoWireCompatibility(t *testing.T) {
 	otlp.MigrateTraces(td.orig.ResourceSpans)
 	assert.Equal(t, td, td2)
 }
+
+func TestSanitizeUTF8(t *testing.T) {
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("bad\xff", "bad\xff")
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Scope().SetName("scope\xff")
+	span := ss.Spans().AppendEmpty()
+	span.SetName("span\xff")
+	span.Attributes().PutStr("ok", "ok")
+	span.Events().AppendEmpty().SetName("event\xff")
+	span.Links().AppendEmpty().Attributes().PutStr("link\xff", "link\xff")
+	span.Status().SetMessage("status\xff")
+
+	NewExportRequestFromTraces(td).SanitizeUTF8()
+
+	expected := ptrace.NewTraces()
+	ers := expected.ResourceSpans().AppendEmpty()
+	ers.Resource().Attributes().PutStr("bad�", "bad�")
+	ess := ers.ScopeSpans().AppendEmpty()
+	ess.Scope().SetName("scope�")
+	espan := ess.Spans().AppendEmpty()
+	espan.SetName("span�")
+	espan.Attributes().PutStr("ok", "ok")
+	espan.Events().AppendEmpty().SetName("event�")
+	espan.Links().AppendEmpty().Attributes().PutStr("link�", "link�")
+	espan.Status().SetMessage("status�")
+	assert.Equal(t, expected, td)
+}
+
+func TestSanitizeUTF8ReadOnly(t *testing.T) {
+	td := ptrace.NewTraces()
+	td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("bad\xff")
+	td.MarkReadOnly()
+	assert.Panics(t, func() { NewExportRequestFromTraces(td).SanitizeUTF8() })
+}
