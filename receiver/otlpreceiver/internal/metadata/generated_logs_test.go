@@ -3,10 +3,11 @@
 package metadata
 
 import (
+	"github.com/stretchr/testify/assert"
+
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
