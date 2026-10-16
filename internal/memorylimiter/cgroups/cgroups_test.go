@@ -144,6 +144,14 @@ func TestCGroupsIsCGroupV2(t *testing.T) {
 			shouldHaveError: false,
 		},
 		{
+			// Regression test for #16174: the drvfs mount Docker Desktop adds
+			// under WSL2 carries spaces in its super options, and must not
+			// fail the mountinfo walk.
+			name:            "cgroupv1-docker-desktop",
+			expectedIsV2:    false,
+			shouldHaveError: false,
+		},
+		{
 			name:            "cgroupv1v2",
 			expectedIsV2:    false,
 			shouldHaveError: false,
