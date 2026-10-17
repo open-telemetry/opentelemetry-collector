@@ -59,46 +59,30 @@ func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 	}
 
 	// Collect per-component log level overrides from all component kinds.
-	for id, ov := range cfg.Receivers.TelemetryOverrides() {
-		if ov.LogLevel != nil {
-			if cfg.ComponentLogLevelOverrides == nil {
-				cfg.ComponentLogLevelOverrides = make(map[component.ID]*zapcore.Level)
-			}
-			cfg.ComponentLogLevelOverrides[id] = ov.LogLevel
-		}
-	}
-	for id, ov := range cfg.Processors.TelemetryOverrides() {
-		if ov.LogLevel != nil {
-			if cfg.ComponentLogLevelOverrides == nil {
-				cfg.ComponentLogLevelOverrides = make(map[component.ID]*zapcore.Level)
-			}
-			cfg.ComponentLogLevelOverrides[id] = ov.LogLevel
-		}
-	}
-	for id, ov := range cfg.Exporters.TelemetryOverrides() {
-		if ov.LogLevel != nil {
-			if cfg.ComponentLogLevelOverrides == nil {
-				cfg.ComponentLogLevelOverrides = make(map[component.ID]*zapcore.Level)
-			}
-			cfg.ComponentLogLevelOverrides[id] = ov.LogLevel
-		}
-	}
-	for id, ov := range cfg.Connectors.TelemetryOverrides() {
-		if ov.LogLevel != nil {
-			if cfg.ComponentLogLevelOverrides == nil {
-				cfg.ComponentLogLevelOverrides = make(map[component.ID]*zapcore.Level)
-			}
-			cfg.ComponentLogLevelOverrides[id] = ov.LogLevel
-		}
-	}
-	for id, ov := range cfg.Extensions.TelemetryOverrides() {
-		if ov.LogLevel != nil {
-			if cfg.ComponentLogLevelOverrides == nil {
-				cfg.ComponentLogLevelOverrides = make(map[component.ID]*zapcore.Level)
-			}
-			cfg.ComponentLogLevelOverrides[id] = ov.LogLevel
-		}
-	}
+	cfg.ComponentLogLevelOverrides = collectLogLevelOverrides(
+		cfg.Receivers.TelemetryOverrides(),
+		cfg.Processors.TelemetryOverrides(),
+		cfg.Exporters.TelemetryOverrides(),
+		cfg.Connectors.TelemetryOverrides(),
+		cfg.Extensions.TelemetryOverrides(),
+	)
 
 	return cfg, nil
+}
+
+// collectLogLevelOverrides merges log level overrides from multiple component kinds
+// into a single map keyed by component.ID.
+func collectLogLevelOverrides(overrides ...map[component.ID]configunmarshaler.TelemetryOverride) map[component.ID]*zapcore.Level {
+	var result map[component.ID]*zapcore.Level
+	for _, ovMap := range overrides {
+		for id, ov := range ovMap {
+			if ov.LogLevel != nil {
+				if result == nil {
+					result = make(map[component.ID]*zapcore.Level)
+				}
+				result[id] = ov.LogLevel
+			}
+		}
+	}
+	return result
 }
