@@ -265,25 +265,21 @@ func TestKeepaliveCompatNewSyntaxMarshalRoundtrip(t *testing.T) {
 	assert.False(t, transport.DisableKeepAlives)
 }
 
-// Strict unmarshaling rejects unknown keys on main, but implementing
-// confmap.Unmarshaler on ClientConfig/ServerConfig forfeits this for every
-// embedding component: for squash embedding, confmap's embedded-structs hook
-// decodes sibling fields with unused keys ignored, and for named sections the
-// Unmarshal implementation must use WithIgnoreUnused to support the squash
-// case. These tests document that accepted trade-off. If they start failing,
-// strict checking has been restored (e.g. the Unmarshaler was removed or
-// confmap learned to track unused keys across the hook) and they should be
-// flipped back to asserting an error.
-func TestKeepaliveCompatUnknownKeyIgnoredSquash(t *testing.T) {
+// The following tests verify that strict unmarshaling rejects unknown keys
+// both when ClientConfig/ServerConfig is squash-embedded (sibling fields from
+// the parent struct remain unknown to the embedded config and are therefore
+// rejected) and when used as a named section (typos inside the section are
+// caught). Embedding config structs is discouraged per docs/coding-guidelines.md.
+func TestKeepaliveCompatUnknownKeyRejectedSquash(t *testing.T) {
 	cfg := namedSquashClientConfig{ClientConfig: NewDefaultClientConfig()}
 	conf := confmap.NewFromStringMap(map[string]any{
 		"endpoint":  "http://localhost:4318",
 		"bogus_key": 1,
 	})
-	assert.NoError(t, conf.Unmarshal(&cfg), "unknown keys are ignored for configs embedding ClientConfig")
+	assert.Error(t, conf.Unmarshal(&cfg), "unknown keys must be rejected for configs embedding ClientConfig")
 }
 
-func TestKeepaliveCompatUnknownKeyIgnoredNamedSection(t *testing.T) {
+func TestKeepaliveCompatUnknownKeyRejectedNamedSection(t *testing.T) {
 	type outerConfig struct {
 		Egress ClientConfig `mapstructure:"egress"`
 	}
@@ -294,7 +290,7 @@ func TestKeepaliveCompatUnknownKeyIgnoredNamedSection(t *testing.T) {
 			"bogus_key": 1,
 		},
 	})
-	assert.NoError(t, conf.Unmarshal(&cfg), "unknown keys are ignored inside a ClientConfig section")
+	assert.Error(t, conf.Unmarshal(&cfg), "unknown keys must be rejected inside a ClientConfig section")
 }
 
 // ---- known limitations ----
