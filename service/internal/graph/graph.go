@@ -23,6 +23,7 @@ import (
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
@@ -40,6 +41,7 @@ import (
 	"go.opentelemetry.io/collector/service/hostcapabilities"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
+	"go.opentelemetry.io/collector/service/internal/componentattribute"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
@@ -58,6 +60,10 @@ type Settings struct {
 	PipelineConfigs pipelines.Config
 
 	ReportStatus status.ServiceStatusFunc
+
+	// ComponentLogLevelOverrides holds per-component log level overrides
+	// extracted from component configs (e.g. `telemetry.logs.level`).
+	ComponentLogLevelOverrides map[component.ID]*zapcore.Level
 }
 
 type Graph struct {
@@ -303,14 +309,18 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 	for _, node := range slices.Backward(nodes) {
 		switch n := node.(type) {
 		case *receiverNode:
-			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
+			tel := componentattribute.ApplyLogLevelOverride(set.Telemetry, set.ComponentLogLevelOverrides, n.componentID)
+			err = n.buildComponent(ctx, tel, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(n.ID()))
 		case *processorNode:
 			// nextConsumers is guaranteed to be length 1.  Either it is the next processor or it is the fanout node for the exporters.
-			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
+			tel := componentattribute.ApplyLogLevelOverride(set.Telemetry, set.ComponentLogLevelOverrides, n.componentID)
+			err = n.buildComponent(ctx, tel, set.BuildInfo, set.ProcessorBuilder, g.nextConsumers(n.ID())[0])
 		case *exporterNode:
-			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ExporterBuilder)
+			tel := componentattribute.ApplyLogLevelOverride(set.Telemetry, set.ComponentLogLevelOverrides, n.componentID)
+			err = n.buildComponent(ctx, tel, set.BuildInfo, set.ExporterBuilder)
 		case *connectorNode:
-			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(n.ID()))
+			tel := componentattribute.ApplyLogLevelOverride(set.Telemetry, set.ComponentLogLevelOverrides, n.componentID)
+			err = n.buildComponent(ctx, tel, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(n.ID()))
 		case *capabilitiesNode:
 			capability := consumer.Capabilities{
 				// The fanOutNode represents the aggregate capabilities of the exporters in the pipeline.
@@ -675,7 +685,8 @@ func (g *Graph) UpdateReceivers(ctx context.Context, set Settings,
 				continue // shared receiver already built
 			}
 			built[nodeID] = true
-			if err := rn.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(nodeID)); err != nil {
+			tel := componentattribute.ApplyLogLevelOverride(set.Telemetry, set.ComponentLogLevelOverrides, rn.componentID)
+			if err := rn.buildComponent(ctx, tel, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(nodeID)); err != nil {
 				return fmt.Errorf("failed to build receiver %q: %w", rn.componentID, err)
 			}
 		}

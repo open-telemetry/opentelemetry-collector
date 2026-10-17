@@ -6,6 +6,9 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 import (
 	"errors"
 
+	"go.uber.org/zap/zapcore"
+
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
@@ -25,6 +28,10 @@ type configSettings struct {
 	Connectors *configunmarshaler.Configs[connector.Factory] `mapstructure:"connectors"`
 	Extensions *configunmarshaler.Configs[extension.Factory] `mapstructure:"extensions"`
 	Service    service.Config                                `mapstructure:"service"`
+
+	// ComponentLogLevelOverrides collects per-component log level overrides
+	// from all component configs. Populated after Unmarshal.
+	ComponentLogLevelOverrides map[component.ID]*zapcore.Level `mapstructure:"-"`
 }
 
 // unmarshal the configSettings from a confmap.Conf.
@@ -47,5 +54,35 @@ func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 		},
 	}
 	err := v.Unmarshal(&cfg)
-	return cfg, err
+	if err != nil {
+		return cfg, err
+	}
+
+	// Collect per-component log level overrides from all component kinds.
+	cfg.ComponentLogLevelOverrides = collectLogLevelOverrides(
+		cfg.Receivers.TelemetryOverrides(),
+		cfg.Processors.TelemetryOverrides(),
+		cfg.Exporters.TelemetryOverrides(),
+		cfg.Connectors.TelemetryOverrides(),
+		cfg.Extensions.TelemetryOverrides(),
+	)
+
+	return cfg, nil
+}
+
+// collectLogLevelOverrides merges log level overrides from multiple component kinds
+// into a single map keyed by component.ID.
+func collectLogLevelOverrides(overrides ...map[component.ID]configunmarshaler.TelemetryOverride) map[component.ID]*zapcore.Level {
+	var result map[component.ID]*zapcore.Level
+	for _, ovMap := range overrides {
+		for id, ov := range ovMap {
+			if ov.LogLevel != nil {
+				if result == nil {
+					result = make(map[component.ID]*zapcore.Level)
+				}
+				result[id] = ov.LogLevel
+			}
+		}
+	}
+	return result
 }

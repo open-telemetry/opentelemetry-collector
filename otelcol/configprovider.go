@@ -71,12 +71,13 @@ func (cm *ConfigProvider) getWithConf(ctx context.Context, factories Factories) 
 	}
 
 	return &Config{
-		Receivers:  cfg.Receivers.Configs(),
-		Processors: cfg.Processors.Configs(),
-		Exporters:  cfg.Exporters.Configs(),
-		Connectors: cfg.Connectors.Configs(),
-		Extensions: cfg.Extensions.Configs(),
-		Service:    cfg.Service,
+		Receivers:                  cfg.Receivers.Configs(),
+		Processors:                 cfg.Processors.Configs(),
+		Exporters:                  cfg.Exporters.Configs(),
+		Connectors:                 cfg.Connectors.Configs(),
+		Extensions:                 cfg.Extensions.Configs(),
+		Service:                    cfg.Service,
+		ComponentLogLevelOverrides: cfg.ComponentLogLevelOverrides,
 	}, conf, nil
 }
 
