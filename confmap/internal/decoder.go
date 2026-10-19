@@ -210,6 +210,65 @@ func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncTy
 	}
 }
 
+// extractTopLevelFieldKeys returns the set of top-level mapstructure field
+// names for a struct type, derived from exported fields' mapstructure tags
+// (with snake_case fallback for fields without an explicit tag name).
+// Fields tagged with "-" or not exported are skipped.
+// Squash-embedded structs are recursed into so that their top-level keys are
+// also included (e.g. ServerConfig has a squash-embedded NetAddr whose
+// endpoint/transport keys must be filterable).
+func extractTopLevelFieldKeys(typ reflect.Type) map[string]struct{} {
+	keys := make(map[string]struct{})
+	var extract func(t reflect.Type, depth int)
+	extract = func(t reflect.Type, depth int) {
+		if depth > 10 {
+			return
+		}
+		for i := 0; i < t.NumField(); i++ {
+			f := t.Field(i)
+			if !f.IsExported() {
+				continue
+			}
+			tagParts := strings.Split(f.Tag.Get(MapstructureTag), ",")
+			name := tagParts[0]
+			if name == "-" {
+				continue
+			}
+			isSquash := slices.Contains(tagParts[1:], "squash")
+			// For squash-embedded structs, recurse and don't add the field name
+			// itself (squash means the embedded struct's keys are flattened).
+			if isSquash {
+				ft := f.Type
+				for ft.Kind() == reflect.Ptr {
+					ft = ft.Elem()
+				}
+				if ft.Kind() == reflect.Struct {
+					extract(ft, depth+1)
+				}
+				continue
+			}
+			if name == "" {
+				name = strings.ToLower(f.Name[:1]) + f.Name[1:]
+			}
+			keys[name] = struct{}{}
+		}
+	}
+	extract(typ, 0)
+	return keys
+}
+
+// filterMapTopLevel returns a new map containing only the top-level keys
+// present in the allowed set.
+func filterMapTopLevel(m map[string]any, allowed map[string]struct{}) map[string]any {
+	out := make(map[string]any, len(allowed))
+	for k, v := range m {
+		if _, ok := allowed[k]; ok {
+			out[k] = v
+		}
+	}
+	return out
+}
+
 // unmarshalerEmbeddedStructsHookFunc provides a mechanism for embedded structs to define their own unmarshal logic,
 // by implementing the Unmarshaler interface.
 func unmarshalerEmbeddedStructsHookFunc(settings UnmarshalOptions) mapstructure.DecodeHookFuncValue {
@@ -224,6 +283,7 @@ func unmarshalerEmbeddedStructsHookFunc(settings UnmarshalOptions) mapstructure.
 
 		// First call Unmarshaler on squashed embedded fields, if necessary.
 		var squashedUnmarshalers []int
+		var squashedKeysUnion map[string]struct{}
 		for i := 0; i < to.Type().NumField(); i++ {
 			f := to.Type().Field(i)
 			if !f.IsExported() {
@@ -237,7 +297,20 @@ func unmarshalerEmbeddedStructsHookFunc(settings UnmarshalOptions) mapstructure.
 			if !ok {
 				continue
 			}
-			c := NewFromStringMap(fromAsMap)
+			// Filter the map to only keys belonging to the squashed embedded
+			// struct. This is necessary because the parent struct's full map
+			// also contains sibling fields that are unknown to the embedded
+			// struct. Passing the unfiltered map would cause strict
+			// unmarshaling (ErrorUnused) to reject valid parent fields.
+			allowedKeys := extractTopLevelFieldKeys(f.Type)
+			if squashedKeysUnion == nil {
+				squashedKeysUnion = make(map[string]struct{})
+			}
+			for k := range allowedKeys {
+				squashedKeysUnion[k] = struct{}{}
+			}
+			filteredMap := filterMapTopLevel(fromAsMap, allowedKeys)
+			c := NewFromStringMap(filteredMap)
 			c.skipTopLevelUnmarshaler = true
 			if err := unmarshaler.Unmarshal(c); err != nil {
 				return nil, err
@@ -273,11 +346,51 @@ func unmarshalerEmbeddedStructsHookFunc(settings UnmarshalOptions) mapstructure.
 			restValue.Elem().Field(i).Set(fieldValue)
 		}
 
-		// Decode into the partial struct.
-		// This performs a recursive call into this hook, which will be handled by the "no squashed unmarshalers" case above.
-		// We need to set `IgnoreUnused` to avoid errors from the map containing fields only present in the full struct.
-		settings.IgnoreUnused = true
-		if err := Decode(fromAsMap, restValue.Interface(), settings, true); err != nil {
+		// Build the full set of known keys (squashed + non-squashed). This
+		// will be used to detect truly unknown keys at the parent level.
+		allKnownKeys := make(map[string]struct{})
+		for k := range squashedKeysUnion {
+			allKnownKeys[k] = struct{}{}
+		}
+		// Extract keys from non-squashed fields.
+		for _, f := range fields {
+			tagParts := strings.Split(f.Tag.Get(MapstructureTag), ",")
+			name := tagParts[0]
+			if name == "-" {
+				continue
+			}
+			if name == "" {
+				name = strings.ToLower(f.Name[:1]) + f.Name[1:]
+			}
+			allKnownKeys[name] = struct{}{}
+		}
+
+		// Detect truly unknown top-level keys that are not consumed by
+		// either the squashed Unmarshalers or the non-squashed fields.
+		var unknownKeys []string
+		for k := range fromAsMap {
+			if _, ok := allKnownKeys[k]; !ok {
+				unknownKeys = append(unknownKeys, k)
+			}
+		}
+		if len(unknownKeys) > 0 {
+			slices.Sort(unknownKeys)
+			return nil, fmt.Errorf("%q has invalid keys: %s", to.Type().String(), strings.Join(unknownKeys, ", "))
+		}
+
+		// Filter the map for non-squashed partial decode: exclude keys that
+		// belong to squashed Unmarshalers (they were already consumed), but
+		// include all other keys (truly unknown ones are already caught above).
+		nonSquashedFiltered := make(map[string]any)
+		for k, v := range fromAsMap {
+			if _, isSquashedKey := squashedKeysUnion[k]; !isSquashedKey {
+				nonSquashedFiltered[k] = v
+			}
+		}
+
+		// Decode into the partial struct with strict mode (no IgnoreUnused).
+		settings.IgnoreUnused = false
+		if err := Decode(nonSquashedFiltered, restValue.Interface(), settings, true); err != nil {
 			return nil, err
 		}
 
