@@ -89,6 +89,15 @@ This means pursuing graduation for each of these components using the process we
 followed for the k8s attributes
 processor](https://opentelemetry.io/blog/2026/k8s-attributes-processor-v1/).
 
+As part of the stability process, components should either:
+1. abide by a particular semantic conventions version OR
+2. clarify on a publicly available document the following:
+   1. what semantic conventions the stable release of the component abides by
+   2. if said semantic conventions are not considered stable, what is the rationale and the plan for
+      the component to migrate to stable semantic conventions in a future major version.
+
+This last requirement will be added to the component graduation issue template.
+
 ### Prepare the core distro for being v1
 
 We should:
