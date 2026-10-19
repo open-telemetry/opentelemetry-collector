@@ -95,6 +95,16 @@ func (loc levelOverrideCore) Enabled(l zapcore.Level) bool {
 	return l >= loc.overrideLevel
 }
 
+// With preserves the level override wrapper when fields are added,
+// otherwise a subsequent zap.WrapCore call that invokes c.With() would
+// silently drop the override layer.
+func (loc levelOverrideCore) With(fields []zapcore.Field) zapcore.Core {
+	return levelOverrideCore{
+		Core:          loc.Core.With(fields),
+		overrideLevel: loc.overrideLevel,
+	}
+}
+
 func (loc levelOverrideCore) Check(e zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
 	// Use our own Enabled, then delegate Write to underlying core.
 	if loc.Enabled(e.Level) {
