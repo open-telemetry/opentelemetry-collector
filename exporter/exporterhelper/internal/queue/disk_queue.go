@@ -31,7 +31,6 @@ type diskQueue[T request.Request] struct {
 	capacity         int64
 	sizerType        request.SizerType
 	activeSizer      request.Sizer
-	refCounter       ReferenceCounter[T]
 	storageID        component.ID
 	signalType       pipeline.Signal
 	id               component.ID
@@ -47,7 +46,6 @@ func newDiskQueue[T request.Request](set Settings[T]) readableQueue[T] {
 		capacity:    set.Capacity,
 		sizerType:   set.SizerType,
 		activeSizer: request.NewSizer(set.SizerType),
-		refCounter:  set.ReferenceCounter,
 		signalType:  set.Signal,
 	}
 
@@ -103,15 +101,11 @@ func (d *diskQueue[T]) Offer(ctx context.Context, item T) error {
 	if d.capacity < (d.diskAccessClient.Size() + size) {
 		return ErrQueueIsFull
 	}
-	if d.refCounter != nil {
-		d.refCounter.Ref(item)
-	}
+	// The disk queue stores a serialized copy and does not retain item. The
+	// async queue owns the decoded request's reference and releases it after
+	// the consumer returns.
 	b, err := d.encoding.Marshal(ctx, item)
 	if err != nil {
-		// Unref in case of an error since there will not be any async worker to pick it up.
-		if d.refCounter != nil {
-			d.refCounter.Unref(item)
-		}
 		return err
 	}
 
@@ -119,10 +113,6 @@ func (d *diskQueue[T]) Offer(ctx context.Context, item T) error {
 		Payload: b,
 		Size:    size,
 	}); err != nil {
-		// Unref in case of an error since there will not be any async worker to pick it up.
-		if d.refCounter != nil {
-			d.refCounter.Unref(item)
-		}
 		return err
 	}
 	return nil
@@ -164,9 +154,6 @@ func (d *diskQueue[T]) Read(_ context.Context) (context.Context, T, Done, bool) 
 	}
 	var fn onDoneFunc = func(err error) {
 		msg.ConsumeCallback(err)
-		if d.refCounter != nil {
-			d.refCounter.Unref(el)
-		}
 	}
 	return restoredCtx, el, fn, true
 }

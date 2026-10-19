@@ -15,8 +15,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension/diskqueueextension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	xqueue "go.opentelemetry.io/collector/extension/xextension/queue"
@@ -291,10 +293,79 @@ func TestDiskQueueReadUnmarshalErrorDoesNotPanic(t *testing.T) {
 	assert.Nil(t, done)
 }
 
+func TestAsyncDiskQueueReferenceCounting(t *testing.T) {
+	storageID := component.MustNewID(diskqueueextension.TypeStr)
+	set := Settings[request.Request]{
+		ReferenceCounter: refCountedRequestCounter{},
+		Encoding:         refCountedRequestEncoding{},
+		SizerType:        request.SizerTypeItems,
+		Capacity:         1,
+		Signal:           pipeline.SignalTraces,
+		StorageID:        &storageID,
+		ID:               component.NewID(exportertest.NopType),
+		Telemetry:        componenttest.NewNopTelemetrySettings(),
+	}
+
+	dq := newDiskQueue[request.Request](set)
+	ext := newDiskAccessExtensionForTest(t, t.TempDir())
+	host := hosttest.NewHost(map[component.ID]component.Component{storageID: ext})
+	asyncQueue := newAsyncQueue[request.Request](dq, 1,
+		func(_ context.Context, _ request.Request, done Done) {
+			done.OnDone(nil)
+		}, set.ReferenceCounter)
+	require.NoError(t, asyncQueue.Start(context.Background(), host))
+
+	req := &refCountedRequest{}
+	req.refs.Store(1)
+	require.NoError(t, asyncQueue.Offer(context.Background(), req))
+	require.NoError(t, asyncQueue.Shutdown(context.Background()))
+	assert.EqualValues(t, 1, req.refs.Load(), "queue must not retain the original request")
+}
+
 // countingReferenceCounter tracks the net number of outstanding references,
 // so tests can assert Offer correctly balances Ref/Unref on failure paths.
 type countingReferenceCounter struct {
 	ref atomic.Int64
+}
+
+type refCountedRequest struct {
+	refs atomic.Int32
+}
+
+func (*refCountedRequest) MergeSplit(context.Context, int, request.SizerType, request.Request) ([]request.Request, error) {
+	panic("implement me")
+}
+
+func (*refCountedRequest) ItemsCount() int {
+	return 1
+}
+
+func (*refCountedRequest) BytesSize() int {
+	return 1
+}
+
+type refCountedRequestEncoding struct{}
+
+func (refCountedRequestEncoding) Marshal(context.Context, request.Request) ([]byte, error) {
+	return []byte("request"), nil
+}
+
+func (refCountedRequestEncoding) Unmarshal([]byte) (context.Context, request.Request, error) {
+	req := &refCountedRequest{}
+	req.refs.Store(1)
+	return context.Background(), req, nil
+}
+
+type refCountedRequestCounter struct{}
+
+func (refCountedRequestCounter) Ref(req request.Request) {
+	req.(*refCountedRequest).refs.Add(1)
+}
+
+func (refCountedRequestCounter) Unref(req request.Request) {
+	if req.(*refCountedRequest).refs.Add(-1) < 0 {
+		panic("request was unreferenced too many times")
+	}
 }
 
 func (c *countingReferenceCounter) Ref(intRequest) {
