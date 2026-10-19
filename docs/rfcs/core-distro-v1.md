@@ -165,7 +165,7 @@ approve the RFC.
 
 1. What minor version do we use for tagging the distribution? (do we reset the minor version or do we use the same one used in opentelemetry-collector or opentelemetry-collector-contrib)
 2. Do we align minor versions across opentelemetry-collector and opentelemetry-collector-contrib modules?
-3. What's the release cadence after v1? Do we keep on "every other week" cadence or do we make it
+3. What's the release cadence after v1, both for minor and major versions? Do we keep on "every other week" cadence or do we make it
    monthly?
 4. Do we want to release a 'stable-only' distro?
 5. How does versioning and support work in practice after v1? Do we need to update our existing
