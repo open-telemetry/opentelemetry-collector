@@ -157,6 +157,10 @@ and that we won't prioritize anymore is as follows:
    priority components list**. This includes stabilizing items such as OCB, profiling, other Go APIs
    such as the component helper, service or otelcol modules or other component kinds such as
    connectors or extensions.
+7. **LTS releases**. The v1 release will abide by the existing
+   [VERSIONING.md](https://github.com/open-telemetry/opentelemetry-collector/blob/main/VERSIONING.md#long-term-support-after-v1)
+   guidance. It is not a goal of this RFC to change our current stance regarding long term support
+   or introduce any specific minor versions that are considered 'LTS'.
 
 ## Open questions
 
