@@ -605,7 +605,9 @@ func createValidator(validators *[]Validator, fieldName string, md *ConfigMetada
 			HasDefault: hasDefaultValue(md),
 		})
 	}
-	if md.GoStruct.CustomValidator != nil {
+
+	isPromotedObjectProp := !isType && md.Type == ObjectType && len(md.Properties) > 0
+	if md.GoStruct.CustomValidator != nil && !isPromotedObjectProp {
 		*validators = append(*validators, Validator{
 			FieldName:       fieldName,
 			FieldType:       md.Type,
