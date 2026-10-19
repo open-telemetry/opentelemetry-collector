@@ -43,8 +43,10 @@ func (req *tracesRequest) MergeSplit(_ context.Context, maxSize int, szt request
 
 func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer, szt request.SizerType) {
 	if sz != nil {
-		dst.sizes.Update(szt, dst.size(sz, szt)+req.size(sz, szt))
-		req.sizes.Update(szt, 0)
+		_ = dst.size(sz, szt)
+		_ = req.size(sz, szt)
+		dst.sizes.Merge(req.sizes)
+		req.sizes.Reset()
 	}
 	req.td.ResourceSpans().MoveAndAppendTo(dst.td.ResourceSpans())
 }

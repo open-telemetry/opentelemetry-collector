@@ -43,8 +43,10 @@ func (req *metricsRequest) MergeSplit(_ context.Context, maxSize int, szt reques
 
 func (req *metricsRequest) mergeTo(dst *metricsRequest, sz sizer.MetricsSizer, szt request.SizerType) {
 	if sz != nil {
-		dst.sizes.Update(szt, dst.size(sz, szt)+req.size(sz, szt))
-		req.sizes.Update(szt, 0)
+		_ = dst.size(sz, szt)
+		_ = req.size(sz, szt)
+		dst.sizes.Merge(req.sizes)
+		req.sizes.Reset()
 	}
 	req.md.ResourceMetrics().MoveAndAppendTo(dst.md.ResourceMetrics())
 }

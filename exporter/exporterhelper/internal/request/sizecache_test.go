@@ -65,3 +65,95 @@ func TestSizeCacheIgnoresRequestsSizerType(t *testing.T) {
 	c.Update(SizerTypeRequests, 1)
 	assert.Equal(t, 8, c.SizeOf(SizerTypeItems, func() int { return 8 }))
 }
+
+func TestSizeCacheMerge(t *testing.T) {
+	t.Run("both_dimensions_cached_on_both", func(t *testing.T) {
+		c1 := NewSizeCache()
+		c1.Update(SizerTypeItems, 10)
+		c1.SizeOf(SizerTypeBytes, func() int { return 100 })
+
+		c2 := NewSizeCache()
+		c2.Update(SizerTypeItems, 20)
+		c2.SizeOf(SizerTypeBytes, func() int { return 200 })
+
+		c1.Merge(c2)
+
+		itemsCalls, bytesCalls := 0, 0
+		assert.Equal(t, 30, c1.SizeOf(SizerTypeItems, func() int { itemsCalls++; return -1 }))
+		assert.Equal(t, 300, c1.SizeOf(SizerTypeBytes, func() int { bytesCalls++; return -1 }))
+		assert.Equal(t, 0, itemsCalls, "items must be served from cache")
+		assert.Equal(t, 0, bytesCalls, "bytes must be served from cache")
+	})
+
+	t.Run("one_dimension_uncached_on_one_side", func(t *testing.T) {
+		c1 := NewSizeCache()
+		c1.Update(SizerTypeItems, 10)
+		// bytes uncached on c1
+
+		c2 := NewSizeCache()
+		c2.Update(SizerTypeItems, 20)
+		c2.SizeOf(SizerTypeBytes, func() int { return 200 })
+
+		c1.Merge(c2)
+
+		itemsCalls, bytesCalls := 0, 0
+		assert.Equal(t, 30, c1.SizeOf(SizerTypeItems, func() int { itemsCalls++; return -1 }))
+		assert.Equal(t, 0, itemsCalls, "items must be served from cache")
+
+		assert.Equal(t, 500, c1.SizeOf(SizerTypeBytes, func() int { bytesCalls++; return 500 }))
+		assert.Equal(t, 1, bytesCalls, "bytes must be recomputed on cache miss")
+	})
+
+	t.Run("bytes_cached_items_uncached_on_one_side", func(t *testing.T) {
+		c1 := NewSizeCache()
+		c1.Update(SizerTypeBytes, 100)
+
+		c2 := NewSizeCache()
+		c2.Update(SizerTypeBytes, 200)
+
+		c1.Merge(c2)
+
+		itemsCalls, bytesCalls := 0, 0
+		assert.Equal(t, 300, c1.SizeOf(SizerTypeBytes, func() int { bytesCalls++; return -1 }))
+		assert.Equal(t, 0, bytesCalls, "bytes must be served from cache")
+
+		assert.Equal(t, 15, c1.SizeOf(SizerTypeItems, func() int { itemsCalls++; return 15 }))
+		assert.Equal(t, 1, itemsCalls, "items must be recomputed on cache miss")
+	})
+
+	t.Run("zero_size_preserved_in_merge", func(t *testing.T) {
+		c1 := NewSizeCache()
+		c1.Update(SizerTypeItems, 0)
+		c1.Update(SizerTypeBytes, 100)
+
+		c2 := NewSizeCache()
+		c2.Update(SizerTypeItems, 5)
+		c2.Update(SizerTypeBytes, 0)
+
+		// c1.Update cleared items, so re-populate items as 0
+		c1.itemsSize = 0
+		c2.itemsSize = 5
+
+		c1.Merge(c2)
+
+		itemsCalls, bytesCalls := 0, 0
+		assert.Equal(t, 5, c1.SizeOf(SizerTypeItems, func() int { itemsCalls++; return -1 }))
+		assert.Equal(t, 100, c1.SizeOf(SizerTypeBytes, func() int { bytesCalls++; return -1 }))
+		assert.Equal(t, 0, itemsCalls)
+		assert.Equal(t, 0, bytesCalls)
+	})
+}
+
+func TestSizeCacheReset(t *testing.T) {
+	c := NewSizeCache()
+	c.SizeOf(SizerTypeItems, func() int { return 10 })
+	c.SizeOf(SizerTypeBytes, func() int { return 100 })
+
+	c.Reset()
+
+	itemsCalls, bytesCalls := 0, 0
+	assert.Equal(t, 0, c.SizeOf(SizerTypeItems, func() int { itemsCalls++; return -1 }))
+	assert.Equal(t, 0, c.SizeOf(SizerTypeBytes, func() int { bytesCalls++; return -1 }))
+	assert.Equal(t, 0, itemsCalls, "items must be cached at 0")
+	assert.Equal(t, 0, bytesCalls, "bytes must be cached at 0")
+}
