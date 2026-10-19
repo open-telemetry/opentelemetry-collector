@@ -11,10 +11,29 @@
     "config:best-practices",
     "helpers:pinGitHubActionDigestsToSemver"
   ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update Docker images pinned by digest in the Makefile",
+      "managerFilePatterns": [
+        "/(^|/)Makefile$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>docker) depName=(?<depName>[^\\s]+?)\\s+[A-Za-z0-9_]+?_IMAGE\\s*:?=\\s*[^\\s:]+:(?<currentValue>[^\\s@]+)@(?<currentDigest>sha256:[a-f0-9]+)\\s"
+      ]
+    }
+  ],
   "schedule": [
     "on tuesday"
   ],
   "packageRules": [
+    {
+      "description": "Ensure source compatibility with Go version used by this project",
+      "matchManagers": [
+        "gomod"
+      ],
+      "constraintsFiltering": "strict"
+    },
     {
       "matchManagers": [
         "gomod"
@@ -121,6 +140,15 @@
       "matchManagers": [
         "gomod"
       ],
+      "groupName": "All go.opentelemetry.io/proto packages",
+      "matchPackageNames": [
+        "go.opentelemetry.io/proto{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
       "groupName": "All go.opentelemetry.io/collector packages",
       "matchPackageNames": [
         "go.opentelemetry.io/collector{/,}**"
@@ -154,6 +182,7 @@
   "prConcurrentLimit": 200,
   "prHourlyLimit": 5,
   "postUpdateOptions": [
-    "gomodTidy"
+    "gomodTidyAll",
+    "gomodUpdateImportPaths"
   ]
 }

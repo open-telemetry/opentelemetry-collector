@@ -95,19 +95,18 @@ func extractLogs(srcLogs plog.Logs, capacity int, sz sizer.LogsSizer) (plog.Logs
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
-			removedSize += extRlSize
-			// There represents the delta between the delta sizes.
-			removedSize += rlSize - rawRlSize - (sz.DeltaSize(rawRlSize-extRlSize) - (rawRlSize - extRlSize))
 			// It is possible that for the bytes scenario, the extracted field contains no log records.
 			// Do not add it to the destination if that is the case.
 			if extSrcRL.ScopeLogs().Len() > 0 {
 				extSrcRL.MoveTo(destLogs.ResourceLogs().AppendEmpty())
 			}
 			if srcRL.ScopeLogs().Len() == 0 {
-				// Nothing is left in the source resource, so remove what remains of it too.
-				removedSize += sz.DeltaSize(rawRlSize - extRlSize)
+				// Nothing is left in the source resource, so all of it is removed.
+				removedSize += rlSize
 				return true
 			}
+			// The source resource shrinks to the delta size of what is left in it.
+			removedSize += rlSize - sz.DeltaSize(rawRlSize-extRlSize)
 			return false
 		}
 		capacityLeft -= rlSize
@@ -140,19 +139,18 @@ func extractResourceLogs(srcRL plog.ResourceLogs, capacity, maxSize int, sz size
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
-			removedSize += extSlSize
-			// There represents the delta between the delta sizes.
-			removedSize += slSize - rawSlSize - (sz.DeltaSize(rawSlSize-extSlSize) - (rawSlSize - extSlSize))
 			// It is possible that for the bytes scenario, the extracted field contains no log records.
 			// Do not add it to the destination if that is the case.
 			if extSrcSL.LogRecords().Len() > 0 {
 				extSrcSL.MoveTo(destRL.ScopeLogs().AppendEmpty())
 			}
 			if srcSL.LogRecords().Len() == 0 {
-				// Nothing is left in the source scope, so remove what remains of it too.
-				removedSize += sz.DeltaSize(rawSlSize - extSlSize)
+				// Nothing is left in the source scope, so all of it is removed.
+				removedSize += slSize
 				return true
 			}
+			// The source scope shrinks to the delta size of what is left in it.
+			removedSize += slSize - sz.DeltaSize(rawSlSize-extSlSize)
 			return false
 		}
 		capacityLeft -= slSize
