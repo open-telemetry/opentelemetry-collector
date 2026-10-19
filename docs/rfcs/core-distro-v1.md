@@ -139,9 +139,9 @@ and that we won't prioritize anymore is as follows:
 2. [**`consumererror`
    stabilization**](https://github.com/open-telemetry/opentelemetry-collector/issues/12984). We will
    stop requiring `consumererror` stabilization to be able to tag v1
-3. **Migration to new pipeline telemetry**. We will not require having migrated to [new pipeline
-   telemetry](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md)
-   or changing internal metrics
+3. **Updates to internal telemetry**. We will not require having migrated to [new pipeline
+   telemetry](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md),
+   having [renamed internal metrics to match OTel naming conventions](https://github.com/open-telemetry/opentelemetry-collector/issues/12909), or other desired changes to internal telemetry.
 4. **Stabilizing components that are not high priority but that are in the core distro**. The core
    distro will be marked as v1 even if it has unstable components. These components may be
    stabilized later. These components will NOT be available by default, having to use [some
@@ -168,6 +168,6 @@ approve the RFC.
 3. What's the release cadence after v1? Do we keep on "every other week" cadence or do we make it
    monthly?
 4. Do we want to release a 'stable-only' distro?
-5. How does versioning and support work in practice after v2? Do we need to update our existing
+5. How does versioning and support work in practice after v1? Do we need to update our existing
    versioning guidance?
 6. How does the mechanism to opt into unstable components work?
