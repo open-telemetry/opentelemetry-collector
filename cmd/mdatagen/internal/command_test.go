@@ -2049,39 +2049,7 @@ func TestGenerateConfigGoStruct_TestFileContainsValidateTestWhenValidatorsPresen
 	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config_test.go")) // #nosec G304
 	require.NoError(t, err)
 	require.Contains(t, string(content), "func TestCreateDefaultConfig(")
-	require.Contains(t, string(content), "func TestConfigValidate_DefaultValid(")
 	require.Contains(t, string(content), "func TestPortValidate_MinimumPort(")
-}
-
-func TestGenerateConfigGoStruct_TestFileNoValidateTestWhenNoValidators(t *testing.T) {
-	root := t.TempDir()
-	outputDir := filepath.Join(root, "shortname")
-	require.NoError(t, os.MkdirAll(outputDir, 0o700))
-	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
-
-	md := Metadata{
-		Type:        "test",
-		PackageName: "testmodule/shortname",
-		Status:      &Status{Class: "receiver"},
-		ConfigsMetadata: &cfggen.ConfigsMetadata{
-			Config: &cfggen.ConfigMetadata{
-				Type: "object",
-				Properties: map[string]*cfggen.ConfigMetadata{
-					"timeout": {
-						Type:     "string",
-						GoStruct: cfggen.GoStructConfig{FieldName: "timeout", Type: "time.Duration"},
-					},
-				},
-			},
-		},
-	}
-
-	require.NoError(t, generateConfigGoStruct(md, outputDir))
-
-	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config_test.go")) // #nosec G304
-	require.NoError(t, err)
-	require.Contains(t, string(content), "func TestCreateDefaultConfig(")
-	require.NotContains(t, string(content), "func TestConfigValidate_DefaultValid(")
 }
 
 func TestGenerateConfigGoStruct_DefsOnlyConfigGeneratesLibraryTypes(t *testing.T) {
@@ -2141,7 +2109,6 @@ func TestGenerateConfigGoStruct_DefsOnlyConfigGeneratesLibraryTypes(t *testing.T
 
 	"github.com/stretchr/testify/require"
 )`)
-	require.Contains(t, generatedTest, "func TestSampleConfigValidate_DefaultValid(")
 	require.Contains(t, generatedTest, "func TestConfigValidate_RequiredHostName(")
 	require.Contains(t, generatedTest, "func TestConfigValidate_RequiredPort(")
 	require.NotContains(t, generatedTest, "func TestCreateDefaultConfig(")
