@@ -60,6 +60,9 @@ server-side middleware object.
   extension returns a `tap.ServerInHandle` that runs before the server
   reads the request message. A gRPC server accepts only one tap handle, so
   extensions must use this interface instead of returning
-  `grpc.InTapHandle` from `GRPCServer`. The tap handles of all configured
-  middlewares are called in the configured order, and the first error
-  rejects the request.
+  `grpc.InTapHandle` from `GRPCServer`; `configgrpc` returns an error if
+  they do. The tap handles of all configured middlewares are called in the
+  configured order, and the first error rejects the request.
+  `tap.ServerInHandle` comes from `google.golang.org/grpc/tap`, which
+  grpc-go marks as experimental, so this interface may change if that
+  package does.

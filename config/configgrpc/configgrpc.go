@@ -338,7 +338,18 @@ func (sc *ServerConfig) ToServer(
 	if err != nil {
 		return nil, err
 	}
-	return grpc.NewServer(grpcOpts...), nil
+	return newGRPCServer(grpcOpts...)
+}
+
+// newGRPCServer calls grpc.NewServer and returns an error instead of panicking,
+// for example when the options set more than one tap handle.
+func newGRPCServer(opts ...grpc.ServerOption) (srv *grpc.Server, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("failed to create gRPC server: %v", r)
+		}
+	}()
+	return grpc.NewServer(opts...), nil
 }
 
 func (sc *ServerConfig) getGrpcServerOptions(
@@ -435,6 +446,9 @@ func (sc *ServerConfig) getGrpcServerOptions(
 		if err != nil {
 			return nil, fmt.Errorf("failed to get gRPC server options from middleware: %w", err)
 		}
+		if includesInTapHandle(middlewareOptions) {
+			return nil, fmt.Errorf("middleware %q returned grpc.InTapHandle; implement GRPCServerInTap instead", middleware.ID)
+		}
 		opts = append(opts, middlewareOptions...)
 
 		// GetGRPCServerOptions already verified that the middleware extension exists.
@@ -480,6 +494,32 @@ func chainInTapHandles(handles []tap.ServerInHandle) tap.ServerInHandle {
 		}
 		return ctx, nil
 	}
+}
+
+// includesInTapHandle reports whether opts include grpc.InTapHandle.
+// grpc.NewServer panics when a tap handle is set twice, so opts include one
+// if they fail after a placeholder tap handle but succeed on their own.
+func includesInTapHandle(opts []grpc.ServerOption) bool {
+	if len(opts) == 0 {
+		return false
+	}
+	placeholder := grpc.InTapHandle(func(ctx context.Context, _ *tap.Info) (context.Context, error) {
+		return ctx, nil
+	})
+	if canCreateServer(append([]grpc.ServerOption{placeholder}, opts...)) {
+		return false
+	}
+	return canCreateServer(opts)
+}
+
+// canCreateServer reports whether a gRPC server can be created with opts.
+func canCreateServer(opts []grpc.ServerOption) bool {
+	srv, err := newGRPCServer(opts...)
+	if err != nil {
+		return false
+	}
+	srv.Stop()
+	return true
 }
 
 // getGRPCCompressionName returns compression name registered in grpc.

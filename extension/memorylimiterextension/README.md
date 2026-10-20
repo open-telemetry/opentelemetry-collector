@@ -56,7 +56,8 @@ Refused requests receive the same `ResourceExhausted` response and are counted i
 
 The check runs in the gRPC server tap handle, which `configgrpc` installs for the
 extensions listed in `middlewares`. gRPC servers that apply this extension by other
-means are not protected while the gate is enabled.
+means are not protected while the gate is enabled. The tap handle uses
+`google.golang.org/grpc/tap`, which grpc-go marks as experimental.
 
 Requests refused by the tap handle do not appear in the Collector's own gRPC server
 metrics and spans (`rpc.server.*`), because the server aborts them before its

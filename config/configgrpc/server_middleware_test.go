@@ -80,6 +80,17 @@ func newTestServerInTapMiddleware(handle tap.ServerInHandle) extension.Extension
 	}
 }
 
+// newTestServerInTapOptionMiddleware returns a middleware that sets a tap handle
+// through its gRPC server options.
+func newTestServerInTapOptionMiddleware(name string) extension.Extension {
+	return &testServerMiddleware{
+		Extension: extensionmiddlewaretest.NewNop(),
+		GetGRPCServerOptionsFunc: func(context.Context) ([]grpc.ServerOption, error) {
+			return []grpc.ServerOption{grpc.InTapHandle(recordingInTapHandle(name))}, nil
+		},
+	}
+}
+
 // recordingInTapHandle returns a tap handle that records its name in the context.
 func recordingInTapHandle(name string) tap.ServerInHandle {
 	return func(ctx context.Context, _ *tap.Info) (context.Context, error) {
@@ -207,6 +218,7 @@ func TestServerMiddlewareToServerErrors(t *testing.T) {
 		name       string
 		extensions map[component.ID]component.Component
 		config     ServerConfig
+		opts       []ToServerOption
 		errText    string
 	}{
 		{
@@ -266,13 +278,76 @@ func TestServerMiddlewareToServerErrors(t *testing.T) {
 			},
 			errText: "get server tap handle failed",
 		},
+		{
+			name: "server_options_tap_handle",
+			extensions: map[component.ID]component.Component{
+				component.MustNewID("tapoptions"): newTestServerInTapOptionMiddleware("tapoptions"),
+			},
+			config: ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
+				Middlewares: []configmiddleware.Config{
+					{
+						ID: component.MustNewID("tapoptions"),
+					},
+				},
+			},
+			errText: "middleware \"tapoptions\" returned grpc.InTapHandle; implement GRPCServerInTap instead",
+		},
+		{
+			name: "server_options_conflict",
+			extensions: map[component.ID]component.Component{
+				component.MustNewID("conflict"): &testServerMiddleware{
+					Extension: extensionmiddlewaretest.NewNop(),
+					GetGRPCServerOptionsFunc: func(context.Context) ([]grpc.ServerOption, error) {
+						interceptor := func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+							return handler(ctx, req)
+						}
+						return []grpc.ServerOption{grpc.UnaryInterceptor(interceptor), grpc.UnaryInterceptor(interceptor)}, nil
+					},
+				},
+			},
+			config: ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
+				Middlewares: []configmiddleware.Config{
+					{
+						ID: component.MustNewID("conflict"),
+					},
+				},
+			},
+			errText: "failed to create gRPC server",
+		},
+		{
+			name: "extra_option_tap_handle_conflicts",
+			extensions: map[component.ID]component.Component{
+				component.MustNewID("tap"): newTestServerInTapMiddleware(recordingInTapHandle("tap")),
+			},
+			config: ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
+				Middlewares: []configmiddleware.Config{
+					{
+						ID: component.MustNewID("tap"),
+					},
+				},
+			},
+			opts:    []ToServerOption{WithGrpcServerOption(grpc.InTapHandle(recordingInTapHandle("extra")))},
+			errText: "failed to create gRPC server",
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Test creating the server with middleware errors
 			server := &grpcTraceServer{}
-			srv, err := server.startTestServerWithExtensionsError(t, tc.config, tc.extensions)
+			srv, err := server.startTestServerWithExtensionsError(t, tc.config, tc.extensions, tc.opts...)
 			if srv != nil {
 				srv.Stop()
 			}

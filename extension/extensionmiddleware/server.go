@@ -23,17 +23,21 @@ type GRPCServer interface {
 	//
 	// The options must not include grpc.InTapHandle, because a gRPC server
 	// accepts only one tap handle. Implement GRPCServerInTap instead.
+	// configgrpc returns an error if they do.
 	GetGRPCServerOptions(context.Context) ([]grpc.ServerOption, error)
 }
 
 // GRPCServerInTap is an optional interface for gRPC server middleware
 // extensions that need to check a request before the server reads the
-// request message.
+// request message. Extensions must also implement GRPCServer.
 //
 // gRPC servers accept a single tap handle, so middleware extensions must
 // implement this interface instead of returning grpc.InTapHandle from
 // GetGRPCServerOptions. The tap handles of all configured middlewares are
 // combined into one and called in the configured order.
+//
+// tap.ServerInHandle comes from google.golang.org/grpc/tap, which grpc-go
+// marks as experimental, so this interface may change if that package does.
 type GRPCServerInTap interface {
 	// GetGRPCServerInTapHandle returns a tap handle for a gRPC server,
 	// or nil if the extension does not need one.

@@ -11,5 +11,5 @@ var ExtensionMemorylimiterUseGRPCTapFeatureGate = featuregate.GlobalRegistry().M
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Reject gRPC requests before protobuf decoding when the memory limiter refuses requests."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/16184"),
-	featuregate.WithRegisterFromVersion("v0.163.0"),
+	featuregate.WithRegisterFromVersion("v0.164.0"),
 )
