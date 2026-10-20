@@ -4,7 +4,6 @@
 package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 
 import (
-	"cmp"
 	"errors"
 	"fmt"
 	"maps"
@@ -95,17 +94,8 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return call
 		},
-		"embeddedProps": func(props map[string]*ConfigMetadata) map[string]*ConfigMetadata {
-			return filterProps(props, func(prop *ConfigMetadata) bool {
-				return prop.Embed
-			})
-		},
-		"namedProps": func(props map[string]*ConfigMetadata) map[string]*ConfigMetadata {
-			return filterProps(props, func(prop *ConfigMetadata) bool {
-				return !prop.Embed
-			})
-		},
-		"isRequired": isRequired,
+		"orderedProps": orderedProps,
+		"isRequired":   isRequired,
 		"shouldOmitEmpty": func(md *ConfigMetadata, propName string, prop *ConfigMetadata) bool {
 			return !isRequired(md, propName) && !hasNonZeroDefault(prop)
 		},
@@ -131,6 +121,23 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 
 func isRequired(md *ConfigMetadata, propName string) bool {
 	return slices.Contains(md.Required, propName)
+}
+
+type NamedProp struct {
+	Name string
+	Prop *ConfigMetadata
+}
+
+func orderedProps(md *ConfigMetadata) []NamedProp {
+	if md == nil {
+		return nil
+	}
+	names := OrderedPropNames(md)
+	props := make([]NamedProp, 0, len(names))
+	for _, name := range names {
+		props = append(props, NamedProp{Name: name, Prop: md.Properties[name]})
+	}
+	return props
 }
 
 // ExternalDefaultCall returns the Go expression that delegates to the upstream package's
@@ -520,9 +527,6 @@ func ExtractValidators(name string, md *ConfigMetadata) []Validator {
 		return validators
 	}
 	collectValidators(name, md, &validators)
-	slices.SortFunc(validators, func(a, b Validator) int {
-		return cmp.Compare(a.FieldName, b.FieldName)
-	})
 
 	return validators
 }
@@ -557,7 +561,6 @@ type Validator struct {
 	Rules           ValidationRules
 	CustomValidator string
 	IsType          bool
-	HasDefault      bool
 }
 
 func (v Validator) RequiredCheckEmitted() bool {
@@ -598,10 +601,11 @@ func createValidator(validators *[]Validator, fieldName string, md *ConfigMetada
 			IsOptional: md.IsOptional,
 			Rules:      rules,
 			IsType:     isType,
-			HasDefault: hasDefaultValue(md),
 		})
 	}
-	if md.GoStruct.CustomValidator != nil {
+
+	isPromotedObjectProp := !isType && md.Type == ObjectType && len(md.Properties) > 0
+	if md.GoStruct.CustomValidator != nil && !isPromotedObjectProp {
 		*validators = append(*validators, Validator{
 			FieldName:       fieldName,
 			FieldType:       md.Type,
@@ -618,7 +622,7 @@ func collectValidators(name string, md *ConfigMetadata, validators *[]Validator)
 		return
 	}
 	createValidator(validators, name, md, true, false)
-	for _, propName := range slices.Sorted(maps.Keys(md.Properties)) {
+	for _, propName := range OrderedPropNames(md) {
 		prop := md.Properties[propName]
 
 		if prop.Embed {
@@ -639,7 +643,6 @@ func collectValidators(name string, md *ConfigMetadata, validators *[]Validator)
 					IsPointer:  prop.IsPointer,
 					IsOptional: prop.IsOptional,
 					Rules:      ValidationRules{Required: required},
-					HasDefault: hasDefaultValue(prop),
 				})
 			}
 			if prop.GoStruct.CustomValidator != nil {
@@ -697,6 +700,10 @@ func generateDefaultCall(md *ConfigMetadata, name, rootPackage, componentPackage
 	return baseName + "()"
 }
 
+func isStructSchema(md *ConfigMetadata) bool {
+	return (md.Ref != "" && !IsPrimitiveSchema(md)) || md.Type == ObjectType
+}
+
 func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, componentPackage string) []string {
 	if schema.GoStruct.IgnoreDefault {
 		return nil
@@ -712,6 +719,23 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 					panic("schema does not contain required property: " + key)
 				}
 				varName, _ := helpers.FormatIdentifier(key, true)
+
+				if value == nil {
+					cleared := clearedValueExpr(propSchema, key, rootPackage, componentPackage)
+					if cleared == "" {
+						panic(fmt.Sprintf("cannot represent an explicit null default for required, non-optional field %q", key))
+					}
+					exps = append(exps, fmt.Sprintf(".%s = %s", varName, cleared))
+					continue
+				}
+
+				if nestedValue, ok := value.(map[string]any); ok && isStructSchema(propSchema) {
+					for _, nestedExp := range MapCustomDefaults(propSchema, nestedValue, rootPackage, componentPackage) {
+						exps = append(exps, fmt.Sprintf(".%s%s", varName, nestedExp))
+					}
+					continue
+				}
+
 				exp := fmt.Sprintf(".%s = %s", varName, FormatDefaultValue(propSchema, key, value, rootPackage, componentPackage))
 				exps = append(exps, exp)
 			}
@@ -734,6 +758,17 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 	return exps
 }
 
+func clearedValueExpr(md *ConfigMetadata, name, rootPackage, componentPackage string) string {
+	if md.IsPointer {
+		return "nil"
+	}
+	if md.IsOptional {
+		t, _ := resolveGoType(md, name, rootPackage, componentPackage)
+		return fmt.Sprintf("configoptional.None[%s]()", t)
+	}
+	return ""
+}
+
 func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
 	validateOptionalMode(md)
 	if md.IsOptional && md.GoStruct.OptionalMode == OptionalModeDefault {
@@ -741,14 +776,7 @@ func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootP
 	}
 
 	if md.GoStruct.IgnoreDefault || (defaultValue == nil && !hasDefaultValue(md)) {
-		if md.IsPointer {
-			return "nil"
-		}
-		if md.IsOptional {
-			t, _ := resolveGoType(md, name, rootPackage, componentPackage)
-			return fmt.Sprintf("configoptional.None[%s]()", t)
-		}
-		return ""
+		return clearedValueExpr(md, name, rootPackage, componentPackage)
 	}
 	exp := formatSimpleValue(md, name, defaultValue, rootPackage, componentPackage)
 	if md.IsPointer {
@@ -884,8 +912,7 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 
 	// handle references
 	isReference := md.Ref != ""
-	isSubStruct := md.Type == ObjectType
-	if (isReference && !IsPrimitiveSchema(md)) || isSubStruct {
+	if isStructSchema(md) {
 		if hasDefaultValue(md) {
 			if isReference {
 				refType, err := ResolveGoTypeRef(md.Ref, rootPackage, componentPackage)
@@ -1045,14 +1072,4 @@ func invalidTestValue(fieldType SchemaType) string {
 	default:
 		return `"__invalid__"`
 	}
-}
-
-func filterProps(props map[string]*ConfigMetadata, pred func(value *ConfigMetadata) bool) map[string]*ConfigMetadata {
-	result := make(map[string]*ConfigMetadata)
-	for k, v := range props {
-		if pred(v) {
-			result[k] = v
-		}
-	}
-	return result
 }

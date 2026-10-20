@@ -7,6 +7,24 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.69.0/v0.163.0
+
+### 💡 Enhancements 💡
+
+- `pkg/component`: Document compatibility guidelines for adding fields to public structs in the component interface RFC. (#16069)
+- `pkg/pprofile`: Implement Profiles development-version metadata in the OTLP receiver and exporters. (#16147, #16009)
+  The receiver rejects malformed, repeated, or unsupported versions before decoding.
+  OTLP exporters send the version associated with their compiled-in Profiles schema.
+  The version is not configurable, and existing clients without metadata identify
+  the initial development version.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/otelcol`: Redact config opaque MapList values in unexpanded configuration snapshots (#15980)
+
+<!-- previous-version -->
+
 ## v1.68.0/v0.162.0
 
 ### 💡 Enhancements 💡
