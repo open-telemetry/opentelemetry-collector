@@ -3026,6 +3026,29 @@ func TestMapCustomDefaults_NestedObjectOverrides(t *testing.T) {
 	}, exprs)
 }
 
+func TestMapCustomDefaults_StableOrderAcrossRuns(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"zulu":  {Type: "string"},
+			"alpha": {Type: "string"},
+			"mike":  {Type: "string"},
+			"bravo": {Type: "string"},
+		},
+	}
+	input := defaultValue(map[string]any{
+		"zulu":  "z",
+		"alpha": "a",
+		"mike":  "m",
+		"bravo": "b",
+	})
+
+	want := []string{`.Alpha = "a"`, `.Bravo = "b"`, `.Mike = "m"`, `.Zulu = "z"`}
+	for i := 0; i < 20; i++ {
+		require.Equal(t, want, MapCustomDefaults(md, input, "", ""))
+	}
+}
+
 func TestMapCustomDefaults_NestedStructFieldOverride(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "object",
