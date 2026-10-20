@@ -29,7 +29,9 @@ exported_configs:
   batch_config:
     $ref: ./internal/queuebatch.batch_config
     description: Defines a configuration for batching requests based on a timeout and a minimum number of items.
-
+  partition_config:
+    $ref: ./internal/queuebatch.partition_config
+    description: Defines a configuration for partitioning requests based on metadata keys.
 telemetry:
   metrics:
     exporter_enqueue_failed_log_records:

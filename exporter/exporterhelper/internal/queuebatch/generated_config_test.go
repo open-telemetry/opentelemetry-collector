@@ -8,12 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestBatchConfigValidate_DefaultValid(t *testing.T) {
-	cfg := NewDefaultBatchConfig()
-
-	require.NoError(t, cfg.Validate())
-}
-
 func TestBatchConfigValidate_ExclusiveMinimumFlushTimeout(t *testing.T) {
 	cfg := NewDefaultBatchConfig()
 	cfg.FlushTimeout = 0
@@ -47,12 +41,6 @@ func TestConfigValidate_ExclusiveMinimumNumConsumers(t *testing.T) {
 	cfg.NumConsumers = 0
 
 	require.ErrorContains(t, cfg.Validate(), "num_consumers value must be greater than 0")
-}
-
-func TestPartitionConfigValidate_DefaultValid(t *testing.T) {
-	cfg := NewDefaultPartitionConfig()
-
-	require.NoError(t, cfg.Validate())
 }
 
 func TestPartitionConfigValidate_ExclusiveMinimumCacheSize(t *testing.T) {

@@ -16,6 +16,15 @@ func NewDefaultBatchConfig() BatchConfig {
 	return queuebatch.NewDefaultBatchConfig()
 }
 
+// PartitionConfig defines a configuration for partitioning requests based on metadata keys.
+type PartitionConfig = queuebatch.PartitionConfig
+
+// NewDefaultPartitionConfig returns a new PartitionConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
+func NewDefaultPartitionConfig() PartitionConfig {
+	return queuebatch.NewDefaultPartitionConfig()
+}
+
 // QueueBatchConfig defines configuration for queueing and batching for the exporter.
 type QueueBatchConfig = queuebatch.Config
 
