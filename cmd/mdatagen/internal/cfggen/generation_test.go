@@ -3044,7 +3044,7 @@ func TestMapCustomDefaults_StableOrderAcrossRuns(t *testing.T) {
 	})
 
 	want := []string{`.Alpha = "a"`, `.Bravo = "b"`, `.Mike = "m"`, `.Zulu = "z"`}
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		require.Equal(t, want, MapCustomDefaults(md, input, "", ""))
 	}
 }
