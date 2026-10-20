@@ -242,7 +242,7 @@ func TestUnmarshal(t *testing.T) {
 			// panic and Batch must remain absent.
 			expectedCfg: func() configoptional.Optional[Config] {
 				cfg := newBaseCfg()
-				cfg.Get().Batch = configoptional.None[BatchConfig]()
+				cfg.Get().Batch = configoptional.Disabled[BatchConfig]()
 				return cfg
 			},
 		},
