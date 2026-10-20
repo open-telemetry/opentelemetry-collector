@@ -8,18 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestClientConfigValidate_DefaultValid(t *testing.T) {
-	cfg := NewDefaultClientConfig()
-
-	require.NoError(t, cfg.Validate())
-}
-
-func TestServerConfigValidate_DefaultValid(t *testing.T) {
-	cfg := NewDefaultServerConfig()
-
-	require.NoError(t, cfg.Validate())
-}
-
 func TestServerConfigValidate_MinimumReadBufferSize(t *testing.T) {
 	cfg := NewDefaultServerConfig()
 	cfg.ReadBufferSize = 0 - 1

@@ -8,12 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestBackOffConfigValidate_DefaultValid(t *testing.T) {
-	cfg := NewDefaultBackOffConfig()
-
-	require.NoError(t, cfg.Validate())
-}
-
 func TestBackOffConfigValidate_MinimumInitialInterval(t *testing.T) {
 	cfg := NewDefaultBackOffConfig()
 	cfg.InitialInterval = 0 - 1

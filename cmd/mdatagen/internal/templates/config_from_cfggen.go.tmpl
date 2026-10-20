@@ -20,7 +20,11 @@ import (
         {{- $prop := $item.Prop }}
         {{- if $prop.Embed }}
             {{- if $prop.Description }}
-            {{ $prop.Description | goComment }}
+                {{- if $prop.GoStruct.Anonymous }}
+                    {{ $prop.Description | goComment }}
+                {{- else }}
+                    {{ printf "%s %s" ($prop.GoStruct.FieldName | publicVar) ($prop.Description | uncapitalize) | goComment }}
+                {{- end }}
             {{- end }}
             {{- if $prop.Deprecated }}
                 {{ printf "Deprecated: [%s] %s" $prop.Deprecated.Since $prop.Deprecated.Note | goComment }}
