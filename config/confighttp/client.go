@@ -113,6 +113,8 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 		transport.WriteBufferSize = cc.WriteBufferSize
 	}
 
+	transport.DisableKeepAlives = !cc.Keepalive.HasValue()
+
 	if kaCfg := cc.Keepalive.Get(); kaCfg != nil {
 		// Unmarshal always leaves Keepalive at None, so a value here was set
 		// programmatically afterwards and takes precedence.
