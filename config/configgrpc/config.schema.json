@@ -39,6 +39,10 @@
             ""
           ]
         },
+        "dscp": {
+          "type": "integer",
+          "description": "Sets the Differentiated Services Code Point (DSCP) value on outgoing gRPC connections. \nThis value is used to set the DS field in the IP header, enabling QoS classification \nby network devices. Valid values are 0 to 63. Common values: 0 (Default/Best Effort, CS0), \n46 (Expedited Forwarding, EF, for low-latency traffic), 34 (Assured Forwarding AF41). \nDefault is 0 (disabled, no marking applied).\n"
+        },
         "endpoint": {
           "type": "string",
           "description": "The target to which the exporter is going to send traces or metrics, using the gRPC protocol. \nThe valid syntax is described at https://github.com/grpc/grpc/blob/master/doc/naming.md.\n"
@@ -522,6 +526,10 @@
             "dialer": {
               "type": "object",
               "properties": {
+                "dscp": {
+                  "type": "integer",
+                  "description": "Sets the Differentiated Services Code Point (DSCP) value on outgoing connections. \nThis value is used to set the DS field in the IP header, enabling QoS classification \nby network devices. Valid values are 0 to 63. Common values: 0 (Default/Best Effort, CS0), \n46 (Expedited Forwarding, EF, for low-latency traffic), 34 (Assured Forwarding AF41). \nDefault is 0 (disabled, no marking applied).\n"
+                },
                 "timeout": {
                   "type": "string",
                   "description": "The maximum amount of time a dial will wait for a connect to complete. The default is no timeout.",
