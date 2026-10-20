@@ -77,3 +77,12 @@ func (ms ExportRequest) UnmarshalJSON(data []byte) error {
 func (ms ExportRequest) Traces() ptrace.Traces {
 	return ptrace.Traces(internal.NewTracesWrapper(ms.orig, ms.state))
 }
+
+// SanitizeUTF8 replaces every run of invalid UTF-8 bytes in the string fields of the request with the
+// Unicode replacement character U+FFFD, so the request only contains valid UTF-8 strings afterwards.
+// Attribute keys and values, nested map and slice values, names, descriptions and other string fields
+// are all covered. Bytes values and binary identifiers (trace, span and parent span IDs) are not modified.
+func (ms ExportRequest) SanitizeUTF8() {
+	ms.state.AssertMutable()
+	internal.SanitizeUTF8ExportTraceServiceRequest(ms.orig)
+}

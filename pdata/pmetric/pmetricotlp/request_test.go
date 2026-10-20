@@ -93,3 +93,45 @@ func TestMetricsProtoWireCompatibility(t *testing.T) {
 	otlp.MigrateMetrics(md.orig.ResourceMetrics)
 	assert.Equal(t, md, md2)
 }
+
+func TestSanitizeUTF8(t *testing.T) {
+	md := pmetric.NewMetrics()
+	rm := md.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("bad\xff", "bad\xff")
+	sm := rm.ScopeMetrics().AppendEmpty()
+	sm.Scope().SetName("scope\xff")
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("metric\xff")
+	m.SetUnit("unit\xff")
+	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.Attributes().PutStr("dp\xff", "dp\xff")
+	dp.Exemplars().AppendEmpty().FilteredAttributes().PutStr("ex\xff", "ex\xff")
+	m = sm.Metrics().AppendEmpty()
+	m.SetName("summary")
+	m.SetEmptySummary().DataPoints().AppendEmpty().Attributes().PutStr("s\xff", "s\xff")
+
+	NewExportRequestFromMetrics(md).SanitizeUTF8()
+
+	expected := pmetric.NewMetrics()
+	erm := expected.ResourceMetrics().AppendEmpty()
+	erm.Resource().Attributes().PutStr("bad�", "bad�")
+	esm := erm.ScopeMetrics().AppendEmpty()
+	esm.Scope().SetName("scope�")
+	em := esm.Metrics().AppendEmpty()
+	em.SetName("metric�")
+	em.SetUnit("unit�")
+	edp := em.SetEmptyGauge().DataPoints().AppendEmpty()
+	edp.Attributes().PutStr("dp�", "dp�")
+	edp.Exemplars().AppendEmpty().FilteredAttributes().PutStr("ex�", "ex�")
+	em = esm.Metrics().AppendEmpty()
+	em.SetName("summary")
+	em.SetEmptySummary().DataPoints().AppendEmpty().Attributes().PutStr("s�", "s�")
+	assert.Equal(t, expected, md)
+}
+
+func TestSanitizeUTF8ReadOnly(t *testing.T) {
+	md := pmetric.NewMetrics()
+	md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("bad\xff")
+	md.MarkReadOnly()
+	assert.Panics(t, func() { NewExportRequestFromMetrics(md).SanitizeUTF8() })
+}
