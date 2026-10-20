@@ -305,12 +305,17 @@ func TestVersionedMetrics(t *testing.T) {
 							}
 							if m.Type() == pmetric.MetricTypeSum {
 								newFound = true
+								dp := m.Sum().DataPoints().At(0)
 								if tt.expectLegacyAttrs {
-									dp := m.Sum().DataPoints().At(0)
 									_, hasCPU := dp.Attributes().Get("cpu")
 									assert.True(t, hasCPU, "expected legacy attr cpu")
 									_, hasState := dp.Attributes().Get("state")
 									assert.True(t, hasState, "expected legacy attr state")
+								} else if tt.enableNew && tt.disableOld {
+									_, hasCPU := dp.Attributes().Get("cpu")
+									assert.False(t, hasCPU, "didn't expect legacy attr cpu")
+									_, hasState := dp.Attributes().Get("state")
+									assert.False(t, hasState, "didn't expect legacy attr state")
 								}
 							}
 						}

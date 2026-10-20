@@ -149,8 +149,7 @@ misspell-correction:
 run: otelcorecol
 	./bin/otelcorecol_$(GOOS)_$(GOARCH) --config ${RUN_CONFIG} ${RUN_ARGS}
 
-# Append root module to all modules
-GOMODULES = $(ALL_MODULES) $(PWD)
+GOMODULES = $(ALL_MODULES)
 
 # Define a delegation target for each module
 .PHONY: $(GOMODULES)
@@ -214,6 +213,7 @@ prepare-contrib:
 	@echo Setting contrib at $(CONTRIB_PATH) to use this core checkout
 	@$(MAKE) -j4 -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		$(addprefix -replace ,$(join $(ALL_MOD_PATHS:%=go.opentelemetry.io/collector%=),$(ALL_MOD_PATHS:%=$(CURDIR)%)))"
+	@$(MAKE) -C $(CONTRIB_PATH)/internal/tools tidy
 
 	@$(MAKE) -j4 -C $(CONTRIB_PATH) gotidy
 	@$(MAKE) generate-contrib

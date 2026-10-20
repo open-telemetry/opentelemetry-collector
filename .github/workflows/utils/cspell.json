@@ -487,6 +487,7 @@
       "sprocessor",
       "statusdata",
       "statusreporting",
+      "statusutil",
       "statuswatcher",
       "stdlib",
       "stencel",

@@ -17,25 +17,25 @@ type Config struct {
 	// MetricsBuilderConfig is a configuration for sample metrics builder.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 
+	// Endpoint the endpoint to scrape metrics from.
+	Endpoint string `mapstructure:"endpoint"`
+
+	// Timeout timeout for scraping metrics.
+	Timeout time.Duration `mapstructure:"timeout"`
+
+	// MaxResults maximum number of results to return per scrape.
+	MaxResults int64 `mapstructure:"max_results"`
+
 	// APIToken aPI token used to authenticate with the endpoint.
 	APIToken configopaque.String `mapstructure:"api_token,omitempty"`
 
 	// ComponentID component ID used to identify this receiver instance.
 	ComponentID component.ID `mapstructure:"component_id,omitempty"`
 
-	// Endpoint the endpoint to scrape metrics from.
-	Endpoint string `mapstructure:"endpoint"`
-
 	// Headers extra HTTP headers to attach to each request.
 	Headers configopaque.MapList `mapstructure:"headers,omitempty"`
 
-	// MaxResults maximum number of results to return per scrape.
-	MaxResults int64 `mapstructure:"max_results"`
-
 	SamplePkg samplepkg.SampleConfig `mapstructure:"sample_pkg"`
-
-	// Timeout timeout for scraping metrics.
-	Timeout time.Duration `mapstructure:"timeout"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -55,8 +55,8 @@ func (c *Config) Validate() error {
 func createDefaultConfig() component.Config {
 	return &Config{
 		Endpoint:   "localhost:12345",
+		Timeout:    10 * time.Second,
 		MaxResults: 100,
 		SamplePkg:  samplepkg.NewDefaultSampleConfig(),
-		Timeout:    10 * time.Second,
 	}
 }
