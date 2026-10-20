@@ -55,7 +55,7 @@ func createTraces(ctx context.Context, set exporter.Settings, config component.C
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.Logger)
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
-	return exporterhelper.NewTraces(ctx, set, config,
+	return exporterhelper.NewTracesWithConfig(ctx, set, config,
 		debug.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithQueue(cfg.QueueConfig),
@@ -68,7 +68,7 @@ func createMetrics(ctx context.Context, set exporter.Settings, config component.
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.Logger)
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
-	return exporterhelper.NewMetrics(ctx, set, config,
+	return exporterhelper.NewMetricsWithConfig(ctx, set, config,
 		debug.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithQueue(cfg.QueueConfig),
@@ -81,7 +81,7 @@ func createLogs(ctx context.Context, set exporter.Settings, config component.Con
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.Logger)
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
-	return exporterhelper.NewLogs(ctx, set, config,
+	return exporterhelper.NewLogsWithConfig(ctx, set, config,
 		debug.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithQueue(cfg.QueueConfig),
