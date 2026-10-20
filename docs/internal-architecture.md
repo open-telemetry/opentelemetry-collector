@@ -52,9 +52,9 @@ flowchart TD
 
 #### Partial Receiver Reload (Alpha)
 
-When the `service.partialReload` (Alpha) and `service.partialReloadReceivers` (Beta, on by default) feature gates are both enabled (`--feature-gates=service.partialReload`), the Collector first checks whether the config change is limited to receivers. If only receiver configurations and/or pure-receiver entries in pipeline receiver lists have changed — and all other sections (processors, exporters, connectors, extensions, telemetry, pipeline structure) are identical — a partial reload is performed instead.
+When the `service.partialReload` (Alpha) and `service.partialReloadReceivers` (Beta, on by default) feature gates are both enabled (`--feature-gates=service.partialReload`), the Collector first checks whether the config change is limited to receivers. If only receiver configurations and/or pure-receiver entries in pipeline receiver lists have changed — and all other sections (processors, unless the processor gate is on, exporters, connectors, extensions, telemetry, pipeline structure) are identical — a partial reload is performed instead. (With `service.partialReloadProcessors` also enabled, processor changes are handled together with receiver changes; see below.)
 
-The partial reload path (`Collector.tryPartialReceiverReload`) delegates to `Graph.UpdateReceivers`, which runs a 9-phase algorithm:
+The partial reload path (`Collector.tryPartialReload`) delegates to `Graph.Update` (see the processor section below for the combined algorithm). For receivers alone it does the following:
 
 1. **Collect** all current receiver nodes from pipelines (skipping connectors-as-receivers)
 2. **Determine** the desired receiver set from the new pipeline configs
@@ -73,9 +73,9 @@ flowchart TD
     A("`Config change or SIGHUP`") --> B("`**Collector.reloadConfiguration**`")
     B --> C{"`Feature gate enabled
     AND receiver-only change?`"}
-    C -->|Yes| D("`**tryPartialReceiverReload**
+    C -->|Yes| D("`**tryPartialReload**
     Diff old/new config`")
-    D --> E("`**Graph.UpdateReceivers**
+    D --> E("`**Graph.Update**
     Shutdown old receivers,
     build and start new ones`")
     E --> F("`Service running with updated receivers
@@ -84,6 +84,25 @@ flowchart TD
     (shutdown and rebuild everything)`")
     G --> F
 ```
+
+#### Partial Processor Reload (Beta)
+
+When the `service.partialReload` and `service.partialReloadProcessors` (Beta, on by default) feature gates are enabled (in practice, once `service.partialReload` is enabled), processors are also eligible for partial reload. Receivers and processors are handled together: `Collector.tryPartialReload` calls `partialReloadSupported`, which allows receiver differences only when the receiver gate is enabled and processor differences only when the processor gate is enabled. Exporters, connectors, extensions, telemetry, and the set of pipelines with their exporters and connector-as-receiver entries must be identical, otherwise the standard full reload runs.
+
+All the receiver and processor changes are applied in one pass by `Graph.Update`, which works out what needs to restart so that each component is shut down, rebuilt, and started at most once. The restart set is:
+
+- Receivers that were added or removed, whose config changed, or whose pipeline membership changed (as in the receiver phase).
+- For each pipeline whose processor list differs, or that uses a processor whose config changed: the changed processors, every processor upstream of them, and all of the pipeline's receivers. Every component stores the next consumer it was built with, so everything upstream of a replaced component must be recreated. The longest run of unchanged processors at the end of the pipeline keeps running, since those only reference the pipeline's fan-out node.
+
+Exporters, connectors, and pipelines that are not affected are not restarted. The pass runs in this order:
+
+1. **Identify** the affected pipelines and processors, then categorize receivers into add, remove, and rebuild (a receiver in an affected pipeline is rebuilt)
+2. **Shutdown** the receivers being removed or rebuilt, then the processors being replaced
+3. **Update the graph**: remove the old receiver nodes, replace the processor nodes, create the new receiver nodes, and rewire the edges
+4. **Build** the new processors from last to first, then the pipelines' capabilities consumers, then the receivers
+5. **Start** the new processors from last to first, then the receivers
+
+Receivers are keyed by signal and component ID, so a receiver shared with a pipeline that is not affected is restarted too; that pipeline's processors and exporters keep running. If a pipeline with processor changes is fed by a connector, the connector holds a reference to the pipeline's capabilities node, so `Graph.Update` makes no change and reports that a full reload is required. As with receivers, if a partial reload fails part way, the service falls back to a full reload.
 
 ### Where to start to read the code
 Here is a brief list of useful and/or important files and interfaces that you may find valuable to glance through.

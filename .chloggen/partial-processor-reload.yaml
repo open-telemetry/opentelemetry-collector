@@ -1,0 +1,29 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
+component: pkg/service
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: "Add partial reload for processors (phase 2), behind the `service.partialReloadProcessors` (Beta) feature gate. It takes effect once `service.partialReload` is enabled."
+
+# One or more tracking issues or pull requests related to the change
+issues: [5966]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  When both `service.partialReload` and `service.partialReloadProcessors` are enabled and only receivers and
+  processors changed, only what is affected is restarted, in a single pass: the changed receivers, the changed
+  processors, the processors upstream of them, and the receivers feeding any pipeline whose processors changed.
+  Exporters, connectors, extensions, and unaffected pipelines keep running. Any other change falls back to a full reload.
+
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]

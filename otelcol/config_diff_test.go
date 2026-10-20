@@ -481,3 +481,187 @@ func TestChangedReceivers(t *testing.T) {
 	changed := changedReceivers(old, cur)
 	assert.Equal(t, map[component.ID]bool{component.MustNewID("otlp"): true}, changed)
 }
+
+func TestProcessorsOnlyChanged(t *testing.T) {
+	withRaw := func(mutate func(map[string]any)) map[string]any {
+		r := baseRawConf()
+		mutate(r)
+		return r
+	}
+	withCfg := func(mutate func(*Config)) *Config {
+		c := baseServiceConfig()
+		mutate(c)
+		return c
+	}
+	tracesID := pipeline.NewID(pipeline.SignalTraces)
+
+	tests := []struct {
+		name   string
+		newRaw map[string]any
+		newCfg *Config
+		want   bool
+	}{
+		{"identical", baseRawConf(), baseServiceConfig(), true},
+		{
+			"processor_config_changed",
+			withRaw(func(r map[string]any) { r["processors"] = map[string]any{"batch": map[string]any{"timeout": "1s"}} }),
+			baseServiceConfig(), true,
+		},
+		{
+			"processor_added_to_config_map",
+			withRaw(func(r map[string]any) {
+				r["processors"] = map[string]any{"batch": map[string]any{}, "memory_limiter": map[string]any{}}
+			}),
+			baseServiceConfig(), true,
+		},
+		{
+			"processor_added_to_pipeline",
+			baseRawConf(),
+			withCfg(func(c *Config) {
+				p := c.Service.Pipelines[tracesID]
+				p.Processors = append(p.Processors, component.MustNewID("memory_limiter"))
+			}),
+			true,
+		},
+		{
+			"processor_removed_from_pipeline",
+			baseRawConf(),
+			withCfg(func(c *Config) { c.Service.Pipelines[tracesID].Processors = nil }),
+			true,
+		},
+		{
+			"receiver_config_changed",
+			withRaw(func(r map[string]any) { r["receivers"] = map[string]any{"otlp": map[string]any{"endpoint": "x"}} }),
+			baseServiceConfig(), false,
+		},
+		{
+			"receiver_added_to_pipeline",
+			baseRawConf(),
+			withCfg(func(c *Config) {
+				p := c.Service.Pipelines[tracesID]
+				p.Receivers = append(p.Receivers, component.MustNewID("jaeger"))
+			}),
+			false,
+		},
+		{
+			"exporter_config_changed",
+			withRaw(func(r map[string]any) { r["exporters"] = map[string]any{"otlp": map[string]any{"endpoint": "x"}} }),
+			baseServiceConfig(), false,
+		},
+		{
+			"exporter_added_to_pipeline",
+			baseRawConf(),
+			withCfg(func(c *Config) {
+				p := c.Service.Pipelines[tracesID]
+				p.Exporters = append(p.Exporters, component.MustNewID("debug"))
+			}),
+			false,
+		},
+		{
+			"connector_config_changed",
+			withRaw(func(r map[string]any) { r["connectors"] = map[string]any{"forward": map[string]any{}} }),
+			baseServiceConfig(), false,
+		},
+		{
+			"extension_config_changed",
+			withRaw(func(r map[string]any) { r["extensions"] = map[string]any{"zpages": map[string]any{}} }),
+			baseServiceConfig(), false,
+		},
+		{
+			"extension_list_changed",
+			baseRawConf(),
+			withCfg(func(c *Config) { c.Service.Extensions = []component.ID{component.MustNewID("zpages")} }),
+			false,
+		},
+		{
+			"telemetry_changed",
+			withRaw(func(r map[string]any) {
+				r["service"] = map[string]any{"telemetry": map[string]any{"logs": map[string]any{"level": "debug"}}}
+			}),
+			baseServiceConfig(), false,
+		},
+		{
+			"pipeline_added",
+			baseRawConf(),
+			withCfg(func(c *Config) {
+				c.Service.Pipelines[pipeline.NewID(pipeline.SignalLogs)] = &pipelines.PipelineConfig{
+					Receivers: []component.ID{component.MustNewID("otlp")},
+					Exporters: []component.ID{component.MustNewID("otlp")},
+				}
+			}),
+			false,
+		},
+		{
+			"pipeline_removed",
+			baseRawConf(),
+			withCfg(func(c *Config) { c.Service.Pipelines = pipelines.Config{} }),
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			oldFP := fingerprintFor(t, baseRawConf(), baseServiceConfig())
+			newFP := fingerprintFor(t, tt.newRaw, tt.newCfg)
+			assert.Equal(t, tt.want, processorsOnlyChanged(oldFP, newFP))
+		})
+	}
+}
+
+func TestReceiversOnlyChangedRejectsProcessorChange(t *testing.T) {
+	newRaw := baseRawConf()
+	newRaw["processors"] = map[string]any{"batch": map[string]any{"timeout": "1s"}}
+	oldFP := fingerprintFor(t, baseRawConf(), baseServiceConfig())
+	newFP := fingerprintFor(t, newRaw, baseServiceConfig())
+	assert.False(t, receiversOnlyChanged(oldFP, newFP, func(component.ID) bool { return false }))
+}
+
+func TestChangedProcessors(t *testing.T) {
+	oldRaw := baseRawConf()
+	oldRaw["processors"] = map[string]any{"a": map[string]any{}, "b": map[string]any{}, "gone": map[string]any{}}
+	newRaw := baseRawConf()
+	newRaw["processors"] = map[string]any{"a": map[string]any{}, "b": map[string]any{"x": 1}, "new": map[string]any{}}
+
+	got := changedProcessors(fingerprintFor(t, oldRaw, baseServiceConfig()), fingerprintFor(t, newRaw, baseServiceConfig()))
+	assert.Equal(t, map[component.ID]bool{component.MustNewID("b"): true}, got)
+}
+
+func TestPartialReloadSupported(t *testing.T) {
+	never := func(component.ID) bool { return false }
+	tracesID := pipeline.NewID(pipeline.SignalTraces)
+
+	// Both a receiver and a processor change.
+	bothRaw := baseRawConf()
+	bothRaw["receivers"] = map[string]any{"otlp": map[string]any{"endpoint": "x"}}
+	bothRaw["processors"] = map[string]any{"batch": map[string]any{"timeout": "1s"}}
+	bothCfg := baseServiceConfig()
+	bothCfg.Service.Pipelines[tracesID].Receivers = append(bothCfg.Service.Pipelines[tracesID].Receivers, component.MustNewID("jaeger"))
+	bothCfg.Service.Pipelines[tracesID].Processors = nil
+
+	// A receiver and an exporter change.
+	exporterRaw := baseRawConf()
+	exporterRaw["receivers"] = map[string]any{"otlp": map[string]any{"endpoint": "x"}}
+	exporterRaw["exporters"] = map[string]any{"otlp": map[string]any{"endpoint": "x"}}
+
+	oldFP := fingerprintFor(t, baseRawConf(), baseServiceConfig())
+	bothFP := fingerprintFor(t, bothRaw, bothCfg)
+	exporterFP := fingerprintFor(t, exporterRaw, baseServiceConfig())
+
+	tests := []struct {
+		name                            string
+		cur                             configFingerprint
+		allowReceivers, allowProcessors bool
+		want                            bool
+	}{
+		{"both_changed_both_allowed", bothFP, true, true, true},
+		{"both_changed_only_receivers_allowed", bothFP, true, false, false},
+		{"both_changed_only_processors_allowed", bothFP, false, true, false},
+		{"both_changed_none_allowed", bothFP, false, false, false},
+		{"unchanged_none_allowed", oldFP, false, false, true},
+		{"exporter_change_never_allowed", exporterFP, true, true, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, partialReloadSupported(oldFP, tt.cur, never, tt.allowReceivers, tt.allowProcessors))
+		})
+	}
+}
