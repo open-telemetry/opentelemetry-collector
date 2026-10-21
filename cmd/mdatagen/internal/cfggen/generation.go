@@ -713,11 +713,17 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 	case map[string]any:
 		// is nested struct
 		if schema.Values == nil {
-			for key, value := range typedValue {
-				propSchema := schema.Properties[key]
-				if propSchema == nil {
+			for key := range typedValue {
+				if schema.Properties[key] == nil {
 					panic("schema does not contain required property: " + key)
 				}
+			}
+			for _, key := range OrderedPropNames(schema) {
+				value, ok := typedValue[key]
+				if !ok {
+					continue
+				}
+				propSchema := schema.Properties[key]
 				varName, _ := helpers.FormatIdentifier(key, true)
 
 				if value == nil {
