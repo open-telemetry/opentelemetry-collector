@@ -64,7 +64,7 @@ func (c *Protocols) Validate() error {
 // Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultProtocols() Protocols {
 	grpc := configgrpc.NewDefaultServerConfig()
-	grpc.ReadBufferSize = 512 * 1024
+	grpc.ReadBufferSize = 524288
 	grpc.NetAddr.Endpoint = "localhost:4317"
 	http := NewDefaultHTTPConfig()
 	http.ServerConfig.NetAddr.Endpoint = "localhost:4318"

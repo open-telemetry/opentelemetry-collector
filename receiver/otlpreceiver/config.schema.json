@@ -208,7 +208,7 @@
             "net_addr": {
               "endpoint": "localhost:4317"
             },
-            "read_buffer_size": "512 * 1024"
+            "read_buffer_size": 524288
           },
           "allOf": [
             {
@@ -1049,7 +1049,7 @@
             "net_addr": {
               "endpoint": "localhost:4317"
             },
-            "read_buffer_size": "512 * 1024"
+            "read_buffer_size": 524288
           },
           "allOf": [
             {
