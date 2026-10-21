@@ -10,6 +10,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -724,4 +725,47 @@ func TestPartitionBatcher_OnEmptyNotCalledWithActiveData(t *testing.T) {
 	assert.Equal(t, int64(0), onEmptyCalled.Load())
 	// But data should have been flushed
 	assert.GreaterOrEqual(t, sink.RequestsCount(), 1)
+}
+
+// A stale partition reference may still be consumed after LRU eviction. Such
+// synchronous flushes must share the concurrency limit with active partitions.
+func TestPartitionBatcher_StoppedPartitionRespectsWorkerLimit(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		cfg := BatchConfig{Sizer: request.SizerTypeItems}
+		wp := newWorkerPool(1)
+		release := make(chan struct{})
+		var exports atomic.Int64
+		export := func(context.Context, request.Request) error {
+			exports.Add(1)
+			<-release
+			return nil
+		}
+		active := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, wp, export, zap.NewNop(), nil)
+		stopped := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, wp, export, zap.NewNop(), nil)
+		require.NoError(t, stopped.Shutdown(context.Background()))
+		done := newFakeDone()
+		active.Consume(context.Background(), &requesttest.FakeRequest{Items: 1}, done)
+		synctest.Wait()
+		assert.EqualValues(t, 1, exports.Load())
+
+		const producers = 8
+		var wg sync.WaitGroup
+		for range producers {
+			wg.Go(func() {
+				stopped.Consume(context.Background(), &requesttest.FakeRequest{Items: 1}, done)
+			})
+		}
+		synctest.Wait()
+		assert.EqualValues(t, 1, exports.Load(), "stopped partitions must wait for a worker")
+		assert.EqualValues(t, 0, done.success.Load())
+
+		close(release)
+		wg.Wait()
+		require.NoError(t, active.Shutdown(context.Background()))
+		assert.EqualValues(t, producers+1, exports.Load())
+		assert.EqualValues(t, producers+1, done.success.Load())
+		assert.EqualValues(t, 0, done.errors.Load())
+		synctest.Wait()
+		assert.Len(t, wp.workers, 1, "the synchronous flush must return its worker")
+	})
 }
