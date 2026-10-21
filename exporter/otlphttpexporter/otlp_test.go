@@ -1260,3 +1260,41 @@ func TestPartialSuccess_responseBodyTooLarge(t *testing.T) {
 	assert.True(t, consumererror.IsPermanent(err))
 	assert.Contains(t, err.Error(), "error parsing protobuf response:")
 }
+
+func TestExport_StatusErrorShowsResolvedURL(t *testing.T) {
+	configuredURL := "http://endpoint.invalid/v1/logs"
+	resolvedURL := "https://actual-destination.example.com/v1/logs"
+
+	transport := &mockTransport{
+		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			// A routing middleware that follows the RoundTripper contract clones
+			// the request instead of mutating it, so only the response carries
+			// the rewritten URL.
+			resolved := req.Clone(req.Context())
+			var err error
+			resolved.URL, err = url.Parse(resolvedURL)
+			require.NoError(t, err)
+			return &http.Response{
+				StatusCode: http.StatusNotFound,
+				Header:     make(http.Header),
+				Body:       http.NoBody,
+				Request:    resolved,
+			}, nil
+		},
+	}
+
+	logger, _ := observer.New(zap.DebugLevel)
+	exp := &baseExporter{
+		client: &http.Client{Transport: transport},
+		logger: zap.New(logger),
+		config: &Config{
+			Encoding: EncodingProto,
+		},
+	}
+
+	err := exp.export(context.Background(), configuredURL, []byte("test data"), nil)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), resolvedURL, "Error message should contain the resolved destination URL")
+	assert.NotContains(t, err.Error(), configuredURL, "Error message should NOT contain the configured placeholder URL")
+}

@@ -214,18 +214,26 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 
 	respStatus := readResponseStatus(resp)
 
+	// Report the URL the transport actually sent the request to. Middleware
+	// RoundTrippers may clone the request and rewrite its URL, leaving
+	// requestURL with only the configured placeholder.
+	destURL := requestURL
+	if resp.Request != nil && resp.Request.URL != nil {
+		destURL = resp.Request.URL.String()
+	}
+
 	// Format the error message. Use the status if it is present in the response.
 	var errString string
 	var formattedErr error
 	if respStatus != nil {
 		errString = fmt.Sprintf(
 			"error exporting items, request to %s responded with HTTP Status Code %d, Message=%s, Details=%v",
-			requestURL, resp.StatusCode, respStatus.Message, respStatus.Details,
+			destURL, resp.StatusCode, respStatus.Message, respStatus.Details,
 		)
 	} else {
 		errString = fmt.Sprintf(
 			"error exporting items, request to %s responded with HTTP Status Code %d",
-			requestURL, resp.StatusCode,
+			destURL, resp.StatusCode,
 		)
 	}
 	formattedErr = statusutil.NewStatusFromMsgAndHTTPCode(errString, resp.StatusCode).Err()
