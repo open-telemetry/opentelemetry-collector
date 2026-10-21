@@ -102,14 +102,14 @@ type Config struct {
 	// JobName name of the scrape job, used to identify the source in telemetry.
 	JobName string `mapstructure:"job_name"`
 
+	// Targets list of targets to scrape metrics from.
+	Targets *[]TargetsItem `mapstructure:"targets"`
+
 	// LogLevel logging level for the scraper.
 	LogLevel string `mapstructure:"log_level"`
 
 	// Protocol protocol used when connecting to scrape targets, reused from samplepkg.
 	Protocol samplepkg.Protocol `mapstructure:"protocol"`
-
-	// Targets list of targets to scrape metrics from.
-	Targets *[]TargetsItem `mapstructure:"targets"`
 
 	// placeholder for the private fields
 	privateConfigFields
@@ -143,12 +143,12 @@ func (c *Config) Validate() error {
 		err = errors.Join(err, inner_err)
 	}
 
-	if !slices.Contains([]string{"debug", "info", "warn", "error"}, c.LogLevel) {
-		err = errors.Join(err, errors.New("log_level must be one of [debug, info, warn, error]"))
-	}
-
 	if c.Targets == nil || len(*c.Targets) == 0 {
 		err = errors.Join(err, errors.New("targets is required"))
+	}
+
+	if !slices.Contains([]string{"debug", "info", "warn", "error"}, c.LogLevel) {
+		err = errors.Join(err, errors.New("log_level must be one of [debug, info, warn, error]"))
 	}
 
 	return err
@@ -159,8 +159,8 @@ func createDefaultConfig() component.Config {
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		JobName:              "test_job",
+		Targets:              &[]TargetsItem{NewDefaultTargetsItem()},
 		LogLevel:             "info",
 		Protocol:             samplepkg.NewDefaultProtocol(),
-		Targets:              &[]TargetsItem{NewDefaultTargetsItem()},
 	}
 }

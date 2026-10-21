@@ -2213,6 +2213,35 @@ func TestExtractValidators_RequiredAndCustomValidator(t *testing.T) {
 	require.Equal(t, "validateHTTPClient", result[1].CustomValidator)
 }
 
+func TestExtractValidators_NestedObjectPropertyCustomValidatorNotDuplicated(t *testing.T) {
+	nonNil := new(CustomValidatorConfig)
+	protocols := &ConfigMetadata{
+		Type:     ObjectType,
+		GoStruct: GoStructConfig{CustomValidator: nonNil},
+		Properties: map[string]*ConfigMetadata{
+			"grpc": {Type: "string"},
+		},
+	}
+	md := &ConfigMetadata{
+		Type:     "object",
+		Required: []string{"protocols"},
+		Properties: map[string]*ConfigMetadata{
+			"protocols": protocols,
+		},
+	}
+
+	result := ExtractValidators("config", md)
+	require.Len(t, result, 1)
+	require.Equal(t, "protocols", result[0].FieldName)
+	require.True(t, result[0].Rules.Required)
+	require.Empty(t, result[0].CustomValidator)
+
+	defResult := ExtractValidators("protocols", protocols)
+	require.Len(t, defResult, 1)
+	require.Equal(t, "validateProtocols", defResult[0].CustomValidator)
+	require.True(t, defResult[0].IsType)
+}
+
 func TestExtractValidators_RootCustomValidatorLast(t *testing.T) {
 	md := &ConfigMetadata{
 		Type:     "object",
@@ -2995,6 +3024,94 @@ func TestMapCustomDefaults_NestedObjectOverrides(t *testing.T) {
 		`.Host = "localhost"`,
 		`.Port = 9090`,
 	}, exprs)
+}
+
+func TestMapCustomDefaults_StableOrderAcrossRuns(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"zulu":  {Type: "string"},
+			"alpha": {Type: "string"},
+			"mike":  {Type: "string"},
+			"bravo": {Type: "string"},
+		},
+	}
+	input := defaultValue(map[string]any{
+		"zulu":  "z",
+		"alpha": "a",
+		"mike":  "m",
+		"bravo": "b",
+	})
+
+	want := []string{`.Alpha = "a"`, `.Bravo = "b"`, `.Mike = "m"`, `.Zulu = "z"`}
+	for range 20 {
+		require.Equal(t, want, MapCustomDefaults(md, input, "", ""))
+	}
+}
+
+func TestMapCustomDefaults_NestedStructFieldOverride(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"server_config": {
+				Type: "object",
+				Ref:  "go.opentelemetry.io/collector/config/confighttp.server_config",
+				Properties: map[string]*ConfigMetadata{
+					"read_header_timeout": {
+						Type:     "string",
+						Default:  "1m",
+						GoStruct: GoStructConfig{Type: "time.Duration"},
+					},
+					"write_timeout": {
+						Type:     "string",
+						Default:  "30s",
+						GoStruct: GoStructConfig{Type: "time.Duration"},
+					},
+				},
+			},
+		},
+	}
+
+	exprs := MapCustomDefaults(md, defaultValue(map[string]any{
+		"server_config": map[string]any{"read_header_timeout": "0s"},
+	}), "go.opentelemetry.io/collector", "")
+
+	require.Equal(t, []string{
+		".ServerConfig.ReadHeaderTimeout = 0",
+	}, exprs)
+}
+
+func TestMapCustomDefaults_ExplicitNullOverride(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"tls": {
+				Type:       "object",
+				Ref:        "go.opentelemetry.io/collector/config/configtls.server_config",
+				IsOptional: true,
+				Properties: map[string]*ConfigMetadata{
+					"min_version": {Type: "string", Default: "1.2"},
+				},
+			},
+		},
+	}
+
+	exprs := MapCustomDefaults(md, defaultValue(map[string]any{"tls": nil}), "go.opentelemetry.io/collector", "")
+
+	require.Equal(t, []string{".TLS = configoptional.None[configtls.ServerConfig]()"}, exprs)
+}
+
+func TestMapCustomDefaults_ExplicitNullOverride_RequiredFieldPanics(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"host": {Type: "string"},
+		},
+	}
+
+	require.Panics(t, func() {
+		MapCustomDefaults(md, defaultValue(map[string]any{"host": nil}), "", "")
+	})
 }
 
 func TestMapCustomDefaults_SliceOfObjectsOverrides(t *testing.T) {
