@@ -420,6 +420,18 @@ func TestLoadMetadata(t *testing.T) {
 							Mono:                   Mono{Monotonic: false},
 						},
 					},
+					"test.histogram": {
+						Signal: Signal{
+							Enabled:     true,
+							Stability:   component.StabilityLevelDevelopment,
+							Description: "Test histogram metric",
+						},
+						Unit: new("s"),
+						Histogram: &Histogram{
+							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
+							Boundaries:      []float64{1, 10, 100},
+						},
+					},
 					"optional.metric": {
 						Signal: Signal{
 							Enabled:     false,
