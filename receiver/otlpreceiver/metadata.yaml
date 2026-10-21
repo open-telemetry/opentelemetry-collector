@@ -9,3 +9,10 @@ status:
     stable: [traces, metrics, logs]
     alpha: [profiles]
   distributions: [core, contrib, k8s, otlp]
+
+feature_gates:
+  - id: receiver.otlp.rejectInvalidUTF8
+    description: 'Controls whether the OTLP receiver rejects telemetry items containing invalid UTF-8 and reports them through OTLP partial success.'
+    stage: alpha
+    from_version: 'v0.163.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/11449'

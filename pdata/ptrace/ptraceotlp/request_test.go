@@ -94,3 +94,54 @@ func TestTracesProtoWireCompatibility(t *testing.T) {
 	otlp.MigrateTraces(td.orig.ResourceSpans)
 	assert.Equal(t, td, td2)
 }
+
+func TestRejectInvalidUTF8(t *testing.T) {
+	t.Run("invalid resource", func(t *testing.T) {
+		td := ptrace.NewTraces()
+		rs := td.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("bad", string([]byte{0xff}))
+		rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+		assert.False(t, NewExportRequestFromTraces(td).ValidateUTF8())
+		assert.Equal(t, 1, NewExportRequestFromTraces(td).RejectInvalidUTF8())
+		assert.Equal(t, 0, td.SpanCount())
+	})
+
+	t.Run("invalid scope", func(t *testing.T) {
+		td := ptrace.NewTraces()
+		ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+		ss.Scope().SetName(string([]byte{0xff}))
+		ss.Spans().AppendEmpty()
+
+		assert.Equal(t, 1, NewExportRequestFromTraces(td).RejectInvalidUTF8())
+		assert.Equal(t, 0, td.SpanCount())
+	})
+
+	t.Run("invalid span", func(t *testing.T) {
+		td := ptrace.NewTraces()
+		spans := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
+		spans.AppendEmpty().SetName("ok")
+		spans.AppendEmpty().SetName(string([]byte{0xff}))
+
+		assert.Equal(t, 1, NewExportRequestFromTraces(td).RejectInvalidUTF8())
+		assert.Equal(t, 1, td.SpanCount())
+	})
+
+	t.Run("empty containers are kept", func(t *testing.T) {
+		td := ptrace.NewTraces()
+		td.ResourceSpans().AppendEmpty()
+		td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+
+		assert.Equal(t, 0, NewExportRequestFromTraces(td).RejectInvalidUTF8())
+		assert.Equal(t, 2, td.ResourceSpans().Len())
+		assert.Equal(t, 1, td.ResourceSpans().At(1).ScopeSpans().Len())
+	})
+
+	t.Run("emptied containers are dropped", func(t *testing.T) {
+		td := ptrace.NewTraces()
+		td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName(string([]byte{0xff}))
+
+		assert.Equal(t, 1, NewExportRequestFromTraces(td).RejectInvalidUTF8())
+		assert.Equal(t, 0, td.ResourceSpans().Len())
+	})
+}

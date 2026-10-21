@@ -11,15 +11,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
@@ -51,6 +54,51 @@ func TestExport_EmptyRequest(t *testing.T) {
 	assert.NotNil(t, resp, "The response is missing")
 }
 
+func TestExport_InvalidUTF8(t *testing.T) {
+	setRejectInvalidUTF8Gate(t, true)
+
+	ld := testdata.GenerateLogs(2)
+	ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("bad", string([]byte{0xff}))
+	req := plogotlp.NewExportRequestFromLogs(ld)
+
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	logSink := new(consumertest.LogsSink)
+	logClient := makeLogsServiceClientWithTelemetry(t, logSink, tt)
+	resp, err := logClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), resp.PartialSuccess().RejectedLogRecords())
+	assert.Equal(t, invalidUTF8Message, resp.PartialSuccess().ErrorMessage())
+
+	lds := logSink.AllLogs()
+	require.Len(t, lds, 1)
+	assert.Equal(t, 1, lds[0].LogRecordCount())
+
+	// Rejected log records must be visible in the receiver telemetry, not only in the response.
+	assertReceiverSum(t, tt, "otelcol_receiver_refused_log_records", 1)
+	assertReceiverSum(t, tt, "otelcol_receiver_accepted_log_records", 1)
+}
+
+func TestExport_InvalidUTF8FeatureGateDisabled(t *testing.T) {
+	setRejectInvalidUTF8Gate(t, false)
+
+	ld := testdata.GenerateLogs(2)
+	ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("bad", string([]byte{0xff}))
+	req := plogotlp.NewExportRequestFromLogs(ld)
+
+	logSink := new(consumertest.LogsSink)
+	logClient := makeLogsServiceClient(t, logSink)
+	resp, err := logClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Zero(t, resp.PartialSuccess().RejectedLogRecords())
+	assert.Empty(t, resp.PartialSuccess().ErrorMessage())
+
+	lds := logSink.AllLogs()
+	require.Len(t, lds, 1)
+	assert.Equal(t, 2, lds[0].LogRecordCount())
+}
+
 func TestExport_NonPermanentErrorConsumer(t *testing.T) {
 	ld := testdata.GenerateLogs(1)
 	req := plogotlp.NewExportRequestFromLogs(ld)
@@ -74,7 +122,11 @@ func TestExport_PermanentErrorConsumer(t *testing.T) {
 }
 
 func makeLogsServiceClient(t *testing.T, lc consumer.Logs) plogotlp.GRPCClient {
-	addr := otlpReceiverOnGRPCServer(t, lc)
+	return makeLogsServiceClientWithTelemetry(t, lc, nil)
+}
+
+func makeLogsServiceClientWithTelemetry(t *testing.T, lc consumer.Logs, tt *componenttest.Telemetry) plogotlp.GRPCClient {
+	addr := otlpReceiverOnGRPCServer(t, lc, tt)
 	cc, err := grpc.NewClient(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	t.Cleanup(func() {
@@ -84,7 +136,9 @@ func makeLogsServiceClient(t *testing.T, lc consumer.Logs) plogotlp.GRPCClient {
 	return plogotlp.NewGRPCClient(cc)
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) net.Addr {
+// otlpReceiverOnGRPCServer starts the receiver on a gRPC server. When tt is not nil, the
+// receiver telemetry is wired to it so tests can assert the emitted metrics.
+func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs, tt *componenttest.Telemetry) net.Addr {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
@@ -93,6 +147,9 @@ func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) net.Addr {
 	})
 
 	set := receivertest.NewNopSettings(metadata.Type)
+	if tt != nil {
+		set.TelemetrySettings = tt.NewTelemetrySettings()
+	}
 	set.ID = component.MustNewIDWithName("otlp", "log")
 	obsreport, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
@@ -109,4 +166,26 @@ func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) net.Addr {
 	}()
 
 	return ln.Addr()
+}
+
+func setRejectInvalidUTF8Gate(t *testing.T, enabled bool) {
+	original := metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.ID(), original))
+	})
+}
+
+// assertReceiverSum checks the value of a receiver counter metric.
+func assertReceiverSum(t *testing.T, tt *componenttest.Telemetry, name string, want int64) {
+	t.Helper()
+	m, err := tt.GetMetric(name)
+	require.NoError(t, err)
+	sum, ok := m.Data.(metricdata.Sum[int64])
+	require.True(t, ok, "metric %s is not an int64 sum", name)
+	var got int64
+	for _, dp := range sum.DataPoints {
+		got += dp.Value
+	}
+	assert.Equal(t, want, got, "metric %s", name)
 }
