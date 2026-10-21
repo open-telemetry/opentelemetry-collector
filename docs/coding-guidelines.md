@@ -73,11 +73,11 @@ When naming configuration structs, use the following guidelines:
 #### Experimental fields on stable configuration structs
 
 You can add new experimental Go fields to a stable configuration struct. Its functionality must be
-under a feature gate. When the feature gate is disabled, a Collector loading a config with such a
+under an alpha feature gate. When the feature gate is disabled, a Collector loading a config with such a
 field must fail with a descriptive error that refers to the feature gate. The same feature gate can
 be re-used for multiple logically related related fields.
 
-The name of a field cannot be changed, even if experimental, since that would break the Go API.
+Even if experimental, the name of a field cannot be changed, and its type cannot change in backward-incompatible ways, since that would break the Go API.
 Think carefully about the field name and ensure there is consensus before adding it. 
 
 If a field on a stable configuration struct needs to be removed or renamed, instead, create a new
