@@ -16,7 +16,8 @@ issues: [16164]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Object definitions under `exported_configs` are now rendered in the README after the `config:` table.
+  Object definitions and scalar type aliases under `exported_configs` are now rendered in the README after the `config:` table.
+  Packages that only declare `exported_configs` can now get generated docs once their README contains the config markers.
   Components that only declare `exported_configs` no longer get an empty configuration table.
 
 # Optional: The change log or logs in which this entry should be included.
