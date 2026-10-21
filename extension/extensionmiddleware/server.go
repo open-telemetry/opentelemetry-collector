@@ -23,7 +23,8 @@ type GRPCServer interface {
 	//
 	// The options must not include grpc.InTapHandle, because a gRPC server
 	// accepts only one tap handle. Implement GRPCServerInTap instead.
-	// configgrpc returns an error if they do.
+	// configgrpc returns an error when the server options set more than one
+	// tap handle.
 	GetGRPCServerOptions(context.Context) ([]grpc.ServerOption, error)
 }
 

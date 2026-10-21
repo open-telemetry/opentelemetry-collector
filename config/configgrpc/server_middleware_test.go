@@ -279,9 +279,10 @@ func TestServerMiddlewareToServerErrors(t *testing.T) {
 			errText: "get server tap handle failed",
 		},
 		{
-			name: "server_options_tap_handle",
+			name: "server_options_tap_handle_conflicts",
 			extensions: map[component.ID]component.Component{
 				component.MustNewID("tapoptions"): newTestServerInTapOptionMiddleware("tapoptions"),
+				component.MustNewID("tap"):        newTestServerInTapMiddleware(recordingInTapHandle("tap")),
 			},
 			config: ServerConfig{
 				NetAddr: confignet.AddrConfig{
@@ -292,9 +293,12 @@ func TestServerMiddlewareToServerErrors(t *testing.T) {
 					{
 						ID: component.MustNewID("tapoptions"),
 					},
+					{
+						ID: component.MustNewID("tap"),
+					},
 				},
 			},
-			errText: "middleware \"tapoptions\" returned grpc.InTapHandle; implement GRPCServerInTap instead",
+			errText: "failed to create gRPC server",
 		},
 		{
 			name: "server_options_conflict",
