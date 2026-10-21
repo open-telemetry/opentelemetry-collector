@@ -15,7 +15,7 @@ import (
 func TestSplitMetrics_noop(t *testing.T) {
 	td := testdata.GenerateMetrics(20)
 	splitSize := 40
-	split := splitMetrics(splitSize, td)
+	split := splitMetrics(splitSize, td, td.DataPointCount())
 	assert.Equal(t, td, split)
 
 	i := 0
@@ -51,24 +51,24 @@ func TestSplitMetrics(t *testing.T) {
 
 	splitMetricCount := 5
 	splitSize := splitMetricCount * dataPointCount
-	split := splitMetrics(splitSize, md)
+	split := splitMetrics(splitSize, md, md.DataPointCount())
 	assert.Equal(t, splitMetricCount, split.MetricCount())
 	assert.Equal(t, cp, split)
 	assert.Equal(t, 15, md.MetricCount())
 	assert.Equal(t, "test-metric-int-0-0", split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
 	assert.Equal(t, "test-metric-int-0-4", split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).Name())
 
-	split = splitMetrics(splitSize, md)
+	split = splitMetrics(splitSize, md, md.DataPointCount())
 	assert.Equal(t, 10, md.MetricCount())
 	assert.Equal(t, "test-metric-int-0-5", split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
 	assert.Equal(t, "test-metric-int-0-9", split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).Name())
 
-	split = splitMetrics(splitSize, md)
+	split = splitMetrics(splitSize, md, md.DataPointCount())
 	assert.Equal(t, 5, md.MetricCount())
 	assert.Equal(t, "test-metric-int-0-10", split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
 	assert.Equal(t, "test-metric-int-0-14", split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).Name())
 
-	split = splitMetrics(splitSize, md)
+	split = splitMetrics(splitSize, md, md.DataPointCount())
 	assert.Equal(t, 5, md.MetricCount())
 	assert.Equal(t, "test-metric-int-0-15", split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
 	assert.Equal(t, "test-metric-int-0-19", split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).Name())
@@ -92,7 +92,7 @@ func TestSplitMetricsMultipleResourceSpans(t *testing.T) {
 
 	splitMetricCount := 5
 	splitSize := splitMetricCount * dataPointCount
-	split := splitMetrics(splitSize, md)
+	split := splitMetrics(splitSize, md, md.DataPointCount())
 	assert.Equal(t, splitMetricCount, split.MetricCount())
 	assert.Equal(t, 35, md.MetricCount())
 	assert.Equal(t, "test-metric-int-0-0", split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
@@ -117,7 +117,7 @@ func TestSplitMetricsMultipleResourceSpans_SplitSizeGreaterThanMetricSize(t *tes
 
 	splitMetricCount := 25
 	splitSize := splitMetricCount * dataPointCount
-	split := splitMetrics(splitSize, td)
+	split := splitMetrics(splitSize, td, td.DataPointCount())
 	assert.Equal(t, splitMetricCount, split.MetricCount())
 	assert.Equal(t, 40-splitMetricCount, td.MetricCount())
 	assert.Equal(t, 1, td.ResourceMetrics().Len())
@@ -137,19 +137,19 @@ func TestSplitMetricsUneven(t *testing.T) {
 	}
 
 	splitSize := 9
-	split := splitMetrics(splitSize, md)
+	split := splitMetrics(splitSize, md, md.DataPointCount())
 	assert.Equal(t, 5, split.MetricCount())
 	assert.Equal(t, 6, md.MetricCount())
 	assert.Equal(t, "test-metric-int-0-0", split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
 	assert.Equal(t, "test-metric-int-0-4", split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).Name())
 
-	split = splitMetrics(splitSize, md)
+	split = splitMetrics(splitSize, md, md.DataPointCount())
 	assert.Equal(t, 5, split.MetricCount())
 	assert.Equal(t, 1, md.MetricCount())
 	assert.Equal(t, "test-metric-int-0-4", split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
 	assert.Equal(t, "test-metric-int-0-8", split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).Name())
 
-	split = splitMetrics(splitSize, md)
+	split = splitMetrics(splitSize, md, md.DataPointCount())
 	assert.Equal(t, 1, split.MetricCount())
 	assert.Equal(t, "test-metric-int-0-9", split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
 }
@@ -168,14 +168,14 @@ func TestSplitMetricsAllTypes(t *testing.T) {
 	// and then split by 2 for the rest so that each metric is split in half.
 	// Verify that descriptors are preserved for all data types across splits.
 
-	split := splitMetrics(1, md)
+	split := splitMetrics(1, md, md.DataPointCount())
 	assert.Equal(t, 1, split.MetricCount())
 	assert.Equal(t, 7, md.MetricCount())
 	gaugeInt := split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, 1, gaugeInt.Gauge().DataPoints().Len())
 	assert.Equal(t, "test-metric-int-0-0", gaugeInt.Name())
 
-	split = splitMetrics(splitSize, md)
+	split = splitMetrics(splitSize, md, md.DataPointCount())
 	assert.Equal(t, 2, split.MetricCount())
 	assert.Equal(t, 6, md.MetricCount())
 	gaugeInt = split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
@@ -185,7 +185,7 @@ func TestSplitMetricsAllTypes(t *testing.T) {
 	assert.Equal(t, 1, gaugeDouble.Gauge().DataPoints().Len())
 	assert.Equal(t, "test-metric-int-0-1", gaugeDouble.Name())
 
-	split = splitMetrics(splitSize, md)
+	split = splitMetrics(splitSize, md, md.DataPointCount())
 	assert.Equal(t, 2, split.MetricCount())
 	assert.Equal(t, 5, md.MetricCount())
 	gaugeDouble = split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
@@ -197,7 +197,7 @@ func TestSplitMetricsAllTypes(t *testing.T) {
 	assert.True(t, sumInt.Sum().IsMonotonic())
 	assert.Equal(t, "test-metric-int-0-2", sumInt.Name())
 
-	split = splitMetrics(splitSize, md)
+	split = splitMetrics(splitSize, md, md.DataPointCount())
 	assert.Equal(t, 2, split.MetricCount())
 	assert.Equal(t, 4, md.MetricCount())
 	sumInt = split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
@@ -211,7 +211,7 @@ func TestSplitMetricsAllTypes(t *testing.T) {
 	assert.True(t, sumDouble.Sum().IsMonotonic())
 	assert.Equal(t, "test-metric-int-0-3", sumDouble.Name())
 
-	split = splitMetrics(splitSize, md)
+	split = splitMetrics(splitSize, md, md.DataPointCount())
 	assert.Equal(t, 2, split.MetricCount())
 	assert.Equal(t, 3, md.MetricCount())
 	sumDouble = split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
@@ -224,7 +224,7 @@ func TestSplitMetricsAllTypes(t *testing.T) {
 	assert.Equal(t, pmetric.AggregationTemporalityCumulative, histogram.Histogram().AggregationTemporality())
 	assert.Equal(t, "test-metric-int-0-4", histogram.Name())
 
-	split = splitMetrics(splitSize, md)
+	split = splitMetrics(splitSize, md, md.DataPointCount())
 	assert.Equal(t, 2, split.MetricCount())
 	assert.Equal(t, 2, md.MetricCount())
 	histogram = split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
@@ -236,7 +236,7 @@ func TestSplitMetricsAllTypes(t *testing.T) {
 	assert.Equal(t, pmetric.AggregationTemporalityDelta, exponentialHistogram.ExponentialHistogram().AggregationTemporality())
 	assert.Equal(t, "test-metric-int-0-5", exponentialHistogram.Name())
 
-	split = splitMetrics(splitSize, md)
+	split = splitMetrics(splitSize, md, md.DataPointCount())
 	assert.Equal(t, 2, split.MetricCount())
 	assert.Equal(t, 1, md.MetricCount())
 	exponentialHistogram = split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
@@ -247,7 +247,7 @@ func TestSplitMetricsAllTypes(t *testing.T) {
 	assert.Equal(t, 1, summary.Summary().DataPoints().Len())
 	assert.Equal(t, "test-metric-int-0-6", summary.Name())
 
-	split = splitMetrics(splitSize, md)
+	split = splitMetrics(splitSize, md, md.DataPointCount())
 	summary = split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, 1, summary.Summary().DataPoints().Len())
 	assert.Equal(t, "test-metric-int-0-6", summary.Name())
@@ -263,25 +263,25 @@ func TestSplitMetricsBatchSizeSmallerThanDataPointCount(t *testing.T) {
 	}
 
 	splitSize := 1
-	split := splitMetrics(splitSize, md)
+	split := splitMetrics(splitSize, md, md.DataPointCount())
 	splitMetric := split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, 1, split.MetricCount())
 	assert.Equal(t, 2, md.MetricCount())
 	assert.Equal(t, "test-metric-int-0-0", splitMetric.Name())
 
-	split = splitMetrics(splitSize, md)
+	split = splitMetrics(splitSize, md, md.DataPointCount())
 	splitMetric = split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, 1, split.MetricCount())
 	assert.Equal(t, 1, md.MetricCount())
 	assert.Equal(t, "test-metric-int-0-0", splitMetric.Name())
 
-	split = splitMetrics(splitSize, md)
+	split = splitMetrics(splitSize, md, md.DataPointCount())
 	splitMetric = split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, 1, split.MetricCount())
 	assert.Equal(t, 1, md.MetricCount())
 	assert.Equal(t, "test-metric-int-0-1", splitMetric.Name())
 
-	split = splitMetrics(splitSize, md)
+	split = splitMetrics(splitSize, md, md.DataPointCount())
 	splitMetric = split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	assert.Equal(t, 1, split.MetricCount())
 	assert.Equal(t, 1, md.MetricCount())
@@ -310,7 +310,7 @@ func TestSplitMetricsMultipleILM(t *testing.T) {
 
 	splitMetricCount := 40
 	splitSize := splitMetricCount * dataPointCount
-	split := splitMetrics(splitSize, md)
+	split := splitMetrics(splitSize, md, md.DataPointCount())
 	assert.Equal(t, splitMetricCount, split.MetricCount())
 	assert.Equal(t, 20, md.MetricCount())
 	assert.Equal(t, "test-metric-int-0-0", split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
@@ -325,7 +325,7 @@ func TestSplitMetricsPreserveSchemaURLOnPartialSplit(t *testing.T) {
 	md.ResourceMetrics().At(0).ScopeMetrics().At(0).SetSchemaUrl(scopeSchemaURL)
 
 	splitSize := 1
-	split := splitMetrics(splitSize, md)
+	split := splitMetrics(splitSize, md, md.DataPointCount())
 	assert.Equal(t, resourceSchemaURL, split.ResourceMetrics().At(0).SchemaUrl())
 	assert.Equal(t, scopeSchemaURL, split.ResourceMetrics().At(0).ScopeMetrics().At(0).SchemaUrl())
 }

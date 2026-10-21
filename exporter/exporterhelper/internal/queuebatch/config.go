@@ -44,6 +44,9 @@ type Config struct {
 
 	// BatchConfig it configures how the requests are consumed from the queue and batch together during consumption.
 	Batch configoptional.Optional[BatchConfig] `mapstructure:"batch"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
@@ -88,9 +91,6 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
-// defaultPartitionCacheSize is the partition cache size used when `cache_size` is unset.
-const defaultPartitionCacheSize = 10000
-
 // BatchConfig defines a configuration for batching requests based on a timeout and a minimum number of items.
 type BatchConfig struct {
 	// FlushTimeout sets the time after which a batch will be sent regardless of its size.
@@ -109,6 +109,19 @@ type BatchConfig struct {
 
 	// Partition defines the partitioning of the batches configuration.
 	Partition PartitionConfig `mapstructure:"partition"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// NewDefaultBatchConfig returns the default BatchConfig.
+func NewDefaultBatchConfig() BatchConfig {
+	return BatchConfig{
+		FlushTimeout: 200 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      8192,
+		Partition:    NewDefaultPartitionConfig(),
+	}
 }
 
 // PartitionConfig defines a configuration for partitioning requests based on metadata keys.
@@ -125,14 +138,25 @@ type PartitionConfig struct {
 
 	// CacheSize is the maximum number of active partition batchers kept in the LRU
 	// cache when partitioning is enabled. When the limit is reached, the least
-	// recently used partition is flushed and removed. If unset, defaults to 10000.
-	// Must be positive.
-	CacheSize configoptional.Optional[int] `mapstructure:"cache_size"`
+	// recently used partition is flushed and removed. Default is 10000. Must be positive.
+	CacheSize int `mapstructure:"cache_size"`
 
 	// IdleTimeout is the duration a partition may stay empty before it is removed.
-	// Keep it above the data arrival interval to avoid churning partitions. If unset,
-	// it defaults to 90s. Must be positive.
-	IdleTimeout configoptional.Optional[time.Duration] `mapstructure:"idle_timeout"`
+	// Keep it above the data arrival interval to avoid churning partitions. Default is 90s.
+	// Must be positive.
+	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// NewDefaultPartitionConfig returns the default PartitionConfig.
+func NewDefaultPartitionConfig() PartitionConfig {
+	return PartitionConfig{
+		CacheSize: 10000,
+		// Large enough to keep a partition alive across common metrics scrape intervals (up to 60s).
+		IdleTimeout: 90 * time.Second,
+	}
 }
 
 func (cfg *BatchConfig) Validate() error {
@@ -168,8 +192,8 @@ func (cfg *PartitionConfig) Validate() error {
 		return nil
 	}
 
-	if v := cfg.IdleTimeout.Get(); v != nil && *v <= 0 {
-		return fmt.Errorf("`idle_timeout` must be positive, found %s", *v)
+	if cfg.IdleTimeout <= 0 {
+		return fmt.Errorf("`idle_timeout` must be positive, found %s", cfg.IdleTimeout)
 	}
 
 	// Validate metadata_keys for duplicates (case-insensitive)
@@ -182,8 +206,8 @@ func (cfg *PartitionConfig) Validate() error {
 		uniq[l] = true
 	}
 
-	if size := cfg.CacheSize.Get(); size != nil && *size <= 0 {
-		return fmt.Errorf("`cache_size` must be positive, found %d", *size)
+	if cfg.CacheSize <= 0 {
+		return fmt.Errorf("`cache_size` must be positive, found %d", cfg.CacheSize)
 	}
 
 	return nil

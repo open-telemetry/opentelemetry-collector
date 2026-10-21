@@ -8,11 +8,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 )
@@ -84,6 +86,13 @@ func LoadMetadata(filePath string) (Metadata, error) {
 	}
 	md.PackageName = packageName
 
+	if md.Status != nil {
+		md.GithubLabel, err = githubLabel(filepath.Dir(filePath), md.Status.Class, md.ShortFolderName)
+		if err != nil {
+			return md, fmt.Errorf("unable to determine github label: %w", err)
+		}
+	}
+
 	if md.ScopeName == "" {
 		md.ScopeName = packageName
 	}
@@ -133,6 +142,37 @@ func shortFolderName(filePath string) string {
 		}
 	}
 	return parentFolder
+}
+
+// githubLabel looks up the component in the repo's .github/component_labels.txt, defaulting to <class>/<short folder name>.
+func githubLabel(componentDir, class, shortName string) (string, error) {
+	fallback := class + "/" + shortName
+	rootDir, err := helpers.RootModuleDir(componentDir)
+	if err != nil {
+		return "", err
+	}
+	labels, err := os.ReadFile(filepath.Clean(filepath.Join(rootDir, ".github", "component_labels.txt")))
+	if errors.Is(err, fs.ErrNotExist) {
+		return fallback, nil
+	}
+	if err != nil {
+		return "", err
+	}
+	absDir, err := filepath.Abs(componentDir)
+	if err != nil {
+		return "", err
+	}
+	relDir, err := filepath.Rel(rootDir, absDir)
+	if err != nil {
+		return "", err
+	}
+	relDir = filepath.ToSlash(relDir)
+	for line := range strings.Lines(string(labels)) {
+		if fields := strings.Fields(line); len(fields) == 2 && fields[0] == relDir {
+			return fields[1], nil
+		}
+	}
+	return fallback, nil
 }
 
 func packageName(filePath string) (string, error) {
