@@ -3,6 +3,11 @@
 {{- if $sec.Title }}
 ### <a id="{{ $sec.Anchor }}"></a>{{ $sec.Title }}
 {{ end -}}
+{{- if $sec.Scalar -}}
+| Type | Default | Constraints | Description |
+| ---- | ------- | ----------- | ----------- |
+| {{ cfgDocType $sec.Schema }} | {{ cfgDocDefault $sec.Schema }} | {{ cfgDocConstraints $sec.Schema }} | {{ $sec.Schema.Description }} |
+{{- else -}}
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 {{- range cfgPropDocs $sec.Schema }}
@@ -13,6 +18,7 @@
 {{- if cfgIsObject .Schema }}
 {{- $anchor := cfgAnchor $sec.Anchor .Name }}
 {{ template "configSection" (cfgSubSection .Schema $anchor $anchor) }}
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end -}}

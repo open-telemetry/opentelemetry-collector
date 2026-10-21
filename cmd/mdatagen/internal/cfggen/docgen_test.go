@@ -240,11 +240,15 @@ func TestCfgExportedSections(t *testing.T) {
 	}
 
 	sections := CfgExportedSections(md)
-	require.Len(t, sections, 2, "scalar, internal and nil definitions must be skipped")
+	require.Len(t, sections, 3, "internal and nil definitions must be skipped")
 	// sorted by name for stable README output
 	assert.Equal(t, "exported_configs.alpha", sections[0].Anchor)
 	assert.Equal(t, "exported_configs.alpha", sections[0].Title)
-	assert.Equal(t, "exported_configs.zeta", sections[1].Anchor)
+	assert.False(t, sections[0].Scalar)
+	assert.Equal(t, "exported_configs.scalar", sections[1].Anchor)
+	assert.True(t, sections[1].Scalar, "scalar aliases must be flagged for scalar rendering")
+	assert.Equal(t, "exported_configs.zeta", sections[2].Anchor)
+	assert.False(t, sections[2].Scalar)
 	assert.NotNil(t, sections[0].Schema)
 }
 
