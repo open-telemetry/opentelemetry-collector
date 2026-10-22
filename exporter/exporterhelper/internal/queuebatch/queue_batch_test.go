@@ -287,22 +287,21 @@ func TestQueueBatch_Merge(t *testing.T) {
 			require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 3}))
 			require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 1}))
 
-			// the third and fifth requests should be sent by reaching the timeout
-			// the fourth request should be ignored because of the merge error.
-			assert.Never(t, func() bool {
-				return sink.RequestsCount() != 1
-			}, 50*time.Millisecond, 10*time.Millisecond)
-
 			// should be ignored because of the merge error.
 			require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{
 				Items:    3,
 				MergeErr: errors.New("merge error"),
 			}))
 
-			assert.Equal(t, 1, sink.RequestsCount())
+			// the third and fifth requests should be sent together by reaching the timeout.
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 2 && sink.ItemsCount() == 15
 			}, 1*time.Second, 10*time.Millisecond)
+
+			// the request with the merge error must have been dropped, not flushed later.
+			assert.Never(t, func() bool {
+				return sink.RequestsCount() != 2 || sink.ItemsCount() != 15
+			}, 2*tt.batchCfg.FlushTimeout, 10*time.Millisecond)
 		})
 	}
 }
@@ -590,7 +589,7 @@ func TestQueueBatchTimerFlush(t *testing.T) {
 		assert.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 4}))
 	}()
 
-	// Confirm that it is not flushed in 50ms
+	// Confirm that it is not flushed in 60ms
 	assert.Never(t, func() bool {
 		return sink.ItemsCount() != 8
 	}, 60*time.Millisecond, 10*time.Millisecond)
