@@ -377,7 +377,7 @@ func receiverNodeFor(t *testing.T, pg *Graph, pid pipeline.ID, id component.ID) 
 }
 
 func TestUpdate_ReceiversAndProcessorsTogether(t *testing.T) {
-	mk := func(tracesRecv []component.ID, tracesProcs []component.ID) pipelines.Config {
+	mk := func(tracesRecv, tracesProcs []component.ID) pipelines.Config {
 		return pipelines.Config{
 			tracesID: {
 				Receivers:  tracesRecv,

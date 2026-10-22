@@ -10,7 +10,7 @@ component: pkg/service
 note: "Add partial reload for processors (phase 2), behind the `service.partialReloadProcessors` (Beta) feature gate. It takes effect once `service.partialReload` is enabled."
 
 # One or more tracking issues or pull requests related to the change
-issues: [5966]
+issues: [14529]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
