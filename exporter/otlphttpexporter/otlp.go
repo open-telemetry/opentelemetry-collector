@@ -215,11 +215,12 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 	respStatus := readResponseStatus(resp)
 
 	// Report the URL the transport actually sent the request to. Middleware
-	// RoundTrippers may clone the request and rewrite its URL, leaving
-	// requestURL with only the configured placeholder.
-	destURL := requestURL
+	// RoundTrippers may clone the request and rewrite its URL, leaving req with
+	// only the configured placeholder. Redact userinfo: the rewritten URL is not
+	// under the exporter's control and the error ends up in logs.
+	destURL := req.URL.Redacted()
 	if resp.Request != nil && resp.Request.URL != nil {
-		destURL = resp.Request.URL.String()
+		destURL = resp.Request.URL.Redacted()
 	}
 
 	// Format the error message. Use the status if it is present in the response.
