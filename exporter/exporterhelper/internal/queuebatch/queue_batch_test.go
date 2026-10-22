@@ -600,6 +600,50 @@ func TestQueueBatchTimerFlush(t *testing.T) {
 	require.NoError(t, qb.Shutdown(context.Background()))
 }
 
+func TestQueueBatch_FastTrack_BatchingPreserved(t *testing.T) {
+	sink := requesttest.NewSink()
+	storageID := component.MustNewIDWithName("file_storage", "storage")
+	cfg := newTestConfig()
+	cfg.StorageID = &storageID
+	cfg.FastTrack = true
+	cfg.NumConsumers = 2
+	// Enable batching with MinSize of 2 items — requests should be merged before export.
+	cfg.Batch = configoptional.Some(BatchConfig{
+		FlushTimeout: 200 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      2,
+	})
+
+	qSet := newFakeRequestSettings()
+	qSet.Encoding = newFakeEncoding(&requesttest.FakeRequest{Items: 1})
+	qb, err := NewQueueBatch(qSet, cfg, sink.Export)
+	require.NoError(t, err)
+
+	host := hosttest.NewHost(map[component.ID]component.Component{
+		storageID: storagetest.NewMockStorageExtension(nil),
+	})
+	require.NoError(t, qb.Start(context.Background(), host))
+
+	// Send 4 individual 1-item requests concurrently. With batching (MinSize=2),
+	// they should be merged before export. Fast-track blocks the caller so we
+	// need concurrent goroutines for batching to merge them.
+	wg := sync.WaitGroup{}
+	for range 4 {
+		wg.Go(func() {
+			assert.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 1}))
+		})
+	}
+	wg.Wait()
+
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.Equal(c, 4, sink.ItemsCount())
+		// With MinSize=2 and 4 items sent concurrently, expect at most 2 batched requests.
+		assert.LessOrEqual(c, sink.RequestsCount(), 2)
+	}, 1*time.Second, 10*time.Millisecond)
+
+	require.NoError(t, qb.Shutdown(context.Background()))
+}
+
 func newTestConfig() Config {
 	return Config{
 		WaitForResult:   false,
