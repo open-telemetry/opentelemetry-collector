@@ -332,7 +332,7 @@ func TestLocationSwitchDictionary(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			l := tt.location
 			dst := tt.dst
-			err := l.switchDictionary(tt.src, dst)
+			err := l.switchDictionary(tt.src, dst, newMergeIndex(dst))
 
 			if tt.wantErr == nil {
 				require.NoError(t, err)
@@ -366,9 +366,10 @@ func BenchmarkLocationSwitchDictionary(b *testing.B) {
 		dst.StringTable().Append("", "foo")
 		dst.AttributeTable().AppendEmpty()
 		dst.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+		mi := newMergeIndex(dst)
 		b.StartTimer()
 
-		_ = l.switchDictionary(src, dst)
+		_ = l.switchDictionary(src, dst, mi)
 	}
 }
 

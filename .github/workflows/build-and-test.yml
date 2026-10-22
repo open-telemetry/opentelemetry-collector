@@ -117,7 +117,7 @@ jobs:
           key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
           lookup-only: true
       - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24"
           package-manager-cache: false
@@ -203,7 +203,7 @@ jobs:
       - name: Run Unit Tests
         run: |
           make -j4 gotest-with-junit
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-results-${{ runner.os }}-${{ matrix.runner }}-${{ matrix.go-version }}
           path: internal/tools/testresults/
@@ -262,7 +262,7 @@ jobs:
       - name: check-stability
         run: make check-stability
       - name: Upload coverage report
-        uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4 # v7.1.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -338,3 +338,59 @@ jobs:
           GOARM: ${{matrix.goarm}}
         run: |
           make otelcorecol
+      - name: Upload PR binary for size comparison
+        if: ${{ github.event_name == 'pull_request' && matrix.goos == 'linux' && matrix.goarch == 'amd64' && !contains(github.event.pull_request.labels.*.name, 'Skip Size Check') }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: otelcorecol-pr-linux-amd64
+          path: bin/otelcorecol_linux_amd64
+          retention-days: 1
+      - name: Checkout base ref
+        if: ${{ github.event_name == 'pull_request' && matrix.goos == 'linux' && matrix.goarch == 'amd64' && !contains(github.event.pull_request.labels.*.name, 'Skip Size Check') }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - name: Build base binary
+        if: ${{ github.event_name == 'pull_request' && matrix.goos == 'linux' && matrix.goarch == 'amd64' && !contains(github.event.pull_request.labels.*.name, 'Skip Size Check') }}
+        env:
+          GOOS: ${{matrix.goos}}
+          GOARCH: ${{matrix.goarch}}
+          GOARM: ${{matrix.goarm}}
+        run: |
+          make otelcorecol
+      - name: Upload base binary for size comparison
+        if: ${{ github.event_name == 'pull_request' && matrix.goos == 'linux' && matrix.goarch == 'amd64' && !contains(github.event.pull_request.labels.*.name, 'Skip Size Check') }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: otelcorecol-base-linux-amd64
+          path: bin/otelcorecol_linux_amd64
+          retention-days: 1
+
+  check-binary-size:
+    needs: [cross-build-collector]
+    if: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'Skip Size Check') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BINARY_SIZE_THRESHOLD_PCT: "2"
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Download PR binary
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: otelcorecol-pr-linux-amd64
+          path: pr-bin
+      - name: Download base binary
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: otelcorecol-base-linux-amd64
+          path: base-bin
+      - name: Compare binary size
+        run: |
+          PR_SIZE=$(stat -c%s pr-bin/otelcorecol_linux_amd64)
+          BASE_SIZE=$(stat -c%s base-bin/otelcorecol_linux_amd64)
+          .github/workflows/scripts/check-binary-size.sh "$BASE_SIZE" "$PR_SIZE" "$BINARY_SIZE_THRESHOLD_PCT"

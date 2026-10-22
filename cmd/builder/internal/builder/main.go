@@ -144,8 +144,8 @@ func Compile(cfg *Config) error {
 
 	args = append(args, "-ldflags="+ldflags, "-gcflags="+gcflags)
 
-	if cfg.Distribution.BuildTags != "" {
-		args = append(args, "-tags", cfg.Distribution.BuildTags)
+	if tags := cfg.Distribution.buildTags(); tags != "" {
+		args = append(args, "-tags", tags)
 	}
 	if _, err := runGoCommand(cfg, args...); err != nil {
 		return fmt.Errorf("%w: %s", errCompileFailed, err.Error())

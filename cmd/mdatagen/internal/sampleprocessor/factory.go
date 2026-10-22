@@ -30,45 +30,47 @@ func NewFactory() processor.Factory {
 	)
 }
 
-func createTracesProcessor(context.Context, processor.Settings, component.Config, consumer.Traces) (processor.Traces, error) {
-	return nopInstance, nil
+func createTracesProcessor(_ context.Context, _ processor.Settings, _ component.Config, next consumer.Traces) (processor.Traces, error) {
+	return &nopProcessor{nextTraces: next}, nil
 }
 
-func createMetricsProcessor(context.Context, processor.Settings, component.Config, consumer.Metrics) (processor.Metrics, error) {
-	return nopInstance, nil
+func createMetricsProcessor(_ context.Context, _ processor.Settings, _ component.Config, next consumer.Metrics) (processor.Metrics, error) {
+	return &nopProcessor{nextMetrics: next}, nil
 }
 
-func createLogsProcessor(context.Context, processor.Settings, component.Config, consumer.Logs) (processor.Logs, error) {
-	return nopInstance, nil
+func createLogsProcessor(_ context.Context, _ processor.Settings, _ component.Config, next consumer.Logs) (processor.Logs, error) {
+	return &nopProcessor{nextLogs: next}, nil
 }
 
-func createProfilesProcessor(context.Context, processor.Settings, component.Config, xconsumer.Profiles) (xprocessor.Profiles, error) {
-	return nopInstance, nil
+func createProfilesProcessor(_ context.Context, _ processor.Settings, _ component.Config, next xconsumer.Profiles) (xprocessor.Profiles, error) {
+	return &nopProcessor{nextProfiles: next}, nil
 }
-
-var nopInstance = &nopProcessor{}
 
 type nopProcessor struct {
 	component.StartFunc
 	component.ShutdownFunc
+	nextTraces   consumer.Traces
+	nextMetrics  consumer.Metrics
+	nextLogs     consumer.Logs
+	nextProfiles xconsumer.Profiles
 }
 
-func (n nopProcessor) ConsumeTraces(context.Context, ptrace.Traces) error {
-	return nil
+func (n *nopProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	return n.nextTraces.ConsumeTraces(ctx, td)
 }
 
-func (n nopProcessor) ConsumeLogs(context.Context, plog.Logs) error {
-	return nil
+func (n *nopProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	return n.nextLogs.ConsumeLogs(ctx, ld)
 }
 
-func (n nopProcessor) Capabilities() consumer.Capabilities {
+func (*nopProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
-func (n nopProcessor) ConsumeMetrics(context.Context, pmetric.Metrics) error {
-	return nil
+func (n *nopProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	return n.nextMetrics.ConsumeMetrics(ctx, md)
 }
 
-func (n nopProcessor) ConsumeProfiles(context.Context, pprofile.Profiles) error {
-	return nil
+func (n *nopProcessor) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
+	return n.nextProfiles.ConsumeProfiles(ctx, pd)
 }

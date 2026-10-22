@@ -9,7 +9,9 @@ type (
 	ConfigMetadata        = schemagen.ConfigMetadata
 	ConfigsMetadata       = schemagen.ConfigsMetadata
 	GoStructConfig        = schemagen.GoStructConfig
+	DeprecatedConfig      = schemagen.DeprecatedConfig
 	CustomValidatorConfig = schemagen.CustomValidatorConfig
+	CustomDefaultConfig   = schemagen.CustomDefaultConfig
 	Loader                = schemagen.Loader
 	Ref                   = schemagen.Ref
 	RefKind               = schemagen.RefKind
@@ -50,14 +52,20 @@ const (
 	OpaqueStringType = schemagen.OpaqueStringType
 	ComponentIDType  = schemagen.ComponentIDType
 	OpaqueMapType    = schemagen.OpaqueMapType
+
+	OptionalModeSome    = schemagen.OptionalModeSome
+	OptionalModeDefault = schemagen.OptionalModeDefault
 )
 
 var (
-	ErrNotFound     = schemagen.ErrNotFound
-	NewLoader       = schemagen.NewLoader
-	NewRef          = schemagen.NewRef
-	WithOrigin      = schemagen.WithOrigin
-	LocalizeRef     = schemagen.LocalizeRef
-	NewResolver     = schemagen.NewResolver
-	WriteJSONSchema = schemagen.WriteJSONSchema
+	ErrNotFound         = schemagen.ErrNotFound
+	NewLoader           = schemagen.NewLoader
+	NewRef              = schemagen.NewRef
+	WithOrigin          = schemagen.WithOrigin
+	LocalizeRef         = schemagen.LocalizeRef
+	NewResolver         = schemagen.NewResolver
+	WriteJSONSchema     = schemagen.WriteJSONSchema
+	OrderedPropNames    = schemagen.OrderedPropNames
+	ApplyConfigsOrder   = schemagen.ApplyConfigsOrder
+	ApplyNamedDefsOrder = schemagen.ApplyNamedDefsOrder
 )
