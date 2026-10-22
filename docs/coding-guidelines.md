@@ -78,7 +78,7 @@ field must fail with a descriptive error that refers to the feature gate. The sa
 be re-used for multiple logically related related fields.
 
 Even if experimental, the name of a field cannot be changed, and its type cannot change in backward-incompatible ways, since that would break the Go API.
-Think carefully about the field name and ensure there is consensus before adding it. 
+Think carefully about the field name and ensure there is consensus before adding it.
 
 If a field on a stable configuration struct needs to be removed or renamed, instead, create a new
 field and deprecate the old one. Setting the old field should be a no-op and must log a warning.
