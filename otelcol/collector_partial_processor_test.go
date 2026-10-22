@@ -210,3 +210,81 @@ func TestCollectorPartialProcessorReload(t *testing.T) {
 		})
 	}
 }
+
+// A pipeline fed by a connector cannot reload its processors in place, so the
+// collector attempts a partial reload and falls back to a full reload.
+func TestCollectorPartialProcessorReloadConnectorFedFallsBack(t *testing.T) {
+	reg := featuregate.GlobalRegistry()
+	require.NoError(t, reg.Set("service.partialReload", true))
+	defer func() { require.NoError(t, reg.Set("service.partialReload", false)) }()
+
+	conf := func(generation int) map[string]any {
+		return map[string]any{
+			"receivers":  map[string]any{"nop": map[string]any{}},
+			"processors": map[string]any{"countingproc": map[string]any{"generation": generation}},
+			"exporters":  map[string]any{"nop": map[string]any{}},
+			"connectors": map[string]any{"nop/conn": map[string]any{}},
+			"service": map[string]any{
+				"pipelines": map[string]any{
+					"traces/in": map[string]any{
+						"receivers": []any{"nop"},
+						"exporters": []any{"nop/conn"},
+					},
+					"traces/out": map[string]any{
+						"receivers":  []any{"nop/conn"},
+						"processors": []any{"countingproc"},
+						"exporters":  []any{"nop"},
+					},
+				},
+			},
+		}
+	}
+
+	observerCore, observedLogs := observer.New(zapcore.InfoLevel)
+	var creates atomic.Int32
+	factories := countingProcessorFactories(t, &creates)
+	factories.Telemetry = telemetry.NewFactory(
+		func() component.Config { return fakeTelemetryConfig{} },
+		telemetrytest.WithLogger(zap.New(observerCore), nil),
+	)
+
+	var reloaded atomic.Bool
+	var watcher confmap.WatcherFunc
+	provider := newFakeProvider("file", func(_ context.Context, _ string, w confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		watcher = w
+		if reloaded.Load() {
+			return confmap.NewRetrieved(conf(1))
+		}
+		return confmap.NewRetrieved(conf(0))
+	})
+
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:              []string{"file:cfg"},
+				ProviderFactories: []confmap.ProviderFactory{provider},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState()
+	}, 2*time.Second, 50*time.Millisecond)
+	require.EqualValues(t, 1, creates.Load())
+
+	reloaded.Store(true)
+	watcher(&confmap.ChangeEvent{})
+
+	assert.Eventually(t, func() bool { return hasLog(observedLogs, "Config updated, restart service") }, 2*time.Second, 50*time.Millisecond)
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState() && creates.Load() == 2
+	}, 2*time.Second, 50*time.Millisecond)
+
+	col.Shutdown()
+	wg.Wait()
+	assert.Equal(t, StateClosed, col.GetState())
+}

@@ -143,10 +143,10 @@ func hashValue(v any) (uint64, error) {
 // with allowReceivers, and processor differences only with allowProcessors.
 // Everything else must be identical, including connector-as-receiver entries.
 //
-// isConnector reports whether an ID is a connector. It may be derived from
-// either fingerprint: by the time it is consulted,
-// otherHash equality has already established that the set of configured
-// connectors (and their configuration) is identical between old and cur.
+// isConnector reports whether an ID is a connector. It is only used when
+// allowReceivers is set, and may be derived from either fingerprint: by the
+// time it is consulted, otherHash equality has already established that the
+// configured connectors are identical between old and cur.
 func partialReloadSupported(old, cur configFingerprint, isConnector func(component.ID) bool, allowReceivers, allowProcessors bool) bool {
 	if old.otherHash != cur.otherHash {
 		return false
@@ -202,7 +202,7 @@ func receiversOnlyChanged(old, cur configFingerprint, isConnector func(component
 
 // processorsOnlyChanged reports whether only processors differ.
 func processorsOnlyChanged(old, cur configFingerprint) bool {
-	return partialReloadSupported(old, cur, func(component.ID) bool { return false }, false, true)
+	return partialReloadSupported(old, cur, nil, false, true)
 }
 
 // filterIDs returns only the IDs for which the predicate returns true,

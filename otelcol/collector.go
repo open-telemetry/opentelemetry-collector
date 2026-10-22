@@ -366,9 +366,6 @@ func (col *Collector) tryPartialReload(ctx context.Context) (bool, error) {
 		newCfg.Service.Pipelines,
 	)
 	if err != nil {
-		if !applied {
-			return false, err
-		}
 		return true, fmt.Errorf("partial reload failed: %w", err)
 	}
 	if !applied {

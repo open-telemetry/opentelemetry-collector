@@ -665,3 +665,45 @@ func TestPartialReloadSupported(t *testing.T) {
 		})
 	}
 }
+
+func TestFingerprintForPartialReload_Errors(t *testing.T) {
+	tests := []struct {
+		name    string
+		mutate  func(map[string]any)
+		wantErr string
+	}{
+		{
+			name:    "unencodable_other_section",
+			mutate:  func(r map[string]any) { r["exporters"] = map[string]any{"otlp": make(chan int)} },
+			wantErr: "could not fingerprint configuration",
+		},
+		{
+			name:    "receivers_not_a_map",
+			mutate:  func(r map[string]any) { r["receivers"] = "invalid" },
+			wantErr: "could not fingerprint receiver configuration",
+		},
+		{
+			name:    "processors_not_a_map",
+			mutate:  func(r map[string]any) { r["processors"] = []any{"batch"} },
+			wantErr: "could not fingerprint processor configuration",
+		},
+		{
+			name:    "invalid_component_id",
+			mutate:  func(r map[string]any) { r["processors"] = map[string]any{"bad id/": map[string]any{}} },
+			wantErr: "invalid component id",
+		},
+		{
+			name:    "unencodable_entry",
+			mutate:  func(r map[string]any) { r["receivers"] = map[string]any{"otlp": make(chan int)} },
+			wantErr: "could not encode value for fingerprint",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			raw := baseRawConf()
+			tt.mutate(raw)
+			_, err := fingerprintForPartialReload(confmap.NewFromStringMap(raw), baseServiceConfig())
+			require.ErrorContains(t, err, tt.wantErr)
+		})
+	}
+}

@@ -5,6 +5,7 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -493,4 +494,78 @@ func TestUpdate_ReceiversAndProcessorsTogether(t *testing.T) {
 		assert.Equal(t, 1, receiverNodeFor(t, pg, tracesID, testReceiverID).starts)
 		assert.Len(t, pg.pipelines[tracesID].receivers, 1)
 	})
+}
+
+// faultyProcessor fails Start or Shutdown on demand.
+type faultyProcessor struct {
+	consumer.Traces
+	startErr, shutdownErr error
+}
+
+func (p *faultyProcessor) Start(context.Context, component.Host) error { return p.startErr }
+func (p *faultyProcessor) Shutdown(context.Context) error              { return p.shutdownErr }
+func (*faultyProcessor) Capabilities() consumer.Capabilities           { return consumer.Capabilities{} }
+
+// faultyProcessorFactories returns factories whose processors fail with the given errors.
+func faultyProcessorFactories(startErr, shutdownErr error) map[component.Type]processor.Factory {
+	f := processor.NewFactory(testcomponents.ExampleProcessorFactory.Type(),
+		func() component.Config { return &struct{ _ int }{} },
+		processor.WithTraces(func(_ context.Context, _ processor.Settings, _ component.Config, next consumer.Traces) (processor.Traces, error) {
+			return &faultyProcessor{Traces: next, startErr: startErr, shutdownErr: shutdownErr}, nil
+		}, component.StabilityLevelDevelopment),
+	)
+	return map[component.Type]processor.Factory{f.Type(): f}
+}
+
+func TestUpdate_ProcessorLifecycleErrors(t *testing.T) {
+	cfg := processorTestPipelines([]component.ID{procA}, nil)
+	update := func(pg *Graph, host *Host, set Settings, factories map[component.Type]processor.Factory) (bool, error) {
+		set.PipelineConfigs = cfg
+		return pg.Update(context.Background(), set, UpdateRequest{
+			ChangedProcessors:  map[component.ID]bool{procA: true},
+			NewProcessorCfgs:   testProcessorCfgs(),
+			ProcessorFactories: factories,
+			NewReceiverCfgs:    testReceiverCfgs(),
+			ReceiverFactories:  processorTestReceiverFactories,
+		}, host)
+	}
+
+	t.Run("start_fails", func(t *testing.T) {
+		pg, host, set := buildProcessorTestGraph(t, cfg, nil)
+
+		applied, err := update(pg, host, set, faultyProcessorFactories(errors.New("start boom"), nil))
+		require.ErrorContains(t, err, "failed to start processor")
+		assert.True(t, applied)
+	})
+
+	t.Run("shutdown_fails", func(t *testing.T) {
+		pg, host, set := buildProcessorTestGraph(t, cfg, nil)
+
+		// The first reload installs a processor that fails to shut down.
+		factories := faultyProcessorFactories(nil, errors.New("shutdown boom"))
+		applied, err := update(pg, host, set, factories)
+		require.NoError(t, err)
+		require.True(t, applied)
+
+		// The second reload shuts it down.
+		applied, err = update(pg, host, set, factories)
+		require.ErrorContains(t, err, "failed to shutdown processor")
+		assert.True(t, applied)
+	})
+}
+
+func TestUpdate_PipelineMissingFromGraph(t *testing.T) {
+	pg, host, set := buildProcessorTestGraph(t, processorTestPipelines([]component.ID{procA}, nil), nil)
+
+	// Same number of pipelines, but a different one.
+	set.PipelineConfigs = pipelines.Config{
+		logsID: {
+			Receivers:  []component.ID{testReceiverID},
+			Processors: []component.ID{procA},
+			Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+		},
+	}
+	applied, err := pg.Update(context.Background(), set, UpdateRequest{}, host)
+	require.NoError(t, err)
+	assert.False(t, applied)
 }
