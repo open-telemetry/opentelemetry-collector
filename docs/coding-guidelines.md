@@ -75,7 +75,7 @@ When naming configuration structs, use the following guidelines:
 You can add new experimental Go fields to a stable configuration struct. Its functionality MUST be
 under an alpha feature gate. When the feature gate is disabled, a Collector loading a config with such a
 field MUST fail with a descriptive error that refers to the feature gate. The same feature gate MAY
-be re-used for multiple logically related related fields.
+be re-used for multiple logically-related fields.
 
 Even if experimental, the name of a field MUST NOT be changed, and its type MUST NOT change in backward-incompatible ways, since that would break the Go API.
 Think carefully about the field name and ensure there is consensus before adding it.
