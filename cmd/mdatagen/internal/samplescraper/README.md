@@ -165,6 +165,8 @@ This scraper is used for testing purposes to check the output of mdatagen.
 | `metrics_include` | []object |  | no | Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted. |
 | `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 
+## Exported configs
+
 ### <a id="exported_configs.sample_pkg"></a>exported_configs.sample_pkg
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
