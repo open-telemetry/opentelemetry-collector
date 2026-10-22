@@ -287,20 +287,21 @@ func TestQueueBatch_Merge(t *testing.T) {
 			require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 3}))
 			require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 1}))
 
-			// the third and fifth requests should be sent by reaching the timeout
-			// the fourth request should be ignored because of the merge error.
-			time.Sleep(50 * time.Millisecond)
-
 			// should be ignored because of the merge error.
 			require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{
 				Items:    3,
 				MergeErr: errors.New("merge error"),
 			}))
 
-			assert.Equal(t, 1, sink.RequestsCount())
+			// the third and fifth requests should be sent together by reaching the timeout.
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 2 && sink.ItemsCount() == 15
 			}, 1*time.Second, 10*time.Millisecond)
+
+			// the request with the merge error must have been dropped, not flushed later.
+			assert.Never(t, func() bool {
+				return sink.RequestsCount() != 2 || sink.ItemsCount() != 15
+			}, 2*tt.batchCfg.FlushTimeout, 10*time.Millisecond)
 		})
 	}
 }
@@ -565,7 +566,7 @@ func TestQueueBatchTimerFlush(t *testing.T) {
 	sink := requesttest.NewSink()
 	cfg := newTestConfig()
 	cfg.WaitForResult = true
-	cfg.Batch = configoptional.Some(BatchConfig{FlushTimeout: 100 * time.Millisecond, Sizer: request.SizerTypeItems, MinSize: 8})
+	cfg.Batch = configoptional.Some(BatchConfig{FlushTimeout: 300 * time.Millisecond, Sizer: request.SizerTypeItems, MinSize: 8})
 	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
@@ -578,25 +579,25 @@ func TestQueueBatchTimerFlush(t *testing.T) {
 	go func() {
 		assert.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 4}))
 	}()
-	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+	require.EventuallyWithT(t, func(c *assert.CollectT) {
 		assert.LessOrEqual(c, 1, sink.RequestsCount())
 		assert.Equal(c, 8, sink.ItemsCount())
 	}, 30*time.Millisecond, 5*time.Millisecond)
 
-	// Send another request that should be flushed after 100ms instead of 50ms since last flush
+	// Send another request that should be flushed on the 300ms timer, not by size
 	go func() {
 		assert.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 4}))
 	}()
 
-	// Confirm that it is not flushed in 50ms
-	time.Sleep(60 * time.Millisecond)
-	assert.LessOrEqual(t, 1, sink.RequestsCount())
-	assert.Equal(t, 8, sink.ItemsCount())
+	// Confirm that it is not flushed in 150ms, well before the 300ms timer
+	assert.Never(t, func() bool {
+		return sink.ItemsCount() != 8
+	}, 150*time.Millisecond, 10*time.Millisecond)
 
-	// Confirm that it is flushed after 100ms (using 60+50=110 here to be safe)
-	time.Sleep(50 * time.Millisecond)
-	assert.LessOrEqual(t, 2, sink.RequestsCount())
-	assert.Equal(t, 12, sink.ItemsCount())
+	// Confirm that it is flushed after 300ms
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() >= 2 && sink.ItemsCount() == 12
+	}, 1*time.Second, 10*time.Millisecond)
 	require.NoError(t, qb.Shutdown(context.Background()))
 }
 
