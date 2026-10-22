@@ -200,6 +200,7 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 				TLS: configtls.ClientConfig{
 					Insecure: false,
 				},
+				Keepalive:       configoptional.Some(NewDefaultKeepaliveClientConfig()),
 				ReadBufferSize:  1024,
 				WriteBufferSize: 512,
 			},
