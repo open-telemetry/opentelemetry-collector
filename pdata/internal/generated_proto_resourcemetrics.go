@@ -255,6 +255,16 @@ func (orig *ResourceMetrics) MarshalProto(buf []byte) int {
 }
 
 func (orig *ResourceMetrics) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *ResourceMetrics) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *ResourceMetrics) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -280,7 +290,7 @@ func (orig *ResourceMetrics) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Resource.UnmarshalProto(buf[startPos:pos])
+			err = orig.Resource.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -295,8 +305,9 @@ func (orig *ResourceMetrics) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.ScopeMetrics = proto.GrowRepeated(orig.ScopeMetrics, buf, pos, fieldNum)
 			orig.ScopeMetrics = append(orig.ScopeMetrics, NewScopeMetrics())
-			err = orig.ScopeMetrics[len(orig.ScopeMetrics)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.ScopeMetrics[len(orig.ScopeMetrics)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -311,7 +322,7 @@ func (orig *ResourceMetrics) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.SchemaUrl = string(buf[startPos:pos])
+			orig.SchemaUrl = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 
 		case 1000:
 			if wireType != proto.WireTypeLen {
@@ -323,8 +334,9 @@ func (orig *ResourceMetrics) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.DeprecatedScopeMetrics = proto.GrowRepeated(orig.DeprecatedScopeMetrics, buf, pos, fieldNum)
 			orig.DeprecatedScopeMetrics = append(orig.DeprecatedScopeMetrics, NewScopeMetrics())
-			err = orig.DeprecatedScopeMetrics[len(orig.DeprecatedScopeMetrics)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.DeprecatedScopeMetrics[len(orig.DeprecatedScopeMetrics)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -341,9 +353,9 @@ func (orig *ResourceMetrics) UnmarshalProto(buf []byte) error {
 func GenTestResourceMetrics() *ResourceMetrics {
 	orig := NewResourceMetrics()
 	orig.Resource = *GenTestResource()
-	orig.ScopeMetrics = []*ScopeMetrics{{}, GenTestScopeMetrics()}
+	orig.ScopeMetrics = []*ScopeMetrics{&ScopeMetrics{}, GenTestScopeMetrics()}
 	orig.SchemaUrl = "test_schemaurl"
-	orig.DeprecatedScopeMetrics = []*ScopeMetrics{{}, GenTestScopeMetrics()}
+	orig.DeprecatedScopeMetrics = []*ScopeMetrics{&ScopeMetrics{}, GenTestScopeMetrics()}
 	return orig
 }
 

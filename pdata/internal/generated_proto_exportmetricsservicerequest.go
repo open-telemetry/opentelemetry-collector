@@ -182,6 +182,16 @@ func (orig *ExportMetricsServiceRequest) MarshalProto(buf []byte) int {
 }
 
 func (orig *ExportMetricsServiceRequest) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *ExportMetricsServiceRequest) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *ExportMetricsServiceRequest) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -206,8 +216,9 @@ func (orig *ExportMetricsServiceRequest) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.ResourceMetrics = proto.GrowRepeated(orig.ResourceMetrics, buf, pos, fieldNum)
 			orig.ResourceMetrics = append(orig.ResourceMetrics, NewResourceMetrics())
-			err = orig.ResourceMetrics[len(orig.ResourceMetrics)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.ResourceMetrics[len(orig.ResourceMetrics)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -223,7 +234,7 @@ func (orig *ExportMetricsServiceRequest) UnmarshalProto(buf []byte) error {
 
 func GenTestExportMetricsServiceRequest() *ExportMetricsServiceRequest {
 	orig := NewExportMetricsServiceRequest()
-	orig.ResourceMetrics = []*ResourceMetrics{{}, GenTestResourceMetrics()}
+	orig.ResourceMetrics = []*ResourceMetrics{&ResourceMetrics{}, GenTestResourceMetrics()}
 	return orig
 }
 

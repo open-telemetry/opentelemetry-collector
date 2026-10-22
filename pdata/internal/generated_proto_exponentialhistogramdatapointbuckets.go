@@ -202,6 +202,16 @@ func (orig *ExponentialHistogramDataPointBuckets) MarshalProto(buf []byte) int {
 }
 
 func (orig *ExponentialHistogramDataPointBuckets) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *ExponentialHistogramDataPointBuckets) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *ExponentialHistogramDataPointBuckets) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -236,6 +246,7 @@ func (orig *ExponentialHistogramDataPointBuckets) UnmarshalProto(buf []byte) err
 				}
 				startPos := pos - length
 				var num uint64
+				orig.BucketCounts = proto.GrowCap(orig.BucketCounts, length)
 				for startPos < pos {
 					num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
 					if err != nil {
@@ -252,6 +263,7 @@ func (orig *ExponentialHistogramDataPointBuckets) UnmarshalProto(buf []byte) err
 				if err != nil {
 					return err
 				}
+				orig.BucketCounts = proto.GrowRepeated(orig.BucketCounts, buf, pos, fieldNum)
 				orig.BucketCounts = append(orig.BucketCounts, uint64(num))
 			default:
 				return fmt.Errorf("proto: wrong wireType = %d for field BucketCounts", wireType)

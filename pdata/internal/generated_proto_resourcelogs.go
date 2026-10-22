@@ -255,6 +255,16 @@ func (orig *ResourceLogs) MarshalProto(buf []byte) int {
 }
 
 func (orig *ResourceLogs) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *ResourceLogs) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *ResourceLogs) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -280,7 +290,7 @@ func (orig *ResourceLogs) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.Resource.UnmarshalProto(buf[startPos:pos])
+			err = orig.Resource.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -295,8 +305,9 @@ func (orig *ResourceLogs) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.ScopeLogs = proto.GrowRepeated(orig.ScopeLogs, buf, pos, fieldNum)
 			orig.ScopeLogs = append(orig.ScopeLogs, NewScopeLogs())
-			err = orig.ScopeLogs[len(orig.ScopeLogs)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.ScopeLogs[len(orig.ScopeLogs)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -311,7 +322,7 @@ func (orig *ResourceLogs) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
-			orig.SchemaUrl = string(buf[startPos:pos])
+			orig.SchemaUrl = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 
 		case 1000:
 			if wireType != proto.WireTypeLen {
@@ -323,8 +334,9 @@ func (orig *ResourceLogs) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.DeprecatedScopeLogs = proto.GrowRepeated(orig.DeprecatedScopeLogs, buf, pos, fieldNum)
 			orig.DeprecatedScopeLogs = append(orig.DeprecatedScopeLogs, NewScopeLogs())
-			err = orig.DeprecatedScopeLogs[len(orig.DeprecatedScopeLogs)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.DeprecatedScopeLogs[len(orig.DeprecatedScopeLogs)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -341,9 +353,9 @@ func (orig *ResourceLogs) UnmarshalProto(buf []byte) error {
 func GenTestResourceLogs() *ResourceLogs {
 	orig := NewResourceLogs()
 	orig.Resource = *GenTestResource()
-	orig.ScopeLogs = []*ScopeLogs{{}, GenTestScopeLogs()}
+	orig.ScopeLogs = []*ScopeLogs{&ScopeLogs{}, GenTestScopeLogs()}
 	orig.SchemaUrl = "test_schemaurl"
-	orig.DeprecatedScopeLogs = []*ScopeLogs{{}, GenTestScopeLogs()}
+	orig.DeprecatedScopeLogs = []*ScopeLogs{&ScopeLogs{}, GenTestScopeLogs()}
 	return orig
 }
 

@@ -377,6 +377,16 @@ func (orig *Exemplar) MarshalProto(buf []byte) int {
 }
 
 func (orig *Exemplar) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, false)
+}
+
+// UnmarshalProtoUnsafe unmarshals buf without copying string fields.
+// The caller must keep buf alive and immutable for as long as orig is used.
+func (orig *Exemplar) UnmarshalProtoUnsafe(buf []byte) error {
+	return orig.unmarshalProto(buf, true)
+}
+
+func (orig *Exemplar) unmarshalProto(buf []byte, unsafeUnmarshal bool) error {
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -401,8 +411,9 @@ func (orig *Exemplar) UnmarshalProto(buf []byte) error {
 				return err
 			}
 			startPos := pos - length
+			orig.FilteredAttributes = proto.GrowRepeated(orig.FilteredAttributes, buf, pos, fieldNum)
 			orig.FilteredAttributes = append(orig.FilteredAttributes, KeyValue{})
-			err = orig.FilteredAttributes[len(orig.FilteredAttributes)-1].UnmarshalProto(buf[startPos:pos])
+			err = orig.FilteredAttributes[len(orig.FilteredAttributes)-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -466,7 +477,7 @@ func (orig *Exemplar) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.TraceId.UnmarshalProto(buf[startPos:pos])
+			err = orig.TraceId.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -482,7 +493,7 @@ func (orig *Exemplar) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 
-			err = orig.SpanId.UnmarshalProto(buf[startPos:pos])
+			err = orig.SpanId.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 			if err != nil {
 				return err
 			}
@@ -498,7 +509,7 @@ func (orig *Exemplar) UnmarshalProto(buf []byte) error {
 
 func GenTestExemplar() *Exemplar {
 	orig := NewExemplar()
-	orig.FilteredAttributes = []KeyValue{{}, *GenTestKeyValue()}
+	orig.FilteredAttributes = []KeyValue{KeyValue{}, *GenTestKeyValue()}
 	orig.TimeUnixNano = uint64(13)
 	orig.Value = &Exemplar_AsDouble{AsDouble: float64(3.1415926)}
 	orig.TraceId = *GenTestTraceID()

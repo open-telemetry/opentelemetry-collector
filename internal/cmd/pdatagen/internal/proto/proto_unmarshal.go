@@ -38,6 +38,7 @@ const unmarshalProtoFloat = `{{ if .repeated -}}
 			if err != nil {
 				return err
 			}
+			orig.{{ .fieldName }} = proto.GrowRepeated(orig.{{ .fieldName }}, buf, pos, fieldNum)
 			orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, math.Float{{ .bitSize }}frombits(num))
 		default:
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
@@ -96,6 +97,7 @@ const unmarshalProtoFixed = `{{ if .repeated -}}
 			if err != nil {
 				return err
 			}
+			orig.{{ .fieldName }} = proto.GrowRepeated(orig.{{ .fieldName }}, buf, pos, fieldNum)
 			orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ .goType }}(num))
 		default:
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
@@ -152,6 +154,7 @@ const unmarshalProtoBool = `{{ if .repeated -}}
 			if err != nil {
 				return err
 			}
+			orig.{{ .fieldName }} = proto.GrowRepeated(orig.{{ .fieldName }}, buf, pos, fieldNum)
 			orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, num != 0)
 		default:
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
@@ -192,6 +195,7 @@ const unmarshalProtoVarint = `{{ if .repeated -}}
 			}
 			startPos := pos - length
 			var num uint64
+			orig.{{ .fieldName }} = proto.GrowCap(orig.{{ .fieldName }}, length)
 			for startPos < pos {
 				num, startPos, err = proto.ConsumeVarint(buf[:pos], startPos)
 				if err != nil {
@@ -208,6 +212,7 @@ const unmarshalProtoVarint = `{{ if .repeated -}}
 			if err != nil {
 				return err
 			}
+			orig.{{ .fieldName }} = proto.GrowRepeated(orig.{{ .fieldName }}, buf, pos, fieldNum)
 			orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ .goType }}(num))
 		default:
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)
@@ -255,12 +260,13 @@ const unmarshalProtoString = `
 		} else {
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
 		}
-		ov.{{ .fieldName }} = string(buf[startPos:pos])
+		ov.{{ .fieldName }} = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 		orig.{{ .oneOfGroup }} = ov
 {{- else if .repeated -}}
-		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, string(buf[startPos:pos]))
+		orig.{{ .fieldName }} = proto.GrowRepeated(orig.{{ .fieldName }}, buf, pos, fieldNum)
+		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, proto.BytesToString(buf[startPos:pos], unsafeUnmarshal))
 {{- else -}}
-		orig.{{ .fieldName }} = string(buf[startPos:pos])
+		orig.{{ .fieldName }} = proto.BytesToString(buf[startPos:pos], unsafeUnmarshal)
 {{- end }}`
 
 const unmarshalProtoBytes = `	
@@ -282,22 +288,14 @@ const unmarshalProtoBytes = `
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
 		}
 		if length != 0 {
-			ov.{{ .fieldName }} = make([]byte, length)
-			copy(ov.{{ .fieldName }}, buf[startPos:pos])
+			ov.{{ .fieldName }} = proto.BytesToBytes(buf[startPos:pos], unsafeUnmarshal)
 		}
 		orig.{{ .oneOfGroup }} = ov
 {{- else if .repeated -}}
-		if length != 0 {
-			orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, make([]byte, length))
-			copy(orig.{{ .fieldName }}[len(orig.{{ .fieldName }}) - 1], buf[startPos:pos])
-		} else {
-			orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, nil)
-		}
+		orig.{{ .fieldName }} = proto.GrowRepeated(orig.{{ .fieldName }}, buf, pos, fieldNum)
+		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, proto.BytesToBytes(buf[startPos:pos], unsafeUnmarshal))
 {{- else -}}
-		if length != 0 {
-			orig.{{ .fieldName }} = make([]byte, length)
-			copy(orig.{{ .fieldName }}, buf[startPos:pos])
-		}
+		orig.{{ .fieldName }} = proto.BytesToBytes(buf[startPos:pos], unsafeUnmarshal)
 {{- end }}`
 
 const unmarshalProtoMessage = `
@@ -319,20 +317,21 @@ const unmarshalProtoMessage = `
 			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
 		}
 		ov.{{ .fieldName }} = New{{ .messageName }}()
-		err = ov.{{ .fieldName }}.UnmarshalProto(buf[startPos:pos])
+		err = ov.{{ .fieldName }}.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 		if err != nil {
 			return err
 		}
 		orig.{{ .oneOfGroup }} = ov
 {{- else if .repeated -}}
+		orig.{{ .fieldName }} = proto.GrowRepeated(orig.{{ .fieldName }}, buf, pos, fieldNum)
 		orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, {{ if .nullable }}New{{ .messageName }}(){{ else }}{{ .defaultValue }}{{ end }})
-		err = orig.{{ .fieldName }}[len(orig.{{ .fieldName }})-1].UnmarshalProto(buf[startPos:pos])
+		err = orig.{{ .fieldName }}[len(orig.{{ .fieldName }})-1].unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 		if err != nil {
 			return err
 		}
 {{- else }}
 		{{ if .nullable }}orig.{{ .fieldName }} = New{{ .messageName }}(){{ end }}
-		err = orig.{{ .fieldName }}.UnmarshalProto(buf[startPos:pos]) 
+		err = orig.{{ .fieldName }}.unmarshalProto(buf[startPos:pos], unsafeUnmarshal)
 		if err != nil {
 			return err
 		}
@@ -367,6 +366,7 @@ const unmarshalProtoSignedVarint = `{{ if .repeated -}}
 			if err != nil {
 				return err
 			}
+			orig.{{ .fieldName }} = proto.GrowRepeated(orig.{{ .fieldName }}, buf, pos, fieldNum)
 			orig.{{ .fieldName }} = append(orig.{{ .fieldName }}, int{{ .bitSize }}(uint{{ .bitSize }}(num >> 1) ^ uint{{ .bitSize }}(int{{ .bitSize }}((num&1)<<{{ sub .bitSize 1 }})>>{{ sub .bitSize 1 }})))
 		default:
 			return fmt.Errorf("proto: wrong wireType = %d for field {{ .fieldName }}", wireType)

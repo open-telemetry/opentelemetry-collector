@@ -51,6 +51,18 @@ func (ms ExportRequest) UnmarshalProto(data []byte) error {
 	return nil
 }
 
+// UnmarshalProtoUnsafe unmarshals ExportRequest from proto bytes without
+// copying string and byte fields. The caller must keep data immutable while
+// the request is in use.
+func (ms ExportRequest) UnmarshalProtoUnsafe(data []byte) error {
+	pd, err := (&pprofile.ProtoUnmarshaler{}).UnmarshalProfilesUnsafe(data)
+	if err != nil {
+		return err
+	}
+	pd.MoveTo(ms.Profiles())
+	return nil
+}
+
 // MarshalJSON marshals ExportRequest into JSON bytes.
 func (ms ExportRequest) MarshalJSON() ([]byte, error) {
 	return (&pprofile.JSONMarshaler{}).MarshalProfiles(ms.Profiles())

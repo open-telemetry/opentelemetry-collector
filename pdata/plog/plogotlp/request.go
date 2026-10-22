@@ -55,6 +55,18 @@ func (ms ExportRequest) UnmarshalProto(data []byte) error {
 	return nil
 }
 
+// UnmarshalProtoUnsafe unmarshals ExportRequest from proto bytes without
+// copying string and byte fields. The caller must keep data immutable while
+// the request is in use.
+func (ms ExportRequest) UnmarshalProtoUnsafe(data []byte) error {
+	err := ms.orig.UnmarshalProtoUnsafe(data)
+	if err != nil {
+		return err
+	}
+	otlp.MigrateLogs(ms.orig.ResourceLogs)
+	return nil
+}
+
 // MarshalJSON marshals ExportRequest into JSON bytes.
 func (ms ExportRequest) MarshalJSON() ([]byte, error) {
 	dest := json.BorrowStream(nil)

@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
+	"unsafe"
 )
 
 // WireType represents the proto wire type.
@@ -27,6 +29,76 @@ var (
 	ErrIntOverflow          = errors.New("proto: integer overflow")
 	ErrUnexpectedEndOfGroup = errors.New("proto: unexpected end of group")
 )
+
+// BytesToString converts data to a string. If unsafeUnmarshal is true, the
+// returned string aliases data and the caller must keep data alive and
+// immutable for as long as the string is used.
+func BytesToString(data []byte, unsafeUnmarshal bool) string {
+	if !unsafeUnmarshal {
+		return string(data)
+	}
+	return unsafe.String(unsafe.SliceData(data), len(data))
+}
+
+// BytesToBytes copies data, or returns data itself when unsafeUnmarshal is true.
+// If unsafeUnmarshal is true, the caller must keep data alive and immutable for
+// as long as the returned slice is used.
+func BytesToBytes(data []byte, unsafeUnmarshal bool) []byte {
+	if len(data) == 0 {
+		return nil
+	}
+	if unsafeUnmarshal {
+		return data
+	}
+	out := make([]byte, len(data))
+	copy(out, data)
+	return out
+}
+
+// countFieldLimit is the largest remaining message we will scan to size a
+// repeated field exactly. Larger messages grow exponentially instead; a full
+// tag walk of a 10MB ScopeLogs is more expensive than a few slice reallocs.
+const countFieldLimit = 4096
+
+// GrowRepeated grows s for another repeated element. Small remaining messages
+// are sized exactly; large ones double capacity to avoid a second proto scan.
+func GrowRepeated[T any](s []T, buf []byte, pos int, fieldNum int32) []T {
+	if cap(s) > len(s) {
+		return s
+	}
+	extra := 8
+	if remaining := len(buf) - pos; remaining > 0 && remaining <= countFieldLimit {
+		extra = 1 + CountField(buf, pos, fieldNum)
+	} else if cap(s) > extra {
+		extra = cap(s)
+	}
+	return slices.Grow(s, extra)
+}
+
+// GrowCap grows s by extra capacity.
+func GrowCap[T any](s []T, extra int) []T {
+	return slices.Grow(s, extra)
+}
+
+// CountField counts remaining occurrences of fieldNum in buf starting at pos.
+func CountField(buf []byte, pos int, fieldNum int32) int {
+	n := 0
+	for pos < len(buf) {
+		num, wireType, next, err := ConsumeTag(buf, pos)
+		if err != nil {
+			return n
+		}
+		pos = next
+		if num == fieldNum {
+			n++
+		}
+		pos, err = ConsumeUnknown(buf, pos, wireType)
+		if err != nil {
+			return n
+		}
+	}
+	return n
+}
 
 // ConsumeUnknown parses buf starting at pos as a wireType field, reporting the new position.
 func ConsumeUnknown(buf []byte, pos int, wireType WireType) (int, error) {
