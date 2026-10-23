@@ -20,6 +20,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensiontest v0.163.0
 	go.opentelemetry.io/collector/extension/xextension v0.163.0
 	go.opentelemetry.io/collector/featuregate v1.69.0
+	go.opentelemetry.io/collector/internal/telemetry v0.163.0
 	go.opentelemetry.io/collector/internal/testutil v0.163.0
 	go.opentelemetry.io/collector/pdata v1.69.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.163.0
@@ -124,3 +125,5 @@ replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testut
 replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
 
 replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipeline
+
+replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
