@@ -174,9 +174,14 @@ func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) e
 }
 
 func (e *baseExporter) export(ctx context.Context, requestURL string, request []byte, partialSuccessHandler partialSuccessHandler) error {
-	e.logger.Debug("Preparing to make HTTP request", zap.String("url", requestURL))
+	diagnosticURL := urlForLog(requestURL)
+	e.logger.Debug("Preparing to make HTTP request", zap.String("url", diagnosticURL))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, requestURL, bytes.NewReader(request))
 	if err != nil {
+		if _, ok := errors.AsType[*url.Error](err); ok {
+			// URL parsing errors may also include sensitive input in their details.
+			err = redactedURLParseError{err: err}
+		}
 		return consumererror.NewPermanent(err)
 	}
 
@@ -194,7 +199,7 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 	resp, err := e.client.Do(req)
 	if err != nil {
 		if urlErr, ok := errors.AsType[*url.Error](err); ok {
-			urlErr.URL = req.URL.String()
+			urlErr.URL = urlForLog(req.URL.String())
 		}
 		return fmt.Errorf("failed to make an HTTP request: %w", err)
 	}
@@ -216,11 +221,11 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 
 	// Report the URL the transport actually sent the request to. Middleware
 	// RoundTrippers may clone the request and rewrite its URL, leaving req with
-	// only the configured placeholder. Redact userinfo: the rewritten URL is not
-	// under the exporter's control and the error ends up in logs.
-	destURL := req.URL.Redacted()
+	// only the configured placeholder. Retain only the scheme and host because
+	// the rewritten URL may also contain secrets in its path or query.
+	destURL := urlForLog(req.URL.String())
 	if resp.Request != nil && resp.Request.URL != nil {
-		destURL = resp.Request.URL.Redacted()
+		destURL = urlForLog(resp.Request.URL.String())
 	}
 
 	// Format the error message. Use the status if it is present in the response.
@@ -266,6 +271,26 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 		}
 	}
 	return formattedErr
+}
+
+func urlForLog(requestURL string) string {
+	u, err := url.Parse(requestURL)
+	if err != nil || u.Host == "" {
+		return "[REDACTED]"
+	}
+	return (&url.URL{Scheme: u.Scheme, Host: u.Host}).String()
+}
+
+type redactedURLParseError struct {
+	err error
+}
+
+func (redactedURLParseError) Error() string {
+	return "invalid request URL [REDACTED]"
+}
+
+func (e redactedURLParseError) Unwrap() error {
+	return e.err
 }
 
 // Determine if the status code is retryable according to the specification.
