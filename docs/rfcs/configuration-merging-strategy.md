@@ -313,7 +313,7 @@ otelcol \
 
 Instead of annotating individual yaml nodes (Approach 1) or touching the command line (Approaches 2 & 3), a config file can carry a dedicated top-level `merge_strategy:` section that declares which paths in *that file* should be merged into the running configuration. The `merge_strategy:` section will be removed before the config is applied.
 
-The `merge_strategy:` block is local to the configuration file that contains it. It controls how that file is merged into the base configuration and is discarded immediately afterward. Because each file's `merge_strategy:` is handled independently during processing, there's no need to merge `merge_strategy:` sections across files.
+The `merge_strategy:` block is local to the configuration file that contains it and it will reside under `metadata` section for a config file. It controls how that file is merged into the base configuration and is discarded immediately afterward. Because each file's `merge_strategy:` is handled independently during processing, there's no need to merge `merge_strategy:` sections across files.
 
 This keeps URIs opaque, keeps the command line short, and keeps merge intent with the data it governs.
 
@@ -380,11 +380,12 @@ extensions:
 service:
   extensions: [file_storage]
 
-merge_strategy:
-  lists:
-    mode: append
-    fields:
-      - path: "service::extensions"
+metadata:
+  merge_strategy:
+    lists:
+      mode: append
+      fields:
+        - path: "service::extensions"
 ```
 
 ```yaml
@@ -422,14 +423,15 @@ service:
     metrics:
       receivers: [prometheus/sidecar]
 
-merge_strategy:
-  lists:
-    mode: append
-    fields:
-      - path: "service::extensions"
-      - path: "service::pipelines::*::receivers"
-      - path: "service::pipelines::*::processors"
-      - path: "service::pipelines::*::exporters"
+metadata:
+  merge_strategy:
+    lists:
+      mode: append
+      fields:
+        - path: "service::extensions"
+        - path: "service::pipelines::*::receivers"
+        - path: "service::pipelines::*::processors"
+        - path: "service::pipelines::*::exporters"
 ```
 
 3. _Mix append and prepend in a single fragment_:
@@ -447,13 +449,14 @@ service:
     logs:
       processors: [transform/enrich] # append: run last
 
-merge_strategy:
-  lists:
-    fields:
-      - path: "service::pipelines::traces::processors"
-        mode: prepend
-      - path: "service::pipelines::logs::processors"
-        mode: append
+metadata:
+  merge_strategy:
+    lists:
+      fields:
+        - path: "service::pipelines::traces::processors"
+          mode: prepend
+        - path: "service::pipelines::logs::processors"
+          mode: append
 ```
 
 4. _(Future) Merge a list of objects by key field_:
@@ -483,12 +486,13 @@ service:
         - name: key3
           value: val3       # new key, appended
 
-merge_strategy:
-  lists:
-    fields:
-      - path: "service::telemetry::resource::attributes"
-        mode: append
-        key: name             # match items by the "name" field
+metadata:
+  merge_strategy:
+    lists:
+      fields:
+        - path: "service::telemetry::resource::attributes"
+          mode: append
+          key: name             # match items by the "name" field
 ```
 
 ```yaml
