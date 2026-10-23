@@ -282,6 +282,11 @@ func (v Value) Bytes() ByteSlice {
 // Calling this function on zero-initialized Value will cause a panic.
 func (v Value) SetStr(sv string) {
 	v.getState().AssertMutable()
+	// Mutate the existing wrapper in place to avoid re-allocating or cycling through sync.Pool.
+	if ov, ok := v.getOrig().Value.(*internal.AnyValue_StringValue); ok {
+		ov.StringValue = sv
+		return
+	}
 	// Delete everything but the AnyValue object itself.
 	internal.DeleteAnyValue(v.getOrig(), false)
 	ov := internal.NewAnyValueStringValue()
@@ -294,6 +299,11 @@ func (v Value) SetStr(sv string) {
 // Calling this function on zero-initialized Value will cause a panic.
 func (v Value) SetInt(iv int64) {
 	v.getState().AssertMutable()
+	// Mutate the existing wrapper in place to avoid re-allocating or cycling through sync.Pool.
+	if ov, ok := v.getOrig().Value.(*internal.AnyValue_IntValue); ok {
+		ov.IntValue = iv
+		return
+	}
 	// Delete everything but the AnyValue object itself.
 	internal.DeleteAnyValue(v.getOrig(), false)
 	ov := internal.NewAnyValueIntValue()
@@ -306,6 +316,11 @@ func (v Value) SetInt(iv int64) {
 // Calling this function on zero-initialized Value will cause a panic.
 func (v Value) SetDouble(dv float64) {
 	v.getState().AssertMutable()
+	// Mutate the existing wrapper in place to avoid re-allocating or cycling through sync.Pool.
+	if ov, ok := v.getOrig().Value.(*internal.AnyValue_DoubleValue); ok {
+		ov.DoubleValue = dv
+		return
+	}
 	// Delete everything but the AnyValue object itself.
 	internal.DeleteAnyValue(v.getOrig(), false)
 	ov := internal.NewAnyValueDoubleValue()
@@ -318,6 +333,11 @@ func (v Value) SetDouble(dv float64) {
 // Calling this function on zero-initialized Value will cause a panic.
 func (v Value) SetBool(bv bool) {
 	v.getState().AssertMutable()
+	// Mutate the existing wrapper in place to avoid re-allocating or cycling through sync.Pool.
+	if ov, ok := v.getOrig().Value.(*internal.AnyValue_BoolValue); ok {
+		ov.BoolValue = bv
+		return
+	}
 	// Delete everything but the AnyValue object itself.
 	internal.DeleteAnyValue(v.getOrig(), false)
 	ov := internal.NewAnyValueBoolValue()
