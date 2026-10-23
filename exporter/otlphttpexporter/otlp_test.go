@@ -1387,3 +1387,103 @@ func TestPartialSuccess_responseBodyTooLarge(t *testing.T) {
 	assert.True(t, consumererror.IsPermanent(err))
 	assert.Contains(t, err.Error(), "error parsing protobuf response:")
 }
+
+func TestExport_StatusErrorShowsResolvedURL(t *testing.T) {
+	configuredURL := "http://endpoint.invalid/configured-token/v1/logs?api_key=configured-key#configured-fragment"
+
+	// Routing middleware can clone requests, so only the response carries the
+	// rewritten URL. Diagnostics retain that destination without its secrets.
+	cloneWithURL := func(rawURL string) func(*http.Request) *http.Request {
+		return func(req *http.Request) *http.Request {
+			resolved := req.Clone(req.Context())
+			var err error
+			resolved.URL, err = url.Parse(rawURL)
+			require.NoError(t, err)
+			return resolved
+		}
+	}
+
+	withUserinfo, err := url.Parse("https://actual-destination.example.com:443/rewritten-token/v1/logs?api_key=rewritten-key#rewritten-fragment")
+	require.NoError(t, err)
+	withUserinfo.User = url.UserPassword("user", "secret")
+
+	tests := []struct {
+		name         string
+		respRequest  func(*http.Request) *http.Request
+		wantContains string
+		wantAbsent   []string
+	}{
+		{
+			name:         "rewritten URL taken from the response request",
+			respRequest:  cloneWithURL("https://actual-destination.example.com/rewritten-token/v1/logs?api_key=rewritten-key#rewritten-fragment"),
+			wantContains: "https://actual-destination.example.com",
+			wantAbsent:   []string{"endpoint.invalid"},
+		},
+		{
+			name:         "userinfo in the rewritten URL is redacted",
+			respRequest:  cloneWithURL(withUserinfo.String()),
+			wantContains: "https://actual-destination.example.com:443",
+			wantAbsent:   []string{"user", "secret", "endpoint.invalid"},
+		},
+		{
+			name:         "response without request falls back to the configured URL",
+			respRequest:  func(*http.Request) *http.Request { return nil },
+			wantContains: "http://endpoint.invalid",
+		},
+		{
+			name:         "response request without URL falls back to the configured URL",
+			respRequest:  func(*http.Request) *http.Request { return &http.Request{} },
+			wantContains: "http://endpoint.invalid",
+		},
+	}
+	statusBody, err := proto.Marshal(status.New(codes.Unavailable, "unavailable").Proto())
+	require.NoError(t, err)
+	responses := []struct {
+		name      string
+		code      int
+		body      string
+		permanent bool
+	}{
+		{"permanent", http.StatusNotFound, "", true},
+		{"retryable with status", http.StatusServiceUnavailable, string(statusBody), false},
+	}
+
+	for _, tt := range tests {
+		for _, response := range responses {
+			t.Run(tt.name+"/"+response.name, func(t *testing.T) {
+				transport := &mockTransport{
+					roundTripFunc: func(req *http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode:    response.code,
+							Header:        http.Header{"Content-Type": {protobufContentType}},
+							Body:          io.NopCloser(strings.NewReader(response.body)),
+							ContentLength: int64(len(response.body)),
+							Request:       tt.respRequest(req),
+						}, nil
+					},
+				}
+
+				exp := &baseExporter{
+					client: &http.Client{Transport: transport},
+					logger: zap.NewNop(),
+					config: &Config{Encoding: EncodingProto},
+				}
+
+				err := exp.export(t.Context(), configuredURL, []byte("test data"), nil)
+
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "request to "+tt.wantContains+" responded with HTTP Status Code "+strconv.Itoa(response.code))
+				assert.Equal(t, response.permanent, consumererror.IsPermanent(err))
+				if response.body != "" {
+					assert.Contains(t, err.Error(), "Message=unavailable")
+				}
+				for _, absent := range tt.wantAbsent {
+					assert.NotContains(t, err.Error(), absent)
+				}
+				for _, secret := range []string{"configured-token", "configured-key", "configured-fragment", "rewritten-token", "rewritten-key", "rewritten-fragment", "api_key"} {
+					assert.NotContains(t, err.Error(), secret)
+				}
+			})
+		}
+	}
+}
