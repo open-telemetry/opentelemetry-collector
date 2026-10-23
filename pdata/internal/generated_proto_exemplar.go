@@ -377,11 +377,6 @@ func (orig *Exemplar) MarshalProto(buf []byte) int {
 }
 
 func (orig *Exemplar) UnmarshalProto(buf []byte) error {
-	return orig.unmarshalProto(buf, 0)
-}
-
-func (orig *Exemplar) unmarshalProto(buf []byte, depth int) error {
-	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -407,7 +402,7 @@ func (orig *Exemplar) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.FilteredAttributes = append(orig.FilteredAttributes, KeyValue{})
-			err = orig.FilteredAttributes[len(orig.FilteredAttributes)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.FilteredAttributes[len(orig.FilteredAttributes)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}

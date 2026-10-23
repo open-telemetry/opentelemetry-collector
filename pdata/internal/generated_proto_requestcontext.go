@@ -475,11 +475,6 @@ func (orig *RequestContext) MarshalProto(buf []byte) int {
 }
 
 func (orig *RequestContext) UnmarshalProto(buf []byte) error {
-	return orig.unmarshalProto(buf, 0)
-}
-
-func (orig *RequestContext) unmarshalProto(buf []byte, depth int) error {
-	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -522,7 +517,7 @@ func (orig *RequestContext) unmarshalProto(buf []byte, depth int) error {
 			}
 			startPos := pos - length
 			orig.ClientMetadata = append(orig.ClientMetadata, KeyValue{})
-			err = orig.ClientMetadata[len(orig.ClientMetadata)-1].unmarshalProto(buf[startPos:pos], depth)
+			err = orig.ClientMetadata[len(orig.ClientMetadata)-1].UnmarshalProto(buf[startPos:pos])
 			if err != nil {
 				return err
 			}

@@ -221,11 +221,6 @@ func (orig *ScopeMetrics) MarshalProto(buf []byte) int {
 }
 
 func (orig *ScopeMetrics) UnmarshalProto(buf []byte) error {
-	return orig.unmarshalProto(buf, 0)
-}
-
-func (orig *ScopeMetrics) unmarshalProto(buf []byte, depth int) error {
-	depth++
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
