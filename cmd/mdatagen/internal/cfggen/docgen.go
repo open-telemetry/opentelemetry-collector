@@ -5,6 +5,7 @@ package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cf
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -26,6 +27,9 @@ type DocSection struct {
 	Schema *ConfigMetadata
 	Anchor string
 	Title  string
+	// Scalar is true for non-object definitions (type aliases such as an enum
+	// string or a bounded int), which render as a single summary row.
+	Scalar bool
 }
 
 // CfgRootSection wraps a schema for the top-level configSection call.
@@ -122,6 +126,38 @@ func CfgDocType(cfg *ConfigMetadata) string {
 	}
 }
 
+// CfgDocConstraints returns a compact, human-readable summary of the validation
+// constraints on a scalar schema (numeric bounds, length bounds, pattern).
+// It returns an empty string when there are none.
+func CfgDocConstraints(cfg *ConfigMetadata) string {
+	if cfg == nil {
+		return ""
+	}
+	var parts []string
+	if cfg.Minimum != nil {
+		parts = append(parts, fmt.Sprintf("min: %v", *cfg.Minimum))
+	}
+	if cfg.ExclusiveMinimum != nil {
+		parts = append(parts, fmt.Sprintf("exclusive min: %v", *cfg.ExclusiveMinimum))
+	}
+	if cfg.Maximum != nil {
+		parts = append(parts, fmt.Sprintf("max: %v", *cfg.Maximum))
+	}
+	if cfg.ExclusiveMaximum != nil {
+		parts = append(parts, fmt.Sprintf("exclusive max: %v", *cfg.ExclusiveMaximum))
+	}
+	if cfg.MinLength != nil {
+		parts = append(parts, fmt.Sprintf("min length: %d", *cfg.MinLength))
+	}
+	if cfg.MaxLength != nil {
+		parts = append(parts, fmt.Sprintf("max length: %d", *cfg.MaxLength))
+	}
+	if cfg.Pattern != "" {
+		parts = append(parts, fmt.Sprintf("pattern: %#q", cfg.Pattern))
+	}
+	return strings.Join(parts, ", ")
+}
+
 // CfgDocDefault returns a human-readable default value for display in the docs table.
 // Primitives are returned as-is; slices and maps are marshaled to a compact single-line
 // YAML flow representation to avoid breaking Markdown table cells.
@@ -173,12 +209,36 @@ func setFlowStyle(n *yaml.Node) {
 // These are added to the func map by WithCfgFns.
 func NewCfgDocFns() map[string]any {
 	return map[string]any{
-		"cfgPropDocs":    CfgPropDocs,
-		"cfgIsObject":    CfgIsObject,
-		"cfgAnchor":      CfgAnchor,
-		"cfgDocType":     CfgDocType,
-		"cfgDocDefault":  CfgDocDefault,
-		"cfgRootSection": CfgRootSection,
-		"cfgSubSection":  CfgSubSection,
+		"cfgPropDocs":         CfgPropDocs,
+		"cfgIsObject":         CfgIsObject,
+		"cfgAnchor":           CfgAnchor,
+		"cfgDocType":          CfgDocType,
+		"cfgDocDefault":       CfgDocDefault,
+		"cfgRootSection":      CfgRootSection,
+		"cfgSubSection":       CfgSubSection,
+		"cfgExportedSections": CfgExportedSections,
+		"cfgDocConstraints":   CfgDocConstraints,
 	}
+}
+
+// CfgExportedSections returns one DocSection for every user-facing definition
+// under exported_configs, including scalar type aliases. InternalOnly
+// definitions (injected by mdatagen itself) are skipped. Sections are sorted
+// by name so the generated README is stable.
+func CfgExportedSections(md *ConfigsMetadata) []DocSection {
+	if md == nil {
+		return nil
+	}
+	var sections []DocSection
+	for _, name := range slices.Sorted(maps.Keys(md.ExportedConfigs)) {
+		cfg := md.ExportedConfigs[name]
+		if cfg == nil || cfg.InternalOnly {
+			continue
+		}
+		anchor := CfgAnchor("exported_configs", name)
+		sec := CfgSubSection(cfg, anchor, anchor)
+		sec.Scalar = !CfgIsObject(cfg)
+		sections = append(sections, sec)
+	}
+	return sections
 }
