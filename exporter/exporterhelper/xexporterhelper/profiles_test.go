@@ -38,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/pdata/xpdata/pref"
 )
 
 const (
@@ -55,6 +56,25 @@ func TestProfilesRequest(t *testing.T) {
 		newProfilesRequest(pprofile.NewProfiles()),
 		lr.(RequestErrorHandler).OnError(profileErr),
 	)
+}
+
+func TestProfilesEncodingUnmarshalMarksPipelineOwned(t *testing.T) {
+	t.Parallel()
+
+	enc := profilesEncoding{}
+	buf, err := enc.Marshal(t.Context(), newProfilesRequest(testdata.GenerateProfiles(1)))
+	require.NoError(t, err)
+
+	_, req, err := enc.Unmarshal(buf)
+	require.NoError(t, err)
+
+	pd := req.(*profilesRequest).pd
+	marked := pref.MarkPipelineOwnedProfiles(pd)
+	if marked {
+		pref.UnrefProfiles(pd)
+	}
+	assert.False(t, marked)
+	assert.NotPanics(t, func() { profilesReferenceCounter{}.Unref(req) })
 }
 
 func TestProfilesExporter_InvalidName(t *testing.T) {
