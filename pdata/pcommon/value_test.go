@@ -19,16 +19,42 @@ func TestValue(t *testing.T) {
 	v := NewValueStr("abc")
 	assert.Equal(t, ValueTypeStr, v.Type())
 	assert.Equal(t, "abc", v.Str())
+	v.SetStr("def")
+	assert.Equal(t, ValueTypeStr, v.Type())
+	assert.Equal(t, "def", v.Str())
 
 	v = NewValueInt(123)
 	assert.Equal(t, ValueTypeInt, v.Type())
 	assert.EqualValues(t, 123, v.Int())
+	v.SetInt(456)
+	assert.Equal(t, ValueTypeInt, v.Type())
+	assert.EqualValues(t, 456, v.Int())
 
 	v = NewValueDouble(3.4)
 	assert.Equal(t, ValueTypeDouble, v.Type())
 	assert.InDelta(t, 3.4, v.Double(), 0.01)
+	v.SetDouble(5.6)
+	assert.Equal(t, ValueTypeDouble, v.Type())
+	assert.InDelta(t, 5.6, v.Double(), 0.01)
 
 	v = NewValueBool(true)
+	assert.Equal(t, ValueTypeBool, v.Type())
+	assert.True(t, v.Bool())
+	v.SetBool(false)
+	assert.Equal(t, ValueTypeBool, v.Type())
+	assert.False(t, v.Bool())
+
+	// Cross-type Set* transitions on a non-empty Value.
+	v.SetStr("ghi")
+	assert.Equal(t, ValueTypeStr, v.Type())
+	assert.Equal(t, "ghi", v.Str())
+	v.SetInt(789)
+	assert.Equal(t, ValueTypeInt, v.Type())
+	assert.EqualValues(t, 789, v.Int())
+	v.SetDouble(7.8)
+	assert.Equal(t, ValueTypeDouble, v.Type())
+	assert.InDelta(t, 7.8, v.Double(), 0.01)
+	v.SetBool(true)
 	assert.Equal(t, ValueTypeBool, v.Type())
 	assert.True(t, v.Bool())
 
@@ -253,6 +279,31 @@ func TestValue_CopyTo(t *testing.T) {
 	orig := internal.GenTestAnyValue()
 	newValue(orig, internal.NewState()).CopyTo(dest)
 	assert.Equal(t, internal.GenTestAnyValue(), dest.getOrig())
+
+	// In-place Set* after CopyTo must not mutate the source Value.
+	srcStr := NewValueStr("abc")
+	srcStr.CopyTo(dest)
+	dest.SetStr("def")
+	assert.Equal(t, "abc", srcStr.Str())
+	assert.Equal(t, "def", dest.Str())
+
+	srcInt := NewValueInt(123)
+	srcInt.CopyTo(dest)
+	dest.SetInt(456)
+	assert.EqualValues(t, 123, srcInt.Int())
+	assert.EqualValues(t, 456, dest.Int())
+
+	srcDouble := NewValueDouble(3.4)
+	srcDouble.CopyTo(dest)
+	dest.SetDouble(5.6)
+	assert.InDelta(t, 3.4, srcDouble.Double(), 0.01)
+	assert.InDelta(t, 5.6, dest.Double(), 0.01)
+
+	srcBool := NewValueBool(true)
+	srcBool.CopyTo(dest)
+	dest.SetBool(false)
+	assert.True(t, srcBool.Bool())
+	assert.False(t, dest.Bool())
 }
 
 func TestValue_CopyToBytesIsDeepCopy(t *testing.T) {
@@ -860,6 +911,44 @@ func BenchmarkValueEqual(b *testing.B) {
 			}
 		})
 	}
+}
+
+// Recommended CLI invocation:
+//
+//	export bench=set-before && go test ./pcommon -run '^$' -bench '^BenchmarkValueSet' -benchtime 1s -count 6 -cpu 2 -timeout 999m -benchmem | tee ${bench}.txt
+func BenchmarkValueSet(b *testing.B) {
+	b.Run("type=str", func(b *testing.B) {
+		v := NewValueStr("initial")
+		b.ReportAllocs()
+		b.ResetTimer()
+		for b.Loop() {
+			v.SetStr("updated")
+		}
+	})
+	b.Run("type=int", func(b *testing.B) {
+		v := NewValueInt(1)
+		b.ReportAllocs()
+		b.ResetTimer()
+		for b.Loop() {
+			v.SetInt(2)
+		}
+	})
+	b.Run("type=double", func(b *testing.B) {
+		v := NewValueDouble(1.0)
+		b.ReportAllocs()
+		b.ResetTimer()
+		for b.Loop() {
+			v.SetDouble(2.0)
+		}
+	})
+	b.Run("type=bool", func(b *testing.B) {
+		v := NewValueBool(false)
+		b.ReportAllocs()
+		b.ResetTimer()
+		for b.Loop() {
+			v.SetBool(true)
+		}
+	})
 }
 
 func generateTestValueMap() Value {
