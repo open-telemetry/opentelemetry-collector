@@ -5,6 +5,12 @@ exclusions:
         validation:
           enabled: false
 
+  - component: go.opentelemetry.io/collector/extension/memorylimiterextension
+    feature_gates:
+      - name: extension.memorylimiter.UseGRPCTap
+        validation:
+          enabled: false
+
   - component: go.opentelemetry.io/collector/pdata
     feature_gates:
       - name: pdata.useProtoPooling
