@@ -25,6 +25,9 @@ exclusions:
       - name: service.partialReload
         validation:
           enabled: false
+      - name: service.partialReloadProcessors
+        validation:
+          enabled: false
       - name: service.partialReloadReceivers
         validation:
           enabled: false
