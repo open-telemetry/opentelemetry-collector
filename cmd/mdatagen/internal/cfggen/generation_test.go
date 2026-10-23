@@ -2213,6 +2213,35 @@ func TestExtractValidators_RequiredAndCustomValidator(t *testing.T) {
 	require.Equal(t, "validateHTTPClient", result[1].CustomValidator)
 }
 
+func TestExtractValidators_NestedObjectPropertyCustomValidatorNotDuplicated(t *testing.T) {
+	nonNil := new(CustomValidatorConfig)
+	protocols := &ConfigMetadata{
+		Type:     ObjectType,
+		GoStruct: GoStructConfig{CustomValidator: nonNil},
+		Properties: map[string]*ConfigMetadata{
+			"grpc": {Type: "string"},
+		},
+	}
+	md := &ConfigMetadata{
+		Type:     "object",
+		Required: []string{"protocols"},
+		Properties: map[string]*ConfigMetadata{
+			"protocols": protocols,
+		},
+	}
+
+	result := ExtractValidators("config", md)
+	require.Len(t, result, 1)
+	require.Equal(t, "protocols", result[0].FieldName)
+	require.True(t, result[0].Rules.Required)
+	require.Empty(t, result[0].CustomValidator)
+
+	defResult := ExtractValidators("protocols", protocols)
+	require.Len(t, defResult, 1)
+	require.Equal(t, "validateProtocols", defResult[0].CustomValidator)
+	require.True(t, defResult[0].IsType)
+}
+
 func TestExtractValidators_RootCustomValidatorLast(t *testing.T) {
 	md := &ConfigMetadata{
 		Type:     "object",
@@ -2995,6 +3024,29 @@ func TestMapCustomDefaults_NestedObjectOverrides(t *testing.T) {
 		`.Host = "localhost"`,
 		`.Port = 9090`,
 	}, exprs)
+}
+
+func TestMapCustomDefaults_StableOrderAcrossRuns(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"zulu":  {Type: "string"},
+			"alpha": {Type: "string"},
+			"mike":  {Type: "string"},
+			"bravo": {Type: "string"},
+		},
+	}
+	input := defaultValue(map[string]any{
+		"zulu":  "z",
+		"alpha": "a",
+		"mike":  "m",
+		"bravo": "b",
+	})
+
+	want := []string{`.Alpha = "a"`, `.Bravo = "b"`, `.Mike = "m"`, `.Zulu = "z"`}
+	for range 20 {
+		require.Equal(t, want, MapCustomDefaults(md, input, "", ""))
+	}
 }
 
 func TestMapCustomDefaults_NestedStructFieldOverride(t *testing.T) {
