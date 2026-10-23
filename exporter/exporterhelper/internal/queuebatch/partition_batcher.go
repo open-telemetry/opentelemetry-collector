@@ -230,7 +230,13 @@ func (qb *partitionBatcher) Start(context.Context, component.Host) error {
 }
 
 // shutdownInternal ensures that queue and all Batcher are stopped.
-func (qb *partitionBatcher) shutdownInternal() {
+//
+// flushInline controls how the pending batch is exported. Callers that already
+// run on a worker-pool goroutine (the LRU eviction path) must flush on that same
+// goroutine: acquiring another worker while holding one blocks forever once
+// every worker is busy, which wedges the pool. Callers that do not hold a
+// worker (Shutdown) flush through the pool as usual.
+func (qb *partitionBatcher) shutdownInternal(flushInline bool) {
 	qb.currentBatchMu.Lock()
 	if !qb.active {
 		qb.currentBatchMu.Unlock()
@@ -242,13 +248,30 @@ func (qb *partitionBatcher) shutdownInternal() {
 	qb.currentBatchMu.Unlock()
 	close(qb.shutdownCh)
 	// Make sure execute one last flush if necessary.
-	qb.flushCurrentBatchOrRemovePartition()
+	if flushInline {
+		qb.flushCurrentBatchInline()
+	} else {
+		qb.flushCurrentBatchOrRemovePartition()
+	}
 	qb.stopWG.Wait()
+}
+
+// flushCurrentBatchInline exports the pending batch on the calling goroutine.
+// Only safe when the caller is not waiting on the worker pool itself.
+func (qb *partitionBatcher) flushCurrentBatchInline() {
+	qb.currentBatchMu.Lock()
+	batchToFlush := qb.currentBatch
+	qb.currentBatch = nil
+	qb.currentBatchMu.Unlock()
+	if batchToFlush == nil {
+		return
+	}
+	batchToFlush.done.OnDone(qb.consumeFunc(batchToFlush.ctx, batchToFlush.req))
 }
 
 // Shutdown ensures that queue and all Batcher are stopped.
 func (qb *partitionBatcher) Shutdown(context.Context) error {
-	qb.shutdownInternal()
+	qb.shutdownInternal(false)
 	return nil
 }
 
