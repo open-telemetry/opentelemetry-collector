@@ -48,11 +48,6 @@ const oneOfTestValuesTemplate = `
 	{{ .GenTestEncodingValues }}
 	{{- end }}`
 
-const oneOfPoolOrigTemplate = `
-	{{ range .fields -}}
-	{{ .GenPool }}
-	{{- end }}`
-
 const oneOfMessageOrigTemplate = `
 func (m *{{ .protoName }}) Get{{ .originFieldName }}() any {
 	if m != nil {
@@ -61,16 +56,24 @@ func (m *{{ .protoName }}) Get{{ .originFieldName }}() any {
 	return nil
 }
 
+func (m *{{ .protoName }}) delete{{ .originFieldName }}() {
+	if m == nil {
+		return
+	}
+	switch ov := m.{{ .originFieldName }}.(type) {
+		{{ range .fields -}}
+		case *{{ $.protoName }}_{{ .GetName }}:
+			delete{{ $.protoName }}_{{ .GetName }}(ov)
+		{{ end -}}
+	}
+	m.{{ .originFieldName }} = nil
+}
+
 {{ range .fields -}}
 {{ .GenOneOfMessages }}
 {{- end }}`
 
-const oneOfDeleteOrigTemplate = `switch ov := orig.{{ .originFieldName }}.(type) {
-	{{ range .fields -}}
-	case *{{ $.protoName }}_{{ .GetName }}:
-		{{ .GenDelete }}
-	{{ end -}}
-}`
+const oneOfDeleteOrigTemplate = `orig.delete{{ .originFieldName }}()`
 
 const oneOfCopyOrigTemplate = `switch t := src.{{ .originFieldName }}.(type) {
 	{{ range .fields -}}
@@ -195,10 +198,6 @@ func (of *oneOfProtoField) GenTestFailingUnmarshalProtoValues() string {
 
 func (of *oneOfProtoField) GenTestEncodingValues() string {
 	return tmplutil.Execute(tmplutil.Parse("oneOfTestValuesTemplate", []byte(oneOfTestValuesTemplate)), of.templateFields())
-}
-
-func (of *oneOfProtoField) GenPool() string {
-	return tmplutil.Execute(tmplutil.Parse("oneOfPoolOrigTemplate", []byte(oneOfPoolOrigTemplate)), of.templateFields())
 }
 
 func (of *oneOfProtoField) GenDelete() string {

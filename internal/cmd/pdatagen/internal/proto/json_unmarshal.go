@@ -19,12 +19,7 @@ const unmarshalJSONPrimitive = `	case {{ .allJSONTags }}:
 	}
 {{ else if ne .oneOfGroup "" -}}
 	{
-		var ov *{{ .oneOfMessageName }}
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &{{ .oneOfMessageName }}{}
-		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
-		}
+		ov := New{{ .oneOfMessageName }}()
 		ov.{{ .fieldName }} = iter.Read{{ upperFirst .goType }}()
 		orig.{{ .oneOfGroup }} = ov
 	}
@@ -51,12 +46,7 @@ const unmarshalJSONMessage = `	case {{ .allJSONTags }}:
 	}
 {{ else if ne .oneOfGroup "" -}}
 	{
-		var ov *{{ .oneOfMessageName }}
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &{{ .oneOfMessageName }}{}
-		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
-		}
+		ov := New{{ .oneOfMessageName }}()
 		ov.{{ .fieldName }} = New{{ .messageName }}()
 		ov.{{ .fieldName }}.UnmarshalJSON(iter)
 		orig.{{ .oneOfGroup }} = ov
@@ -73,12 +63,7 @@ const unmarshalJSONBytes = `	case {{ .allJSONTags }}:
 	}
 {{ else if ne .oneOfGroup "" -}}
 	{
-		var ov *{{ .oneOfMessageName }}
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &{{ .oneOfMessageName }}{}
-		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
-		}
+		ov := New{{ .oneOfMessageName }}()
 		ov.{{ .fieldName }} = iter.ReadBytes()
 		orig.{{ .oneOfGroup }} = ov
 	}
