@@ -29,6 +29,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.69.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.163.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.163.0 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.163.0 // indirect
 	go.opentelemetry.io/collector/pipeline v1.69.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.163.0 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
@@ -74,3 +75,7 @@ replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
 
 replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
+
+replace go.opentelemetry.io/collector/client => ../../client
+
+replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
