@@ -37,6 +37,9 @@ type Optional[T any] struct {
 	// flavor indicates the flavor of the Optional.
 	// The zero value of flavor is noneFlavor.
 	flavor flavor
+
+	// disabled indicates if the field is disabled explicitly
+	disabled bool
 }
 
 // deref a reflect.Type to its underlying type.
@@ -106,9 +109,25 @@ func None[T any]() Optional[T] {
 	return Optional[T]{flavor: noneFlavor}
 }
 
+// Disabled returns an Optional with a `noneFlavor` and `disabled` set to
+// true. This supports programmatically disabling a field.
+//
+// It panics if T has a field with the mapstructure tag "enabled".
+func Disabled[T any]() Optional[T] {
+	if err := assertNoEnabledField[T](); err != nil {
+		panic(err)
+	}
+	return Optional[T]{disabled: true}
+}
+
 // HasValue checks if the Optional has a value.
 func (o Optional[T]) HasValue() bool {
 	return o.flavor == someFlavor
+}
+
+// Disabled checks if the Optional is disabled.
+func (o Optional[T]) Disabled() bool {
+	return o.disabled
 }
 
 // Get returns the value of the Optional.
@@ -192,6 +211,7 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 	if isEnabled {
 		o.flavor = someFlavor
 	} else {
+		o.disabled = true
 		o.flavor = noneFlavor
 		// override o.value with zero value.
 		var zero T
