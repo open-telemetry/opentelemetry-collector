@@ -85,6 +85,10 @@ $defs:
       max_conns_per_host:
         description: MaxConnsPerHost limits the total number of connections per host, including connections in the dialing, active, and idle states. Default is 0 (unlimited).
         type: integer
+      dialer_middleware:
+        description: Dialer middleware is a handler customizing how the client will dial connections over TCP.
+        optional: true
+        $ref: /config/configmiddleware.config
       middlewares:
         description: Middlewares are used to add custom functionality to the HTTP client. Middleware handlers are called in the order they appear in this list, with the first middleware becoming the outermost handler.
         type: array
