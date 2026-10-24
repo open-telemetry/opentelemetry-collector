@@ -78,7 +78,7 @@ require (
 	go.opentelemetry.io/collector/receiver v1.69.0 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.163.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.163.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.70.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
 	go.opentelemetry.io/otel/metric v1.47.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.47.0 // indirect
