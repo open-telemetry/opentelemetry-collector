@@ -222,7 +222,8 @@ func (m *fakeStorageClientWithErrors) Reset() {
 
 type failingMetadataGetClient struct {
 	storage.Client
-	err error
+	err      error
+	closeErr error
 }
 
 func (c *failingMetadataGetClient) Get(ctx context.Context, key string) ([]byte, error) {
@@ -230,6 +231,13 @@ func (c *failingMetadataGetClient) Get(ctx context.Context, key string) ([]byte,
 		return nil, c.err
 	}
 	return c.Client.Get(ctx, key)
+}
+
+func (c *failingMetadataGetClient) Close(ctx context.Context) error {
+	if err := c.Client.Close(ctx); err != nil {
+		return err
+	}
+	return c.closeErr
 }
 
 type testStorageExtension struct {
@@ -667,6 +675,30 @@ func TestPersistentQueue_MetadataReadErrorFailsStart(t *testing.T) {
 		return nil
 	}))
 	require.NoError(t, restoredQueue.Shutdown(context.Background()))
+}
+
+func TestPersistentQueue_MetadataReadErrorJoinsCloseError(t *testing.T) {
+	storageErr := errors.New("storage read failed")
+	closeErr := errors.New("storage close failed")
+	ext := &testStorageExtension{
+		StartFunc:    func(context.Context, component.Host) error { return nil },
+		ShutdownFunc: func(context.Context) error { return nil },
+		client: &failingMetadataGetClient{
+			Client:   newFakeBoundedStorageClient(1024),
+			err:      storageErr,
+			closeErr: closeErr,
+		},
+	}
+	set := newSettingsWithStorage(request.SizerTypeRequests, 1000)
+	pq := newPersistentQueue[intRequest](set).(*persistentQueue[intRequest])
+	host := hosttest.NewHost(map[component.ID]component.Component{{}: ext})
+
+	err := pq.Start(context.Background(), host)
+	require.ErrorIs(t, err, storageErr)
+	require.ErrorIs(t, err, closeErr)
+	assert.Nil(t, pq.client)
+	assert.Zero(t, pq.refClient)
+	require.NoError(t, pq.Shutdown(context.Background()))
 }
 
 func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
