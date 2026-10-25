@@ -283,14 +283,28 @@ func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 		}
 	}
 
+	reqBuf, err := pq.encoding.Marshal(ctx, req)
+	if err != nil {
+		return err
+	}
+
 	pq.metadata.ItemsSize += pq.itemsSizer.Sizeof(req)
 	pq.metadata.BytesSize += pq.bytesSizer.Sizeof(req)
 
-	return pq.putInternal(ctx, req)
+	return pq.putInternalEncoded(ctx, reqBuf)
 }
 
 // putInternal adds the request to the storage without updating items/bytes sizes.
 func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
+	reqBuf, err := pq.encoding.Marshal(ctx, req)
+	if err != nil {
+		return err
+	}
+	return pq.putInternalEncoded(ctx, reqBuf)
+}
+
+// putInternalEncoded adds the already marshaled request to the storage without updating items/bytes sizes.
+func (pq *persistentQueue[T]) putInternalEncoded(ctx context.Context, reqBuf []byte) error {
 	pq.metadata.WriteIndex++
 
 	metadataBuf, err := proto.Marshal(&pq.metadata)
@@ -298,10 +312,6 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 		return err
 	}
 
-	reqBuf, err := pq.encoding.Marshal(ctx, req)
-	if err != nil {
-		return err
-	}
 	// Carry out a transaction where we both add the item and update the write index
 	ops := []*storage.Operation{
 		storage.SetOperation(metadataKey, metadataBuf),
