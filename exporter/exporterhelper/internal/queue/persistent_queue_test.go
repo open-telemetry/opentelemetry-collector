@@ -220,6 +220,28 @@ func (m *fakeStorageClientWithErrors) Reset() {
 	m.nextErrorIndex = 0
 }
 
+type failingMetadataGetClient struct {
+	storage.Client
+	err error
+}
+
+func (c *failingMetadataGetClient) Get(ctx context.Context, key string) ([]byte, error) {
+	if key == metadataKey {
+		return nil, c.err
+	}
+	return c.Client.Get(ctx, key)
+}
+
+type testStorageExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
+	client storage.Client
+}
+
+func (e *testStorageExtension) GetClient(context.Context, component.Kind, component.ID, string) (storage.Client, error) {
+	return e.client, nil
+}
+
 type fakeReferenceCounter struct {
 	mu  sync.Mutex
 	ref int64
@@ -260,9 +282,10 @@ func newSettingsWithStorage(sizerType request.SizerType, capacity int64) Setting
 	return set
 }
 
-func createTestPersistentQueueWithClient(client storage.Client) *persistentQueue[intRequest] {
+func createTestPersistentQueueWithClient(tb testing.TB, client storage.Client) *persistentQueue[intRequest] {
+	tb.Helper()
 	pq := newPersistentQueue[intRequest](newSettingsWithStorage(request.SizerTypeRequests, 1000)).(*persistentQueue[intRequest])
-	pq.initClient(context.Background(), client)
+	require.NoError(tb, pq.initClient(context.Background(), client))
 	return pq
 }
 
@@ -617,6 +640,35 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 	}
 }
 
+func TestPersistentQueue_MetadataReadErrorFailsStart(t *testing.T) {
+	client := newFakeBoundedStorageClient(1024)
+	initialQueue := createTestPersistentQueueWithClient(t, client)
+	require.NoError(t, initialQueue.Offer(context.Background(), intRequest(10)))
+	require.NoError(t, initialQueue.Shutdown(context.Background()))
+
+	storageErr := errors.New("storage read failed")
+	ext := &testStorageExtension{
+		StartFunc:    func(context.Context, component.Host) error { return nil },
+		ShutdownFunc: func(context.Context) error { return nil },
+		client:       &failingMetadataGetClient{Client: client, err: storageErr},
+	}
+	set := newSettingsWithStorage(request.SizerTypeRequests, 1000)
+	pq := newPersistentQueue[intRequest](set).(*persistentQueue[intRequest])
+	host := hosttest.NewHost(map[component.ID]component.Component{{}: ext})
+
+	require.ErrorIs(t, pq.Start(context.Background(), host), storageErr)
+	assert.Nil(t, pq.client)
+	require.NoError(t, pq.Shutdown(context.Background()))
+
+	restoredQueue := createTestPersistentQueueWithClient(t, client)
+	assert.EqualValues(t, 1, restoredQueue.Size())
+	assert.True(t, consume(restoredQueue, func(_ context.Context, val intRequest) error {
+		assert.Equal(t, intRequest(10), val)
+		return nil
+	}))
+	require.NoError(t, restoredQueue.Shutdown(context.Background()))
+}
+
 func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 	req := intRequest(50)
 
@@ -889,7 +941,7 @@ func TestPersistentQueue_StorageFull(t *testing.T) {
 	maxSizeInBytes := len(marshaled)*5 + 60 // arbitrary small number
 
 	client := newFakeBoundedStorageClient(maxSizeInBytes)
-	ps := createTestPersistentQueueWithClient(client)
+	ps := createTestPersistentQueueWithClient(t, client)
 
 	// Put enough items in to fill the underlying storage
 	reqCount := 0
@@ -966,8 +1018,9 @@ func TestPersistentQueue_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			client := newFakeStorageClientWithErrors(tt.storageErrors)
-			ps := createTestPersistentQueueWithClient(client)
+			client := newFakeStorageClientWithErrors(nil)
+			ps := createTestPersistentQueueWithClient(t, client)
+			client.errors = tt.storageErrors
 			client.Reset()
 
 			require.ErrorIs(t, ps.itemDispatchingFinish(context.Background(), 0), tt.expectedError)
