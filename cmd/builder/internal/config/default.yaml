@@ -31,11 +31,11 @@ connectors:
   - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.163.0
 
 providers:
-  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.69.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.69.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.69.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.69.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.69.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.70.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.70.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.70.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.70.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.70.0
 
 telemetry:
   gomod: go.opentelemetry.io/collector/service v0.163.0
