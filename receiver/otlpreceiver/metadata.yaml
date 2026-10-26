@@ -13,43 +13,41 @@ status:
 config:
   properties:
     protocols:
-      $ref: protocols
+      description: Is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
+      go_struct:
+        custom_validator:
+      properties:
+        grpc:
+          $ref: /config/configgrpc.server_config
+          optional: true
+          default:
+            net_addr:
+              endpoint: localhost:4317
+            # We almost write 0 bytes, so no need to tune WriteBufferSize.
+            read_buffer_size: 524288 # 512 * 1024
+          go_struct:
+            optional_mode: default
+            field_name: GRPC
+        http:
+          $ref: http_config
+          optional: true
+          default:
+            traces_url_path: "/v1/traces"
+            metrics_url_path: "/v1/metrics"
+            logs_url_path: "/v1/logs"
+            server_config:
+              net_addr:
+                endpoint: localhost:4318
+              tls: # <empty> - drop confighttp defaults
+              write_timeout: 0
+              read_header_timeout: 0
+          go_struct:
+            optional_mode: default
   required: [protocols]
 
 exported_configs:
   sanitized_url_path:
     type: string
-  protocols:
-    description: Is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
-    go_struct:
-      custom_validator:
-    properties:
-      grpc:
-        $ref: /config/configgrpc.server_config
-        optional: true
-        default:
-          net_addr:
-            endpoint: localhost:4317
-          # We almost write 0 bytes, so no need to tune WriteBufferSize.
-          read_buffer_size: 524288 # 512 * 1024
-        go_struct:
-          optional_mode: default
-          field_name: GRPC
-      http:
-        $ref: http_config
-        optional: true
-        default:
-          traces_url_path: "/v1/traces"
-          metrics_url_path: "/v1/metrics"
-          logs_url_path: "/v1/logs"
-          server_config:
-            net_addr:
-              endpoint: localhost:4318
-            tls: # <empty> - drop confighttp defaults
-            write_timeout: 0
-            read_header_timeout: 0
-        go_struct:
-          optional_mode: default
   http_config:
     optional: true
     properties:
