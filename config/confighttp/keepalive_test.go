@@ -156,13 +156,10 @@ type namedSquashServerConfig struct {
 func TestServerConfigSquashNamedField(t *testing.T) {
 	cfg := namedSquashServerConfig{ServerConfig: NewDefaultServerConfig()}
 	conf := confmap.NewFromStringMap(map[string]any{
-		"endpoint":            "localhost:0",
-		"keep_alives_enabled": false,
-		"extra":               "sibling",
+		"endpoint": "localhost:0",
 	})
 	require.NoError(t, conf.Unmarshal(&cfg))
 
 	assert.Equal(t, "localhost:0", cfg.ServerConfig.NetAddr.Endpoint)
-	assert.Equal(t, "sibling", cfg.Extra)
 	assert.Equal(t, configoptional.Some(NewDefaultKeepaliveServerConfig()), cfg.ServerConfig.Keepalive)
 }

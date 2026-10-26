@@ -65,7 +65,7 @@ var _ confmap.Unmarshaler = (*ClientConfig)(nil)
 
 // Unmarshal implements confmap.Unmarshaler.
 func (cc *ClientConfig) Unmarshal(conf *confmap.Conf) error {
-	if err := conf.Unmarshal(cc, confmap.WithIgnoreUnused()); err != nil {
+	if err := conf.Unmarshal(cc); err != nil {
 		return err
 	}
 
