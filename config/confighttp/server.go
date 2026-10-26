@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
@@ -62,16 +61,6 @@ func NewDefaultServerConfig() ServerConfig {
 		ReadHeaderTimeout: 1 * time.Minute,
 		Keepalive:         configoptional.Some(NewDefaultKeepaliveServerConfig()),
 	}
-}
-
-var _ confmap.Unmarshaler = (*ServerConfig)(nil)
-
-// Unmarshal implements confmap.Unmarshaler.
-func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
-	if err := conf.Unmarshal(sc); err != nil {
-		return err
-	}
-	return nil
 }
 
 // ToListener creates a net.Listener.

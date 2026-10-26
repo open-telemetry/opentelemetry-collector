@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
-	"go.opentelemetry.io/collector/confmap"
 )
 
 const (
@@ -59,17 +58,6 @@ func NewDefaultClientConfig() ClientConfig {
 		Keepalive:         configoptional.Some(NewDefaultKeepaliveClientConfig()),
 		ForceAttemptHTTP2: true,
 	}
-}
-
-var _ confmap.Unmarshaler = (*ClientConfig)(nil)
-
-// Unmarshal implements confmap.Unmarshaler.
-func (cc *ClientConfig) Unmarshal(conf *confmap.Conf) error {
-	if err := conf.Unmarshal(cc); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (cc *ClientConfig) Validate() error {
