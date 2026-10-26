@@ -21,7 +21,10 @@ func (ms {{ .structName }}) {{ .typeFuncName }}() {{ .typeName }} {
 	return {{ .typeName }}Empty
 }
 
-{{ range .values -}}
+{{ range $i, $v := .values -}}
+{{- if $i }}
+
+{{ end -}}
 {{ .GenerateAccessors $.baseStruct $.OneOfField }}
 {{- end }}`
 

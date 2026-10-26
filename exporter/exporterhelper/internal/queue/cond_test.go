@@ -176,14 +176,19 @@ func TestCondCancellationNotification(t *testing.T) {
 				defer cancel()
 				var cancelled, live []<-chan error
 				for i := range tt.cancelled {
+					// Wait for each waiter to park on the channel before starting the next one,
+					// so the receive order (and thus which waiter a signal wakes) is deterministic.
 					cancelled = append(cancelled, startCondWaiter(ctx, c))
+					synctest.Wait()
 					if tt.interleaved && i < tt.live {
 						live = append(live, startCondWaiter(t.Context(), c))
+						synctest.Wait()
 					}
 				}
 				if !tt.interleaved {
 					for range tt.live {
 						live = append(live, startCondWaiter(t.Context(), c))
+						synctest.Wait()
 					}
 				}
 				notify := func(n int) {
@@ -221,8 +226,8 @@ func TestCondCancellationNotification(t *testing.T) {
 					synctest.Wait()
 					for _, waiter := range live {
 						select {
-						case <-waiter:
-							t.Fatal("notification was duplicated")
+						case err := <-waiter:
+							t.Fatalf("notification was duplicated, waiter returned: %v", err)
 						default:
 						}
 					}
@@ -251,8 +256,8 @@ func checkCondReuse(t *testing.T, c *cond) {
 	waiter := startCondWaiter(t.Context(), c)
 	synctest.Wait()
 	select {
-	case <-waiter:
-		t.Fatal("waiter consumed a stale notification")
+	case err := <-waiter:
+		t.Fatalf("waiter consumed a stale notification, returned: %v", err)
 	default:
 	}
 	c.L.Lock()
