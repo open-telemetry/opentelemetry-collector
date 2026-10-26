@@ -47,7 +47,7 @@ require (
 	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/ClickHouse/clickhouse-go-linter v1.2.1 // indirect
 	github.com/Djarvur/go-err113 v0.1.1 // indirect
-	github.com/KimMachineGun/automemlimit v1.0.0 // indirect
+	github.com/KimMachineGun/automemlimit v0.7.5 // indirect
 	github.com/Masterminds/semver/v3 v3.5.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/MirrexOne/unqueryvet v1.5.4 // indirect
@@ -94,7 +94,7 @@ require (
 	github.com/daixiang0/gci v0.13.7 // indirect
 	github.com/dave/dst v0.28.0 // indirect
 	github.com/denis-tingaikin/go-header v0.5.0 // indirect
-	github.com/dkorunic/betteralign v0.15.3 // indirect
+	github.com/dkorunic/betteralign v0.14.4 // indirect
 	github.com/dlclark/regexp2/v2 v2.2.1 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
