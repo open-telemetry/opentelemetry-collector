@@ -15,7 +15,7 @@ import (
 )
 
 type AuthConfig struct {
-	// Defines the auth settings for the receiver.
+	// Config defines the auth settings for the receiver.
 	Config configauth.Config `mapstructure:",squash"`
 
 	// RequestParameters is a list of parameters that should be extracted from the request and added to the context.
@@ -191,7 +191,7 @@ func NewDefaultKeepaliveServerConfig() KeepaliveServerConfig {
 
 // ServerConfig defines settings for creating an HTTP server.
 type ServerConfig struct {
-	// Holds configuration for the network listener.
+	// NetAddr holds configuration for the network listener.
 	// Transport defaults to "tcp" if unspecified, and only
 	// "tcp", "tcp4", "tcp6", and "unix" are valid options.
 	NetAddr confignet.AddrConfig `mapstructure:",squash"`
