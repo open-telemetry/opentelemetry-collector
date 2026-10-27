@@ -12,10 +12,7 @@ best practices.
 
 This repository provides the Collector service, shared libraries, components,
 and build tools. A distribution selects its components and configuration; its
-attack surface depends on what it includes and enables. Components in
-[Collector Contrib](https://github.com/open-telemetry/opentelemetry-collector-contrib)
-and custom distributions may need additional threat models. For example, OTTL
-is implemented in Contrib, rather than this repository.
+attack surface depends on what it includes and enables.
 
 Assets include:
 
