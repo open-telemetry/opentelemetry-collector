@@ -126,14 +126,23 @@ and appropriate network restrictions, and for configuring resource protections
 for their deployment. Receiver authentication does not imply that an exposed
 diagnostic endpoint is also protected.
 
-The Collector has finite capacity and does not guarantee lossless delivery.
-Ordinary overload from traffic exceeding deployment capacity, documented
-backpressure or data drops, and opportunities to reduce resource use do not,
-by themselves, establish vulnerabilities. These are capacity, reliability, or
-hardening concerns. Examples include rejection by a configured memory limiter,
-queue overflow, and exhaustion of configured retries during a backend outage.
-Their importance to a deployment does not alone determine their classification
-as security issues.
+The Collector does not guarantee lossless delivery. Documented backpressure or
+data drops, such as memory-limiter rejection, queue overflow, and exhaustion of
+configured retries during a backend outage, are expected capacity or reliability
+behavior.
+
+Outside the exclusions above, an availability report must identify a concrete
+security risk: how attacker-controlled input exploits a reachable processing or
+retention weakness to deny service, beyond ordinary traffic exceeding deployment
+capacity. A missing resource limit alone does not establish a vulnerability.
+Changes made solely to reduce resource consumption or improve performance are
+capacity or hardening work. Security mitigations should be limited to what is
+necessary to address the identified risk.
+
+For example, an unauthenticated caller bypassing a configured decompressed
+request-size limit and exhausting process memory warrants security assessment.
+Increasing queue capacity to accommodate more legitimate traffic is capacity
+work.
 
 Evaluate the actual protections and their scope:
 
@@ -149,15 +158,13 @@ Evaluate the actual protections and their scope:
   and `send_batch_size` triggers sending rather than enforcing a maximum size.
   Record the relevant queue, batch, and metadata cardinality settings.
 
-For availability reports outside these exclusions, identify the
-attacker-controlled input, required access, and reachable weakness. Include
-input size, rate, concurrency, resource cost, and how long resources remain
-occupied. Describe affected pipelines and users, recovery requirements, and
-why applicable protections are ineffective. Distinguish expected rejection or
-telemetry loss from a stalled pipeline, Collector process failure, or effects
-on other services. Assess component compatibility assumptions, such as those
-inherited from Prometheus, where relevant, rather than assuming every endpoint
-has the same threat model.
+Availability evidence should include input size, rate, concurrency, resource
+cost, and how long resources remain occupied. Describe affected pipelines and
+users, recovery requirements, and why applicable protections are ineffective.
+Distinguish expected rejection or telemetry loss from a stalled pipeline,
+Collector process failure, or effects on other services. Assess component
+compatibility assumptions, such as those inherited from Prometheus, where
+relevant, rather than assuming every endpoint has the same threat model.
 
 ## Reporting and assessment
 
