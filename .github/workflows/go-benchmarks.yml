@@ -41,14 +41,14 @@ jobs:
           - pkg
     steps:
       # Hosted runners mix CPU models with results that differ by up to
-      # 50% on identical code. Only benchmark on the models with stable
+      # 50% on identical code. Only benchmark on the model with stable
       # results. See https://github.com/open-telemetry/opentelemetry-collector/pull/15436 for the data.
       - name: Check runner CPU model
         run: |
           MODEL=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2- | xargs)
           echo "Runner CPU: $MODEL"
           case "$MODEL" in
-            "AMD EPYC 7763"*|"Intel(R) Xeon(R) Platinum 8370C"*) ;;
+            "AMD EPYC 7763"*) ;;
             *)
               echo "SKIP_BENCH=true" >> "$GITHUB_ENV"
               echo "::warning::Runner CPU '$MODEL' gives unstable benchmark results; skipping benchmarks for this job."
