@@ -142,7 +142,7 @@ func (m Map) PutStr(k, v string) {
 		av.SetStr(v)
 		return
 	}
-	ov := internal.NewAnyValueStringValue()
+	ov := internal.NewAnyValue_StringValue()
 	ov.StringValue = v
 	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
 }
@@ -156,7 +156,7 @@ func (m Map) PutInt(k string, v int64) {
 		av.SetInt(v)
 		return
 	}
-	ov := internal.NewAnyValueIntValue()
+	ov := internal.NewAnyValue_IntValue()
 	ov.IntValue = v
 	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
 }
@@ -170,7 +170,7 @@ func (m Map) PutDouble(k string, v float64) {
 		av.SetDouble(v)
 		return
 	}
-	ov := internal.NewAnyValueDoubleValue()
+	ov := internal.NewAnyValue_DoubleValue()
 	ov.DoubleValue = v
 	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
 }
@@ -184,7 +184,7 @@ func (m Map) PutBool(k string, v bool) {
 		av.SetBool(v)
 		return
 	}
-	ov := internal.NewAnyValueBoolValue()
+	ov := internal.NewAnyValue_BoolValue()
 	ov.BoolValue = v
 	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
 }
@@ -195,7 +195,7 @@ func (m Map) PutEmptyBytes(k string) ByteSlice {
 	if av, existing := m.Get(k); existing {
 		return av.SetEmptyBytes()
 	}
-	ov := internal.NewAnyValueBytesValue()
+	ov := internal.NewAnyValue_BytesValue()
 	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
 	return ByteSlice(internal.NewByteSliceWrapper(&ov.BytesValue, m.getState()))
 }
@@ -206,7 +206,7 @@ func (m Map) PutEmptyMap(k string) Map {
 	if av, existing := m.Get(k); existing {
 		return av.SetEmptyMap()
 	}
-	ov := internal.NewAnyValueKvlistValue()
+	ov := internal.NewAnyValue_KvlistValue()
 	ov.KvlistValue = internal.NewKeyValueList()
 	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
 	return Map(internal.NewMapWrapper(&ov.KvlistValue.Values, m.getState()))
@@ -218,7 +218,7 @@ func (m Map) PutEmptySlice(k string) Slice {
 	if av, existing := m.Get(k); existing {
 		return av.SetEmptySlice()
 	}
-	ov := internal.NewAnyValueArrayValue()
+	ov := internal.NewAnyValue_ArrayValue()
 	ov.ArrayValue = internal.NewArrayValue()
 	*m.getOrig() = append(*m.getOrig(), internal.KeyValue{Key: k, Value: internal.AnyValue{Value: ov}})
 	return Slice(internal.NewSliceWrapper(&ov.ArrayValue.Values, m.getState()))

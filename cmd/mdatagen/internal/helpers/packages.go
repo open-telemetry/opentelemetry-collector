@@ -15,7 +15,7 @@ import (
 // and running "go list -m" in that directory. This is used to resolve local absolute references
 // (e.g., "/config/confighttp.client_config") into full Go import paths.
 func RootPackage(componentDir string) (string, error) {
-	rootModDir, err := rootModuleDir(componentDir)
+	rootModDir, err := RootModuleDir(componentDir)
 	if err != nil {
 		return "", err
 	}
@@ -29,7 +29,7 @@ func RootPackage(componentDir string) (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
-func rootModuleDir(componentDir string) (string, error) {
+func RootModuleDir(componentDir string) (string, error) {
 	absDir, err := filepath.Abs(componentDir)
 	if err != nil {
 		return "", fmt.Errorf("failed to get absolute path: %w", err)
