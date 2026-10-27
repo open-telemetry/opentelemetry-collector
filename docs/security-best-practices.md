@@ -6,6 +6,9 @@ considerations for the Collector. This document is intended for component
 developers. It assumes at least a basic understanding of the Collector
 architecture and functionality.
 
+See the [Collector threat model](../THREAT_MODEL.md) for trust assumptions,
+security boundaries, and vulnerability assessment guidance.
+
 > Note: Please review the
 > [configuration documentation](https://opentelemetry.io/docs/collector/configuration/)
 > prior to this security document.
