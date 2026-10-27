@@ -7,6 +7,27 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.70.0/v0.164.0
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add support for supported_platforms in component metadata, allowing generated component tests to target explicitly supported platforms (#13319)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Fix the generated `dataPointKey` function triggering gosec G115 (`uint64` to `int64` conversion) in components that use mdatagen. (#16176)
+  The generated hash values are unchanged.
+- `exporter/otlp_http`: Report the URL the request was actually sent to in HTTP status error messages when a middleware rewrites the request URL. (#14673)
+  Middleware RoundTrippers that clone the request before rewriting its URL left
+  the configured placeholder URL in 4xx/5xx error messages. The exporter now
+  reads the destination from the response instead.
+  
+- `pkg/otelcol`: Redact non-empty literal defaults in unexpanded env provider references such as `${env:NAME:-literal}` in the raw config reported by the OpAMP extension when `reports_raw_config` is enabled (#16141)
+  Empty defaults such as `${env:NAME:-}` stay visible. Other provider schemes are unchanged.
+  
+
+<!-- previous-version -->
+
 ## v1.69.0/v0.163.0
 
 ### 💡 Enhancements 💡

@@ -834,6 +834,20 @@ func TestConfigMetadata_MergeFrom(t *testing.T) {
 		assert.True(t, md.GoStruct.PrivateFields)
 	})
 
+	t.Run("ignore_default is not inherited across a ref boundary", func(t *testing.T) {
+		md := &ConfigMetadata{Ref: "/config/confighttp.server_config"}
+		other := &ConfigMetadata{
+			GoStruct: GoStructConfig{IgnoreDefault: true},
+			Properties: map[string]*ConfigMetadata{
+				"read_header_timeout": {Type: "string", Default: "1m"},
+			},
+		}
+
+		md.mergeResolvedRef(other)
+
+		assert.False(t, md.GoStruct.IgnoreDefault)
+	})
+
 	t.Run("explicit optional mode is preserved", func(t *testing.T) {
 		md := &ConfigMetadata{
 			GoStruct: GoStructConfig{OptionalMode: OptionalModeSome},
