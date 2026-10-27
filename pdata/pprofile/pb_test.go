@@ -73,7 +73,7 @@ func TestProtoSizer(t *testing.T) {
 	marshaler := &ProtoMarshaler{}
 	td := NewProfiles()
 	td.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
-	td.Dictionary().StringTable().Append("foobar")
+	td.Dictionary().StringTable().Append("", "foobar")
 
 	size := marshaler.ProfilesSize(td)
 
