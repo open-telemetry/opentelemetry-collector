@@ -1260,3 +1260,87 @@ func TestPartialSuccess_responseBodyTooLarge(t *testing.T) {
 	assert.True(t, consumererror.IsPermanent(err))
 	assert.Contains(t, err.Error(), "error parsing protobuf response:")
 }
+
+func TestExport_StatusErrorShowsResolvedURL(t *testing.T) {
+	configuredURL := "http://endpoint.invalid/v1/logs"
+
+	// A routing middleware that follows the RoundTripper contract clones the
+	// request instead of mutating it, so only the response carries the
+	// rewritten URL.
+	cloneWithURL := func(rawURL string) func(*http.Request) *http.Request {
+		return func(req *http.Request) *http.Request {
+			resolved := req.Clone(req.Context())
+			var err error
+			resolved.URL, err = url.Parse(rawURL)
+			require.NoError(t, err)
+			return resolved
+		}
+	}
+
+	// Built at runtime so gosec does not see a credential in a URL literal.
+	withUserinfo, err := url.Parse("https://actual-destination.example.com/v1/logs")
+	require.NoError(t, err)
+	withUserinfo.User = url.UserPassword("user", "secret")
+
+	tests := []struct {
+		name         string
+		respRequest  func(*http.Request) *http.Request
+		wantContains string
+		wantAbsent   []string
+	}{
+		{
+			name:         "rewritten URL taken from the response request",
+			respRequest:  cloneWithURL("https://actual-destination.example.com/v1/logs"),
+			wantContains: "https://actual-destination.example.com/v1/logs",
+			wantAbsent:   []string{configuredURL},
+		},
+		{
+			name:         "userinfo in the rewritten URL is redacted",
+			respRequest:  cloneWithURL(withUserinfo.String()),
+			wantContains: withUserinfo.Redacted(),
+			wantAbsent:   []string{"secret", configuredURL},
+		},
+		{
+			name:         "response without request falls back to the configured URL",
+			respRequest:  func(*http.Request) *http.Request { return nil },
+			wantContains: configuredURL,
+		},
+		{
+			name:         "response request without URL falls back to the configured URL",
+			respRequest:  func(*http.Request) *http.Request { return &http.Request{} },
+			wantContains: configuredURL,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			transport := &mockTransport{
+				roundTripFunc: func(req *http.Request) (*http.Response, error) {
+					return &http.Response{
+						StatusCode: http.StatusNotFound,
+						Header:     make(http.Header),
+						Body:       http.NoBody,
+						Request:    tt.respRequest(req),
+					}, nil
+				},
+			}
+
+			logger, _ := observer.New(zap.DebugLevel)
+			exp := &baseExporter{
+				client: &http.Client{Transport: transport},
+				logger: zap.New(logger),
+				config: &Config{
+					Encoding: EncodingProto,
+				},
+			}
+
+			err := exp.export(context.Background(), configuredURL, []byte("test data"), nil)
+
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.wantContains)
+			for _, absent := range tt.wantAbsent {
+				assert.NotContains(t, err.Error(), absent)
+			}
+		})
+	}
+}
