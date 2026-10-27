@@ -5,6 +5,8 @@ package xhash
 
 import (
 	"fmt"
+	"math"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -410,6 +412,19 @@ func TestHash64(t *testing.T) {
 	hashA, hashB := Hash64(WithString("s")), Hash64(WithString("s"))
 	assert.Equal(t, hashA, hashB)
 	assert.NotEqual(t, Hash64(WithString("s1")), Hash64(WithString("s2")))
+}
+
+func TestWithUint64(t *testing.T) {
+	for _, v := range []uint64{0, 1, math.MaxInt64, math.MaxInt64 + 1, math.MaxUint64} {
+		t.Run(strconv.FormatUint(v, 10), func(t *testing.T) {
+			hashA, hashB := Hash(WithUint64(v)), Hash(WithUint64(v))
+			assert.Equal(t, hashA, hashB)
+			// Bit-preserving reinterpretation, matching how int values are hashed.
+			assert.Equal(t, Hash(WithValue(pcommon.NewValueInt(int64(v)))), Hash(WithUint64(v)))
+			assert.NotEqual(t, Hash(WithUint64(v)), Hash(WithUint64(v^1)))
+		})
+	}
+	assert.NotEqual(t, Hash(WithUint64(1), WithUint64(2)), Hash(WithUint64(2), WithUint64(1)))
 }
 
 func BenchmarkMapHashFourItems(b *testing.B) {

@@ -123,6 +123,8 @@ func TestRunContents(t *testing.T) {
 		wantStatusGenerated               bool
 		wantSendingQueueFunctionGenerated bool
 		wantComponentTestGenerated        bool
+		wantBuildTag                      string
+		wantReadmePlatform                string
 		wantGoleakIgnore                  bool
 		wantGoleakSkip                    bool
 		wantGoleakSetup                   bool
@@ -348,6 +350,22 @@ func TestRunContents(t *testing.T) {
 			wantMetricsGenerated:       true,
 			wantConfigGenerated:        true,
 		},
+		{
+			yml:                        "supported_platforms.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
+			wantBuildTag:               "//go:build linux || windows",
+			wantReadmePlatform:         "| Supported Platforms | linux, windows |",
+		},
+		{
+			yml:                        "unsupported_platforms.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
+			wantBuildTag:               "//go:build !freebsd && !illumos",
+			wantReadmePlatform:         "| Unsupported Platforms | freebsd, illumos |",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.yml, func(t *testing.T) {
@@ -497,6 +515,10 @@ foo
 				require.Contains(t, string(contents), "foo")
 			}
 
+			if tt.wantReadmePlatform != "" {
+				require.Contains(t, string(contents), tt.wantReadmePlatform)
+			}
+
 			if tt.wantComponentTestGenerated {
 				require.FileExists(t, filepath.Join(tmpdir, "generated_component_test.go"))
 				contents, err = os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "generated_component_test.go")))
@@ -505,6 +527,10 @@ foo
 				require.NotContains(t, string(contents), `"go.opentelemetry.io/collector/internal/testutil"`)
 				_, err = parser.ParseFile(token.NewFileSet(), "", contents, parser.DeclarationErrors)
 				require.NoError(t, err)
+
+				if tt.wantBuildTag != "" {
+					require.Contains(t, string(contents), tt.wantBuildTag)
+				}
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, "generated_component_test.go"))
 			}

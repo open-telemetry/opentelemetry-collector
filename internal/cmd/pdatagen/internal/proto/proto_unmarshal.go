@@ -53,12 +53,7 @@ const unmarshalProtoFloat = `{{ if .repeated -}}
 			return err
 		}
 {{ if ne .oneOfGroup "" -}}
-		var ov *{{ .oneOfMessageName }}
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &{{ .oneOfMessageName }}{}
-		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
-		}
+		ov := New{{ .oneOfMessageName }}()
 		ov.{{ .fieldName }} = math.Float{{ .bitSize }}frombits(num)
 		orig.{{ .oneOfGroup }} = ov
 {{- else if .nullable -}}
@@ -111,12 +106,7 @@ const unmarshalProtoFixed = `{{ if .repeated -}}
 			return err
 		}
 {{ if ne .oneOfGroup "" -}}
-		var ov *{{ .oneOfMessageName }}
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &{{ .oneOfMessageName }}{}
-		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
-		}
+		ov := New{{ .oneOfMessageName }}()
 		ov.{{ .fieldName }} = {{ .goType }}(num)
 		orig.{{ .oneOfGroup }} = ov
 {{- else }}
@@ -167,12 +157,7 @@ const unmarshalProtoBool = `{{ if .repeated -}}
 			return err
 		}
 {{ if ne .oneOfGroup "" -}}
-		var ov *{{ .oneOfMessageName }}
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &{{ .oneOfMessageName }}{}
-		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
-		}
+		ov := New{{ .oneOfMessageName }}()
 		ov.{{ .fieldName }} = num != 0
 		orig.{{ .oneOfGroup }} = ov
 {{- else if .nullable -}}
@@ -223,12 +208,7 @@ const unmarshalProtoVarint = `{{ if .repeated -}}
 			return err
 		}
 {{ if ne .oneOfGroup "" -}}
-		var ov *{{ .oneOfMessageName }}
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &{{ .oneOfMessageName }}{}
-		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
-		}
+		ov := New{{ .oneOfMessageName }}()
 		ov.{{ .fieldName }} = {{ .goType }}(num)
 		orig.{{ .oneOfGroup }} = ov
 {{- else if .nullable -}}
@@ -249,12 +229,7 @@ const unmarshalProtoString = `
 		}
 		startPos := pos - length
 {{ if ne .oneOfGroup "" -}}
-		var ov *{{ .oneOfMessageName }}
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &{{ .oneOfMessageName }}{}
-		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
-		}
+		ov := New{{ .oneOfMessageName }}()
 		ov.{{ .fieldName }} = string(buf[startPos:pos])
 		orig.{{ .oneOfGroup }} = ov
 {{- else if .repeated -}}
@@ -275,12 +250,7 @@ const unmarshalProtoBytes = `
 		}
 		startPos := pos - length
 {{ if ne .oneOfGroup "" -}}
-		var ov *{{ .oneOfMessageName }}
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &{{ .oneOfMessageName }}{}
-		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
-		}
+		ov := New{{ .oneOfMessageName }}()
 		if length != 0 {
 			ov.{{ .fieldName }} = make([]byte, length)
 			copy(ov.{{ .fieldName }}, buf[startPos:pos])
@@ -312,12 +282,7 @@ const unmarshalProtoMessage = `
 		}
 		startPos := pos - length
 {{ if ne .oneOfGroup "" -}}
-		var ov *{{ .oneOfMessageName }}
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &{{ .oneOfMessageName }}{}
-		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
-		}
+		ov := New{{ .oneOfMessageName }}()
 		ov.{{ .fieldName }} = New{{ .messageName }}()
 		err = ov.{{ .fieldName }}.UnmarshalProto(buf[startPos:pos])
 		if err != nil {
@@ -383,12 +348,7 @@ const unmarshalProtoSignedVarint = `{{ if .repeated -}}
 			return err
 		}
 {{ if ne .oneOfGroup "" -}}
-		var ov *{{ .oneOfMessageName }}
-		if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
-			ov = &{{ .oneOfMessageName }}{}
-		} else {
-			ov = ProtoPool{{ .oneOfMessageName }}.Get().(*{{ .oneOfMessageName }})
-		}
+		ov := New{{ .oneOfMessageName }}()
 		ov.{{ .fieldName }} = int{{ .bitSize }}(uint{{ .bitSize }}(num >> 1) ^ uint{{ .bitSize }}(int{{ .bitSize }}((num&1)<<{{ sub .bitSize 1 }})>>{{ sub .bitSize 1 }}))
 		orig.{{ .oneOfGroup }} = ov
 {{- else if .nullable -}}
