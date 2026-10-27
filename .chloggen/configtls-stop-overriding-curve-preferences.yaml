@@ -2,7 +2,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
-component: pkg/config/configtls
+component: configtls
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Use the `crypto/tls` default key exchanges when `curve_preferences` is unset, and accept the hybrid post-quantum groups added in Go 1.26
