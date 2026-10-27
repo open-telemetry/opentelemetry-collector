@@ -14,24 +14,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 }
 
-func TestConfigValidate_DefaultValid(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-
-	require.NoError(t, cfg.Validate())
-}
-
 func TestConfigValidate_RequiredJobName(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.JobName = ""
 
 	require.ErrorContains(t, cfg.Validate(), "job_name is required")
-}
-
-func TestConfigValidate_InvalidEnumLogLevel(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.LogLevel = "__invalid__"
-
-	require.ErrorContains(t, cfg.Validate(), "log_level must be one of")
 }
 
 func TestConfigValidate_RequiredTargets(t *testing.T) {
@@ -41,10 +28,11 @@ func TestConfigValidate_RequiredTargets(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "targets is required")
 }
 
-func TestTargetsItemValidate_DefaultValid(t *testing.T) {
-	cfg := NewDefaultTargetsItem()
+func TestConfigValidate_InvalidEnumLogLevel(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.LogLevel = "__invalid__"
 
-	require.NoError(t, cfg.Validate())
+	require.ErrorContains(t, cfg.Validate(), "log_level must be one of")
 }
 
 func TestConfigValidate_RequiredLabels(t *testing.T) {

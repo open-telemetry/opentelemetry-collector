@@ -83,6 +83,16 @@ func (sl *schemaLoader) load(ref Ref) (*ConfigsMetadata, error) {
 }
 
 func (sl *schemaLoader) loadFromFile(filePath string) (*ConfigsMetadata, error) {
+	info, err := os.Stat(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("failed to read schema from %s: %w", filePath, err)
+	}
+	if info.IsDir() {
+		return nil, fmt.Errorf("failed to read schema from %s: is a directory", filePath)
+	}
 	body, err := os.ReadFile(filePath) // #nosec G304
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -107,6 +117,10 @@ func unmarshalSchema(body []byte) (*ConfigsMetadata, error) {
 
 	var metadata ConfigsMetadata
 	if err := confmap.NewFromStringMap(raw).Unmarshal(&metadata, confmap.WithIgnoreUnused()); err != nil {
+		return nil, err
+	}
+
+	if err := ApplyConfigsOrder(body, &metadata); err != nil {
 		return nil, err
 	}
 
