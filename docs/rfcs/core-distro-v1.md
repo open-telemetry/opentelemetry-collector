@@ -119,6 +119,7 @@ stabilizing or removing dependencies on these remaining modules:
 * [`go.opentelemetry.io/collector/config/confighttp`](https://pkg.go.dev/go.opentelemetry.io/collector/config/confighttp), used by the OTLP receiver.
 * [`go.opentelemetry.io/collector/filter`](https://pkg.go.dev/go.opentelemetry.io/collector/filter), used by the hostmetrics receiver.
 * [`go.opentelemetry.io/collector/exporter/exporterhelper`](https://pkg.go.dev/go.opentelemetry.io/collector/exporter/exporterhelper), whose configuration is used by the OTLP exporters.
+* [`go.opentelemetry.io/collector/scraper/scraperhelper`](https://pkg.go.dev/go.opentelemetry.io/collector/scraper/scraperhelper), used by the hostmetrics receiver.
 
 We continue with the batching migration roadmap until at least [Phase
 3](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/batching-migration.md#phase-3).
