@@ -26,7 +26,7 @@ need to wire up depends on the component type:
 Create one `ObsReport` per receiver instance, using keyed fields:
 
 ```go
-obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+obsreport, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 	ReceiverID:             set.ID,
 	Transport:              "grpc", // or "http", "tcp", ...
 	ReceiverCreateSettings: set,
