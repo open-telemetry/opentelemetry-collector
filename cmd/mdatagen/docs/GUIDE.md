@@ -214,6 +214,33 @@ also accepted and flow into `config.schema.json` (so IDEs and other JSON-Schema-
 enforce them), but mdatagen does not yet generate a corresponding check in the Go `Validate()`
 method — only the constraints listed above do.
 
+## Deprecating a property
+
+Mark a property, a named definition (`exported_configs` entry), or the whole `config:` block as
+deprecated with a `deprecated:` block giving both `since` and `note` — both are required:
+
+```yaml
+config:
+  properties:
+    interval:
+      type: duration
+      default: 10s
+      deprecated:
+        since: v0.160.0
+        note: Support for this property will be dropped soon.
+```
+
+This flows into every generated artifact:
+
+- a `// Deprecated: [<since>] <note>` Go doc comment above the field (or struct/type, if set at
+  the `config:` or `exported_configs` level);
+- `"deprecated": true` in `config.schema.json`;
+- "(**deprecated**)" next to the property's description in the generated README table.
+
+`mdatagen` rejects a `deprecated:` block that's missing `since` or `note` — both are required so
+that generated comments and release notes always say when a property was deprecated and what
+users should do about it.
+
 ## References and reuse (`$ref`, `exported_configs`)
 
 Instead of inlining a schema, point at another one with `$ref`. Three flavors:
@@ -674,14 +701,18 @@ squashed in alongside your own hand-declared fields, and the README table gets `
 
 For a component with a `config:` block, `generated_config_test.go` includes
 `TestCreateDefaultConfig`, asserting `createDefaultConfig()` returns a non-nil config. When
-`Config` has validators, it also includes `TestConfigValidate_DefaultValid` and generated
-failure cases for required fields, numeric bounds, and enum values. The generator does not add
+`Config` has validators, it also includes generated failure cases for required fields, numeric
+bounds, and enum values — one atomic test per rule, each mutating a single field away from its
+default and asserting the specific `Validate()` error it produces. The generator does not add
 failure cases for `minLength`, `maxLength`, `pattern`, or custom validators; add tests for those
 rules yourself. A package with only `exported_configs` has no `TestCreateDefaultConfig`.
 
-Generated tests also cover supported rules on exported and nested types. If an object definition
-has validators but no default, mdatagen emits a failing test asking you to add one. If there are
-no supported validation rules, the file contains a comment instead of validation tests.
+Generated tests also cover supported rules on exported and nested types the same way, one atomic
+test per rule. mdatagen does not generate a test asserting that the default or zero value passes
+`Validate()` as a whole: whether a default is "valid" can depend on a `custom_validator` whose
+logic mdatagen cannot evaluate at generation time, so there is no way to generate that assertion
+deterministically. If there are no supported validation rules at all, the file contains a comment
+instead of validation tests.
 
 ## Config docs
 
@@ -712,7 +743,8 @@ Once the markers are in place, the generated table, for every run of `mdatagen m
 - recurses into nested `object` properties, including a plain, non-embedded `$ref`, as their own
   `### <a id="...">` sub-section linked from the parent row — this is how `samplereceiver`'s
   README ends up with `## Configuration`, `### metrics`, `### metrics.default.metric`, and so on;
-- marks properties with `deprecated: true` with "(**deprecated**)" next to their description.
+- marks deprecated properties (see [Deprecating a property](#deprecating-a-property)) with
+  "(**deprecated**)" next to their description.
 
 There's no separate flag or command for the docs step beyond the usual `mdatagen metadata.yaml` —
 it runs as part of the same pass that writes `generated_config.go` and `config.schema.json`.

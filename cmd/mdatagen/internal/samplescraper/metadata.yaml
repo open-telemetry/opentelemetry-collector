@@ -70,8 +70,12 @@ config:
               optional_mode: default
           interval:
             type: duration
+            description: Polling interval for the scraper target.
             optional: true
             default: 10s
+            deprecated:
+              since: v0.160.0
+              note: Support for this property will be dropped soon.
           labels:
             description: Static key-value labels attached to all metrics from this target.
             type: map

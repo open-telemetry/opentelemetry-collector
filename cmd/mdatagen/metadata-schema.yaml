@@ -75,7 +75,11 @@ status:
   codeowners:
     active: [string]
     emeritus: [string]
-  unsupported_platforms: [<linux|windows>]
+  # Optional: A list of platforms supported by this component.
+  supported_platforms: [string]
+
+  # Optional: A list of platforms not supported by this component.
+  unsupported_platforms: [string]
 
 # Optional: OTel Semantic Conventions version that will be associated with the scraped metrics.
 # This attribute should be set for metrics compliant with OTel Semantic Conventions.
@@ -115,7 +119,11 @@ config:
       # Optional: Example values for this property.
       examples: [any]
       # Optional: Indicates if this property is deprecated.
-      deprecated: bool
+      deprecated:
+        # Required: version when the prop was deprecated
+        since:
+        # Required: migration note
+        note:
       # Optional: For string types - allowed values.
       enum: [string]
       # Optional: Constant value - property must have exactly this value.
