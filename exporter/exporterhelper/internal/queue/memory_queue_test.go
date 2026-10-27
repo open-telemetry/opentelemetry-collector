@@ -148,29 +148,64 @@ func TestMemoryQueueWaitForResultPassErrorBack(t *testing.T) {
 	wg.Wait()
 }
 
+// Canceling the caller after the element was accepted does not abandon it: the caller stays blocked
+// and receives the actual outcome, because the element is going to be delivered either way.
 func TestMemoryQueueWaitForResultCancelIncomingRequest(t *testing.T) {
 	wg := sync.WaitGroup{}
-	stop := make(chan struct{})
 	set := newSettings(request.SizerTypeItems, 100)
 	set.WaitForResult = true
 	q := newMemoryQueue[intRequest](set)
 	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 
-	// Consume async new data.
+	exportErr := errors.New("export failed")
+	// Consume async new data, reporting the outcome only once the caller has given up.
 	wg.Go(func() {
-		_, _, done, ok := q.Read(context.Background())
+		elCtx, _, done, ok := q.Read(context.Background())
 		assert.True(t, ok)
-		<-stop
-		done.OnDone(nil)
+		<-elCtx.Done()
+		done.OnDone(exportErr)
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg.Go(func() {
-		<-time.After(time.Second)
+		<-time.After(100 * time.Millisecond)
+		cancel()
+	})
+	require.ErrorIs(t, q.Offer(ctx, intRequest(1)), exportErr)
+	require.NoError(t, q.Shutdown(context.Background()))
+	wg.Wait()
+}
+
+// Canceling the caller before the element is accepted returns without queueing anything.
+func TestMemoryQueueWaitForResultCancelBeforeAccepted(t *testing.T) {
+	wg := sync.WaitGroup{}
+	release := make(chan struct{})
+	set := newSettings(request.SizerTypeItems, 1)
+	set.WaitForResult = true
+	set.BlockOnOverflow = true
+	q := newMemoryQueue[intRequest](set)
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Hold the only slot of capacity, so the next Offer blocks before being accepted.
+	wg.Go(func() {
+		_, _, done, ok := q.Read(context.Background())
+		assert.True(t, ok)
+		<-release
+		done.OnDone(nil)
+	})
+	accepted := make(chan error, 1)
+	wg.Go(func() { accepted <- q.Offer(context.Background(), intRequest(1)) })
+	assert.Eventually(t, func() bool { return q.Size() == 1 }, time.Second, 10*time.Millisecond)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wg.Go(func() {
+		<-time.After(100 * time.Millisecond)
 		cancel()
 	})
 	require.ErrorIs(t, q.Offer(ctx, intRequest(1)), context.Canceled)
-	close(stop)
+
+	close(release)
+	require.NoError(t, <-accepted)
 	require.NoError(t, q.Shutdown(context.Background()))
 	wg.Wait()
 }
@@ -240,4 +275,53 @@ func consume[T any](q readableQueue[T], consumeFunc func(context.Context, T) err
 	}
 	done.OnDone(consumeFunc(ctx, req))
 	return true
+}
+
+type noopDone struct{}
+
+func (noopDone) OnDone(error) {}
+
+func TestLinkedQueueQueued(t *testing.T) {
+	build := func(l *linkedQueue[intRequest], n int) []*node[intRequest] {
+		nodes := make([]*node[intRequest], 0, n)
+		for i := 1; i <= n; i++ {
+			nodes = append(nodes, l.push(context.Background(), intRequest(i), noopDone{}))
+		}
+		return nodes
+	}
+
+	t.Run("sole element", func(t *testing.T) {
+		l := &linkedQueue[intRequest]{}
+		n := build(l, 1)[0]
+		assert.True(t, queued(n))
+		_, _, _ = l.pop()
+		assert.False(t, queued(n))
+		assert.False(t, l.hasElements())
+	})
+
+	// Both the popped node and the new head have no next of their own to distinguish them, so the
+	// marker is what tells them apart.
+	t.Run("head after popping the previous one", func(t *testing.T) {
+		l := &linkedQueue[intRequest]{}
+		nodes := build(l, 2)
+		_, _, _ = l.pop()
+		assert.False(t, queued(nodes[0]))
+		assert.True(t, queued(nodes[1]))
+		_, _, _ = l.pop()
+		assert.False(t, queued(nodes[1]))
+	})
+
+	t.Run("still queued behind others", func(t *testing.T) {
+		l := &linkedQueue[intRequest]{}
+		nodes := build(l, 3)
+		_, _, _ = l.pop()
+		assert.True(t, queued(nodes[1]))
+		assert.True(t, queued(nodes[2]))
+		// Pushing after draining must still work, so head and tail have to stay consistent.
+		for l.hasElements() {
+			_, _, _ = l.pop()
+		}
+		n := build(l, 1)[0]
+		assert.True(t, queued(n))
+	})
 }

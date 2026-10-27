@@ -74,7 +74,7 @@ func (mq *memoryQueue[T]) Offer(ctx context.Context, el T) error {
 		mq.refCounter.Ref(el)
 	}
 
-	done, err := mq.add(ctx, el, elSize)
+	n, done, err := mq.add(ctx, el, elSize)
 	if err != nil {
 		// Unref in case of an error since there will not be any async worker to pick it up.
 		if mq.refCounter != nil {
@@ -92,23 +92,61 @@ func (mq *memoryQueue[T]) Offer(ctx context.Context, el T) error {
 			mq.donePool.Put(done)
 			return doneErr
 		case <-ctx.Done():
-			return ctx.Err()
+			if mq.abandon(n, done) {
+				// No consumer will pick the element up, so onDone never runs for it.
+				mq.releaseElement(done)
+				return ctx.Err()
+			}
+			// A consumer already took the element, so it is going to be delivered either way. Report
+			// the actual outcome rather than a failure for data that may have been sent. The element
+			// may have been merged into a batch, whose done only reports after that batch was sent.
+			return <-done.ch
 		}
 	}
 	return nil
 }
 
-func (mq *memoryQueue[T]) add(ctx context.Context, el T, elSize int64) (*blockingDone[T], error) {
+// abandon gives up on an element whose caller is no longer waiting for it. It reports false if a
+// consumer already took the element, in which case it keeps being processed.
+func (mq *memoryQueue[T]) abandon(n *node[T], bd *blockingDone[T]) bool {
+	mq.mu.Lock()
+	defer mq.mu.Unlock()
+	if !queued(n) {
+		return false
+	}
+	// Leave the element in place for Read to drop, which keeps this O(1), and give the capacity back
+	// now so that a producer blocked on overflow does not wait for a consumer to get here.
+	bd.abandoned = true
+	mq.freeCapacity(bd)
+	return true
+}
+
+// freeCapacity gives back the space taken by the element. Callers MUST hold the mutex.
+func (mq *memoryQueue[T]) freeCapacity(bd *blockingDone[T]) {
+	mq.size -= bd.elSize
+	mq.hasMoreSpace.Signal()
+}
+
+// releaseElement drops the queue's reference to the element the done reports for.
+func (mq *memoryQueue[T]) releaseElement(bd *blockingDone[T]) {
+	if mq.refCounter != nil {
+		mq.refCounter.Unref(bd.el)
+	}
+	var zero T
+	bd.el = zero
+}
+
+func (mq *memoryQueue[T]) add(ctx context.Context, el T, elSize int64) (*node[T], *blockingDone[T], error) {
 	mq.mu.Lock()
 	defer mq.mu.Unlock()
 
 	for mq.size+elSize > mq.cap {
 		if !mq.blockOnOverflow {
-			return nil, ErrQueueIsFull
+			return nil, nil, ErrQueueIsFull
 		}
 		// Wait for more space or before the ctx is Done.
 		if err := mq.hasMoreSpace.Wait(ctx); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
@@ -122,10 +160,10 @@ func (mq *memoryQueue[T]) add(ctx context.Context, el T, elSize int64) (*blockin
 		ctx = context.WithoutCancel(ctx)
 	}
 
-	mq.items.push(ctx, el, done)
+	n := mq.items.push(ctx, el, done)
 	// Signal one consumer if any.
 	mq.hasMoreElements.Signal()
-	return done, nil
+	return n, done, nil
 }
 
 // Read removes the element from the queue and returns it.
@@ -137,6 +175,12 @@ func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool)
 
 	for {
 		if mq.items.hasElements() {
+			// An abandoned element must not reach a consumer, and nothing here may read the request
+			// itself, since the caller that gave up on it has already released it.
+			if mq.waitForResult && mq.items.head.done.(*blockingDone[T]).abandoned {
+				mq.items.pop()
+				continue
+			}
 			elCtx, el, done := mq.items.pop()
 			return elCtx, el, done, true
 		}
@@ -153,16 +197,11 @@ func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool)
 }
 
 func (mq *memoryQueue[T]) onDone(bd *blockingDone[T], err error) {
-	if mq.refCounter != nil {
-		mq.refCounter.Unref(bd.el)
-	}
-	var zero T
-	bd.el = zero
+	mq.releaseElement(bd)
 
 	mq.mu.Lock()
 	defer mq.mu.Unlock()
-	mq.size -= bd.elSize
-	mq.hasMoreSpace.Signal()
+	mq.freeCapacity(bd)
 	if mq.waitForResult {
 		// In this case the done will be added back to the queue by the waiter.
 		bd.ch <- err
@@ -202,16 +241,17 @@ type linkedQueue[T any] struct {
 	tail *node[T]
 }
 
-func (l *linkedQueue[T]) push(ctx context.Context, data T, done Done) {
+func (l *linkedQueue[T]) push(ctx context.Context, data T, done Done) *node[T] {
 	n := &node[T]{ctx: ctx, data: data, done: done}
 	// If tail is nil means list is empty so update both head and tail to point to same element.
 	if l.tail == nil {
 		l.head = n
 		l.tail = n
-		return
+		return n
 	}
 	l.tail.next = n
 	l.tail = n
+	return n
 }
 
 func (l *linkedQueue[T]) hasElements() bool {
@@ -225,8 +265,16 @@ func (l *linkedQueue[T]) pop() (context.Context, T, Done) {
 	if l.head == nil {
 		l.tail = nil
 	}
-	n.next = nil
+	// Point the node at itself to record that it left the queue. A node that is still queued never
+	// does, so queued(n) can tell the two apart without an extra field.
+	n.next = n
 	return n.ctx, n.data, n.done
+}
+
+// queued reports whether the node is still waiting in the queue, as opposed to having been handed
+// to a consumer or dropped.
+func queued[T any](n *node[T]) bool {
+	return n.next != n
 }
 
 type blockingDone[T request.Request] struct {
@@ -234,12 +282,17 @@ type blockingDone[T request.Request] struct {
 	// el is the element this done reports for, kept so that the queue can release its reference to it.
 	el     T
 	elSize int64
-	ch     chan error
+	// abandoned tells Read to drop the element instead of handing it to a consumer, because the
+	// caller that was waiting for it has given up. Only ever set while the element is still queued,
+	// so an abandoned element never reaches onDone.
+	abandoned bool
+	ch        chan error
 }
 
 func (bd *blockingDone[T]) reset(el T, elSize int64, queue *memoryQueue[T]) {
 	bd.el = el
 	bd.elSize = elSize
+	bd.abandoned = false
 	bd.queue = queue
 }
 
