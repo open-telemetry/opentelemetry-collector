@@ -18,7 +18,18 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
-var _ Batcher[request.Request] = (*shardedBatcher)(nil)
+var (
+	_ Batcher[request.Request] = (*shardedBatcher)(nil)
+	_ fullQueueFlusher         = (*shardedBatcher)(nil)
+)
+
+// fullQueueFlusher is a Batcher that can flush its partial batches when the queue runs out of
+// capacity, so producers do not wait for min_size or flush_timeout to free space.
+type fullQueueFlusher interface {
+	// onQueueFull returns the hook the queue calls when it has no free capacity, or nil when the
+	// batcher does not need to be notified. The hook must not block.
+	onQueueFull() func()
+}
 
 // shardedBatcher spreads unpartitioned requests across independent partitionBatcher instances.
 // All shards share one worker pool, so worker concurrency remains bounded by the queue setting.
@@ -62,23 +73,36 @@ func (sb *shardedBatcher) Start(ctx context.Context, host component.Host) error 
 	for _, shard := range sb.shards {
 		err = multierr.Append(err, shard.Start(ctx, host))
 	}
-	sb.stopWG.Go(func() {
-		for {
-			select {
-			case <-sb.shutdownCh:
-				return
-			case <-sb.flushCh:
-				sb.flushPartialBatches()
+	if sb.flushesOnFull() {
+		sb.stopWG.Go(func() {
+			for {
+				select {
+				case <-sb.shutdownCh:
+					return
+				case <-sb.flushCh:
+					sb.flushPartialBatches()
+				}
 			}
-		}
-	})
+		})
+	}
 	return err
 }
 
-func (sb *shardedBatcher) requestFlush() {
-	if len(sb.shards) == 1 {
-		return
+// flushesOnFull reports whether a full queue must flush the partial batches. With a single shard
+// the batcher behaves like the previous unsharded one, so neither the hook nor the flush
+// goroutine is wired.
+func (sb *shardedBatcher) flushesOnFull() bool {
+	return len(sb.shards) > 1
+}
+
+func (sb *shardedBatcher) onQueueFull() func() {
+	if !sb.flushesOnFull() {
+		return nil
 	}
+	return sb.requestFlush
+}
+
+func (sb *shardedBatcher) requestFlush() {
 	select {
 	case sb.flushCh <- struct{}{}:
 	default:

@@ -59,12 +59,8 @@ func NewQueueBatch(
 		cfg.NumConsumers = 1
 	}
 
-	var onFull func()
-	if fb, ok := b.(interface{ requestFlush() }); ok {
-		onFull = fb.requestFlush
-	}
 	q, err := queue.NewQueue(queue.Settings[request.Request]{
-		OnFull:           onFull,
+		OnFull:           queueOnFullHook(b),
 		SizerType:        cfg.Sizer,
 		Capacity:         cfg.QueueSize,
 		NumConsumers:     cfg.NumConsumers,
@@ -82,6 +78,15 @@ func NewQueueBatch(
 	}
 
 	return &QueueBatch{queue: q, batcher: b}, nil
+}
+
+// queueOnFullHook returns the hook the queue calls when it runs out of capacity, or nil when the
+// batcher cannot release capacity early.
+func queueOnFullHook(b Batcher[request.Request]) func() {
+	if f, ok := b.(fullQueueFlusher); ok {
+		return f.onQueueFull()
+	}
+	return nil
 }
 
 // Start is invoked during service startup.

@@ -162,7 +162,7 @@ func TestShardedBatcherMultipleShardsDrainOnShutdown(t *testing.T) {
 	assert.EqualValues(t, 0, done.errors.Load())
 }
 
-func TestShardedBatcherRequestFlushFlushesEveryShard(t *testing.T) {
+func TestShardedBatcherOnQueueFullFlushesEveryShard(t *testing.T) {
 	sink := requesttest.NewSink()
 	sb, err := newShardedBatcher(BatchConfig{
 		FlushTimeout: 0,
@@ -177,8 +177,10 @@ func TestShardedBatcherRequestFlushFlushesEveryShard(t *testing.T) {
 	sb.Consume(context.Background(), &requesttest.FakeRequest{Items: 3}, done)
 	assert.Equal(t, 0, sink.RequestsCount(), "both shards hold partial batches below min_size")
 
-	sb.requestFlush()
-	sb.requestFlush()
+	onFull := sb.onQueueFull()
+	require.NotNil(t, onFull)
+	onFull()
+	onFull()
 	assert.Eventually(t, func() bool {
 		return sink.RequestsCount() == 2 && sink.ItemsCount() == 7
 	}, time.Second, 10*time.Millisecond)
@@ -188,7 +190,7 @@ func TestShardedBatcherRequestFlushFlushesEveryShard(t *testing.T) {
 	assert.Equal(t, 2, sink.RequestsCount())
 }
 
-func TestShardedBatcherRequestFlushIsNoopWithOneShard(t *testing.T) {
+func TestShardedBatcherOnQueueFullIsNilWithOneShard(t *testing.T) {
 	sink := requesttest.NewSink()
 	sb, err := newShardedBatcher(BatchConfig{
 		FlushTimeout: 0,
@@ -196,17 +198,51 @@ func TestShardedBatcherRequestFlushIsNoopWithOneShard(t *testing.T) {
 		MinSize:      10,
 	}, request.NewItemsSizer(), nil, newWorkerPool(1), sink.Export, zap.NewNop(), 1)
 	require.NoError(t, err)
+	assert.Nil(t, sb.onQueueFull(), "a single shard keeps waiting for min_size or the timer")
 	require.NoError(t, sb.Start(context.Background(), componenttest.NewNopHost()))
 
 	done := newFakeDone()
 	sb.Consume(context.Background(), &requesttest.FakeRequest{Items: 4}, done)
-	sb.requestFlush()
 	time.Sleep(50 * time.Millisecond)
-	assert.Equal(t, 0, sink.RequestsCount(), "a single shard keeps waiting for min_size or the timer")
+	assert.Equal(t, 0, sink.RequestsCount())
 
 	require.NoError(t, sb.Shutdown(context.Background()))
 	assert.Equal(t, 1, sink.RequestsCount())
 	assert.Equal(t, 4, sink.ItemsCount())
+}
+
+func TestQueueOnFullHook(t *testing.T) {
+	sink := requesttest.NewSink()
+	cfg := BatchConfig{FlushTimeout: 0, Sizer: request.SizerTypeItems, MinSize: 10}
+
+	t.Run("disabled batcher", func(t *testing.T) {
+		assert.Nil(t, queueOnFullHook(newDisabledBatcher(sink.Export)))
+	})
+	t.Run("one shard", func(t *testing.T) {
+		sb, err := newShardedBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(1), sink.Export, zap.NewNop(), 1)
+		require.NoError(t, err)
+		assert.Nil(t, queueOnFullHook(sb))
+	})
+	t.Run("multiple shards", func(t *testing.T) {
+		sb, err := newShardedBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(2), sink.Export, zap.NewNop(), 2)
+		require.NoError(t, err)
+		require.NoError(t, sb.Start(context.Background(), componenttest.NewNopHost()))
+		t.Cleanup(func() {
+			require.NoError(t, sb.Shutdown(context.Background()))
+		})
+
+		done := newFakeDone()
+		sb.Consume(context.Background(), &requesttest.FakeRequest{Items: 4}, done)
+		sb.Consume(context.Background(), &requesttest.FakeRequest{Items: 3}, done)
+		assert.Equal(t, 0, sink.RequestsCount())
+
+		onFull := queueOnFullHook(sb)
+		require.NotNil(t, onFull)
+		onFull()
+		assert.Eventually(t, func() bool {
+			return sink.RequestsCount() == 2 && sink.ItemsCount() == 7
+		}, time.Second, 10*time.Millisecond)
+	})
 }
 
 func TestShardedBatcherReleasesQueueCapacityWhenQueueIsFull(t *testing.T) {
@@ -220,7 +256,7 @@ func TestShardedBatcherReleasesQueueCapacityWhenQueueIsFull(t *testing.T) {
 
 	set := newFakeRequestSettings()
 	q, err := queue.NewQueue(queue.Settings[request.Request]{
-		OnFull:          sb.requestFlush,
+		OnFull:          sb.onQueueFull(),
 		SizerType:       request.SizerTypeItems,
 		Capacity:        4,
 		NumConsumers:    2,
