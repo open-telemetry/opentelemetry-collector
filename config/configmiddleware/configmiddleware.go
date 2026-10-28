@@ -10,10 +10,10 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/collector/config/configmiddleware/internal/metadata"
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configmiddleware/internal/metadata"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 )
 

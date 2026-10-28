@@ -22,6 +22,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.164.0
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.164.0
 	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.164.0
+	go.opentelemetry.io/collector/featuregate v1.70.0
 	go.opentelemetry.io/collector/pdata v1.70.0
 	go.opentelemetry.io/collector/pdata/testdata v0.164.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.72.0
@@ -50,7 +51,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.70.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.164.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.164.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
