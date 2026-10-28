@@ -47,7 +47,7 @@ func newMemoryQueue[T request.Request](set Settings[T]) readableQueue[T] {
 	}
 	if !set.WaitForResult {
 		// With WaitForResult the caller stays blocked until the element is done, so it keeps the
-		// element alive for the queue and no reference of its own is needed.
+		// element alive for the queue.
 		sq.refCounter = set.ReferenceCounter
 	}
 	sq.donePool.New = func() any { return &blockingDone[T]{ch: make(chan error, 1)} }
@@ -100,8 +100,7 @@ func (mq *memoryQueue[T]) Offer(ctx context.Context, el T) error {
 				return ctx.Err()
 			}
 			// A consumer already took the element, so it is going to be delivered either way. Report
-			// the actual outcome rather than a failure for data that may have been sent. The element
-			// may have been merged into a batch, whose done only reports after that batch was sent.
+			// the actual outcome rather than a failure for data that may have been sent.
 			return <-done.ch
 		}
 	}
@@ -116,8 +115,8 @@ func (mq *memoryQueue[T]) abandon(n *node[T], bd *blockingDone[T]) bool {
 	if !queued(n) {
 		return false
 	}
-	// Leave the element in place for Read to drop, which keeps this O(1), and give the capacity back
-	// now so that a producer blocked on overflow does not wait for a consumer to get here.
+	// Leave the element in place for Read to drop, which keeps this O(1), but free its capacity now
+	// so that a producer blocked on overflow does not wait for a consumer to get here.
 	bd.abandoned = true
 	mq.freeCapacity(bd)
 	return true
@@ -168,15 +167,13 @@ func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool)
 
 	for {
 		if mq.items.hasElements() {
-			// An abandoned element must not reach a consumer, and nothing here may read the request
-			// itself: the queue holds no reference in this mode, so the caller that gave up on it
-			// may have released it already.
-			if mq.waitForResult && mq.items.head.done.(*blockingDone[T]).abandoned {
-				mq.items.pop()
+			n := mq.items.pop()
+			// The caller that gave up on an abandoned element owns the request, so it must neither
+			// be read here nor handed to a consumer.
+			if mq.waitForResult && n.done.abandoned {
 				continue
 			}
-			elCtx, el, done := mq.items.pop()
-			return elCtx, el, done, true
+			return n.ctx, n.data, n.done, true
 		}
 
 		if mq.stopped {
@@ -227,19 +224,19 @@ func (mq *memoryQueue[T]) Capacity() int64 {
 	return mq.cap
 }
 
-type node[T any] struct {
+type node[T request.Request] struct {
 	ctx  context.Context
 	data T
-	done Done
+	done *blockingDone[T]
 	next *node[T]
 }
 
-type linkedQueue[T any] struct {
+type linkedQueue[T request.Request] struct {
 	head *node[T]
 	tail *node[T]
 }
 
-func (l *linkedQueue[T]) push(ctx context.Context, data T, done Done) *node[T] {
+func (l *linkedQueue[T]) push(ctx context.Context, data T, done *blockingDone[T]) *node[T] {
 	n := &node[T]{ctx: ctx, data: data, done: done}
 	// If tail is nil means list is empty so update both head and tail to point to same element.
 	if l.tail == nil {
@@ -256,22 +253,19 @@ func (l *linkedQueue[T]) hasElements() bool {
 	return l.head != nil
 }
 
-func (l *linkedQueue[T]) pop() (context.Context, T, Done) {
+func (l *linkedQueue[T]) pop() *node[T] {
 	n := l.head
 	l.head = n.next
 	// If it gets to the last element, then update tail as well.
 	if l.head == nil {
 		l.tail = nil
 	}
-	// Point the node at itself to record that it left the queue. A node that is still queued never
-	// does, so queued(n) can tell the two apart without an extra field.
+	// Point the node at itself to record that it left the queue, which a queued node never does.
 	n.next = n
-	return n.ctx, n.data, n.done
+	return n
 }
 
-// queued reports whether the node is still waiting in the queue, as opposed to having been handed
-// to a consumer or dropped.
-func queued[T any](n *node[T]) bool {
+func queued[T request.Request](n *node[T]) bool {
 	return n.next != n
 }
 
@@ -280,9 +274,8 @@ type blockingDone[T request.Request] struct {
 	// el is the element this done reports for, kept so that the queue can release its reference to it.
 	el     T
 	elSize int64
-	// abandoned tells Read to drop the element instead of handing it to a consumer, because the
-	// caller that was waiting for it has given up. Only ever set while the element is still queued,
-	// so an abandoned element never reaches onDone.
+	// abandoned tells Read to drop the element instead of handing it to a consumer. Only ever set
+	// while the element is still queued, so an abandoned element never reaches onDone.
 	abandoned bool
 	ch        chan error
 }

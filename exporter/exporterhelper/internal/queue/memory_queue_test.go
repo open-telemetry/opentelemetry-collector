@@ -277,15 +277,11 @@ func consume[T any](q readableQueue[T], consumeFunc func(context.Context, T) err
 	return true
 }
 
-type noopDone struct{}
-
-func (noopDone) OnDone(error) {}
-
 func TestLinkedQueueQueued(t *testing.T) {
 	build := func(l *linkedQueue[intRequest], n int) []*node[intRequest] {
 		nodes := make([]*node[intRequest], 0, n)
 		for i := 1; i <= n; i++ {
-			nodes = append(nodes, l.push(context.Background(), intRequest(i), noopDone{}))
+			nodes = append(nodes, l.push(context.Background(), intRequest(i), &blockingDone[intRequest]{}))
 		}
 		return nodes
 	}
@@ -294,7 +290,7 @@ func TestLinkedQueueQueued(t *testing.T) {
 		l := &linkedQueue[intRequest]{}
 		n := build(l, 1)[0]
 		assert.True(t, queued(n))
-		_, _, _ = l.pop()
+		l.pop()
 		assert.False(t, queued(n))
 		assert.False(t, l.hasElements())
 	})
@@ -304,22 +300,22 @@ func TestLinkedQueueQueued(t *testing.T) {
 	t.Run("head after popping the previous one", func(t *testing.T) {
 		l := &linkedQueue[intRequest]{}
 		nodes := build(l, 2)
-		_, _, _ = l.pop()
+		l.pop()
 		assert.False(t, queued(nodes[0]))
 		assert.True(t, queued(nodes[1]))
-		_, _, _ = l.pop()
+		l.pop()
 		assert.False(t, queued(nodes[1]))
 	})
 
 	t.Run("still queued behind others", func(t *testing.T) {
 		l := &linkedQueue[intRequest]{}
 		nodes := build(l, 3)
-		_, _, _ = l.pop()
+		l.pop()
 		assert.True(t, queued(nodes[1]))
 		assert.True(t, queued(nodes[2]))
 		// Pushing after draining must still work, so head and tail have to stay consistent.
 		for l.hasElements() {
-			_, _, _ = l.pop()
+			l.pop()
 		}
 		n := build(l, 1)[0]
 		assert.True(t, queued(n))
