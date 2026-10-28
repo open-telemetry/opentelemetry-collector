@@ -117,6 +117,16 @@ func (cc *ClientConfig) grpcDialTarget() string {
 	}
 }
 
+// defaultServiceConfig returns the gRPC service config for the configured balancer.
+// For pick_first, it turns on shuffleAddressList (gRFC A62), so clients that receive
+// the same ordered address list do not all connect to the first address.
+func (cc *ClientConfig) defaultServiceConfig() string {
+	if cc.BalancerName == "pick_first" {
+		return `{"loadBalancingConfig":[{"pick_first":{"shuffleAddressList":true}}]}`
+	}
+	return fmt.Sprintf(`{"loadBalancingPolicy":%q}`, cc.BalancerName)
+}
+
 func (cc *ClientConfig) isSchemeHTTP() bool {
 	return strings.HasPrefix(cc.Endpoint, "http://")
 }
@@ -247,7 +257,7 @@ func (cc *ClientConfig) getGrpcDialOptions(
 	}
 
 	if cc.BalancerName != "" {
-		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":%q}`, cc.BalancerName)))
+		opts = append(opts, grpc.WithDefaultServiceConfig(cc.defaultServiceConfig()))
 	}
 
 	if cc.Authority != "" {

@@ -282,6 +282,35 @@ func TestSanitizeEndpoint(t *testing.T) {
 	assert.Equal(t, "bad\x7f://host:4317", cfg.sanitizedEndpoint())
 }
 
+func TestDefaultServiceConfig(t *testing.T) {
+	tests := []struct {
+		balancerName string
+		expected     string
+	}{
+		{
+			balancerName: "round_robin",
+			expected:     `{"loadBalancingPolicy":"round_robin"}`,
+		},
+		{
+			balancerName: "pick_first",
+			expected:     `{"loadBalancingConfig":[{"pick_first":{"shuffleAddressList":true}}]}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.balancerName, func(t *testing.T) {
+			cfg := NewDefaultClientConfig()
+			cfg.Endpoint = "localhost:4317"
+			cfg.BalancerName = tt.balancerName
+			assert.Equal(t, tt.expected, cfg.defaultServiceConfig())
+
+			// grpc.NewClient rejects a service config that the balancer cannot parse.
+			conn, err := cfg.ToClientConn(context.Background(), nil, componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+			require.NoError(t, conn.Close())
+		})
+	}
+}
+
 func TestGrpcDialTarget(t *testing.T) {
 	tests := []struct {
 		name     string
