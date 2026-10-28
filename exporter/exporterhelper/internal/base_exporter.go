@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -17,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -32,7 +34,8 @@ type BaseExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	Set exporter.Settings
+	Set    exporter.Settings
+	tracer trace.Tracer
 
 	// Message for the user to be added with an export failure message.
 	ExportFailureMessage string
@@ -79,6 +82,10 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 	}
 	be.obsMetricsShutdown = sync.OnceFunc(be.obsMetrics.Shutdown)
 
+	if be.tracer == nil {
+		be.tracer = metadata.Tracer(set.TelemetrySettings)
+	}
+
 	// Consumer Sender is always initialized.
 	be.firstSender = sender.NewSender(pusher)
 
@@ -94,7 +101,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 	}
 
 	batchEnabled := be.queueCfg.HasValue() && be.queueCfg.Get().Batch.HasValue()
-	be.firstSender = newObsReportSender(set, signal, *be.obsMetrics, batchEnabled, be.firstSender)
+	be.firstSender = newObsReportSender(set, signal, *be.obsMetrics, batchEnabled, be.tracer, be.firstSender)
 
 	if batchEnabled {
 		// Batcher mutates the data.
@@ -171,6 +178,13 @@ func (be *BaseExporter) Shutdown(ctx context.Context) error {
 func WithStart(start component.StartFunc) Option {
 	return func(o *BaseExporter) error {
 		o.StartFunc = start
+		return nil
+	}
+}
+
+func WithTracer(tracer trace.Tracer) Option {
+	return func(o *BaseExporter) error {
+		o.tracer = tracer
 		return nil
 	}
 }

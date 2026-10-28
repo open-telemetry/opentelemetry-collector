@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
@@ -63,6 +62,7 @@ func newObsReportSender[K request.Request](
 	signal pipeline.Signal,
 	obsMetrics queuebatchtelemetry.ObsMetrics,
 	batchEnabled bool,
+	tracer trace.Tracer,
 	next sender.Sender[K],
 ) sender.Sender[K] {
 	idStr := set.ID.String()
@@ -70,7 +70,7 @@ func newObsReportSender[K request.Request](
 
 	return &obsReportSender[K]{
 		spanName:     ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
-		tracer:       metadata.Tracer(set.TelemetrySettings),
+		tracer:       tracer,
 		spanAttrs:    trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
 		obsMetrics:   obsMetrics,
 		batchEnabled: batchEnabled,

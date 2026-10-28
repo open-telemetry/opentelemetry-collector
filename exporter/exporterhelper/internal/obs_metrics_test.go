@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/metric"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -37,6 +38,11 @@ func TestBaseExporterLeavesInjectedObsMetricsOnOptionFailure(t *testing.T) {
 }
 
 func TestBaseExporterUsesAndShutsDownInjectedObsMetrics(t *testing.T) {
+	telemetry := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, telemetry.Shutdown(context.Background()))
+	})
+	tracer := telemetry.NewTelemetrySettings().TracerProvider.Tracer("injected-tracer")
 	shutdowns := 0
 	sent := int64(0)
 	inFlight := int64(0)
@@ -51,11 +57,14 @@ func TestBaseExporterUsesAndShutsDownInjectedObsMetrics(t *testing.T) {
 	}
 
 	be, err := NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
-		WithObsMetrics(metrics))
+		WithObsMetrics(metrics), WithTracer(tracer))
 	require.NoError(t, err)
 	require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 3}))
 	require.Equal(t, int64(3), sent)
 	require.Zero(t, inFlight)
+	spans := telemetry.SpanRecorder.Ended()
+	require.Len(t, spans, 1)
+	require.Equal(t, "injected-tracer", spans[0].InstrumentationScope().Name)
 
 	require.NoError(t, be.Shutdown(context.Background()))
 	require.NoError(t, be.Shutdown(context.Background()))

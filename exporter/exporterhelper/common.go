@@ -5,6 +5,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 
 import (
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -56,4 +57,9 @@ func WithAttrs(attrs ...attribute.KeyValue) Option {
 // WithObsMetrics overrides the queue and batch observability metrics for an exporter.
 func WithObsMetrics(obsMetrics queuebatchtelemetry.ObsMetrics) Option {
 	return internal.WithObsMetrics(obsMetrics)
+}
+
+// WithTracer overrides the tracer used by the exporter helper.
+func WithTracer(tracer trace.Tracer) Option {
+	return internal.WithTracer(tracer)
 }
