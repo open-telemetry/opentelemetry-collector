@@ -1698,6 +1698,8 @@ func assertReceiverProfiles(t *testing.T, tt *componenttest.Telemetry, id compon
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
 							attribute.String("transport", transport),
+							// The test profiles do not set a sample type.
+							attribute.String("sample_type", ":"),
 						),
 						Value: failed,
 					},
@@ -1720,6 +1722,8 @@ func assertReceiverProfiles(t *testing.T, tt *componenttest.Telemetry, id compon
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
 							attribute.String("transport", transport),
+							// The test profiles do not set a sample type.
+							attribute.String("sample_type", ":"),
 						),
 						Value: accepted,
 					},
@@ -1742,6 +1746,8 @@ func assertReceiverProfiles(t *testing.T, tt *componenttest.Telemetry, id compon
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
 							attribute.String("transport", transport),
+							// The test profiles do not set a sample type.
+							attribute.String("sample_type", ":"),
 						),
 						Value: refused,
 					},

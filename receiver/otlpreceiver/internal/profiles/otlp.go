@@ -38,9 +38,13 @@ func (r *Receiver) Export(ctx context.Context, req pprofileotlp.ExportRequest) (
 		return pprofileotlp.NewExportResponse(), nil
 	}
 
+	// Collect the counts before calling ConsumeProfiles as the data may be
+	// mutated downstream.
+	samplesByType := receiverhelper.ProfileSampleCountsByType(td)
+
 	ctx = r.obsreport.StartProfilesOp(ctx)
 	err := r.nextConsumer.ConsumeProfiles(ctx, td)
-	r.obsreport.EndProfilesOp(ctx, dataFormatProtobuf, numSamples, err)
+	r.obsreport.EndProfilesOpBySampleType(ctx, dataFormatProtobuf, samplesByType, err)
 
 	// Use appropriate status codes for permanent/non-permanent errors
 	// If we return the error straightaway, then the grpc implementation will set status code to Unknown
