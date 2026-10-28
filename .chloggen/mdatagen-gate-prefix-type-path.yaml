@@ -7,7 +7,7 @@ change_type: bug_fix
 component: cmd/mdatagen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Use only the last segment of a `type` that contains `/` in the required feature gate ID prefix.
+note: Fix feature gate ID validation for components whose `type` contains `/`.
 
 # One or more tracking issues or pull requests related to the change
 issues: [16253]
