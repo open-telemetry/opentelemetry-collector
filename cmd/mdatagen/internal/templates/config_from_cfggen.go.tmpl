@@ -14,28 +14,35 @@ import (
 {{- end }}
 
 {{ define "struct" }}
-    {{- range $propName, $prop := .data.Properties | embeddedProps }}
-        {{- if $prop.Description }}
-        {{ $prop.Description | goComment }}
-        {{- end }}
-        {{- if $prop.Deprecated }}
-            {{ printf "Deprecated: [%s] %s" $prop.Deprecated.Since $prop.Deprecated.Note | goComment }}
-        {{- end }}
-        {{- if $prop.GoStruct.Anonymous }}
-            {{ $prop.Ref | publicType }} `mapstructure:",squash"`
-        {{- else }}
-            {{ $prop.GoStruct.FieldName | publicVar }} {{ $prop.Ref | publicType }} `mapstructure:",squash"`
-        {{- end }}
-    {{ end }}
     {{- $parent := .data }}
-    {{- range $propName, $prop := .data.Properties | namedProps }}
-        {{- if $prop.Description }}
-            {{ printf "%s %s" ($prop.GoStruct.FieldName | publicVar) ($prop.Description | uncapitalize) | goComment }}
+    {{- range $item := .data | orderedProps }}
+        {{- $propName := $item.Name }}
+        {{- $prop := $item.Prop }}
+        {{- if $prop.Embed }}
+            {{- if $prop.Description }}
+                {{- if $prop.GoStruct.Anonymous }}
+                    {{ $prop.Description | goComment }}
+                {{- else }}
+                    {{ printf "%s %s" ($prop.GoStruct.FieldName | publicVar) ($prop.Description | uncapitalize) | goComment }}
+                {{- end }}
+            {{- end }}
+            {{- if $prop.Deprecated }}
+                {{ printf "Deprecated: [%s] %s" $prop.Deprecated.Since $prop.Deprecated.Note | goComment }}
+            {{- end }}
+            {{- if $prop.GoStruct.Anonymous }}
+                {{ $prop.Ref | publicType }} `mapstructure:",squash"`
+            {{- else }}
+                {{ $prop.GoStruct.FieldName | publicVar }} {{ $prop.Ref | publicType }} `mapstructure:",squash"`
+            {{- end }}
+        {{- else }}
+            {{- if $prop.Description }}
+                {{ printf "%s %s" ($prop.GoStruct.FieldName | publicVar) ($prop.Description | uncapitalize) | goComment }}
+            {{- end }}
+            {{- if $prop.Deprecated }}
+                {{ printf "Deprecated: [%s] %s" $prop.Deprecated.Since $prop.Deprecated.Note | goComment }}
+            {{- end }}
+            {{ $prop.GoStruct.FieldName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}{{ if shouldOmitEmpty $parent $propName $prop }},omitempty{{ end }}"`
         {{- end }}
-        {{- if $prop.Deprecated }}
-            {{ printf "Deprecated: [%s] %s" $prop.Deprecated.Since $prop.Deprecated.Note | goComment }}
-        {{- end }}
-        {{ $prop.GoStruct.FieldName | publicVar }} {{ mapGoType $prop $propName }} `mapstructure:"{{ $propName }}{{ if shouldOmitEmpty $parent $propName $prop }},omitempty{{ end }}"`
     {{ end }}
 
     {{- if .data.GoStruct.PrivateFields }}
@@ -67,7 +74,7 @@ import (
     {{- end }}
 
 {{ $defValidators := extractValidators $defName $def }}
-{{- if and $defValidators (not (isExternalRef $def.Ref)) }}
+{{- if and (anyValidatorEmits $defValidators) (not (isExternalRef $def.Ref)) }}
     // Validate validates the {{$typeName}} fields according to schema annotations.
     // Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
     {{- if (isPrimitiveSchema $def) }}
@@ -254,7 +261,7 @@ import (
     {{- end -}}
 {{ end }}
 
-{{- if $validators }}
+{{- if anyValidatorEmits $validators }}
     // Validate validates the Config fields.
     func (c *Config) Validate() error {
         var err error
@@ -267,54 +274,57 @@ import (
 {{- end }}
 
 {{- define "structLiteralVars" }}
-    {{- range $propName, $prop := .Properties | embeddedProps }}
+    {{- range $item := . | orderedProps }}
+        {{- $propName := $item.Name }}
+        {{- $prop := $item.Prop }}
         {{- $exprs := mapCustomDefaults $prop $prop.Default }}
         {{- if $exprs }}
-            {{- $varName := camelVar $prop.Ref }}
-            {{- $name := $prop.GoStruct.FieldName | publicVar }}
-            {{- $defaultValue := formatBaseValue $prop $name $prop.Default }}
-            {{ $varName }} := {{ $defaultValue }}
-            {{- range $expr := $exprs }}
-                {{ $varName }}{{ $expr }}
-            {{- end }}
-        {{- end }}
-    {{- end }}
-    {{- range $propName, $prop := .Properties | namedProps }}
-        {{- $exprs := mapCustomDefaults $prop $prop.Default }}
-        {{- if $exprs }}
-            {{- $varName := camelVar $propName }}
-            {{- $defaultValue := formatBaseValue $prop $propName $prop.Default }}
-            {{ $varName }} := {{ $defaultValue }}
-            {{- range $expr := $exprs }}
-                {{ $varName }}{{ $expr }}
+            {{- if $prop.Embed }}
+                {{- $varName := camelVar $prop.Ref }}
+                {{- $name := $prop.GoStruct.FieldName | publicVar }}
+                {{- $defaultValue := formatBaseValue $prop $name $prop.Default }}
+                {{ $varName }} := {{ $defaultValue }}
+                {{- range $expr := $exprs }}
+                    {{ $varName }}{{ $expr }}
+                {{- end }}
+            {{- else }}
+                {{- $varName := camelVar $propName }}
+                {{- $defaultValue := formatBaseValue $prop $propName $prop.Default }}
+                {{ $varName }} := {{ $defaultValue }}
+                {{- range $expr := $exprs }}
+                    {{ $varName }}{{ $expr }}
+                {{- end }}
             {{- end }}
         {{- end }}
     {{- end }}
 {{- end }}
 
 {{- define "structLiteralFields" }}
-    {{- range $propName, $prop := .Properties | embeddedProps }}
-        {{- $name := $prop.GoStruct.FieldName | publicVar }}
-        {{- $defaultValue := formatDefaultValue $prop $name $prop.Default }}
-        {{- if $defaultValue }}
-            {{- $exprs := mapCustomDefaults $prop $prop.Default }}
-            {{- if $exprs }}
-                {{- $varName := camelVar $prop.Ref }}
-                {{ $name }}: {{ wrapDefaultValue $prop $varName }},
-            {{- else }}
-                {{ $name }}: {{ $defaultValue }},
+    {{- range $item := . | orderedProps }}
+        {{- $propName := $item.Name }}
+        {{- $prop := $item.Prop }}
+        {{- if $prop.Embed }}
+            {{- $name := $prop.GoStruct.FieldName | publicVar }}
+            {{- $defaultValue := formatDefaultValue $prop $name $prop.Default }}
+            {{- if $defaultValue }}
+                {{- $exprs := mapCustomDefaults $prop $prop.Default }}
+                {{- if $exprs }}
+                    {{- $varName := camelVar $prop.Ref }}
+                    {{ $name }}: {{ wrapDefaultValue $prop $varName }},
+                {{- else }}
+                    {{ $name }}: {{ $defaultValue }},
+                {{- end }}
             {{- end }}
-        {{- end }}
-    {{- end }}
-    {{- range $propName, $prop := .Properties | namedProps }}
-        {{- $defaultValue := formatDefaultValue $prop $propName $prop.Default }}
-        {{- if $defaultValue }}
-            {{- $exprs := mapCustomDefaults $prop $prop.Default }}
-            {{- if $exprs }}
-                {{- $varName := camelVar $propName }}
-                {{ $prop.GoStruct.FieldName | publicVar }}: {{ wrapDefaultValue $prop $varName }},
-            {{- else }}
-                {{ $prop.GoStruct.FieldName | publicVar }}: {{ $defaultValue }},
+        {{- else }}
+            {{- $defaultValue := formatDefaultValue $prop $propName $prop.Default }}
+            {{- if $defaultValue }}
+                {{- $exprs := mapCustomDefaults $prop $prop.Default }}
+                {{- if $exprs }}
+                    {{- $varName := camelVar $propName }}
+                    {{ $prop.GoStruct.FieldName | publicVar }}: {{ wrapDefaultValue $prop $varName }},
+                {{- else }}
+                    {{ $prop.GoStruct.FieldName | publicVar }}: {{ $defaultValue }},
+                {{- end }}
             {{- end }}
         {{- end }}
     {{- end }}

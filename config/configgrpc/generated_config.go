@@ -185,9 +185,6 @@ func NewDefaultKeepaliveServerParameters() KeepaliveServerParameters {
 
 // ServerConfig defines common settings for a gRPC server configuration.
 type ServerConfig struct {
-	// Represents a network endpoint address.
-	NetAddr confignet.AddrConfig `mapstructure:",squash"`
-
 	// Auth authentication for this receiver
 	Auth configoptional.Optional[configauth.Config] `mapstructure:"auth,omitempty"`
 
@@ -217,6 +214,9 @@ type ServerConfig struct {
 	// WriteBufferSize writeBufferSize for gRPC server. See grpc.WriteBufferSize.
 	// (https://godoc.org/google.golang.org/grpc#WriteBufferSize).
 	WriteBufferSize int `mapstructure:"write_buffer_size,omitempty"`
+
+	// NetAddr represents a network endpoint address.
+	NetAddr confignet.AddrConfig `mapstructure:",squash"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -248,9 +248,9 @@ func NewDefaultServerConfig() ServerConfig {
 	addrConfig := confignet.NewDefaultAddrConfig()
 	addrConfig.Transport = "tcp"
 	return ServerConfig{
-		NetAddr:   addrConfig,
 		Auth:      configoptional.None[configauth.Config](),
 		Keepalive: configoptional.Some(NewDefaultKeepaliveServerConfig()),
 		TLS:       configoptional.None[configtls.ServerConfig](),
+		NetAddr:   addrConfig,
 	}
 }

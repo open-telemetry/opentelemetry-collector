@@ -2213,6 +2213,158 @@ func TestExtractValidators_RequiredAndCustomValidator(t *testing.T) {
 	require.Equal(t, "validateHTTPClient", result[1].CustomValidator)
 }
 
+func TestExtractValidators_NestedObjectPropertyCustomValidatorNotDuplicated(t *testing.T) {
+	nonNil := new(CustomValidatorConfig)
+	protocols := &ConfigMetadata{
+		Type:     ObjectType,
+		GoStruct: GoStructConfig{CustomValidator: nonNil},
+		Properties: map[string]*ConfigMetadata{
+			"grpc": {Type: "string"},
+		},
+	}
+	md := &ConfigMetadata{
+		Type:     "object",
+		Required: []string{"protocols"},
+		Properties: map[string]*ConfigMetadata{
+			"protocols": protocols,
+		},
+	}
+
+	result := ExtractValidators("config", md)
+	require.Len(t, result, 1)
+	require.Equal(t, "protocols", result[0].FieldName)
+	require.True(t, result[0].Rules.Required)
+	require.Empty(t, result[0].CustomValidator)
+
+	defResult := ExtractValidators("protocols", protocols)
+	require.Len(t, defResult, 1)
+	require.Equal(t, "validateProtocols", defResult[0].CustomValidator)
+	require.True(t, defResult[0].IsType)
+
+	// Regression check for the bug this test's scenario reproduces: the
+	// "protocols" entry is Required on a non-pointer object field, which the
+	// requiredValidator template has no branch for, so it renders no code.
+	require.False(t, AnyValidatorEmits(result), "required-only validator on a non-pointer object field must not be treated as emitting code")
+	require.True(t, AnyValidatorEmits(defResult), "custom validator must be treated as emitting code")
+}
+
+func TestValidator_RequiredCheckEmitted(t *testing.T) {
+	tests := []struct {
+		name      string
+		validator Validator
+		expected  bool
+	}{
+		{
+			name:      "pointer field",
+			validator: Validator{IsPointer: true, FieldType: ObjectType},
+			expected:  true,
+		},
+		{
+			name:      "string field",
+			validator: Validator{FieldType: StringType},
+			expected:  true,
+		},
+		{
+			name:      "slice field",
+			validator: Validator{FieldType: SliceType},
+			expected:  true,
+		},
+		{
+			name:      "map field",
+			validator: Validator{FieldType: MapType},
+			expected:  true,
+		},
+		{
+			name:      "non-pointer object field",
+			validator: Validator{FieldType: ObjectType},
+			expected:  false,
+		},
+		{
+			name:      "non-pointer numeric field",
+			validator: Validator{FieldType: IntType},
+			expected:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, tt.validator.RequiredCheckEmitted())
+		})
+	}
+}
+
+func TestValidator_Emits(t *testing.T) {
+	tests := []struct {
+		name      string
+		validator Validator
+		expected  bool
+	}{
+		{
+			name:      "custom validator always emits",
+			validator: Validator{CustomValidator: "validateFoo"},
+			expected:  true,
+		},
+		{
+			name:      "value rule emits regardless of field type",
+			validator: Validator{FieldType: ObjectType, Rules: ValidationRules{MinLength: new(1)}},
+			expected:  true,
+		},
+		{
+			name:      "required string field emits",
+			validator: Validator{FieldType: StringType, Rules: ValidationRules{Required: true}},
+			expected:  true,
+		},
+		{
+			name:      "required non-pointer object field does not emit",
+			validator: Validator{FieldType: ObjectType, Rules: ValidationRules{Required: true}},
+			expected:  false,
+		},
+		{
+			name:      "required pointer object field emits",
+			validator: Validator{FieldType: ObjectType, IsPointer: true, Rules: ValidationRules{Required: true}},
+			expected:  true,
+		},
+		{
+			name:      "no rules and no custom validator does not emit",
+			validator: Validator{FieldType: ObjectType},
+			expected:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, tt.validator.Emits())
+		})
+	}
+}
+
+func TestAnyValidatorEmits(t *testing.T) {
+	require.False(t, AnyValidatorEmits(nil))
+	require.False(t, AnyValidatorEmits([]Validator{}))
+
+	require.False(t, AnyValidatorEmits([]Validator{
+		{FieldName: "protocols", FieldType: ObjectType, Rules: ValidationRules{Required: true}},
+	}), "a slice with only no-op validators must report no emission")
+
+	require.True(t, AnyValidatorEmits([]Validator{
+		{FieldName: "protocols", FieldType: ObjectType, Rules: ValidationRules{Required: true}},
+		{FieldName: "endpoint", FieldType: StringType, Rules: ValidationRules{Required: true}},
+	}), "a slice mixing a no-op validator with an emitting one must report emission")
+}
+
+func TestNewCfgFns_AnyValidatorEmits(t *testing.T) {
+	fns := NewCfgFns("", "")
+	anyValidatorEmits := fns["anyValidatorEmits"].(func([]Validator) bool)
+
+	require.False(t, anyValidatorEmits(nil))
+	require.False(t, anyValidatorEmits([]Validator{
+		{FieldType: ObjectType, Rules: ValidationRules{Required: true}},
+	}))
+	require.True(t, anyValidatorEmits([]Validator{
+		{FieldType: StringType, Rules: ValidationRules{Required: true}},
+	}))
+}
+
 func TestExtractValidators_RootCustomValidatorLast(t *testing.T) {
 	md := &ConfigMetadata{
 		Type:     "object",
@@ -2995,6 +3147,94 @@ func TestMapCustomDefaults_NestedObjectOverrides(t *testing.T) {
 		`.Host = "localhost"`,
 		`.Port = 9090`,
 	}, exprs)
+}
+
+func TestMapCustomDefaults_StableOrderAcrossRuns(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"zulu":  {Type: "string"},
+			"alpha": {Type: "string"},
+			"mike":  {Type: "string"},
+			"bravo": {Type: "string"},
+		},
+	}
+	input := defaultValue(map[string]any{
+		"zulu":  "z",
+		"alpha": "a",
+		"mike":  "m",
+		"bravo": "b",
+	})
+
+	want := []string{`.Alpha = "a"`, `.Bravo = "b"`, `.Mike = "m"`, `.Zulu = "z"`}
+	for range 20 {
+		require.Equal(t, want, MapCustomDefaults(md, input, "", ""))
+	}
+}
+
+func TestMapCustomDefaults_NestedStructFieldOverride(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"server_config": {
+				Type: "object",
+				Ref:  "go.opentelemetry.io/collector/config/confighttp.server_config",
+				Properties: map[string]*ConfigMetadata{
+					"read_header_timeout": {
+						Type:     "string",
+						Default:  "1m",
+						GoStruct: GoStructConfig{Type: "time.Duration"},
+					},
+					"write_timeout": {
+						Type:     "string",
+						Default:  "30s",
+						GoStruct: GoStructConfig{Type: "time.Duration"},
+					},
+				},
+			},
+		},
+	}
+
+	exprs := MapCustomDefaults(md, defaultValue(map[string]any{
+		"server_config": map[string]any{"read_header_timeout": "0s"},
+	}), "go.opentelemetry.io/collector", "")
+
+	require.Equal(t, []string{
+		".ServerConfig.ReadHeaderTimeout = 0",
+	}, exprs)
+}
+
+func TestMapCustomDefaults_ExplicitNullOverride(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"tls": {
+				Type:       "object",
+				Ref:        "go.opentelemetry.io/collector/config/configtls.server_config",
+				IsOptional: true,
+				Properties: map[string]*ConfigMetadata{
+					"min_version": {Type: "string", Default: "1.2"},
+				},
+			},
+		},
+	}
+
+	exprs := MapCustomDefaults(md, defaultValue(map[string]any{"tls": nil}), "go.opentelemetry.io/collector", "")
+
+	require.Equal(t, []string{".TLS = configoptional.None[configtls.ServerConfig]()"}, exprs)
+}
+
+func TestMapCustomDefaults_ExplicitNullOverride_RequiredFieldPanics(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"host": {Type: "string"},
+		},
+	}
+
+	require.Panics(t, func() {
+		MapCustomDefaults(md, defaultValue(map[string]any{"host": nil}), "", "")
+	})
 }
 
 func TestMapCustomDefaults_SliceOfObjectsOverrides(t *testing.T) {

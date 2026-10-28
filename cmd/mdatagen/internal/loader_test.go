@@ -608,6 +608,7 @@ func TestLoadMetadata(t *testing.T) {
 				},
 				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",
 				ShortFolderName: "sample",
+				GithubLabel:     "receiver/sample",
 				Tests:           Tests{Host: "newMdatagenNopHost()"},
 				FeatureGates: []FeatureGate{
 					{
@@ -641,6 +642,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				GithubLabel:          "receiver/testdata",
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -661,6 +663,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				GithubLabel:          "receiver/testdata",
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -679,6 +682,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				GithubLabel:          "receiver/testdata",
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -772,6 +776,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				GithubLabel:          "receiver/testdata",
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -791,6 +796,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				GithubLabel:          "receiver/testdata",
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -811,6 +817,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				GithubLabel:          "receiver/testdata",
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -831,6 +838,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				GithubLabel:          "receiver/testdata",
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -850,6 +858,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
+				GithubLabel:          "receiver/testdata",
 				Tests:                Tests{Host: "newMdatagenNopHost()"},
 				Status: &Status{
 					Class: "receiver",
@@ -950,4 +959,47 @@ func TestVersionedMetricName(t *testing.T) {
 	// Versioned metric - Name should be auto-populated from key
 	versioned := md.Metrics["system.cpu.time@v1"]
 	require.True(t, versioned.Versioned)
+}
+
+func TestGithubLabel(t *testing.T) {
+	tests := []struct {
+		name         string
+		labelsFile   string
+		componentDir string
+		want         string
+	}{
+		{
+			name:         "no labels file",
+			componentDir: "extension/storage/filestorage",
+			want:         "extension/filestorage",
+		},
+		{
+			name:         "label from labels file",
+			labelsFile:   "# This file is auto-generated. Do not edit manually.\nextension/storage/filestorage extension/storage/filestorage\n",
+			componentDir: "extension/storage/filestorage",
+			want:         "extension/storage/filestorage",
+		},
+		{
+			name:         "component missing from labels file",
+			labelsFile:   "extension/storage/dbstorage extension/storage/dbstorage\n",
+			componentDir: "extension/storage/filestorage",
+			want:         "extension/filestorage",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rootDir := t.TempDir()
+			require.NoError(t, os.WriteFile(filepath.Join(rootDir, "go.mod"), []byte("module example.com/root\n"), 0o600))
+			if tt.labelsFile != "" {
+				require.NoError(t, os.MkdirAll(filepath.Join(rootDir, ".github"), 0o700))
+				require.NoError(t, os.WriteFile(filepath.Join(rootDir, ".github", "component_labels.txt"), []byte(tt.labelsFile), 0o600))
+			}
+			componentDir := filepath.Join(rootDir, filepath.FromSlash(tt.componentDir))
+			require.NoError(t, os.MkdirAll(componentDir, 0o700))
+
+			got, err := githubLabel(componentDir, "extension", "filestorage")
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
+		})
+	}
 }
