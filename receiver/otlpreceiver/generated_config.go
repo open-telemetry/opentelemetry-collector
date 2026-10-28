@@ -91,13 +91,6 @@ type Config struct {
 	_ struct{}
 }
 
-// Validate validates the Config fields.
-func (c *Config) Validate() error {
-	var err error
-
-	return err
-}
-
 func createDefaultConfig() component.Config {
 	return &Config{
 		Protocols: NewDefaultProtocols(),
