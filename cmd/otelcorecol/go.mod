@@ -284,6 +284,8 @@ replace go.opentelemetry.io/collector/exporter/otlphttpexporter => ../../exporte
 
 replace go.opentelemetry.io/collector/extension => ../../extension
 
+replace go.opentelemetry.io/collector/extension/diskqueueextension => ../../extension/diskqueueextension
+
 replace go.opentelemetry.io/collector/extension/extensionauth => ../../extension/extensionauth
 
 replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => ../../extension/extensionauth/extensionauthtest
@@ -365,5 +367,3 @@ replace go.opentelemetry.io/collector/service => ../../service
 replace go.opentelemetry.io/collector/service/hostcapabilities => ../../service/hostcapabilities
 
 replace go.opentelemetry.io/collector/service/telemetry/telemetrytest => ../../service/telemetry/telemetrytest
-
-replace go.opentelemetry.io/collector/extension/diskqueueextension => ../../extension/diskqueueextension
