@@ -8,8 +8,9 @@ import (
 
 // Config defines the extension ID for a middleware component.
 type Config struct {
-	// Specifies the name of the extension to use.
-	ID component.ID `mapstructure:"id"`
+	// ID specifies the name of the extension to use.
+	ID component.ID `mapstructure:"id,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
