@@ -92,7 +92,7 @@ func convertMetadataToJSONSchema(md *ConfigMetadata, jsonSchema *JSONSchema) *JS
 			jsonSchema.Default = raw
 		}
 	}
-	jsonSchema.Deprecated = md.Deprecated
+	jsonSchema.Deprecated = md.Deprecated != nil
 	jsonSchema.Enum = md.Enum
 	jsonSchema.Required = md.Required
 	jsonSchema.Pattern = md.Pattern

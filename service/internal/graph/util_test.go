@@ -10,8 +10,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/xconnector"
@@ -20,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/xexporter"
-	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/processor"
@@ -311,9 +309,5 @@ func (e errComponent) Shutdown(context.Context) error {
 }
 
 func setObsConsumerGateForTest(t *testing.T, enabled bool) {
-	initial := metadata.TelemetryNewPipelineTelemetryFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TelemetryNewPipelineTelemetryFeatureGate.ID(), enabled))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.TelemetryNewPipelineTelemetryFeatureGate.ID(), initial))
-	})
+	testutil.SetFeatureGate(t, metadata.TelemetryNewPipelineTelemetryFeatureGate.ID(), enabled)
 }

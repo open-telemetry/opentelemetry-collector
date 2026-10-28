@@ -11,7 +11,6 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"slices"
-	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
@@ -19,13 +18,10 @@ import (
 	"golang.org/x/net/publicsuffix"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp/internal/metadata"
-	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -33,113 +29,14 @@ const (
 	headerContentEncoding = "Content-Encoding"
 )
 
-// ClientConfig defines settings for creating an HTTP client.
-type ClientConfig struct {
-	// The target URL to send data to (e.g.: http://some.url:9411/v1/traces).
-	Endpoint string `mapstructure:"endpoint,omitempty"`
-
-	// ProxyURL setting for the collector
-	ProxyURL string `mapstructure:"proxy_url,omitempty"`
-
-	// TLS struct exposes TLS client configuration.
-	TLS configtls.ClientConfig `mapstructure:"tls,omitempty"`
-
-	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
-	// Default is 0.
-	ReadBufferSize int `mapstructure:"read_buffer_size,omitempty"`
-
-	// WriteBufferSize for HTTP client. See http.Transport.WriteBufferSize.
-	// Default is 0.
-	WriteBufferSize int `mapstructure:"write_buffer_size,omitempty"`
-
-	// Timeout parameter configures `http.Client.Timeout`.
-	// Default is 0 (unlimited).
-	Timeout time.Duration `mapstructure:"timeout,omitempty"`
-
-	// Additional headers attached to each HTTP request sent by the client.
-	// Existing header values are overwritten if collision happens.
-	// Header values are opaque since they may be sensitive.
-	Headers configopaque.MapList `mapstructure:"headers,omitempty"`
-
-	// Auth configuration for outgoing HTTP calls.
-	Auth configoptional.Optional[configauth.Config] `mapstructure:"auth,omitempty"`
-
-	// The compression key for supported compression types within collector.
-	Compression configcompression.Type `mapstructure:"compression,omitempty"`
-
-	// Advanced configuration options for the Compression
-	CompressionParams configcompression.CompressionParams `mapstructure:"compression_params,omitempty"`
-
-	// MaxConnsPerHost limits the total number of connections per host, including connections in the dialing,
-	// active, and idle states. Default is 0 (unlimited).
-	MaxConnsPerHost int `mapstructure:"max_conns_per_host,omitempty"`
-
-	// This is needed in case you run into
-	// https://github.com/golang/go/issues/59690
-	// https://github.com/golang/go/issues/36026
-	// HTTP2ReadIdleTimeout if the connection has been idle for the configured value send a ping frame for health check
-	// 0s means no health check will be performed.
-	HTTP2ReadIdleTimeout time.Duration `mapstructure:"http2_read_idle_timeout,omitempty"`
-	// HTTP2PingTimeout if there's no response to the ping within the configured value, the connection will be closed.
-	// If not set or set to 0, it defaults to 15s.
-	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout,omitempty"`
-	// Cookies configures the cookie management of the HTTP client.
-	Cookies configoptional.Optional[CookiesConfig] `mapstructure:"cookies,omitempty"`
-
-	// Enabling ForceAttemptHTTP2 forces the HTTP transport to use the HTTP/2 protocol.
-	// By default, this is set to true.
-	// NOTE: HTTP/2 does not support settings such as MaxConnsPerHost, MaxIdleConnsPerHost and MaxIdleConns.
-	ForceAttemptHTTP2 bool `mapstructure:"force_attempt_http2,omitempty"`
-
-	// Middlewares are used to add custom functionality to the HTTP client.
-	// Middleware handlers are called in the order they appear in this list,
-	// with the first middleware becoming the outermost handler.
-	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
-
-	// Keepalive configuration. Unmarshal folds this section into the deprecated
-	// fields below, which remain the source of truth during their deprecation
-	// window, and always resets it to None. A value visible to ToClient was
-	// therefore set programmatically after unmarshaling (or the config was
-	// never unmarshaled) and takes precedence over the deprecated fields.
-	Keepalive configoptional.Optional[KeepaliveClientConfig] `mapstructure:"keepalive,omitempty"`
-
-	// Deprecated: [v0.160.0] use Keepalive.IdleConnTimeout instead.
-	IdleConnTimeout time.Duration `mapstructure:"idle_conn_timeout,omitempty"`
-	// Deprecated: [v0.160.0] use Keepalive.MaxIdleConns instead.
-	MaxIdleConns int `mapstructure:"max_idle_conns,omitempty"`
-	// Deprecated: [v0.160.0] use Keepalive.MaxIdleConnsPerHost instead.
-	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host,omitempty"`
-	// Deprecated: [v0.160.0] set 'keepalive::enabled' to false to disable keep-alives.
-	DisableKeepAlives bool `mapstructure:"disable_keep_alives,omitempty"`
-
+type privateClientConfigFields struct {
 	// deprecationWarnings records use of deprecated fields observed while
 	// unmarshaling; ToClient logs them, as no logger is available here.
 	deprecationWarnings []string
-
-	// prevent unkeyed literal initialization
-	_ struct{}
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
 type CookiesConfig struct {
-	_ struct{}
-}
-
-// KeepaliveClientConfig describes the keepalive configuration.
-type KeepaliveClientConfig struct {
-	// IdleConnTimeout is the maximum amount of time an idle (keep-alive) connection will remain open before closing itself.
-	// By default, it is set to 90 seconds.
-	IdleConnTimeout time.Duration `mapstructure:"idle_conn_timeout"`
-
-	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
-	// By default, it is set to 100. Zero means no limit.
-	MaxIdleConns int `mapstructure:"max_idle_conns"`
-
-	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
-	// If zero, [net/http.DefaultMaxIdleConnsPerHost] is used.
-	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host,omitempty"`
-
-	// prevent unkeyed literal initialization
 	_ struct{}
 }
 

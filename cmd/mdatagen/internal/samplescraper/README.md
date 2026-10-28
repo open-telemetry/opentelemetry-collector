@@ -23,14 +23,15 @@ This scraper is used for testing purposes to check the output of mdatagen.
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `collection_interval` | duration | 1m | no | Sets how frequently the scraper is scheduled. |
-| `component` | string |  | no | Identifies the scraper, used for telemetry and logging. |
 | `initial_delay` | duration | 1s | no | Sets the initial start delay for the scraper, any non positive value is assumed to be immediately. |
-| `job_name` | string | test_job | **yes** | Name of the scrape job, used to identify the source in telemetry. |
-| `log_level` | string (one of: debug, info, warn, error) | info | no | Logging level for the scraper. |
+| `timeout` | duration | 0 | no | An optional value used to set scraper's context deadline. |
 | `metrics` | object (see [metrics](#metrics)) |  | no | MetricsConfig provides config for sample metrics. |
 | `resource_attributes` | object (see [resource_attributes](#resource_attributes)) |  | no | ResourceAttributesConfig provides config for sample resource attributes. |
+| `component` | string |  | no | Identifies the scraper, used for telemetry and logging. |
+| `job_name` | string | test_job | **yes** | Name of the scrape job, used to identify the source in telemetry. |
 | `targets` | []object | [{}] | **yes** | List of targets to scrape metrics from. |
-| `timeout` | duration | 0 | no | An optional value used to set scraper's context deadline. |
+| `log_level` | string (one of: debug, info, warn, error) | info | no | Logging level for the scraper. |
+| `protocol` | string (one of: http, tcp, smtp, ftp) | http | no | Protocol used when connecting to scrape targets, reused from samplepkg. |
 
 ### <a id="metrics"></a>metrics
 | Setting | Type | Default | Required | Description |
@@ -47,9 +48,9 @@ This scraper is used for testing purposes to check the output of mdatagen.
 ### <a id="metrics.default.metric"></a>metrics.default.metric
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
+| `enabled` | bool | true | no |  |
 | `aggregation_strategy` | string (one of: sum, avg, min, max) | sum | no |  |
 | `attributes` | []string (one of: string_attr, state, enum_attr, slice_attr, map_attr) | [string_attr, state, enum_attr, slice_attr, map_attr] | no |  |
-| `enabled` | bool | true | no |  |
 
 ### <a id="metrics.default.metric.to_be_removed"></a>metrics.default.metric.to_be_removed
 | Setting | Type | Default | Required | Description |
@@ -59,37 +60,37 @@ This scraper is used for testing purposes to check the output of mdatagen.
 ### <a id="metrics.metric.input_type"></a>metrics.metric.input_type
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
+| `enabled` | bool | true | no |  |
 | `aggregation_strategy` | string (one of: sum, avg, min, max) | sum | no |  |
 | `attributes` | []string (one of: string_attr, state, enum_attr, slice_attr, map_attr) | [string_attr, state, enum_attr, slice_attr, map_attr] | no |  |
-| `enabled` | bool | true | no |  |
 
 ### <a id="metrics.optional.metric"></a>metrics.optional.metric
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
+| `enabled` | bool | false | no |  |
 | `aggregation_strategy` | string (one of: sum, avg, min, max) | avg | no |  |
 | `attributes` | []string (one of: string_attr, boolean_attr, boolean_attr2) | [string_attr, boolean_attr, boolean_attr2] | no |  |
-| `enabled` | bool | false | no |  |
 
 ### <a id="metrics.optional.metric.empty_unit"></a>metrics.optional.metric.empty_unit
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
+| `enabled` | bool | false | no |  |
 | `aggregation_strategy` | string (one of: sum, avg, min, max) | avg | no |  |
 | `attributes` | []string (one of: string_attr, boolean_attr) | [string_attr, boolean_attr] | no |  |
-| `enabled` | bool | false | no |  |
 
 ### <a id="metrics.optional.metric.to_be_removed"></a>metrics.optional.metric.to_be_removed
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
+| `enabled` | bool | false | no |  |
 | `aggregation_strategy` | string (one of: sum, avg, min, max) | avg | no |  |
 | `attributes` | []string (one of: string_attr) | [string_attr] | no |  |
-| `enabled` | bool | false | no |  |
 
 ### <a id="metrics.reaggregate.metric"></a>metrics.reaggregate.metric
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
+| `enabled` | bool | true | no |  |
 | `aggregation_strategy` | string (one of: sum, avg, min, max) | avg | no |  |
 | `attributes` | []string (one of: string_attr, boolean_attr) | [string_attr, boolean_attr] | no |  |
-| `enabled` | bool | true | no |  |
 
 ### <a id="metrics.system.cpu.time"></a>metrics.system.cpu.time
 | Setting | Type | Default | Required | Description |
@@ -112,57 +113,57 @@ This scraper is used for testing purposes to check the output of mdatagen.
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `enabled` | bool | true | no |  |
-| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 | `metrics_include` | []object |  | no | Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted. |
+| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 
 ### <a id="resource_attributes.optional.resource.attr"></a>resource_attributes.optional.resource.attr
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `enabled` | bool | false | no |  |
-| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 | `metrics_include` | []object |  | no | Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted. |
+| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 
 ### <a id="resource_attributes.slice.resource.attr"></a>resource_attributes.slice.resource.attr
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `enabled` | bool | true | no |  |
-| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 | `metrics_include` | []object |  | no | Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted. |
+| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 
 ### <a id="resource_attributes.string.enum.resource.attr"></a>resource_attributes.string.enum.resource.attr
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `enabled` | bool | true | no |  |
-| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 | `metrics_include` | []object |  | no | Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted. |
+| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 
 ### <a id="resource_attributes.string.resource.attr"></a>resource_attributes.string.resource.attr
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `enabled` | bool | true | no |  |
-| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 | `metrics_include` | []object |  | no | Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted. |
+| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 
 ### <a id="resource_attributes.string.resource.attr_disable_warning"></a>resource_attributes.string.resource.attr_disable_warning
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `enabled` | bool | true | no |  |
-| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 | `metrics_include` | []object |  | no | Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted. |
+| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 
 ### <a id="resource_attributes.string.resource.attr_remove_warning"></a>resource_attributes.string.resource.attr_remove_warning
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `enabled` | bool | false | no |  |
-| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 | `metrics_include` | []object |  | no | Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted. |
+| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 
 ### <a id="resource_attributes.string.resource.attr_to_be_removed"></a>resource_attributes.string.resource.attr_to_be_removed
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `enabled` | bool | true | no |  |
-| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 | `metrics_include` | []object |  | no | Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted. |
+| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 <!-- end config autogenerated section -->
 
 ## Warnings

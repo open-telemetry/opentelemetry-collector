@@ -25,7 +25,7 @@ func exporterSettings(set processor.Settings) exporter.Settings {
 }
 
 // queueOptions returns the exporterhelper options shared by every signal.
-func queueOptions(cfg *Config, next consumer.Capabilities) []exporterhelper.Option {
+func queueOptions(cfg *Config, next consumer.Capabilities, set processor.Settings) []exporterhelper.Option {
 	var mutates bool
 	switch {
 	case cfg.Batch.HasValue():
@@ -39,21 +39,24 @@ func queueOptions(cfg *Config, next consumer.Capabilities) []exporterhelper.Opti
 		exporterhelper.WithQueue(configoptional.Some(*cfg)),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: mutates}),
+		exporterhelper.WithTracer(
+			set.TracerProvider.Tracer("go.opentelemetry.io/collector/processor/queuebatchprocessor"),
+		),
 	}
 }
 
 func newTracesProcessor(ctx context.Context, set processor.Settings, cfg *Config, next consumer.Traces) (processor.Traces, error) {
-	return exporterhelper.NewTraces(ctx, exporterSettings(set), cfg, next.ConsumeTraces, queueOptions(cfg, next.Capabilities())...)
+	return exporterhelper.NewTraces(ctx, exporterSettings(set), cfg, next.ConsumeTraces, queueOptions(cfg, next.Capabilities(), set)...)
 }
 
 func newMetricsProcessor(ctx context.Context, set processor.Settings, cfg *Config, next consumer.Metrics) (processor.Metrics, error) {
-	return exporterhelper.NewMetrics(ctx, exporterSettings(set), cfg, next.ConsumeMetrics, queueOptions(cfg, next.Capabilities())...)
+	return exporterhelper.NewMetrics(ctx, exporterSettings(set), cfg, next.ConsumeMetrics, queueOptions(cfg, next.Capabilities(), set)...)
 }
 
 func newLogsProcessor(ctx context.Context, set processor.Settings, cfg *Config, next consumer.Logs) (processor.Logs, error) {
-	return exporterhelper.NewLogs(ctx, exporterSettings(set), cfg, next.ConsumeLogs, queueOptions(cfg, next.Capabilities())...)
+	return exporterhelper.NewLogs(ctx, exporterSettings(set), cfg, next.ConsumeLogs, queueOptions(cfg, next.Capabilities(), set)...)
 }
 
 func newProfilesProcessor(ctx context.Context, set processor.Settings, cfg *Config, next xconsumer.Profiles) (xprocessor.Profiles, error) {
-	return xexporterhelper.NewProfiles(ctx, exporterSettings(set), cfg, next.ConsumeProfiles, queueOptions(cfg, next.Capabilities())...)
+	return xexporterhelper.NewProfiles(ctx, exporterSettings(set), cfg, next.ConsumeProfiles, queueOptions(cfg, next.Capabilities(), set)...)
 }
