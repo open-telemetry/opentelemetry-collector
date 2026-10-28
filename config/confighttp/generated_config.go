@@ -3,8 +3,7 @@
 package confighttp
 
 import (
-	"time"
-
+	"errors"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configmiddleware"
@@ -12,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"time"
 )
 
 type AuthConfig struct {
@@ -28,6 +28,9 @@ type AuthConfig struct {
 
 // ClientConfig defines settings for creating an HTTP client.
 type ClientConfig struct {
+	// DialerMiddleware dialer middleware is a handler customizing how the client will dial connections over TCP.
+	DialerMiddleware configoptional.Optional[configmiddleware.Config] `mapstructure:"dialer_middleware,omitempty"`
+
 	// Endpoint is the target URL to send data to (e.g.: http://some.url:9411/v1/traces).
 	Endpoint string `mapstructure:"endpoint,omitempty"`
 
