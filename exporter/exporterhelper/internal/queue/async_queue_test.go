@@ -132,9 +132,9 @@ func TestAsyncMemoryQueueReleasesReferenceOnDone(t *testing.T) {
 	require.NoError(t, ac.Shutdown(context.Background()))
 }
 
-// A consumer already holds the element, so a canceled Offer waits for the actual outcome and the
-// queue keeps the reference until the request is reported as done.
-func TestAsyncMemoryWaitForResultQueueReleasesReferenceOnDone(t *testing.T) {
+// With WaitForResult the caller stays blocked until the element is done, so the queue takes no
+// reference of its own, not even once the caller has given up and a consumer holds the element.
+func TestAsyncMemoryWaitForResultQueueTakesNoReference(t *testing.T) {
 	set := newSettings(request.SizerTypeItems, 100)
 	set.WaitForResult = true
 	rc := set.ReferenceCounter.(*fakeReferenceCounter)
@@ -152,7 +152,7 @@ func TestAsyncMemoryWaitForResultQueueReleasesReferenceOnDone(t *testing.T) {
 
 	done := <-dones
 	cancel()
-	assert.EqualValues(t, 1, rc.count(), "reference released while the element was still in flight")
+	assert.EqualValues(t, 0, rc.count(), "the blocked caller already keeps the element alive")
 
 	done.OnDone(nil)
 	require.NoError(t, <-offerErr)
@@ -199,8 +199,7 @@ func TestAsyncMemoryWaitForResultQueueCancelledNotConsumed(t *testing.T) {
 	}
 	require.NoError(t, ac.Shutdown(context.Background()))
 
-	// Shutdown waits for the consumers, so every reference the queue took must be released by now,
-	// including the one for the abandoned element that never reached a consumer.
+	// Neither the abandoned element nor the consumed one made the queue take a reference.
 	assert.Zero(t, rc.count())
 }
 

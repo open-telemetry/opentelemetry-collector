@@ -39,12 +39,16 @@ type memoryQueue[T request.Request] struct {
 // capacity is the capacity of the queue.
 func newMemoryQueue[T request.Request](set Settings[T]) readableQueue[T] {
 	sq := &memoryQueue[T]{
-		refCounter:      set.ReferenceCounter,
 		sizer:           request.NewSizer(set.SizerType),
 		cap:             set.Capacity,
 		items:           &linkedQueue[T]{},
 		waitForResult:   set.WaitForResult,
 		blockOnOverflow: set.BlockOnOverflow,
+	}
+	if !set.WaitForResult {
+		// With WaitForResult the caller stays blocked until the element is done, so it keeps the
+		// element alive for the queue and no reference of its own is needed.
+		sq.refCounter = set.ReferenceCounter
 	}
 	sq.donePool.New = func() any { return &blockingDone[T]{ch: make(chan error, 1)} }
 	sq.hasMoreElements = sync.NewCond(&sq.mu)
@@ -93,8 +97,6 @@ func (mq *memoryQueue[T]) Offer(ctx context.Context, el T) error {
 			return doneErr
 		case <-ctx.Done():
 			if mq.abandon(n, done) {
-				// No consumer will pick the element up, so onDone never runs for it.
-				mq.releaseElement(done)
 				return ctx.Err()
 			}
 			// A consumer already took the element, so it is going to be delivered either way. Report
@@ -125,15 +127,6 @@ func (mq *memoryQueue[T]) abandon(n *node[T], bd *blockingDone[T]) bool {
 func (mq *memoryQueue[T]) freeCapacity(bd *blockingDone[T]) {
 	mq.size -= bd.elSize
 	mq.hasMoreSpace.Signal()
-}
-
-// releaseElement drops the queue's reference to the element the done reports for.
-func (mq *memoryQueue[T]) releaseElement(bd *blockingDone[T]) {
-	if mq.refCounter != nil {
-		mq.refCounter.Unref(bd.el)
-	}
-	var zero T
-	bd.el = zero
 }
 
 func (mq *memoryQueue[T]) add(ctx context.Context, el T, elSize int64) (*node[T], *blockingDone[T], error) {
@@ -176,7 +169,8 @@ func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool)
 	for {
 		if mq.items.hasElements() {
 			// An abandoned element must not reach a consumer, and nothing here may read the request
-			// itself, since the caller that gave up on it has already released it.
+			// itself: the queue holds no reference in this mode, so the caller that gave up on it
+			// may have released it already.
 			if mq.waitForResult && mq.items.head.done.(*blockingDone[T]).abandoned {
 				mq.items.pop()
 				continue
@@ -197,7 +191,11 @@ func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool)
 }
 
 func (mq *memoryQueue[T]) onDone(bd *blockingDone[T], err error) {
-	mq.releaseElement(bd)
+	if mq.refCounter != nil {
+		mq.refCounter.Unref(bd.el)
+	}
+	var zero T
+	bd.el = zero
 
 	mq.mu.Lock()
 	defer mq.mu.Unlock()
