@@ -473,7 +473,7 @@ telemetry:
 feature_gates:
   - # Required: unique identifier for the feature gate. Unless
     # skip_strict_validation is true on this gate, must be prefixed with
-    # "<status.class>.<type>." so gates are namespaced to their component.
+    # "<status.class>.<last segment of type>." so gates are namespaced to their component.
     id: <gate.id>
     # Required: description of the feature gate.
     description: string
