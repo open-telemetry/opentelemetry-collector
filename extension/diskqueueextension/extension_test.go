@@ -156,8 +156,8 @@ func TestOutOfOrderCompletionReplaysAfterRestart(t *testing.T) {
 	for _, payload := range []string{"one", "two", "three"} {
 		require.NoError(t, c.Write(queue.WriteOp{Payload: []byte(payload), Size: 1}))
 	}
-	_ = <-c.Peek()
-	_ = <-c.Peek()
+	<-c.Peek()
+	<-c.Peek()
 	msg3 := <-c.Peek()
 	msg3.ConsumeCallback(nil)
 	assert.Eventually(t, func() bool { return c.Size() == 3 }, time.Second, 10*time.Millisecond)

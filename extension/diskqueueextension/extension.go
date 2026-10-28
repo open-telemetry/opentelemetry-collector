@@ -98,10 +98,7 @@ func (d *diskAccessExtension) GetClient(_ context.Context, _ component.Kind, _ c
 	// while the completion metadata stores the cumulative size acknowledged by
 	// consumers. Their difference is the queue size after a restart, even when
 	// the two metadata files were synced at different times.
-	queueSize := m.totalSize - p.totalSize
-	if queueSize < 0 {
-		queueSize = 0
-	}
+	queueSize := max(m.totalSize-p.totalSize, 0)
 	m.size.Store(queueSize)
 	p.size.Store(queueSize)
 
@@ -488,7 +485,7 @@ func (d *diskAccessClient) removeFilesBefore(fileNum int64) {
 		_ = d.peekFile.Close()
 		d.peekFile = nil
 	}
-	for n := int64(0); n < fileNum; n++ {
+	for n := range fileNum {
 		f := d.fileName(n)
 		if err := os.Remove(f); err != nil && !os.IsNotExist(err) {
 			d.logger.Error("failed to remove", zap.String("name", d.name), zap.String("filename", f), zap.Error(err))
