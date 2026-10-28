@@ -302,7 +302,7 @@ func TestMetricsConsumeRefused(t *testing.T) {
 
 		errorType, ok := attrs.Value(attribute.Key(obsconsumer.ComponentErrorType))
 		require.True(t, ok)
-		require.Equal(t, "cancelled", errorType.String())
+		require.Equal(t, "canceled", errorType.String())
 	}
 }
 

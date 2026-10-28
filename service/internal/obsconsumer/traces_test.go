@@ -259,12 +259,12 @@ func TestTracesConsumeErrorType(t *testing.T) {
 		{
 			name:         "canceled",
 			err:          context.Canceled,
-			expectedType: "cancelled",
+			expectedType: "canceled",
 		},
 		{
 			name:         "wrapped canceled",
 			err:          errors.Join(errors.New("operation failed"), context.Canceled),
-			expectedType: "cancelled",
+			expectedType: "canceled",
 		},
 		{
 			name:         "deadline exceeded",
@@ -385,7 +385,7 @@ func TestTracesConsumeRefused(t *testing.T) {
 
 		errorType, ok := attrs.Value(attribute.Key(obsconsumer.ComponentErrorType))
 		require.True(t, ok)
-		require.Equal(t, "cancelled", errorType.String())
+		require.Equal(t, "canceled", errorType.String())
 	}
 }
 

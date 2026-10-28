@@ -21,12 +21,12 @@ func TestClassifyError(t *testing.T) {
 		{
 			name:     "context canceled",
 			err:      context.Canceled,
-			expected: componentErrorTypeCancelled,
+			expected: componentErrorTypeCanceled,
 		},
 		{
 			name:     "wrapped context canceled",
 			err:      fmt.Errorf("consume failed: %w", context.Canceled),
-			expected: componentErrorTypeCancelled,
+			expected: componentErrorTypeCanceled,
 		},
 		{
 			name:     "context deadline exceeded",

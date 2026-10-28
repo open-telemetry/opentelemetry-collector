@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	componentErrorTypeCancelled        = "cancelled"
+	componentErrorTypeCanceled         = "canceled"
 	componentErrorTypeDeadlineExceeded = "deadline_exceeded"
 	componentErrorTypeUnspecified      = "unspecified"
 )
@@ -17,7 +17,7 @@ const (
 func classifyError(err error) string {
 	switch {
 	case errors.Is(err, context.Canceled):
-		return componentErrorTypeCancelled
+		return componentErrorTypeCanceled
 	case errors.Is(err, context.DeadlineExceeded):
 		return componentErrorTypeDeadlineExceeded
 	default:
