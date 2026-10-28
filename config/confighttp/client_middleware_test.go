@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 // testClientMiddleware is a test middleware that appends a string to the response body
@@ -250,6 +251,10 @@ func TestGRPCClientMiddlewareErrors(t *testing.T) {
 }
 
 func TestClientCustomDialer(t *testing.T) {
+	featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", true)
+	t.Cleanup(func() {
+		featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", false)
+	})
 	// Create a test server that returns "OK"
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -295,6 +300,10 @@ func TestClientCustomDialer(t *testing.T) {
 }
 
 func TestClientCustomDialerErrors(t *testing.T) {
+	featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", true)
+	t.Cleanup(func() {
+		featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", false)
+	})
 	tests := []struct {
 		name       string
 		extensions map[component.ID]component.Component

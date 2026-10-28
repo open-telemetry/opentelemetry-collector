@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func newTestDialerExtension(dial extensionmiddleware.DialContextFunc) component.Component {
@@ -36,6 +37,10 @@ func newTestDialerExtension(dial extensionmiddleware.DialContextFunc) component.
 }
 
 func TestToClientConnCustomDialer(t *testing.T) {
+	featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", true)
+	t.Cleanup(func() {
+		featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", false)
+	})
 	traceServer := &grpcTraceServer{}
 	server, addr := traceServer.startTestServer(t, configoptional.Some(ServerConfig{
 		NetAddr: confignet.AddrConfig{
@@ -67,6 +72,10 @@ func TestToClientConnCustomDialer(t *testing.T) {
 }
 
 func TestToClientConnCustomDialerErrors(t *testing.T) {
+	featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", true)
+	t.Cleanup(func() {
+		featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", false)
+	})
 	tests := []struct {
 		name       string
 		extensions map[component.ID]component.Component

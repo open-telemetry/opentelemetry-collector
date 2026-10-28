@@ -12,9 +12,11 @@ import (
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configmiddleware/internal/metadata"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 var testID = component.MustNewID("test")
@@ -258,6 +260,11 @@ func TestConfig_GetGRPCClientOptions(t *testing.T) {
 
 func TestConfig_GetDialer(t *testing.T) {
 	ctx := context.Background()
+	oldValue := metadata.PkgConfigmiddlewareCustomTCPRoutingFeatureGate.IsEnabled()
+	featuregate.GlobalRegistry().Set(metadata.PkgConfigmiddlewareCustomTCPRoutingFeatureGate.ID(), true)
+	t.Cleanup(func() {
+		featuregate.GlobalRegistry().Set(metadata.PkgConfigmiddlewareCustomTCPRoutingFeatureGate.ID(), oldValue)
+	})
 
 	tests := []struct {
 		name       string
