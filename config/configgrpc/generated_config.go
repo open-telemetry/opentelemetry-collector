@@ -32,9 +32,6 @@ type ClientConfig struct {
 	// Compression the compression key for supported compression types within collector.
 	Compression configcompression.Type `mapstructure:"compression,omitempty"`
 
-	// DialerMiddleware dialer middleware is a handler customizing how the client will dial connections over TCP.
-	DialerMiddleware configoptional.Optional[configmiddleware.Config] `mapstructure:"dialer_middleware,omitempty"`
-
 	// Endpoint the target to which the exporter is going to send traces or metrics, using the gRPC protocol.
 	// The valid syntax is described at https://github.com/grpc/grpc/blob/master/doc/naming.md.
 	Endpoint string `mapstructure:"endpoint,omitempty"`
@@ -45,6 +42,9 @@ type ClientConfig struct {
 	// Keepalive the keepalive parameters for gRPC client. See grpc.WithKeepaliveParams.
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
 	Keepalive configoptional.Optional[KeepaliveClientConfig] `mapstructure:"keepalive,omitempty"`
+
+	// DialerMiddleware dialer middleware is a handler customizing how the client will dial connections over TCP.
+	DialerMiddleware configoptional.Optional[configmiddleware.Config] `mapstructure:"dialer_middleware,omitempty"`
 
 	// Middlewares middlewares for the gRPC client.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
@@ -91,8 +91,8 @@ func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
 		Auth:             configoptional.None[configauth.Config](),
 		BalancerName:     "round_robin",
-		DialerMiddleware: configoptional.None[configmiddleware.Config](),
 		Keepalive:        configoptional.Some(NewDefaultKeepaliveClientConfig()),
+		DialerMiddleware: configoptional.None[configmiddleware.Config](),
 		TLS:              configtls.NewDefaultClientConfig(),
 	}
 }

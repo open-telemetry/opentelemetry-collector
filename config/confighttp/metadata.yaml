@@ -12,6 +12,10 @@ exported_configs:
   client_config:
     description: Defines settings for creating an HTTP client.
     properties:
+      dialer_middleware:
+        description: Dialer middleware is a handler customizing how the client will dial connections over TCP.
+        optional: true
+        $ref: /config/configmiddleware.config
       endpoint:
         type: string
         description: "Is the target URL to send data to (e.g.: http://some.url:9411/v1/traces)."
