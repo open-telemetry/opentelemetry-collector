@@ -10,7 +10,7 @@ component: pkg/exporterhelper
 note: With `wait_for_result`, canceling a request that the sending queue already accepted no longer returns early
 
 # One or more tracking issues or pull requests related to the change
-issues: [15256]
+issues: [16255]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
