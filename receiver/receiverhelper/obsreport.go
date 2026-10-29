@@ -190,11 +190,23 @@ func ProfileSampleCountsByType(pd pprofile.Profiles) map[string]int {
 	return counts
 }
 
-// lookupString returns the string at idx in strTable or an empty string if
-// idx is out of range.
+const (
+	// unsetStrindex is used in place of a sample type or unit whose string
+	// table index is 0, which indicates an unset value.
+	unsetStrindex = "<unset>"
+	// invalidStrindex is used in place of a sample type or unit whose string
+	// table index is out of range.
+	invalidStrindex = "<invalid>"
+)
+
+// lookupString returns the string at idx in strTable, unsetStrindex if idx is 0
+// or invalidStrindex if idx is out of range.
 func lookupString(strTable pcommon.StringSlice, idx int32) string {
+	if idx == 0 {
+		return unsetStrindex
+	}
 	if idx < 0 || int(idx) >= strTable.Len() {
-		return ""
+		return invalidStrindex
 	}
 	return strTable.At(int(idx))
 }

@@ -952,6 +952,10 @@ func TestProfileSampleCountsByType(t *testing.T) {
 		{typeIdx: 42, unitIdx: -1, samples: 1},
 		// Out of range unit index only.
 		{typeIdx: 1, unitIdx: 42, samples: 1},
+		// Unset sample type.
+		{typeIdx: 0, unitIdx: 0, samples: 2},
+		// Unset unit only.
+		{typeIdx: 1, unitIdx: 0, samples: 1},
 	} {
 		profile := ps.AppendEmpty()
 		profile.SampleType().SetTypeStrindex(p.typeIdx)
@@ -965,8 +969,10 @@ func TestProfileSampleCountsByType(t *testing.T) {
 		"samples:count":       7,
 		"off_cpu:nanoseconds": 5,
 		"events:count":        0,
-		":":                   1,
-		"samples:":            1,
+		"<unset>:<unset>":     2,
+		"samples:<unset>":     1,
+		"<invalid>:<invalid>": 1,
+		"samples:<invalid>":   1,
 	}, ProfileSampleCountsByType(pd))
 	assert.Empty(t, ProfileSampleCountsByType(pprofile.NewProfiles()))
 }
