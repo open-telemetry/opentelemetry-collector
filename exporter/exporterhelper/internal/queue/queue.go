@@ -9,14 +9,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	queuebatchtelemetry "go.opentelemetry.io/collector/internal/telemetry/queuebatch"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
 // ReferenceCounter is an optional interface that can be implemented to provide a way for the request data
 // to manage internal locally allocated memory and re-use across multiple requests, etc.
 //
-// The queue will only call Ref and Unref when requests are executed asynchronously, otherwise these
-// funcs are not called.
+// Ref and Unref are only called by the in-memory queue, which holds the reference from the moment a
+// request is offered until it is reported as done. The persistent queue takes no reference: it
+// serializes the request while the caller still holds it, and what it hands to a consumer is a new
+// request deserialized from the storage.
 type ReferenceCounter[T any] interface {
 	Ref(T)
 	Unref(T)
@@ -76,11 +79,12 @@ type Settings[T request.Request] struct {
 	Encoding         Encoding[T]
 	ID               component.ID
 	Telemetry        component.TelemetrySettings
+	ObsMetrics       queuebatchtelemetry.ObsMetrics
 }
 
 func NewQueue[T request.Request](set Settings[T], next ConsumeFunc[T]) (Queue[T], error) {
 	q := newBaseQueue(set)
-	oq, err := newObsQueue(set, newAsyncQueue(q, set.NumConsumers, next, set.ReferenceCounter))
+	oq, err := newObsQueue(set, set.ObsMetrics, newAsyncQueue(q, set.NumConsumers, next))
 	if err != nil {
 		return nil, err
 	}
