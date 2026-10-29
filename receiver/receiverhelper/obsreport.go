@@ -169,6 +169,11 @@ func (rec *ObsReport) EndProfilesOpBySampleType(
 
 // ProfileSampleCountsByType returns the number of samples for each sample type,
 // formatted as "type:unit", of the profiles in pd.
+//
+// The sample types are taken from the payload and are currently unbounded.
+// TODO: Cap the cardinality of the sample type once the Profiles specification
+// defines the list of known sample types, which the Profiling SIG is working on.
+// Sample types outside that list will then be reported as "unknown".
 func ProfileSampleCountsByType(pd pprofile.Profiles) map[string]int {
 	strTable := pd.Dictionary().StringTable()
 	counts := make(map[string]int)
