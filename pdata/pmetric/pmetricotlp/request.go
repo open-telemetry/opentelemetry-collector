@@ -84,7 +84,7 @@ func (ms ExportRequest) RejectInvalidUTF8() int {
 	md := ms.Metrics()
 	rejected := 0
 	md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
-		if !internal.ValidateUTF8(rm.Resource()) {
+		if !internal.ValidateUTF8(rm.Resource()) || !internal.ValidateUTF8(rm.SchemaUrl()) {
 			rejected += countResourceDataPoints(rm)
 			return true
 		}
@@ -92,7 +92,7 @@ func (ms ExportRequest) RejectInvalidUTF8() int {
 			return false
 		}
 		rm.ScopeMetrics().RemoveIf(func(sm pmetric.ScopeMetrics) bool {
-			if !internal.ValidateUTF8(sm.Scope()) {
+			if !internal.ValidateUTF8(sm.Scope()) || !internal.ValidateUTF8(sm.SchemaUrl()) {
 				rejected += countScopeDataPoints(sm)
 				return true
 			}

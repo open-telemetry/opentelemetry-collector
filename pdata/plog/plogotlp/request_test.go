@@ -118,6 +118,27 @@ func TestRejectInvalidUTF8(t *testing.T) {
 		assert.Equal(t, 0, ld.LogRecordCount())
 	})
 
+	t.Run("invalid resource schema url", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.SetSchemaUrl(string([]byte{0xff}))
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		assert.False(t, NewExportRequestFromLogs(ld).ValidateUTF8())
+		assert.Equal(t, 1, NewExportRequestFromLogs(ld).RejectInvalidUTF8())
+		assert.Equal(t, 0, ld.LogRecordCount())
+	})
+
+	t.Run("invalid scope schema url", func(t *testing.T) {
+		ld := plog.NewLogs()
+		sl := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+		sl.SetSchemaUrl(string([]byte{0xff}))
+		sl.LogRecords().AppendEmpty()
+
+		assert.Equal(t, 1, NewExportRequestFromLogs(ld).RejectInvalidUTF8())
+		assert.Equal(t, 0, ld.LogRecordCount())
+	})
+
 	t.Run("invalid log record", func(t *testing.T) {
 		ld := plog.NewLogs()
 		logs := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()

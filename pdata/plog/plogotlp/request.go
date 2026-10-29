@@ -84,7 +84,7 @@ func (ms ExportRequest) RejectInvalidUTF8() int {
 	ld := ms.Logs()
 	rejected := 0
 	ld.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
-		if !internal.ValidateUTF8(rl.Resource()) {
+		if !internal.ValidateUTF8(rl.Resource()) || !internal.ValidateUTF8(rl.SchemaUrl()) {
 			rejected += countResourceLogs(rl)
 			return true
 		}
@@ -92,7 +92,7 @@ func (ms ExportRequest) RejectInvalidUTF8() int {
 			return false
 		}
 		rl.ScopeLogs().RemoveIf(func(sl plog.ScopeLogs) bool {
-			if !internal.ValidateUTF8(sl.Scope()) {
+			if !internal.ValidateUTF8(sl.Scope()) || !internal.ValidateUTF8(sl.SchemaUrl()) {
 				rejected += sl.LogRecords().Len()
 				return true
 			}

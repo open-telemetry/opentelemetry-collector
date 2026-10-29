@@ -84,7 +84,7 @@ func (ms ExportRequest) RejectInvalidUTF8() int {
 	td := ms.Traces()
 	rejected := 0
 	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
-		if !internal.ValidateUTF8(rs.Resource()) {
+		if !internal.ValidateUTF8(rs.Resource()) || !internal.ValidateUTF8(rs.SchemaUrl()) {
 			rejected += countResourceSpans(rs)
 			return true
 		}
@@ -92,7 +92,7 @@ func (ms ExportRequest) RejectInvalidUTF8() int {
 			return false
 		}
 		rs.ScopeSpans().RemoveIf(func(ss ptrace.ScopeSpans) bool {
-			if !internal.ValidateUTF8(ss.Scope()) {
+			if !internal.ValidateUTF8(ss.Scope()) || !internal.ValidateUTF8(ss.SchemaUrl()) {
 				rejected += ss.Spans().Len()
 				return true
 			}

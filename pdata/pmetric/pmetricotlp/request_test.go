@@ -116,6 +116,27 @@ func TestRejectInvalidUTF8(t *testing.T) {
 		assert.Equal(t, 0, md.DataPointCount())
 	})
 
+	t.Run("invalid resource schema url", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.SetSchemaUrl(string([]byte{0xff}))
+		rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+
+		assert.False(t, NewExportRequestFromMetrics(md).ValidateUTF8())
+		assert.Equal(t, 1, NewExportRequestFromMetrics(md).RejectInvalidUTF8())
+		assert.Equal(t, 0, md.DataPointCount())
+	})
+
+	t.Run("invalid scope schema url", func(t *testing.T) {
+		md := pmetric.NewMetrics()
+		sm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		sm.SetSchemaUrl(string([]byte{0xff}))
+		sm.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+
+		assert.Equal(t, 1, NewExportRequestFromMetrics(md).RejectInvalidUTF8())
+		assert.Equal(t, 0, md.DataPointCount())
+	})
+
 	t.Run("invalid metric descriptor", func(t *testing.T) {
 		md := pmetric.NewMetrics()
 		metric := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()

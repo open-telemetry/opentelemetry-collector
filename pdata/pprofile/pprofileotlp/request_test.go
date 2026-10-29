@@ -182,6 +182,27 @@ func TestRejectInvalidUTF8(t *testing.T) {
 		assert.Equal(t, 0, pd.SampleCount())
 	})
 
+	t.Run("invalid resource schema url", func(t *testing.T) {
+		pd := pprofile.NewProfiles()
+		rp := pd.ResourceProfiles().AppendEmpty()
+		rp.SetSchemaUrl(string([]byte{0xff}))
+		rp.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Samples().AppendEmpty()
+
+		assert.False(t, NewExportRequestFromProfiles(pd).ValidateUTF8())
+		assert.Equal(t, 1, NewExportRequestFromProfiles(pd).RejectInvalidUTF8())
+		assert.Equal(t, 0, pd.SampleCount())
+	})
+
+	t.Run("invalid scope schema url", func(t *testing.T) {
+		pd := pprofile.NewProfiles()
+		sp := pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
+		sp.SetSchemaUrl(string([]byte{0xff}))
+		sp.Profiles().AppendEmpty().Samples().AppendEmpty()
+
+		assert.Equal(t, 1, NewExportRequestFromProfiles(pd).RejectInvalidUTF8())
+		assert.Equal(t, 0, pd.SampleCount())
+	})
+
 	t.Run("invalid profile", func(t *testing.T) {
 		pd := pprofile.NewProfiles()
 		profiles := pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles()

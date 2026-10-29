@@ -117,6 +117,27 @@ func TestRejectInvalidUTF8(t *testing.T) {
 		assert.Equal(t, 0, td.SpanCount())
 	})
 
+	t.Run("invalid resource schema url", func(t *testing.T) {
+		td := ptrace.NewTraces()
+		rs := td.ResourceSpans().AppendEmpty()
+		rs.SetSchemaUrl(string([]byte{0xff}))
+		rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+		assert.False(t, NewExportRequestFromTraces(td).ValidateUTF8())
+		assert.Equal(t, 1, NewExportRequestFromTraces(td).RejectInvalidUTF8())
+		assert.Equal(t, 0, td.SpanCount())
+	})
+
+	t.Run("invalid scope schema url", func(t *testing.T) {
+		td := ptrace.NewTraces()
+		ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+		ss.SetSchemaUrl(string([]byte{0xff}))
+		ss.Spans().AppendEmpty()
+
+		assert.Equal(t, 1, NewExportRequestFromTraces(td).RejectInvalidUTF8())
+		assert.Equal(t, 0, td.SpanCount())
+	})
+
 	t.Run("invalid span", func(t *testing.T) {
 		td := ptrace.NewTraces()
 		spans := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()

@@ -87,7 +87,7 @@ func (ms ExportRequest) RejectInvalidUTF8() int {
 		return rejected
 	}
 	pd.ResourceProfiles().RemoveIf(func(rp pprofile.ResourceProfiles) bool {
-		if !internal.ValidateUTF8(rp.Resource()) {
+		if !internal.ValidateUTF8(rp.Resource()) || !internal.ValidateUTF8(rp.SchemaUrl()) {
 			rejected += countResourceProfiles(rp)
 			return true
 		}
@@ -95,7 +95,7 @@ func (ms ExportRequest) RejectInvalidUTF8() int {
 			return false
 		}
 		rp.ScopeProfiles().RemoveIf(func(sp pprofile.ScopeProfiles) bool {
-			if !internal.ValidateUTF8(sp.Scope()) {
+			if !internal.ValidateUTF8(sp.Scope()) || !internal.ValidateUTF8(sp.SchemaUrl()) {
 				rejected += countScopeProfiles(sp)
 				return true
 			}
