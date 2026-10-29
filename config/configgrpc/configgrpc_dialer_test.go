@@ -37,9 +37,9 @@ func newTestDialerExtension(dial extensionmiddleware.DialContextFunc) component.
 }
 
 func TestToClientConnCustomDialer(t *testing.T) {
-	featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", true)
+	_ = featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", true)
 	t.Cleanup(func() {
-		featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", false)
+		_ = featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", false)
 	})
 	traceServer := &grpcTraceServer{}
 	server, addr := traceServer.startTestServer(t, configoptional.Some(ServerConfig{
@@ -72,9 +72,9 @@ func TestToClientConnCustomDialer(t *testing.T) {
 }
 
 func TestToClientConnCustomDialerErrors(t *testing.T) {
-	featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", true)
+	_ = featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", true)
 	t.Cleanup(func() {
-		featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", false)
+		_ = featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", false)
 	})
 	tests := []struct {
 		name       string
