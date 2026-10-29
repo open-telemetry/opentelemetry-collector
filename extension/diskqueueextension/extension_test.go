@@ -578,7 +578,7 @@ func TestCallbackRemoveOldFileErrorLogged(t *testing.T) {
 	msg := <-c.Peek()
 	msg.ConsumeCallback(nil)
 	require.Eventually(t, func() bool {
-		return observed.FilterMessage(" failed to Remove").Len() > 0
+		return observed.FilterMessage("failed to remove").Len() > 0
 	}, time.Second, 10*time.Millisecond)
 	require.NoError(t, os.Chmod(dir, 0o700)) // #nosec G302
 	require.NoError(t, c.Shutdown(context.Background()))
@@ -663,14 +663,22 @@ func TestRetrieveMetadataSuccess(t *testing.T) {
 
 func TestRetrieveCompletionMetadataSuccess(t *testing.T) {
 	dir := t.TempDir()
-	c := newTestClient(t, dir)
+	ext := newTestExtension(t, dir)
+	ext.cfg.SyncEvery = 1
+	ext.cfg.SyncTimeout = time.Hour
+	c0, err := ext.GetClient(context.Background(), component.KindExporter, component.MustNewID("foo"), "test")
+	require.NoError(t, err)
+	c := c0.(*diskAccessClient)
 	require.NoError(t, c.Write(queue.WriteOp{Payload: []byte("hello world"), Size: 5}))
 	msg := <-c.Peek()
 	msg.ConsumeCallback(nil)
-	require.NoError(t, c.syncCompletionMetadata())
 
-	m, err := c.retrieveCompletionMetadata(c.completionMetadataFilePath())
-	require.NoError(t, err)
+	var m *metadata
+	require.Eventually(t, func() bool {
+		var err error
+		m, err = c.retrieveCompletionMetadata(c.completionMetadataFilePath())
+		return err == nil && m.logicalIndex == 1 && m.totalSize == 5
+	}, 10*time.Second, 10*time.Millisecond)
 	assert.Equal(t, int64(0), m.fileNum)
 	require.NoError(t, c.Shutdown(context.Background()))
 }
