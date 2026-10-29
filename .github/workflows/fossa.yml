@@ -8,7 +8,9 @@ on:
 permissions: {}
 
 jobs:
-  zizmor:
+  fossa:
     permissions:
       contents: read # for actions/checkout
-    uses: open-telemetry/shared-workflows/.github/workflows/fossa.yml@96815000988464ab95b86f8bea8ef514332ad618
+    uses: open-telemetry/shared-workflows/.github/workflows/fossa.yml@efc55838c9769c5476e0a5cf7183a8c5b4ae70a5 # v0.24.0
+    secrets:
+      FOSSA_API_KEY: ${{ secrets.FOSSA_API_KEY }}

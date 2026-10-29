@@ -40,6 +40,7 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return ExtractValidators(name, cfg)
 		},
+		"anyValidatorEmits": AnyValidatorEmits,
 		"mapGoType": func(cfg *ConfigMetadata, propName string) string {
 			if cfg == nil {
 				return "any"
@@ -561,7 +562,6 @@ type Validator struct {
 	Rules           ValidationRules
 	CustomValidator string
 	IsType          bool
-	HasDefault      bool
 }
 
 func (v Validator) RequiredCheckEmitted() bool {
@@ -574,6 +574,25 @@ func (v Validator) RequiredCheckEmitted() bool {
 	default:
 		return false
 	}
+}
+
+func (v Validator) Emits() bool {
+	if v.CustomValidator != "" {
+		return true
+	}
+	if v.Rules.HasValueRule() {
+		return true
+	}
+	return v.Rules.Required && v.RequiredCheckEmitted()
+}
+
+func AnyValidatorEmits(validators []Validator) bool {
+	for _, v := range validators {
+		if v.Emits() {
+			return true
+		}
+	}
+	return false
 }
 
 func createValidator(validators *[]Validator, fieldName string, md *ConfigMetadata, isType, required bool) {
@@ -602,7 +621,6 @@ func createValidator(validators *[]Validator, fieldName string, md *ConfigMetada
 			IsOptional: md.IsOptional,
 			Rules:      rules,
 			IsType:     isType,
-			HasDefault: hasDefaultValue(md),
 		})
 	}
 
@@ -645,7 +663,6 @@ func collectValidators(name string, md *ConfigMetadata, validators *[]Validator)
 					IsPointer:  prop.IsPointer,
 					IsOptional: prop.IsOptional,
 					Rules:      ValidationRules{Required: required},
-					HasDefault: hasDefaultValue(prop),
 				})
 			}
 			if prop.GoStruct.CustomValidator != nil {
@@ -716,11 +733,17 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 	case map[string]any:
 		// is nested struct
 		if schema.Values == nil {
-			for key, value := range typedValue {
-				propSchema := schema.Properties[key]
-				if propSchema == nil {
+			for key := range typedValue {
+				if schema.Properties[key] == nil {
 					panic("schema does not contain required property: " + key)
 				}
+			}
+			for _, key := range OrderedPropNames(schema) {
+				value, ok := typedValue[key]
+				if !ok {
+					continue
+				}
+				propSchema := schema.Properties[key]
 				varName, _ := helpers.FormatIdentifier(key, true)
 
 				if value == nil {
