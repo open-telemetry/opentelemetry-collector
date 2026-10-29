@@ -112,12 +112,12 @@ func (mq *memoryQueue[T]) Offer(ctx context.Context, el T) error {
 func (mq *memoryQueue[T]) abandon(n *node[T], bd *blockingDone[T]) bool {
 	mq.mu.Lock()
 	defer mq.mu.Unlock()
-	if !queued(n) {
+	if !n.queued {
 		return false
 	}
 	// Leave the element in place for Read to drop, which keeps this O(1), but free its capacity now
 	// so that a producer blocked on overflow does not wait for a consumer to get here.
-	bd.abandoned = true
+	n.abandoned = true
 	mq.freeCapacity(bd)
 	return true
 }
@@ -170,7 +170,7 @@ func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool)
 			n := mq.items.pop()
 			// The caller that gave up on an abandoned element owns the request, so it must neither
 			// be read here nor handed to a consumer.
-			if mq.waitForResult && n.done.abandoned {
+			if mq.waitForResult && n.abandoned {
 				continue
 			}
 			return n.ctx, n.data, n.done, true
@@ -224,20 +224,25 @@ func (mq *memoryQueue[T]) Capacity() int64 {
 	return mq.cap
 }
 
-type node[T request.Request] struct {
+type node[T any] struct {
 	ctx  context.Context
 	data T
-	done *blockingDone[T]
+	done Done
 	next *node[T]
+	// queued is false once the element left the queue, either handed to a consumer or dropped.
+	queued bool
+	// abandoned tells Read to drop the element instead of handing it to a consumer, because the
+	// caller that was waiting for it has given up.
+	abandoned bool
 }
 
-type linkedQueue[T request.Request] struct {
+type linkedQueue[T any] struct {
 	head *node[T]
 	tail *node[T]
 }
 
-func (l *linkedQueue[T]) push(ctx context.Context, data T, done *blockingDone[T]) *node[T] {
-	n := &node[T]{ctx: ctx, data: data, done: done}
+func (l *linkedQueue[T]) push(ctx context.Context, data T, done Done) *node[T] {
+	n := &node[T]{ctx: ctx, data: data, done: done, queued: true}
 	// If tail is nil means list is empty so update both head and tail to point to same element.
 	if l.tail == nil {
 		l.head = n
@@ -260,13 +265,9 @@ func (l *linkedQueue[T]) pop() *node[T] {
 	if l.head == nil {
 		l.tail = nil
 	}
-	// Point the node at itself to record that it left the queue, which a queued node never does.
-	n.next = n
+	n.next = nil
+	n.queued = false
 	return n
-}
-
-func queued[T request.Request](n *node[T]) bool {
-	return n.next != n
 }
 
 type blockingDone[T request.Request] struct {
@@ -274,16 +275,12 @@ type blockingDone[T request.Request] struct {
 	// el is the element this done reports for, kept so that the queue can release its reference to it.
 	el     T
 	elSize int64
-	// abandoned tells Read to drop the element instead of handing it to a consumer. Only ever set
-	// while the element is still queued, so an abandoned element never reaches onDone.
-	abandoned bool
-	ch        chan error
+	ch     chan error
 }
 
 func (bd *blockingDone[T]) reset(el T, elSize int64, queue *memoryQueue[T]) {
 	bd.el = el
 	bd.elSize = elSize
-	bd.abandoned = false
 	bd.queue = queue
 }
 

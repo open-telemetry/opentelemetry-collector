@@ -289,35 +289,33 @@ func TestLinkedQueueQueued(t *testing.T) {
 	t.Run("sole element", func(t *testing.T) {
 		l := &linkedQueue[intRequest]{}
 		n := build(l, 1)[0]
-		assert.True(t, queued(n))
+		assert.True(t, n.queued)
 		l.pop()
-		assert.False(t, queued(n))
+		assert.False(t, n.queued)
 		assert.False(t, l.hasElements())
 	})
 
-	// Both the popped node and the new head have no next of their own to distinguish them, so the
-	// marker is what tells them apart.
 	t.Run("head after popping the previous one", func(t *testing.T) {
 		l := &linkedQueue[intRequest]{}
 		nodes := build(l, 2)
 		l.pop()
-		assert.False(t, queued(nodes[0]))
-		assert.True(t, queued(nodes[1]))
+		assert.False(t, nodes[0].queued)
+		assert.True(t, nodes[1].queued)
 		l.pop()
-		assert.False(t, queued(nodes[1]))
+		assert.False(t, nodes[1].queued)
 	})
 
 	t.Run("still queued behind others", func(t *testing.T) {
 		l := &linkedQueue[intRequest]{}
 		nodes := build(l, 3)
 		l.pop()
-		assert.True(t, queued(nodes[1]))
-		assert.True(t, queued(nodes[2]))
+		assert.True(t, nodes[1].queued)
+		assert.True(t, nodes[2].queued)
 		// Pushing after draining must still work, so head and tail have to stay consistent.
 		for l.hasElements() {
 			l.pop()
 		}
 		n := build(l, 1)[0]
-		assert.True(t, queued(n))
+		assert.True(t, n.queued)
 	})
 }
