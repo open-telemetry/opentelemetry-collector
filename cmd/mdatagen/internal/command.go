@@ -508,6 +508,7 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 		"isCommand": func() bool {
 			return md.Status.Class == "cmd"
 		},
+		"isComponent":                func() bool { return isComponent(md.Status) },
 		"supportsLogs":               func() bool { return md.supportsSignal("logs") },
 		"supportsMetrics":            func() bool { return md.supportsSignal("metrics") },
 		"supportsTraces":             func() bool { return md.supportsSignal("traces") },
@@ -774,8 +775,8 @@ func generateConfigGoStruct(md Metadata, outputDir string) error {
 	}
 
 	packageName := filepath.Base(outputDir)
-
-	fns := cfggen.WithCfgFns(getTemplateFuncMap(md, rootPkg), rootPkg, md.PackageName)
+	env := cfggen.NewGeneratorEnv(rootPkg, md.PackageName, isComponent(md.Status))
+	fns := cfggen.WithCfgFns(getTemplateFuncMap(md, rootPkg), env)
 
 	files := []struct{ tmpl, dst string }{
 		{tmpl: "config_from_cfggen.go.tmpl", dst: "generated_config.go"},
@@ -804,7 +805,8 @@ func injectConfigDocsToReadme(md Metadata, mdDir, importRootPath string) error {
 			}
 			rootPkg = pkg
 		}
-		fns := cfggen.WithCfgFns(getTemplateFuncMap(md, rootPkg), rootPkg, md.PackageName)
+		env := cfggen.NewGeneratorEnv(rootPkg, md.PackageName, isComponent(md.Status))
+		fns := cfggen.WithCfgFns(getTemplateFuncMap(md, rootPkg), env)
 		if err := inlineReplaceWithFns(
 			filepath.Join("templates", "config_doc.md.tmpl"),
 			readmePath,
@@ -828,4 +830,8 @@ func joinCamelCase(parts []string, exported bool) string {
 		}
 	}
 	return result.String()
+}
+
+func isComponent(s *Status) bool {
+	return s != nil && !slices.Contains(nonComponents, s.Class)
 }
