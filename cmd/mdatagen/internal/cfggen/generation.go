@@ -40,6 +40,7 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return ExtractValidators(name, cfg)
 		},
+		"anyValidatorEmits": AnyValidatorEmits,
 		"mapGoType": func(cfg *ConfigMetadata, propName string) string {
 			if cfg == nil {
 				return "any"
@@ -573,6 +574,25 @@ func (v Validator) RequiredCheckEmitted() bool {
 	default:
 		return false
 	}
+}
+
+func (v Validator) Emits() bool {
+	if v.CustomValidator != "" {
+		return true
+	}
+	if v.Rules.HasValueRule() {
+		return true
+	}
+	return v.Rules.Required && v.RequiredCheckEmitted()
+}
+
+func AnyValidatorEmits(validators []Validator) bool {
+	for _, v := range validators {
+		if v.Emits() {
+			return true
+		}
+	}
+	return false
 }
 
 func createValidator(validators *[]Validator, fieldName string, md *ConfigMetadata, isType, required bool) {
