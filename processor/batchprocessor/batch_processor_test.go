@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -695,7 +696,7 @@ func BenchmarkTraceSizeBytes(b *testing.B) {
 	sizer := &ptrace.ProtoMarshaler{}
 	td := testdata.GenerateTraces(8192)
 	for b.Loop() {
-		fmt.Println(sizer.TracesSize(td))
+		sizer.TracesSize(td)
 	}
 }
 
@@ -706,26 +707,8 @@ func BenchmarkTraceSizeSpanCount(b *testing.B) {
 	}
 }
 
-func BenchmarkBatchMetricProcessor2k(b *testing.B) {
-	b.StopTimer()
-	cfg := &Config{
-		Timeout:       100 * time.Millisecond,
-		SendBatchSize: 2000,
-	}
-	runMetricsProcessorBenchmark(b, cfg)
-}
-
-func BenchmarkMultiBatchMetricProcessor2k(b *testing.B) {
-	b.StopTimer()
-	cfg := &Config{
-		Timeout:       100 * time.Millisecond,
-		SendBatchSize: 2000,
-		MetadataKeys:  []string{"test", "test2"},
-	}
-	runMetricsProcessorBenchmark(b, cfg)
-}
-
 func BenchmarkBatchMetricSplitMaxSize2k(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
 	const (
 		splitSize         = 2000
 		metricsPerRequest = 50_000
@@ -798,6 +781,7 @@ func generateFanoutLogs(resourceCount, scopePerResource, recordsPerScope int) pl
 }
 
 func BenchmarkBatchTraceSplitMaxSize2k(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
 	const (
 		splitSize        = 2000
 		resourceCount    = 400
@@ -824,6 +808,7 @@ func BenchmarkBatchTraceSplitMaxSize2k(b *testing.B) {
 }
 
 func BenchmarkBatchLogSplitMaxSize2k(b *testing.B) {
+	testutil.SkipGCHeavyBench(b)
 	const (
 		splitSize        = 2000
 		resourceCount    = 400
@@ -847,25 +832,6 @@ func BenchmarkBatchLogSplitMaxSize2k(b *testing.B) {
 			pref.UnrefLogs(req)
 		}
 	}
-}
-
-func runMetricsProcessorBenchmark(b *testing.B, cfg *Config) {
-	ctx := context.Background()
-	sink := new(metricsSink)
-	metrics, err := NewFactory().CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, sink)
-	require.NoError(b, err)
-	require.NoError(b, metrics.Start(ctx, componenttest.NewNopHost()))
-
-	const metricsPerRequest = 150_000
-	b.StartTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			require.NoError(b, metrics.ConsumeMetrics(ctx, testdata.GenerateMetrics(metricsPerRequest)))
-		}
-	})
-	b.StopTimer()
-	require.NoError(b, metrics.Shutdown(ctx))
-	require.Equal(b, b.N*metricsPerRequest, sink.metricsCount)
 }
 
 type metricsSink struct {

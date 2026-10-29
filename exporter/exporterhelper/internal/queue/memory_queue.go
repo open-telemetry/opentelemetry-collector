@@ -12,14 +12,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
-var blockingDonePool = sync.Pool{
-	New: func() any {
-		return &blockingDone{
-			ch: make(chan error, 1),
-		}
-	},
-}
-
 var (
 	errInvalidSize  = errors.New("invalid element size")
 	errSizeTooLarge = errors.New("element size too large")
@@ -31,6 +23,7 @@ type memoryQueue[T request.Request] struct {
 	refCounter ReferenceCounter[T]
 	sizer      request.Sizer
 	cap        int64
+	donePool   sync.Pool
 
 	mu              sync.Mutex
 	hasMoreElements *sync.Cond
@@ -53,6 +46,7 @@ func newMemoryQueue[T request.Request](set Settings[T]) readableQueue[T] {
 		waitForResult:   set.WaitForResult,
 		blockOnOverflow: set.BlockOnOverflow,
 	}
+	sq.donePool.New = func() any { return &blockingDone[T]{ch: make(chan error, 1)} }
 	sq.hasMoreElements = sync.NewCond(&sq.mu)
 	sq.hasMoreSpace = newCond(&sq.mu)
 	return sq
@@ -95,7 +89,7 @@ func (mq *memoryQueue[T]) Offer(ctx context.Context, el T) error {
 		// otherwise no guarantee about when the consumer will add the message to the channel so cannot reuse or close.
 		select {
 		case doneErr := <-done.ch:
-			blockingDonePool.Put(done)
+			mq.donePool.Put(done)
 			return doneErr
 		case <-ctx.Done():
 			return ctx.Err()
@@ -104,7 +98,7 @@ func (mq *memoryQueue[T]) Offer(ctx context.Context, el T) error {
 	return nil
 }
 
-func (mq *memoryQueue[T]) add(ctx context.Context, el T, elSize int64) (*blockingDone, error) {
+func (mq *memoryQueue[T]) add(ctx context.Context, el T, elSize int64) (*blockingDone[T], error) {
 	mq.mu.Lock()
 	defer mq.mu.Unlock()
 
@@ -119,8 +113,8 @@ func (mq *memoryQueue[T]) add(ctx context.Context, el T, elSize int64) (*blockin
 	}
 
 	mq.size += elSize
-	done := blockingDonePool.Get().(*blockingDone)
-	done.reset(elSize, mq)
+	done := mq.donePool.Get().(*blockingDone[T])
+	done.reset(el, elSize, mq)
 
 	if !mq.waitForResult {
 		// Prevent cancellation and deadline to propagate to the context stored in the queue.
@@ -158,7 +152,13 @@ func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool)
 	}
 }
 
-func (mq *memoryQueue[T]) onDone(bd *blockingDone, err error) {
+func (mq *memoryQueue[T]) onDone(bd *blockingDone[T], err error) {
+	if mq.refCounter != nil {
+		mq.refCounter.Unref(bd.el)
+	}
+	var zero T
+	bd.el = zero
+
 	mq.mu.Lock()
 	defer mq.mu.Unlock()
 	mq.size -= bd.elSize
@@ -168,7 +168,7 @@ func (mq *memoryQueue[T]) onDone(bd *blockingDone, err error) {
 		bd.ch <- err
 		return
 	}
-	blockingDonePool.Put(bd)
+	mq.donePool.Put(bd)
 }
 
 // Shutdown closes the queue channel to initiate draining of the queue.
@@ -229,19 +229,20 @@ func (l *linkedQueue[T]) pop() (context.Context, T, Done) {
 	return n.ctx, n.data, n.done
 }
 
-type blockingDone struct {
-	queue interface {
-		onDone(*blockingDone, error)
-	}
+type blockingDone[T request.Request] struct {
+	queue *memoryQueue[T]
+	// el is the element this done reports for, kept so that the queue can release its reference to it.
+	el     T
 	elSize int64
 	ch     chan error
 }
 
-func (bd *blockingDone) reset(elSize int64, queue interface{ onDone(*blockingDone, error) }) {
+func (bd *blockingDone[T]) reset(el T, elSize int64, queue *memoryQueue[T]) {
+	bd.el = el
 	bd.elSize = elSize
 	bd.queue = queue
 }
 
-func (bd *blockingDone) OnDone(err error) {
+func (bd *blockingDone[T]) OnDone(err error) {
 	bd.queue.onDone(bd, err)
 }

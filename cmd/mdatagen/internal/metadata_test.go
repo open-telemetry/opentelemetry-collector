@@ -49,6 +49,10 @@ func TestValidate(t *testing.T) {
 			wantErr: "deprecated component missing date in YYYY-MM-DD format: traces",
 		},
 		{
+			name:    "testdata/both_platform_fields.yaml",
+			wantErr: "supported_platforms and unsupported_platforms cannot both be specified",
+		},
+		{
 			name:    "testdata/no_deprecation_migration_info.yaml",
 			wantErr: "deprecated component missing migration guide: traces",
 		},
@@ -1143,10 +1147,12 @@ func TestValidateConfig(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			md := &Metadata{
-				Type: "test",
+				Type:         "test",
+				SendingQueue: &SendingQueue{Support: SendingQueueSupportDefault},
 				Status: &Status{
 					Class: "exporter",
 					Stability: StabilityMap{
@@ -1165,4 +1171,44 @@ func TestValidateConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestValidateSendingQueueDefaultsForExporters(t *testing.T) {
+	md := Metadata{Status: &Status{Class: "exporter"}}
+
+	require.NoError(t, md.validateSendingQueue())
+	require.True(t, md.SendingQueue.IsOmitted())
+	require.True(t, md.SendingQueue.IsImplicit())
+}
+
+func TestValidateSendingQueueOptOutForExporters(t *testing.T) {
+	t.Setenv(sendingQueueOptOutEnvVar, "true")
+
+	md := Metadata{Status: &Status{Class: "exporter"}}
+
+	require.NoError(t, md.validateSendingQueue())
+	require.Equal(t, &SendingQueue{Support: SendingQueueSupportDefault}, md.SendingQueue)
+	require.False(t, md.SendingQueue.IsImplicit())
+}
+
+func TestValidateSendingQueueRejectsNonExporter(t *testing.T) {
+	md := Metadata{
+		Status:       &Status{Class: "receiver"},
+		SendingQueue: &SendingQueue{},
+	}
+
+	require.EqualError(t, md.validateSendingQueue(), "sending_queue is only valid for exporters")
+}
+
+func TestValidateIncludesSendingQueueErrors(t *testing.T) {
+	md := Metadata{
+		Type: "test",
+		Status: &Status{
+			Class:     "receiver",
+			Stability: StabilityMap{component.StabilityLevelBeta: {"metrics"}},
+		},
+		SendingQueue: &SendingQueue{},
+	}
+
+	require.ErrorContains(t, md.Validate(), "sending_queue is only valid for exporters")
 }
