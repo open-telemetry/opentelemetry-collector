@@ -17,6 +17,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -37,13 +38,21 @@ func newTestController(
 	scrapers ...component.Component,
 ) *Controller[component.Component] {
 	t.Helper()
-	ctrl, err := NewController(
-		cfg,
-		receivertest.NewNopSettings(receivertest.NopType),
-		scrapers,
-		scrapeFunc,
-		nil,
-	)
+	return newTestControllerWithSettings(t, receivertest.NewNopSettings(receivertest.NopType), cfg, scrapeFunc, scrapers...)
+}
+
+// newTestControllerWithSettings lets synctest tests create the settings outside the bubble.
+// receivertest.NewNopSettings uses crypto/rand, which panics inside a synctest bubble in
+// FIPS mode on Go 1.26 (golang/go#78557).
+func newTestControllerWithSettings(
+	t *testing.T,
+	set receiver.Settings,
+	cfg *ControllerConfig,
+	scrapeFunc func(context.Context, *Controller[component.Component]) error,
+	scrapers ...component.Component,
+) *Controller[component.Component] {
+	t.Helper()
+	ctrl, err := NewController(cfg, set, scrapers, scrapeFunc, nil)
 	require.NoError(t, err)
 	return ctrl
 }
@@ -193,6 +202,7 @@ func TestShutdownScraperErrors(t *testing.T) {
 
 func TestStartScraping(t *testing.T) {
 	t.Parallel()
+	set := receivertest.NewNopSettings(receivertest.NopType)
 	synctest.Test(t, func(t *testing.T) {
 		var scrapeCount atomic.Int32
 		scrapeFunc := func(context.Context, *Controller[component.Component]) error {
@@ -201,7 +211,7 @@ func TestStartScraping(t *testing.T) {
 		}
 
 		cfg := &ControllerConfig{CollectionInterval: time.Minute}
-		ctrl := newTestController(t, cfg, scrapeFunc)
+		ctrl := newTestControllerWithSettings(t, set, cfg, scrapeFunc)
 
 		require.NoError(t, ctrl.Start(context.Background(), componenttest.NewNopHost()))
 		synctest.Wait()
@@ -217,6 +227,7 @@ func TestStartScraping(t *testing.T) {
 
 func TestStartScrapingPropagatesContextValues(t *testing.T) {
 	t.Parallel()
+	set := receivertest.NewNopSettings(receivertest.NopType)
 	synctest.Test(t, func(t *testing.T) {
 		type contextKey struct{}
 		const contextValue = "scrape-context-value"
@@ -228,7 +239,7 @@ func TestStartScrapingPropagatesContextValues(t *testing.T) {
 		}
 
 		cfg := &ControllerConfig{CollectionInterval: time.Minute}
-		ctrl := newTestController(t, cfg, scrapeFunc)
+		ctrl := newTestControllerWithSettings(t, set, cfg, scrapeFunc)
 
 		ctx := context.WithValue(context.Background(), contextKey{}, contextValue)
 		require.NoError(t, ctrl.Start(ctx, componenttest.NewNopHost()))
@@ -241,6 +252,7 @@ func TestStartScrapingPropagatesContextValues(t *testing.T) {
 
 func TestStartScrapingWithInitialDelay(t *testing.T) {
 	t.Parallel()
+	set := receivertest.NewNopSettings(receivertest.NopType)
 	synctest.Test(t, func(t *testing.T) {
 		var scrapeCount atomic.Int32
 		scrapeFunc := func(context.Context, *Controller[component.Component]) error {
@@ -252,7 +264,7 @@ func TestStartScrapingWithInitialDelay(t *testing.T) {
 			CollectionInterval: time.Minute,
 			InitialDelay:       50 * time.Millisecond,
 		}
-		ctrl := newTestController(t, cfg, scrapeFunc)
+		ctrl := newTestControllerWithSettings(t, set, cfg, scrapeFunc)
 
 		require.NoError(t, ctrl.Start(context.Background(), componenttest.NewNopHost()))
 		synctest.Wait()
@@ -293,6 +305,7 @@ func TestShutdownDuringHang(t *testing.T) {
 
 	// This test is a bug caused by select's randomness, so
 	// we need more than one run for it to be nearly deterministic.
+	set := receivertest.NewNopSettings(receivertest.NopType)
 	for range 10 {
 		synctest.Test(t, func(t *testing.T) {
 			var hang atomic.Bool
@@ -307,7 +320,7 @@ func TestShutdownDuringHang(t *testing.T) {
 			}
 
 			cfg := &ControllerConfig{CollectionInterval: time.Minute}
-			ctrl := newTestController(t, cfg, scrapeFunc)
+			ctrl := newTestControllerWithSettings(t, set, cfg, scrapeFunc)
 
 			require.NoError(t, ctrl.Start(context.Background(), componenttest.NewNopHost()))
 
