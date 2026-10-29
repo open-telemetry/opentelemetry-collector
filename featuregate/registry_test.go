@@ -4,8 +4,6 @@
 package featuregate
 
 import (
-	"io"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -83,24 +81,26 @@ func TestRegistrySetWarningsLogger(t *testing.T) {
 	assert.Contains(t, entries[1].Message, "deprecated")
 }
 
-func TestRegistrySetWarningsDefaultStdout(t *testing.T) {
+// TestRegistrySetWarningsBufferedUntilLoggerSet verifies that warnings produced by Set before a
+// logger is available (as happens when gates are set from CLI flags, well before a Collector or
+// its logger exist) are buffered rather than lost, and are flushed once SetLogger is called.
+func TestRegistrySetWarningsBufferedUntilLoggerSet(t *testing.T) {
 	r := NewRegistry()
 	r.MustRegister("foo", StageStable, WithRegisterToVersion("v1.0.0"))
-
-	stdout := os.Stdout
-	readEnd, writeEnd, err := os.Pipe()
-	require.NoError(t, err)
-	t.Cleanup(func() { os.Stdout = stdout })
-	os.Stdout = writeEnd
-
 	require.NoError(t, r.Set("foo", true))
 
-	require.NoError(t, writeEnd.Close())
-	os.Stdout = stdout
-	out, err := io.ReadAll(readEnd)
-	require.NoError(t, err)
-	assert.Contains(t, string(out), `"foo"`)
-	assert.Contains(t, string(out), "stable")
+	core, observed := observer.New(zapcore.WarnLevel)
+	r.SetLogger(zap.New(core))
+
+	entries := observed.All()
+	require.Len(t, entries, 1)
+	assert.Contains(t, entries[0].Message, `"foo"`)
+	assert.Contains(t, entries[0].Message, "stable")
+
+	// A subsequent SetLogger call must not replay already-flushed warnings.
+	core2, observed2 := observer.New(zapcore.WarnLevel)
+	r.SetLogger(zap.New(core2))
+	assert.Empty(t, observed2.All())
 }
 
 func TestRegistryApply(t *testing.T) {
@@ -122,6 +122,7 @@ func TestValidateID(t *testing.T) {
 		{name: "alphanumeric segment", id: "foo123", shouldErr: false},
 		{name: "namespaced", id: "foo.bar", shouldErr: false},
 		{name: "multiple namespaces", id: "foo.bar.baz", shouldErr: false},
+		{name: "underscore", id: "receiver.foo_bar.baz", shouldErr: false},
 		{name: "leading dot", id: ".foo", shouldErr: true},
 		{name: "trailing dot", id: "foo.", shouldErr: true},
 		{name: "consecutive dots", id: "foo..bar", shouldErr: true},

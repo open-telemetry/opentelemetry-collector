@@ -10,14 +10,19 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 func TestNewCommandVersion(t *testing.T) {
@@ -249,4 +254,63 @@ func TestNewFeatureGateCommand(t *testing.T) {
 		err := cmd.Execute()
 		require.Error(t, err)
 	})
+}
+
+// TestNewCommandRoutesFeatureGateWarningsToLogger verifies that a warning produced by setting a
+// stable/deprecated gate through the real --feature-gates CLI flag -- parsed by cobra before the
+// Collector (and its logger) is constructed -- still ends up logged through the Collector's
+// configured logger, rather than being lost or only ever printed outside of it.
+func TestNewCommandRoutesFeatureGateWarningsToLogger(t *testing.T) {
+	reg := featuregate.GlobalRegistry()
+	reg.SetLogger(nil)
+	t.Cleanup(func() { reg.SetLogger(nil) })
+
+	gateID := "otelcoltest.cliStableGate"
+	_, err := reg.Register(gateID, featuregate.StageStable, featuregate.WithRegisterToVersion("v1.0.0"))
+	require.NoError(t, err)
+
+	observerCore, observedLogs := observer.New(zapcore.InfoLevel)
+
+	factories, err := nopFactories()
+	require.NoError(t, err)
+	factories.Telemetry = telemetry.NewFactory(
+		func() component.Config { return fakeTelemetryConfig{} },
+		telemetry.WithCreateLogger(
+			func(_ context.Context, set telemetry.LoggerSettings, _ component.Config) (
+				*zap.Logger, component.ShutdownFunc, error,
+			) {
+				logger, buildErr := set.BuildZapLogger(zap.NewDevelopmentConfig())
+				return logger, nil, buildErr
+			},
+		),
+	)
+
+	cmd := NewCommand(CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+		LoggingOptions: []zap.Option{
+			zap.WrapCore(func(zapcore.Core) zapcore.Core {
+				return observerCore
+			}),
+		},
+	})
+	// --feature-gates is parsed by cobra right here, before RunE constructs the Collector.
+	cmd.SetArgs([]string{"--feature-gates=" + gateID})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	errCh := make(chan error, 1)
+	go func() { errCh <- cmd.ExecuteContext(ctx) }()
+
+	assert.Eventually(t, func() bool {
+		for _, entry := range observedLogs.All() {
+			if entry.Level == zapcore.WarnLevel && strings.Contains(entry.Message, gateID) {
+				return true
+			}
+		}
+		return false
+	}, 2*time.Second, 50*time.Millisecond, "expected the --feature-gates warning to be logged through the configured logger")
+
+	cancel()
+	require.NoError(t, <-errCh)
 }

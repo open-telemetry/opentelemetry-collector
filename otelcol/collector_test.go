@@ -7,7 +7,6 @@ package otelcol
 import (
 	"context"
 	"errors"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -1728,30 +1727,22 @@ func TestCollectorLoggingOptions(t *testing.T) {
 	require.NotEmpty(t, entries, "Logger should have logged messages")
 }
 
+// TestCollectorRoutesFeatureGateWarningsToLogger verifies that a feature gate warning produced
+// before the Collector (and therefore its logger) exists -- as happens with gates set from CLI
+// flags, which are parsed before the Collector is constructed -- is still routed through the
+// Collector's configured logger once it becomes available, rather than being lost or only ever
+// printed outside of it.
 func TestCollectorRoutesFeatureGateWarningsToLogger(t *testing.T) {
 	reg := featuregate.GlobalRegistry()
 	reg.SetLogger(nil)
 	t.Cleanup(func() { reg.SetLogger(nil) })
 
-	// A gate set before any collector has installed a logger should log its
-	// warning to stdout.
+	// Simulate a gate being set from a CLI flag: this happens during flag parsing, strictly
+	// before the Collector (and any logger) is constructed.
 	startupGateID := "otelcoltest.stableGateAtStartup"
 	_, err := reg.Register(startupGateID, featuregate.StageStable, featuregate.WithRegisterToVersion("v1.0.0"))
 	require.NoError(t, err)
-
-	stdout := os.Stdout
-	readEnd, writeEnd, pipeErr := os.Pipe()
-	require.NoError(t, pipeErr)
-	t.Cleanup(func() { os.Stdout = stdout })
-	os.Stdout = writeEnd
-
 	require.NoError(t, reg.Set(startupGateID, true))
-
-	require.NoError(t, writeEnd.Close())
-	os.Stdout = stdout
-	out, readErr := io.ReadAll(readEnd)
-	require.NoError(t, readErr)
-	assert.Contains(t, string(out), startupGateID, "warnings set before a logger is configured should be printed to stdout")
 
 	observerCore, observedLogs := observer.New(zapcore.InfoLevel)
 
@@ -1805,12 +1796,14 @@ func TestCollectorRoutesFeatureGateWarningsToLogger(t *testing.T) {
 	col.Shutdown()
 	wg.Wait()
 
-	var found bool
-	for _, entry := range observedLogs.All() {
-		if entry.Level == zapcore.WarnLevel && strings.Contains(entry.Message, runtimeGateID) {
-			found = true
-			break
+	for _, gateID := range []string{startupGateID, runtimeGateID} {
+		var found bool
+		for _, entry := range observedLogs.All() {
+			if entry.Level == zapcore.WarnLevel && strings.Contains(entry.Message, gateID) {
+				found = true
+				break
+			}
 		}
+		assert.True(t, found, "expected feature gate warning for %q to be logged through the configured logger", gateID)
 	}
-	assert.True(t, found, "expected feature gate warning to be logged through the configured logger")
 }

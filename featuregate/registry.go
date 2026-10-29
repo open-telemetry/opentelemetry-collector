@@ -21,9 +21,9 @@ var (
 
 	// idRegexp is used to validate the ID of a Gate.
 	// IDs are one or more dot-separated segments; each segment must be a
-	// non-empty run of alphanumeric characters, so a leading, trailing, or
-	// doubled dot (e.g. ".foo", "foo.", "foo..bar") is rejected.
-	idRegexp = regexp.MustCompile(`^[0-9a-zA-Z]+(\.[0-9a-zA-Z]+)*$`)
+	// non-empty run of alphanumeric characters or underscores, so a leading,
+	// trailing, or doubled dot (e.g. ".foo", "foo.", "foo..bar") is rejected.
+	idRegexp = regexp.MustCompile(`^[0-9a-zA-Z_]+(\.[0-9a-zA-Z_]+)*$`)
 )
 
 // ErrAlreadyRegistered is returned when adding a Gate that is already registered.
@@ -37,7 +37,11 @@ func GlobalRegistry() *Registry {
 type Registry struct {
 	gates sync.Map
 
-	loggerMu sync.Mutex
+	warningsMu sync.Mutex
+	// warnings buffers messages produced by Set until a logger is available
+	// (see SetLogger), since Set is typically called from CLI flag parsing,
+	// before any Collector or logger exists.
+	warnings []string
 	logger   *zap.Logger
 }
 
@@ -132,7 +136,7 @@ func validateID(id string) error {
 }
 
 // Register a Gate and return it. The returned Gate can be used to check if is enabled or not.
-// id must be an ASCII alphanumeric nonempty string. Dots are allowed for namespacing.
+// id must be a nonempty string of ASCII alphanumeric characters and underscores. Dots are allowed for namespacing.
 func (r *Registry) Register(id string, stage Stage, opts ...RegisterOption) (*Gate, error) {
 	if err := validateID(id); err != nil {
 		return nil, fmt.Errorf("invalid ID %q: %w", id, err)
@@ -202,24 +206,29 @@ func (r *Registry) Set(id string, enabled bool) error {
 }
 
 // SetLogger sets the logger used to emit warnings from calls to Set, such as
-// those produced when setting a stable or deprecated Gate. Set is typically
-// called before a logger is available (for example, during CLI flag
-// parsing), so warnings are printed to stdout until SetLogger is called.
+// those produced when setting a stable or deprecated Gate, and immediately
+// flushes through it any warnings buffered before a logger was available.
 func (r *Registry) SetLogger(logger *zap.Logger) {
-	r.loggerMu.Lock()
-	defer r.loggerMu.Unlock()
+	r.warningsMu.Lock()
+	defer r.warningsMu.Unlock()
 	r.logger = logger
+	if logger == nil {
+		return
+	}
+	for _, w := range r.warnings {
+		logger.Warn(w)
+	}
+	r.warnings = nil
 }
 
 func (r *Registry) warn(msg string) {
-	r.loggerMu.Lock()
-	logger := r.logger
-	r.loggerMu.Unlock()
-	if logger != nil {
-		logger.Warn(msg)
+	r.warningsMu.Lock()
+	defer r.warningsMu.Unlock()
+	if r.logger != nil {
+		r.logger.Warn(msg)
 		return
 	}
-	fmt.Println(msg)
+	r.warnings = append(r.warnings, msg)
 }
 
 // VisitAll visits all the gates in lexicographical order, calling fn for each.

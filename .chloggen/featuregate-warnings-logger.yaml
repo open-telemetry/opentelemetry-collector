@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/featuregate
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add a `Registry.SetLogger` method so stable/deprecated feature gate warnings from `Registry.Set` can be routed through a configured logger instead of always going to stdout. `otelcol.Collector` calls `featuregate.GlobalRegistry().SetLogger()` once its logger becomes available; warnings set before that point are still printed to stdout.
+note: Add a `Registry.SetLogger` method so stable/deprecated feature gate warnings from `Registry.Set` can be routed through a configured logger instead of always going to stdout. Warnings produced before a logger is set (for example, from `--feature-gates` CLI flags, parsed before `otelcol.Collector` exists) are buffered and flushed once `otelcol.Collector` calls `featuregate.GlobalRegistry().SetLogger()`.
 
 # One or more tracking issues or pull requests related to the change
 issues: [15586]
