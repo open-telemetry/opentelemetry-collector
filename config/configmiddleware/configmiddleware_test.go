@@ -261,9 +261,9 @@ func TestConfig_GetGRPCClientOptions(t *testing.T) {
 func TestConfig_GetDialer(t *testing.T) {
 	ctx := context.Background()
 	oldValue := metadata.PkgConfigmiddlewareCustomTCPRoutingFeatureGate.IsEnabled()
-	featuregate.GlobalRegistry().Set(metadata.PkgConfigmiddlewareCustomTCPRoutingFeatureGate.ID(), true)
+	_ = featuregate.GlobalRegistry().Set(metadata.PkgConfigmiddlewareCustomTCPRoutingFeatureGate.ID(), true)
 	t.Cleanup(func() {
-		featuregate.GlobalRegistry().Set(metadata.PkgConfigmiddlewareCustomTCPRoutingFeatureGate.ID(), oldValue)
+		_ = featuregate.GlobalRegistry().Set(metadata.PkgConfigmiddlewareCustomTCPRoutingFeatureGate.ID(), oldValue)
 	})
 
 	tests := []struct {

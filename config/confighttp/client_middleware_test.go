@@ -251,9 +251,9 @@ func TestGRPCClientMiddlewareErrors(t *testing.T) {
 }
 
 func TestClientCustomDialer(t *testing.T) {
-	featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", true)
+	_ = featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", true)
 	t.Cleanup(func() {
-		featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", false)
+		_ = featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", false)
 	})
 	// Create a test server that returns "OK"
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -300,9 +300,9 @@ func TestClientCustomDialer(t *testing.T) {
 }
 
 func TestClientCustomDialerErrors(t *testing.T) {
-	featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", true)
+	_ = featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", true)
 	t.Cleanup(func() {
-		featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", false)
+		_ = featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", false)
 	})
 	tests := []struct {
 		name       string
