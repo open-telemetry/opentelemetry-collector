@@ -161,11 +161,10 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 		curvePreferences = append(curvePreferences, curveID)
 	}
 
-	// If no curve preferences were explicitly specified in the configuration, use
-	// the ones we allow. This helps in particular with FIPS builds where not all curves
-	// are allowed.
+	// When no curve_preferences were specified in the config, use the crypto/tls default set
+	// Builds tagged requiredfips instead use the allowed FIPS curves by default
 	if len(curvePreferences) == 0 {
-		curvePreferences = allowedCurves
+		curvePreferences = defaultCurvePreferences()
 	}
 
 	return &tls.Config{
