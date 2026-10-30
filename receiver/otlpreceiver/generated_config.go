@@ -29,9 +29,7 @@ type HTTPConfig struct {
 	_ struct{}
 }
 
-// NewDefaultHTTPConfig returns a new HTTPConfig with its default values applied.
-// Prefer this over an empty struct literal so default changes stay in sync automatically.
-func NewDefaultHTTPConfig() HTTPConfig {
+func newDefaultHTTPConfig() HTTPConfig {
 	return HTTPConfig{
 		ServerConfig: confighttp.NewDefaultServerConfig(),
 	}
@@ -60,13 +58,11 @@ func (c *Protocols) Validate() error {
 	return err
 }
 
-// NewDefaultProtocols returns a new Protocols with its default values applied.
-// Prefer this over an empty struct literal so default changes stay in sync automatically.
-func NewDefaultProtocols() Protocols {
+func newDefaultProtocols() Protocols {
 	grpc := configgrpc.NewDefaultServerConfig()
 	grpc.ReadBufferSize = 524288
 	grpc.NetAddr.Endpoint = "localhost:4317"
-	http := NewDefaultHTTPConfig()
+	http := newDefaultHTTPConfig()
 	http.ServerConfig.NetAddr.Endpoint = "localhost:4318"
 	http.ServerConfig.TLS = configoptional.None[configtls.ServerConfig]()
 	http.ServerConfig.ReadHeaderTimeout = 0
@@ -93,6 +89,6 @@ type Config struct {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Protocols: NewDefaultProtocols(),
+		Protocols: newDefaultProtocols(),
 	}
 }
