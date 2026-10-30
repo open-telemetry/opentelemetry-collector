@@ -157,7 +157,7 @@ $defs:
         x-optional: true
         $ref: keepalive_server_config
       max_request_body_size:
-        description: 'MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.'
+        description: 'MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB. The limit is enforced on the bytes received and, when the request has a supported Content-Encoding (for example gzip), again on the decompressed body. Set it to the maximum expected decompressed payload size.'
         type: integer
         x-customType: int64
       middlewares:
