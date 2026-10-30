@@ -801,6 +801,23 @@ func TestRegisterProcessMetrics_SupportedOS_RegisterFails_ReturnsError(t *testin
 	require.Contains(t, err.Error(), "failed to register process metrics")
 }
 
+func TestRegisterProcessMetrics_SupportedOS_ForwardsOptions(t *testing.T) {
+	var gotOpts []proctelemetry.RegisterOption
+	mockRegister := func(_ component.TelemetrySettings, opts ...proctelemetry.RegisterOption) error {
+		gotOpts = opts
+		return nil
+	}
+
+	srv := &Service{
+		telemetrySettings: component.TelemetrySettings{Logger: zap.NewNop()},
+	}
+
+	err := registerProcessMetrics(srv, "linux", mockRegister, proctelemetry.WithHostProc("/proc"))
+
+	require.NoError(t, err)
+	require.Len(t, gotOpts, 1, "Options passed to registerProcessMetrics should be forwarded to the register function")
+}
+
 func TestReceiverPartialReloadEnabled(t *testing.T) {
 	// Both the master gate and the receiver phase gate must be enabled.
 	cases := []struct {
