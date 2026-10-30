@@ -4,6 +4,7 @@
 package otlphttpexporter
 
 import (
+	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -78,7 +79,8 @@ func TestUnmarshalConfig(t *testing.T) {
 				Compression:       "gzip",
 				ForceAttemptHTTP2: true,
 			},
-			ProfilesEndpoint: "https://custom.profiles.endpoint:8080/v1development/profiles",
+			ProfilesEndpoint:         "https://custom.profiles.endpoint:8080/v1development/profiles",
+			RetryableHTTPStatusCodes: []int{http.StatusRequestTimeout},
 		}, cfg)
 }
 
@@ -134,6 +136,17 @@ func TestUnmarshalEncoding(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConfigValidateRetryableHTTPStatusCodes(t *testing.T) {
+	cfg := &Config{
+		ClientConfig:             confighttp.ClientConfig{Endpoint: "http://localhost:4318"},
+		RetryableHTTPStatusCodes: []int{http.StatusRequestTimeout, http.StatusInternalServerError},
+	}
+	require.NoError(t, cfg.Validate())
+
+	cfg.RetryableHTTPStatusCodes = []int{http.StatusOK}
+	assert.ErrorContains(t, cfg.Validate(), "retryable_http_status_codes must only contain 4xx and 5xx status codes")
 }
 
 func TestConfigValidate(t *testing.T) {

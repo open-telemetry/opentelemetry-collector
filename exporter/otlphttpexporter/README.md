@@ -44,6 +44,11 @@ The following settings can be optionally configured:
 - `write_buffer_size` (default = 512 * 1024): WriteBufferSize for HTTP client.
 - `encoding` (default = proto): The encoding to use for the messages (valid options: `proto`, `json`)
 - `retry_on_failure`:  see [Retry on Failure](../exporterhelper/README.md#retry-on-failure) for the full set of available options.
+- `retryable_http_status_codes` (default = []): Additional HTTP response status codes to retry, on top of the
+  codes the OTLP specification defines as retryable (429, 502, 503 and 504). The specification treats every other
+  4xx and 5xx response as non-retryable and drops the batch, so only add codes here when the response really is
+  transient for your setup (for example 408 Request Timeout returned by an intermediary proxy). Requires
+  `retry_on_failure` to be enabled.
 - `sending_queue`: see [Sending Queue](../exporterhelper/README.md#sending-queue) for the full set of available options.
 
 Example:

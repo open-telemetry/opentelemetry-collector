@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -28,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -157,6 +159,17 @@ func TestErrorResponses(t *testing.T) {
 			},
 		},
 		{
+			name:           "408",
+			responseStatus: http.StatusRequestTimeout,
+			responseBody:   nil,
+			checkErr: func(t *testing.T, err error, _ *httptest.Server) {
+				// 408 is not in the OTLP retryable set, so it stays permanent
+				// unless it is opted in via retryable_http_status_codes.
+				assert.True(t, consumererror.IsPermanent(err))
+				assert.ErrorContains(t, err, "HTTP Status Code 408")
+			},
+		},
+		{
 			name:           "429",
 			responseStatus: http.StatusTooManyRequests,
 			responseBody:   status.New(codes.ResourceExhausted, "Quota exceeded"),
@@ -276,6 +289,69 @@ func TestErrorResponses(t *testing.T) {
 			err = exp.ConsumeTraces(context.Background(), traces)
 			require.Error(t, err)
 			test.checkErr(t, err, srv)
+		})
+	}
+}
+
+func TestRetryableHTTPStatusCodes(t *testing.T) {
+	tests := []struct {
+		name             string
+		retryableCodes   []int
+		expectedRequests int32
+		expectedErr      bool
+	}{
+		{
+			// https://github.com/open-telemetry/opentelemetry-collector/issues/16256
+			name:             "408 is permanent by default",
+			expectedRequests: 1,
+			expectedErr:      true,
+		},
+		{
+			name:             "408 is retried when opted in",
+			retryableCodes:   []int{http.StatusRequestTimeout},
+			expectedRequests: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var requests atomic.Int32
+			srv := createBackend("/v1/traces", func(writer http.ResponseWriter, request *http.Request) {
+				_, _ = io.Copy(io.Discard, request.Body)
+				if requests.Add(1) == 1 {
+					writer.WriteHeader(http.StatusRequestTimeout)
+					return
+				}
+				writer.WriteHeader(http.StatusOK)
+			})
+			defer srv.Close()
+
+			cfg := &Config{
+				Encoding:                 EncodingProto,
+				TracesEndpoint:           srv.URL + "/v1/traces",
+				RetryableHTTPStatusCodes: tt.retryableCodes,
+				RetryConfig: configretry.BackOffConfig{
+					Enabled:         true,
+					InitialInterval: time.Millisecond,
+					MaxInterval:     time.Millisecond,
+					MaxElapsedTime:  5 * time.Second,
+				},
+			}
+			exp, err := createTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+			require.NoError(t, err)
+			require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+			t.Cleanup(func() {
+				require.NoError(t, exp.Shutdown(context.Background()))
+			})
+
+			err = exp.ConsumeTraces(context.Background(), ptrace.NewTraces())
+			if tt.expectedErr {
+				require.Error(t, err)
+				assert.True(t, consumererror.IsPermanent(err))
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, tt.expectedRequests, requests.Load())
 		})
 	}
 }
