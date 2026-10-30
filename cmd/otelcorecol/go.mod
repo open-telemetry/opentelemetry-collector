@@ -354,6 +354,8 @@ replace go.opentelemetry.io/collector/receiver/nopreceiver => ../../receiver/nop
 
 replace go.opentelemetry.io/collector/receiver/receiverhelper => ../../receiver/receiverhelper
 
+replace go.opentelemetry.io/collector/receiver/receiverhelper/xreceiverhelper => ../../receiver/receiverhelper/xreceiverhelper
+
 replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
 
 replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
@@ -365,5 +367,3 @@ replace go.opentelemetry.io/collector/service => ../../service
 replace go.opentelemetry.io/collector/service/hostcapabilities => ../../service/hostcapabilities
 
 replace go.opentelemetry.io/collector/service/telemetry/telemetrytest => ../../service/telemetry/telemetrytest
-
-replace go.opentelemetry.io/collector/receiver/receiverhelper/xreceiverhelper => ../../receiver/receiverhelper/xreceiverhelper
