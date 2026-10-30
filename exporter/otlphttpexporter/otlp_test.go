@@ -90,7 +90,7 @@ func provideProfilesResponseSerializer() responseSerializer {
 
 func TestErrorResponses(t *testing.T) {
 	errMsgPrefix := func(srv *httptest.Server) string {
-		return fmt.Sprintf("error exporting items, request to %s/v1/traces responded with HTTP Status Code ", srv.URL)
+		return fmt.Sprintf("error exporting items, request to %s responded with HTTP Status Code ", srv.URL)
 	}
 
 	tests := []struct {
@@ -1198,16 +1198,21 @@ func (t *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func TestExport_ErrorShowsModifiedURL(t *testing.T) {
-	originalURL := "http://localhost:4318/v1/logs"
-	modifiedURL := "https://actual-destination.example.com/v1/logs"
+	t.Parallel()
+	originalURL := "http://localhost:4318/placeholder-token/v1/logs"
+	modifiedURL := "https://user:secret@actual-destination.example.com:443/rewritten-token/v1/logs?api_key=key#fragment" // #nosec G101 -- synthetic credentials test redaction.
+	transportErr := errors.New("connection failed")
+	var sentRequest *http.Request
 
 	transport := &mockTransport{
 		roundTripFunc: func(req *http.Request) (*http.Response, error) {
+			assert.Equal(t, originalURL, req.URL.String())
 			parsedModified, err := url.Parse(modifiedURL)
 			require.NoError(t, err)
 			req.URL = parsedModified
+			sentRequest = req
 
-			return nil, errors.New("we need an error logged")
+			return nil, transportErr
 		},
 	}
 
@@ -1225,8 +1230,130 @@ func TestExport_ErrorShowsModifiedURL(t *testing.T) {
 	err := exp.export(context.Background(), originalURL, []byte("test data"), nil)
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), modifiedURL, "Error message should contain the modified destination URL")
-	assert.NotContains(t, err.Error(), originalURL, "Error message should NOT contain the original placeholder URL")
+	require.ErrorIs(t, err, transportErr)
+	assert.Contains(t, err.Error(), "https://actual-destination.example.com:443")
+	assert.NotContains(t, err.Error(), "localhost")
+	for _, secret := range []string{"user", "secret", "rewritten-token", "api_key", "fragment"} {
+		assert.NotContains(t, err.Error(), secret)
+	}
+	assert.Equal(t, modifiedURL, sentRequest.URL.String())
+	assert.False(t, consumererror.IsPermanent(err))
+}
+
+func TestExport_RedactsURL(t *testing.T) {
+	t.Parallel()
+	throttleBody, err := proto.Marshal(status.New(codes.Unavailable, "unavailable").Proto())
+	require.NoError(t, err)
+	endpoints := []struct {
+		url      string
+		expected string
+	}{
+		{"https://myendpoint.com/TOKEN/v1/logs", "https://myendpoint.com"},
+		{"https://ingest.example.com:4318/v1/metrics?api_key=abc", "https://ingest.example.com:4318"},
+		{"https://user:secret@ingest.example.com/v1/logs", "https://ingest.example.com"},
+		{"http://[::1]:4318/v1/traces", "http://[::1]:4318"},
+		{"https://user:secret@[::1]:443/path?api_key=abc#fragment", "https://[::1]:443"},
+		{"https://ingest.example.com/path%2Ftoken?api_key=abc#fragment", "https://ingest.example.com"},
+	}
+	responses := []struct {
+		name      string
+		code      int
+		permanent bool
+		body      string
+	}{
+		{"permanent", http.StatusBadRequest, true, ""},
+		{"retryable", http.StatusBadGateway, false, "not-protobuf"},
+		{"throttled", http.StatusServiceUnavailable, false, string(throttleBody)},
+	}
+	for _, endpoint := range endpoints {
+		for _, response := range responses {
+			t.Run(endpoint.url+"/"+response.name, func(t *testing.T) {
+				t.Parallel()
+				logger, logs := observer.New(zap.DebugLevel)
+				exp := &baseExporter{
+					config: &Config{Encoding: EncodingJSON},
+					logger: zap.New(logger),
+					client: &http.Client{Transport: &mockTransport{
+						roundTripFunc: func(req *http.Request) (*http.Response, error) {
+							assert.Equal(t, endpoint.url, req.URL.String())
+							return &http.Response{
+								StatusCode:    response.code,
+								Header:        http.Header{"Content-Type": {protobufContentType}, "Retry-After": {"30"}},
+								ContentLength: int64(len(response.body)),
+								Body:          io.NopCloser(strings.NewReader(response.body)),
+							}, nil
+						},
+					}},
+				}
+				err := exp.export(t.Context(), endpoint.url, nil, nil)
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "request to "+endpoint.expected+" responded with HTTP Status Code "+strconv.Itoa(response.code))
+				assert.Equal(t, response.permanent, consumererror.IsPermanent(err))
+				if response.name == "throttled" {
+					assert.Contains(t, err.Error(), "Throttle (30s)")
+					assert.Contains(t, err.Error(), "Message=unavailable")
+				}
+				for _, secret := range []string{"TOKEN", "api_key", "user", "secret", "/v1", "/path", "fragment"} {
+					assert.NotContains(t, err.Error(), secret)
+				}
+				entries := logs.FilterMessage("Preparing to make HTTP request").All()
+				require.Len(t, entries, 1)
+				assert.Equal(t, endpoint.expected, entries[0].ContextMap()["url"])
+			})
+		}
+	}
+}
+
+func TestExport_RedactsInvalidURL(t *testing.T) {
+	t.Parallel()
+	for _, endpoint := range []string{
+		"https://ingest.example.com/secret%xx",
+		"https://ingest.example.com:secret/path",
+		"/secret/path?api_key=abc",
+		"https:///secret/path?api_key=abc",
+		"mailto:secret@example.com",
+	} {
+		t.Run(endpoint, func(t *testing.T) {
+			t.Parallel()
+			logger, logs := observer.New(zap.DebugLevel)
+			exp := &baseExporter{
+				config: &Config{Encoding: EncodingProto},
+				logger: zap.New(logger),
+				client: &http.Client{},
+			}
+			err := exp.export(t.Context(), endpoint, nil, nil)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "[REDACTED]")
+			assert.NotContains(t, err.Error(), "secret")
+			assert.NotContains(t, err.Error(), "api_key")
+			entries := logs.FilterMessage("Preparing to make HTTP request").All()
+			require.Len(t, entries, 1)
+			assert.Equal(t, "[REDACTED]", entries[0].ContextMap()["url"])
+			if _, parseErr := url.Parse(endpoint); parseErr != nil {
+				assert.True(t, consumererror.IsPermanent(err))
+				var urlErr *url.Error
+				require.ErrorAs(t, err, &urlErr)
+			}
+		})
+	}
+}
+
+func TestExport_TransportErrorPreservesCause(t *testing.T) {
+	t.Parallel()
+	exp := &baseExporter{
+		config: &Config{Encoding: EncodingProto},
+		logger: zap.NewNop(),
+		client: &http.Client{Transport: &mockTransport{
+			roundTripFunc: func(*http.Request) (*http.Response, error) {
+				return nil, context.DeadlineExceeded
+			},
+		}},
+	}
+	err := exp.export(t.Context(), "https://ingest.example.com/secret?api_key=abc", nil, nil)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.NotContains(t, err.Error(), "secret")
+	assert.NotContains(t, err.Error(), "api_key")
+	assert.False(t, consumererror.IsPermanent(err))
 }
 
 func TestPartialSuccess_responseBodyTooLarge(t *testing.T) {
@@ -1262,11 +1389,10 @@ func TestPartialSuccess_responseBodyTooLarge(t *testing.T) {
 }
 
 func TestExport_StatusErrorShowsResolvedURL(t *testing.T) {
-	configuredURL := "http://endpoint.invalid/v1/logs"
+	configuredURL := "http://endpoint.invalid/configured-token/v1/logs?api_key=configured-key#configured-fragment"
 
-	// A routing middleware that follows the RoundTripper contract clones the
-	// request instead of mutating it, so only the response carries the
-	// rewritten URL.
+	// Routing middleware can clone requests, so only the response carries the
+	// rewritten URL. Diagnostics retain that destination without its secrets.
 	cloneWithURL := func(rawURL string) func(*http.Request) *http.Request {
 		return func(req *http.Request) *http.Request {
 			resolved := req.Clone(req.Context())
@@ -1277,8 +1403,7 @@ func TestExport_StatusErrorShowsResolvedURL(t *testing.T) {
 		}
 	}
 
-	// Built at runtime so gosec does not see a credential in a URL literal.
-	withUserinfo, err := url.Parse("https://actual-destination.example.com/v1/logs")
+	withUserinfo, err := url.Parse("https://actual-destination.example.com:443/rewritten-token/v1/logs?api_key=rewritten-key#rewritten-fragment")
 	require.NoError(t, err)
 	withUserinfo.User = url.UserPassword("user", "secret")
 
@@ -1290,57 +1415,75 @@ func TestExport_StatusErrorShowsResolvedURL(t *testing.T) {
 	}{
 		{
 			name:         "rewritten URL taken from the response request",
-			respRequest:  cloneWithURL("https://actual-destination.example.com/v1/logs"),
-			wantContains: "https://actual-destination.example.com/v1/logs",
-			wantAbsent:   []string{configuredURL},
+			respRequest:  cloneWithURL("https://actual-destination.example.com/rewritten-token/v1/logs?api_key=rewritten-key#rewritten-fragment"),
+			wantContains: "https://actual-destination.example.com",
+			wantAbsent:   []string{"endpoint.invalid"},
 		},
 		{
 			name:         "userinfo in the rewritten URL is redacted",
 			respRequest:  cloneWithURL(withUserinfo.String()),
-			wantContains: withUserinfo.Redacted(),
-			wantAbsent:   []string{"secret", configuredURL},
+			wantContains: "https://actual-destination.example.com:443",
+			wantAbsent:   []string{"user", "secret", "endpoint.invalid"},
 		},
 		{
 			name:         "response without request falls back to the configured URL",
 			respRequest:  func(*http.Request) *http.Request { return nil },
-			wantContains: configuredURL,
+			wantContains: "http://endpoint.invalid",
 		},
 		{
 			name:         "response request without URL falls back to the configured URL",
 			respRequest:  func(*http.Request) *http.Request { return &http.Request{} },
-			wantContains: configuredURL,
+			wantContains: "http://endpoint.invalid",
 		},
+	}
+	statusBody, err := proto.Marshal(status.New(codes.Unavailable, "unavailable").Proto())
+	require.NoError(t, err)
+	responses := []struct {
+		name      string
+		code      int
+		body      string
+		permanent bool
+	}{
+		{"permanent", http.StatusNotFound, "", true},
+		{"retryable with status", http.StatusServiceUnavailable, string(statusBody), false},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			transport := &mockTransport{
-				roundTripFunc: func(req *http.Request) (*http.Response, error) {
-					return &http.Response{
-						StatusCode: http.StatusNotFound,
-						Header:     make(http.Header),
-						Body:       http.NoBody,
-						Request:    tt.respRequest(req),
-					}, nil
-				},
-			}
+		for _, response := range responses {
+			t.Run(tt.name+"/"+response.name, func(t *testing.T) {
+				transport := &mockTransport{
+					roundTripFunc: func(req *http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode:    response.code,
+							Header:        http.Header{"Content-Type": {protobufContentType}},
+							Body:          io.NopCloser(strings.NewReader(response.body)),
+							ContentLength: int64(len(response.body)),
+							Request:       tt.respRequest(req),
+						}, nil
+					},
+				}
 
-			logger, _ := observer.New(zap.DebugLevel)
-			exp := &baseExporter{
-				client: &http.Client{Transport: transport},
-				logger: zap.New(logger),
-				config: &Config{
-					Encoding: EncodingProto,
-				},
-			}
+				exp := &baseExporter{
+					client: &http.Client{Transport: transport},
+					logger: zap.NewNop(),
+					config: &Config{Encoding: EncodingProto},
+				}
 
-			err := exp.export(context.Background(), configuredURL, []byte("test data"), nil)
+				err := exp.export(t.Context(), configuredURL, []byte("test data"), nil)
 
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), tt.wantContains)
-			for _, absent := range tt.wantAbsent {
-				assert.NotContains(t, err.Error(), absent)
-			}
-		})
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "request to "+tt.wantContains+" responded with HTTP Status Code "+strconv.Itoa(response.code))
+				assert.Equal(t, response.permanent, consumererror.IsPermanent(err))
+				if response.body != "" {
+					assert.Contains(t, err.Error(), "Message=unavailable")
+				}
+				for _, absent := range tt.wantAbsent {
+					assert.NotContains(t, err.Error(), absent)
+				}
+				for _, secret := range []string{"configured-token", "configured-key", "configured-fragment", "rewritten-token", "rewritten-key", "rewritten-fragment", "api_key"} {
+					assert.NotContains(t, err.Error(), secret)
+				}
+			})
+		}
 	}
 }
