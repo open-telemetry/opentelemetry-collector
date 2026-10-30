@@ -64,6 +64,7 @@ func NewQueueBatch(
 		Capacity:         cfg.QueueSize,
 		NumConsumers:     cfg.NumConsumers,
 		WaitForResult:    cfg.WaitForResult,
+		FastTrack:        cfg.FastTrack,
 		BlockOnOverflow:  cfg.BlockOnOverflow,
 		Signal:           set.Signal,
 		StorageID:        cfg.StorageID,
