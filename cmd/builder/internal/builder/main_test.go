@@ -112,6 +112,7 @@ var replaceModules = []string{
 	"/receiver/otlpreceiver",
 	"/receiver/receivertest",
 	"/receiver/receiverhelper",
+	"/receiver/receiverhelper/xreceiverhelper",
 	"/receiver/xreceiver",
 	"/service",
 	"/service/hostcapabilities",
