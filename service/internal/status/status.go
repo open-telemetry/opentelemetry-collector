@@ -109,7 +109,11 @@ type Reporter interface {
 var _ Reporter = (*reporter)(nil)
 
 type reporter struct {
-	mu                  sync.Mutex
+	mu sync.Mutex
+	// fsmMap holds a state machine for every instance that has reported
+	// StatusStarting and has not yet reported StatusStopped. Entries are
+	// dropped on StatusStopped so that instances replaced by a partial
+	// reload do not accumulate for the lifetime of the service.
 	fsmMap              map[*componentstatus.InstanceID]*fsm
 	onStatusChange      NotifyStatusFunc
 	onInvalidTransition InvalidTransitionFunc
@@ -133,30 +137,36 @@ func (r *reporter) ReportStatus(
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if err := r.componentFSM(id).transition(ev); err != nil {
+	fsm, known := r.fsmMap[id]
+	if !known {
+		fsm = newFSM(func(ev *componentstatus.Event) { r.onStatusChange(id, ev) })
+	}
+	if err := fsm.transition(ev); err != nil {
+		// An unknown instance is only registered by a valid first transition,
+		// which newFSM restricts to StatusStarting. A late event for an
+		// instance that already stopped therefore reports an invalid
+		// transition without creating a new entry.
 		r.onInvalidTransition(err)
+		return
+	}
+	switch {
+	case !known:
+		r.fsmMap[id] = fsm
+	case ev.Status() == componentstatus.StatusStopped:
+		delete(r.fsmMap, id)
 	}
 }
 
 func (r *reporter) ReportOKIfStarting(id *componentstatus.InstanceID) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	fsm := r.componentFSM(id)
-	if fsm.current.Status() == componentstatus.StatusStarting {
-		if err := fsm.transition(componentstatus.NewEvent(componentstatus.StatusOK)); err != nil {
-			r.onInvalidTransition(err)
-		}
+	fsm, known := r.fsmMap[id]
+	if !known || fsm.current.Status() != componentstatus.StatusStarting {
+		return
 	}
-}
-
-// Note: a lock must be acquired before calling this method.
-func (r *reporter) componentFSM(id *componentstatus.InstanceID) *fsm {
-	fsm, ok := r.fsmMap[id]
-	if !ok {
-		fsm = newFSM(func(ev *componentstatus.Event) { r.onStatusChange(id, ev) })
-		r.fsmMap[id] = fsm
+	if err := fsm.transition(componentstatus.NewEvent(componentstatus.StatusOK)); err != nil {
+		r.onInvalidTransition(err)
 	}
-	return fsm
 }
 
 // NewReportStatusFunc returns a function to be used as ReportStatus for componentstatus.TelemetrySettings
