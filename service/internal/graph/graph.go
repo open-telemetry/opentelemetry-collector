@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"reflect"
 	"slices"
 	"strings"
 
@@ -511,7 +510,7 @@ func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error
 // UpdateReceivers performs a partial reload of receiver nodes in the graph.
 // Only receivers that have been added, removed, or changed (config or pipeline
 // membership) are affected, together with the nodes of other signals that
-// hold the same component instance as a removed or rebuilt node. Unchanged
+// have the same component ID as an added, removed or rebuilt node. Unchanged
 // receivers keep running without interruption. Connectors, processors,
 // exporters, and all other graph nodes are left untouched.
 func (g *Graph) UpdateReceivers(ctx context.Context, set Settings,
@@ -541,12 +540,14 @@ func (g *Graph) UpdateReceivers(ctx context.Context, set Settings,
 
 	// Phase 2: Determine desired receiver nodes from the new pipeline configs.
 	desiredPipelines := make(map[int64]map[pipeline.ID]bool)
+	desiredIDs := make(map[int64]component.ID)
 	for pipelineID, pipelineCfg := range set.PipelineConfigs {
 		for _, recvID := range pipelineCfg.Receivers {
 			if set.ConnectorBuilder.IsConfigured(recvID) {
 				continue
 			}
 			nodeID := newReceiverNode(pipelineID.Signal(), recvID).ID()
+			desiredIDs[nodeID] = recvID
 			if desiredPipelines[nodeID] == nil {
 				desiredPipelines[nodeID] = make(map[pipeline.ID]bool)
 			}
@@ -557,7 +558,7 @@ func (g *Graph) UpdateReceivers(ctx context.Context, set Settings,
 	// Phase 3: Categorize each receiver node.
 	toRemove := make(map[int64]*receiverNode)  // present now, absent in desired
 	toRebuild := make(map[int64]*receiverNode) // present in both, but changed
-	toAdd := make(map[int64]bool)              // absent now, present in desired
+	toAdd := make(map[int64]component.ID)      // absent now, present in desired
 
 	for nodeID, rn := range currentReceivers {
 		if _, desired := desiredPipelines[nodeID]; !desired {
@@ -568,20 +569,25 @@ func (g *Graph) UpdateReceivers(ctx context.Context, set Settings,
 		}
 		// else: unchanged — leave running
 	}
-	for nodeID := range desiredPipelines {
+	for nodeID, recvID := range desiredIDs {
 		if _, exists := currentReceivers[nodeID]; !exists {
-			toAdd[nodeID] = true
+			toAdd[nodeID] = recvID
 		}
 	}
 
 	// A receiver factory may hand one component instance to several signals
 	// (internal/sharedcomponent does this for the OTLP receiver, whose single
 	// server serves traces, metrics and logs). Shutting down the node of one
-	// signal stops the instance for all of them, so every node that shares an
-	// instance with a node being removed or rebuilt is rebuilt as well.
-	// Otherwise the remaining nodes would keep a stopped component and the
-	// graph would silently drop the data of their signals.
-	addSharedReceiverNodes(currentReceivers, toRemove, toRebuild)
+	// signal stops the instance for all of them, and a node added for another
+	// signal must be built before the instance is started. The graph cannot
+	// tell whether the nodes of a receiver share an instance, so every node
+	// with the component ID of a node being added, removed or rebuilt is
+	// rebuilt as well. For a receiver with a separate instance per signal this
+	// means an extra restart of its other signals. Without it, a shared
+	// instance could be stopped under a node the graph leaves running, or keep
+	// running without the added signal, and the data of those signals would be
+	// silently dropped.
+	addSharedReceiverNodes(currentReceivers, toRemove, toRebuild, toAdd)
 
 	if len(toRemove) == 0 && len(toRebuild) == 0 && len(toAdd) == 0 {
 		g.telemetry.Logger.Info("Partial receiver reload: no receiver changes detected")
@@ -617,7 +623,10 @@ func (g *Graph) UpdateReceivers(ctx context.Context, set Settings,
 	g.removeReceiverNodes(toRebuild)
 
 	// Phases 6-8: Create, wire and build nodes for added and rebuilt receivers.
-	wanted := maps.Clone(toAdd)
+	wanted := make(map[int64]bool, len(toAdd)+len(toRebuild))
+	for nodeID := range toAdd {
+		wanted[nodeID] = true
+	}
 	for nodeID := range toRebuild {
 		wanted[nodeID] = true
 	}
@@ -635,44 +644,25 @@ func (g *Graph) UpdateReceivers(ctx context.Context, set Settings,
 	return nil
 }
 
-// addSharedReceiverNodes adds to toRebuild every node in current that holds
-// the same component instance as a node in toRemove or toRebuild.
-func addSharedReceiverNodes(current, toRemove, toRebuild map[int64]*receiverNode) {
-	affected := make([]*receiverNode, 0, len(toRemove)+len(toRebuild))
+// addSharedReceiverNodes adds to toRebuild every node in current that is not
+// in toRemove and has the component ID of a node in toRemove, toRebuild or
+// toAdd.
+func addSharedReceiverNodes(current, toRemove, toRebuild map[int64]*receiverNode, toAdd map[int64]component.ID) {
+	affected := make(map[component.ID]bool)
 	for _, rn := range toRemove {
-		affected = append(affected, rn)
+		affected[rn.componentID] = true
 	}
 	for _, rn := range toRebuild {
-		affected = append(affected, rn)
+		affected[rn.componentID] = true
+	}
+	for _, recvID := range toAdd {
+		affected[recvID] = true
 	}
 	for nodeID, rn := range current {
-		if _, ok := toRemove[nodeID]; ok {
-			continue
-		}
-		if _, ok := toRebuild[nodeID]; ok {
-			continue
-		}
-		for _, other := range affected {
-			if sharesInstance(rn, other) {
-				toRebuild[nodeID] = rn
-				break
-			}
+		if _, removed := toRemove[nodeID]; !removed && affected[rn.componentID] {
+			toRebuild[nodeID] = rn
 		}
 	}
-}
-
-// sharesInstance reports whether two receiver nodes hold the same component
-// instance. Identity is established for components handed to the graph by
-// pointer, which is what factories return. For anything else identity cannot
-// be established, and the nodes of one receiver ID are conservatively treated
-// as sharing an instance: an extra restart is cheaper than an instance that is
-// stopped under a node the graph considers running.
-func sharesInstance(a, b *receiverNode) bool {
-	va, vb := reflect.ValueOf(a.Component), reflect.ValueOf(b.Component)
-	if va.Kind() == reflect.Pointer && vb.Kind() == reflect.Pointer {
-		return va.Pointer() == vb.Pointer()
-	}
-	return a.componentID == b.componentID
 }
 
 // shutdownReceiverNodes stops the given receiver nodes, reporting the status
@@ -736,7 +726,10 @@ func (g *Graph) addReceiverNodes(ctx context.Context, set Settings, wanted map[i
 				continue // unchanged receiver, or shared receiver already built
 			}
 			built[nodeID] = true
-			rn := node.(*receiverNode)
+			rn, ok := node.(*receiverNode)
+			if !ok {
+				continue
+			}
 			if err := rn.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(nodeID)); err != nil {
 				return nil, fmt.Errorf("failed to build receiver %q: %w", rn.componentID, err)
 			}

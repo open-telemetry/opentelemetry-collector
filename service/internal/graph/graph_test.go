@@ -3717,23 +3717,22 @@ func newPerSignalReceiverFactory() receiver.Factory {
 	)
 }
 
-// valueReceiver is a sharedReceiver handed to the graph by value rather than
-// by pointer, so that the graph cannot tell by identity whether two nodes hold
-// the same instance.
-type valueReceiver struct{ inner *sharedReceiver }
+// wrappedReceiver wraps a sharedReceiver, so that the nodes of every signal
+// hold a different component while the instance behind them is shared.
+type wrappedReceiver struct{ inner *sharedReceiver }
 
-func (v valueReceiver) Start(ctx context.Context, host component.Host) error {
-	return v.inner.Start(ctx, host)
+func (w *wrappedReceiver) Start(ctx context.Context, host component.Host) error {
+	return w.inner.Start(ctx, host)
 }
 
-func (v valueReceiver) Shutdown(ctx context.Context) error {
-	return v.inner.Shutdown(ctx)
+func (w *wrappedReceiver) Shutdown(ctx context.Context) error {
+	return w.inner.Shutdown(ctx)
 }
 
-// newValueReceiverFactory returns a receiver factory of the same type as
-// newSharedReceiverFactory that shares one instance per config but returns it
-// wrapped in a value type.
-func newValueReceiverFactory(instances *[]*sharedReceiver) receiver.Factory {
+// newWrappedReceiverFactory returns a receiver factory of the same type as
+// newSharedReceiverFactory that shares one instance per config but hands every
+// signal its own wrapper around it.
+func newWrappedReceiverFactory(instances *[]*sharedReceiver) receiver.Factory {
 	shared := newSharedReceiverFactory(instances)
 	return receiver.NewFactory(
 		sharedReceiverType,
@@ -3743,14 +3742,14 @@ func newValueReceiverFactory(instances *[]*sharedReceiver) receiver.Factory {
 			if err != nil {
 				return nil, err
 			}
-			return valueReceiver{inner: r.(*sharedReceiver)}, nil
+			return &wrappedReceiver{inner: r.(*sharedReceiver)}, nil
 		}, component.StabilityLevelDevelopment),
 		receiver.WithMetrics(func(ctx context.Context, set receiver.Settings, cfg component.Config, next consumer.Metrics) (receiver.Metrics, error) {
 			r, err := shared.CreateMetrics(ctx, set, cfg, next)
 			if err != nil {
 				return nil, err
 			}
-			return valueReceiver{inner: r.(*sharedReceiver)}, nil
+			return &wrappedReceiver{inner: r.(*sharedReceiver)}, nil
 		}, component.StabilityLevelDevelopment),
 	)
 }
@@ -3820,6 +3819,46 @@ func TestUpdateReceiversSharedInstanceRemovedFromOneSignal(t *testing.T) {
 	}
 	require.Error(t, tracesRcvr.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)),
 		"metrics are no longer registered on the rebuilt instance")
+
+	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+}
+
+// TestUpdateReceiversSharedInstanceAddedToSignal verifies that adding a
+// receiver to the metrics pipeline while it already runs in the traces
+// pipeline rebuilds the traces node. Otherwise the metrics node would be built
+// on the instance that is already running, which never serves metrics.
+func TestUpdateReceiversSharedInstanceAddedToSignal(t *testing.T) {
+	var instances []*sharedReceiver
+	factories := map[component.Type]receiver.Factory{sharedReceiverType: newSharedReceiverFactory(&instances)}
+	sharedID := component.MustNewID("sharedreceiver")
+	rcvrCfgs := map[component.ID]component.Config{sharedID: &sharedReceiverConfig{id: "v1"}}
+
+	// The metrics pipeline starts out without the receiver.
+	initialPipelines := sharedReceiverPipelines(sharedID, nil)
+	initialPipelines[pipeline.NewID(pipeline.SignalMetrics)].Receivers = nil
+	pg, host, set := receiverTestGraph(t, rcvrCfgs, factories, initialPipelines)
+	require.Len(t, instances, 1)
+	assert.Equal(t, 1, instances[0].signalsAtStart)
+
+	// Same receiver config, metrics pipeline adds the receiver.
+	updatedSet := makeErrUpdatedSettings(set, rcvrCfgs, sharedReceiverPipelines(sharedID, nil))
+	updatedSet.ReceiverBuilder = builders.NewReceiver(rcvrCfgs, factories)
+	require.NoError(t, pg.UpdateReceivers(context.Background(), updatedSet, changedReceiverIDs(rcvrCfgs, rcvrCfgs), rcvrCfgs, factories, host))
+
+	require.Len(t, instances, 2, "the traces node is rebuilt together with the added metrics node")
+	assert.EqualValues(t, 1, instances[0].stopped.Load())
+	rebuilt := instances[1]
+	assert.EqualValues(t, 1, rebuilt.started.Load())
+	assert.Equal(t, 2, rebuilt.signalsAtStart, "both signals must be built before the shared instance starts")
+	assert.Same(t, rebuilt, sharedReceiverNodeComponent(t, pg, pipeline.SignalTraces, sharedID))
+	assert.Same(t, rebuilt, sharedReceiverNodeComponent(t, pg, pipeline.SignalMetrics, sharedID))
+
+	require.NoError(t, rebuilt.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
+	require.NoError(t, rebuilt.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
+	exporters := pg.GetExporters()
+	expID := component.MustNewID("exampleexporter")
+	assert.Len(t, exporters[pipeline.SignalTraces][expID].(*testcomponents.ExampleExporter).Traces, 1)
+	assert.Len(t, exporters[pipeline.SignalMetrics][expID].(*testcomponents.ExampleExporter).Metrics, 1)
 
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
@@ -3905,9 +3944,10 @@ func TestUpdateReceiversSharedInstanceConfigChange(t *testing.T) {
 }
 
 // TestUpdateReceiversSeparateInstancesPerSignal verifies that a receiver whose
-// factory creates a separate instance for every signal is not rebuilt for the
-// signals that did not change: the traces node keeps running when the receiver
-// is removed from the metrics pipeline.
+// factory creates a separate instance for every signal is rebuilt for the
+// signals that did not change as well, since the graph cannot tell that its
+// instances are separate: the traces node is restarted with a new instance
+// when the receiver is removed from the metrics pipeline.
 func TestUpdateReceiversSeparateInstancesPerSignal(t *testing.T) {
 	factories := map[component.Type]receiver.Factory{sharedReceiverType: newPerSignalReceiverFactory()}
 	recvID := component.MustNewID("sharedreceiver")
@@ -3925,24 +3965,31 @@ func TestUpdateReceiversSeparateInstancesPerSignal(t *testing.T) {
 	require.NoError(t, pg.UpdateReceivers(context.Background(), updatedSet, changedReceiverIDs(rcvrCfgs, rcvrCfgs), rcvrCfgs, factories, host))
 
 	assert.EqualValues(t, 1, metricsRcvr.stopped.Load())
-	assert.Same(t, tracesRcvr, sharedReceiverNodeComponent(t, pg, pipeline.SignalTraces, recvID), "the traces node is untouched")
-	assert.EqualValues(t, 0, tracesRcvr.stopped.Load())
-	require.NoError(t, tracesRcvr.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
+	assert.EqualValues(t, 1, tracesRcvr.stopped.Load())
+	rebuilt := sharedReceiverNodeComponent(t, pg, pipeline.SignalTraces, recvID).(*sharedReceiver)
+	assert.NotSame(t, tracesRcvr, rebuilt, "the traces node is rebuilt")
+	assert.EqualValues(t, 1, rebuilt.started.Load())
+	assert.EqualValues(t, 0, rebuilt.stopped.Load())
+	require.NoError(t, rebuilt.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
 
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
 
-// TestUpdateReceiversValueComponentsSameID verifies the conservative rule for
-// components handed to the graph by value, where instance identity cannot be
-// established: the nodes of one receiver ID are rebuilt together.
-func TestUpdateReceiversValueComponentsSameID(t *testing.T) {
+// TestUpdateReceiversSharedInstanceBehindWrappers verifies that the nodes of
+// one receiver ID are rebuilt together when the factory hands every signal a
+// different wrapper around one shared instance, so that the components held by
+// the nodes differ while the instance behind them is the same.
+func TestUpdateReceiversSharedInstanceBehindWrappers(t *testing.T) {
 	var instances []*sharedReceiver
-	factories := map[component.Type]receiver.Factory{sharedReceiverType: newValueReceiverFactory(&instances)}
+	factories := map[component.Type]receiver.Factory{sharedReceiverType: newWrappedReceiverFactory(&instances)}
 	recvID := component.MustNewID("sharedreceiver")
 	rcvrCfgs := map[component.ID]component.Config{recvID: &sharedReceiverConfig{id: "v1"}}
 
 	pg, host, set := receiverTestGraph(t, rcvrCfgs, factories, sharedReceiverPipelines(recvID, nil))
 	require.Len(t, instances, 1)
+	require.NotSame(t,
+		sharedReceiverNodeComponent(t, pg, pipeline.SignalTraces, recvID),
+		sharedReceiverNodeComponent(t, pg, pipeline.SignalMetrics, recvID))
 
 	updatedPipelines := sharedReceiverPipelines(recvID, nil)
 	updatedPipelines[pipeline.NewID(pipeline.SignalMetrics)].Receivers = nil
@@ -3952,7 +3999,7 @@ func TestUpdateReceiversValueComponentsSameID(t *testing.T) {
 
 	require.Len(t, instances, 2, "the traces node is rebuilt together with the removed metrics node")
 	assert.EqualValues(t, 1, instances[0].stopped.Load())
-	tracesRcvr := sharedReceiverNodeComponent(t, pg, pipeline.SignalTraces, recvID).(valueReceiver).inner
+	tracesRcvr := sharedReceiverNodeComponent(t, pg, pipeline.SignalTraces, recvID).(*wrappedReceiver).inner
 	assert.Same(t, instances[1], tracesRcvr)
 	assert.EqualValues(t, 1, tracesRcvr.started.Load())
 	assert.EqualValues(t, 0, tracesRcvr.stopped.Load())
