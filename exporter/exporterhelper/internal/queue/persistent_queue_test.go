@@ -46,6 +46,18 @@ func (i intRequest) BytesSize() int {
 
 type int64Encoding struct{}
 
+type toggleErrorEncoding struct {
+	int64Encoding
+	marshalErr error
+}
+
+func (e *toggleErrorEncoding) Marshal(ctx context.Context, val intRequest) ([]byte, error) {
+	if e.marshalErr != nil {
+		return nil, e.marshalErr
+	}
+	return e.int64Encoding.Marshal(ctx, val)
+}
+
 func (int64Encoding) Marshal(_ context.Context, val intRequest) ([]byte, error) {
 	str := strconv.FormatInt(int64(val), 10)
 	return []byte(str), nil
@@ -334,6 +346,32 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 			require.NoError(t, pq.Shutdown(context.Background()))
 		})
 	}
+}
+
+func TestPersistentQueue_MarshalErrorDoesNotConsumeCapacity(t *testing.T) {
+	marshalErr := errors.New("marshal failed")
+	encoding := &toggleErrorEncoding{
+		int64Encoding: int64Encoding{rc: &fakeReferenceCounter{}},
+		marshalErr:    marshalErr,
+	}
+	set := newSettingsWithStorage(request.SizerTypeRequests, 1)
+	set.Encoding = encoding
+	pq := newPersistentQueue[intRequest](set).(*persistentQueue[intRequest])
+	pq.initClient(context.Background(), newFakeBoundedStorageClient(1024))
+
+	require.ErrorIs(t, pq.Offer(context.Background(), intRequest(10)), marshalErr)
+	assert.Zero(t, pq.Size())
+	assert.Zero(t, pq.metadata.WriteIndex)
+
+	encoding.marshalErr = nil
+	require.NoError(t, pq.Offer(context.Background(), intRequest(10)))
+	assert.EqualValues(t, 1, pq.Size())
+	assert.True(t, consume(pq, func(_ context.Context, val intRequest) error {
+		assert.Equal(t, intRequest(10), val)
+		return nil
+	}))
+	assert.Zero(t, pq.Size())
+	require.NoError(t, pq.Shutdown(context.Background()))
 }
 
 func TestPersistentQueue_Shutdown(t *testing.T) {
