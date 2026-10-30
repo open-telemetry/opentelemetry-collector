@@ -98,18 +98,6 @@ type ClientConfig struct {
 	// never unmarshaled) and takes precedence over the deprecated fields.
 	Keepalive configoptional.Optional[KeepaliveClientConfig] `mapstructure:"keepalive,omitempty"`
 
-	// Deprecated: [v0.160.0] Use Keepalive.IdleConnTimeout instead.
-	IdleConnTimeout time.Duration `mapstructure:"idle_conn_timeout,omitempty"`
-
-	// Deprecated: [v0.160.0] Use Keepalive.MaxIdleConns instead.
-	MaxIdleConns int `mapstructure:"max_idle_conns,omitempty"`
-
-	// Deprecated: [v0.160.0] Use Keepalive.MaxIdleConnsPerHost instead.
-	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host,omitempty"`
-
-	// Deprecated: [v0.160.0] Set 'keepalive::enabled' to false to disable keep-alives.
-	DisableKeepAlives bool `mapstructure:"disable_keep_alives,omitempty"`
-
 	// placeholder for the private fields
 	privateClientConfigFields
 
@@ -260,12 +248,6 @@ type ServerConfig struct {
 	// programmatically after unmarshaling (or the config was never unmarshaled)
 	// and takes precedence over the deprecated fields.
 	Keepalive configoptional.Optional[KeepaliveServerConfig] `mapstructure:"keepalive,omitempty"`
-
-	// Deprecated: [v0.160.0] Use Keepalive.IdleTimeout instead.
-	IdleTimeout time.Duration `mapstructure:"idle_timeout,omitempty"`
-
-	// Deprecated: [v0.160.0] Set 'keepalive::enabled' to false to disable keep-alives.
-	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled,omitempty"`
 
 	// placeholder for the private fields
 	privateServerConfigFields
