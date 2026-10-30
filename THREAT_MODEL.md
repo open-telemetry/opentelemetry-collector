@@ -51,18 +51,11 @@ Out of scope: `cmd/schemagen`, `cmd/githubgen` and `internal/cmd` (developer too
 - Certificates and keys under `testdata/` directories are throwaway fixtures for the tests.
 
 ## How you rate severity
-The project's published security model applies (https://github.com/open-telemetry/.github/blob/main/SECURITY.md): confidentiality and integrity are the topmost concerns. Availability is not: defaults are not considered secure against availability attacks, users are expected to put authentication in front of their endpoints, and a denial of service by an authenticated client is not a vulnerability. Rate with that in mind.
+No special rules for rating severity are provided; use the project's published security model (https://github.com/open-telemetry/.github/blob/main/SECURITY.md).
 
-- **critical**: remote code execution or memory corruption reachable by an unauthenticated peer, or by a hostile backend response.
-- **high**: bypassing authentication, authorization or TLS verification that the operator configured (for example a client certificate that is not checked, or `configauth` not being applied to a request on one of the receiver's protocols). Disclosure of credentials or other configured secrets, such as values `configopaque` should mask, bearer tokens or API keys sent in headers, to logs, zPages, the collector's own telemetry, or a host the operator did not configure. Reading or writing files outside what the configuration allows, or making requests to hosts the configuration does not name, driven by unauthenticated input or a backend response. In `cmd/builder` and `cmd/mdatagen`, a manifest or metadata value that writes outside the output directory, runs a command, or injects code beyond what its field is documented to hold.
-- **medium**: data leaking between clients, tenants or pipelines against the configuration, including client metadata or auth context carried over to another request.
-- **low**: availability problems with a high asymmetry, such as one small unauthenticated request that crashes the process or grows memory without bound. Everything else about availability (volume-based floods, slow clients, resource use that is proportional to the input) is a bug, not a vulnerability, and should not be rated above low.
-
-Not a vulnerability:
+## What threats are out of scope
 - Anything that needs a valid client credential. Telemetry from an authenticated client is trusted, so a payload that crashes, stalls or exhausts memory in a decoder, a processor or an exporter, or one that makes the collector mishandle its own data, is a bug and should be reported as one. The exception is a flaw that breaks isolation between clients, which is rated medium above.
 - Anything that needs control over the configuration, environment variables or the compiled-in components. A builder manifest or `metadata.yaml` that only makes the tool do what the file says is not a finding either; see the build-time input above for what is.
 - Behaviour the operator opted into explicitly, such as `insecure: true`, `insecure_skip_verify`, or running an endpoint with no authentication configured.
 - `debugexporter` printing telemetry, and zPages exposing internal state on its default `localhost` endpoint. Both are by design.
 - Weaknesses in a dependency that cannot be reached from this code. If one can, show the call path.
-
-Reports should name the module and commit, and include the input or a Go test that triggers the issue. A proposed patch should be a minimal diff against `main` that includes a test and follows `docs/coding-guidelines.md`.
