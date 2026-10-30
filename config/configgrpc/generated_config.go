@@ -4,8 +4,6 @@ package configgrpc
 
 import (
 	"errors"
-	"time"
-
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configmiddleware"
@@ -13,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"time"
 )
 
 // ClientConfig defines common settings for a gRPC client configuration.
@@ -31,6 +30,13 @@ type ClientConfig struct {
 
 	// Compression the compression key for supported compression types within collector.
 	Compression configcompression.Type `mapstructure:"compression,omitempty"`
+
+	// DSCP sets the Differentiated Services Code Point (DSCP) value on outgoing gRPC connections.
+	// This value is used to set the DS field in the IP header, enabling QoS classification
+	// by network devices. Valid values are 0 to 63. Common values: 0 (Default/Best Effort, CS0),
+	// 46 (Expedited Forwarding, EF, for low-latency traffic), 34 (Assured Forwarding AF41).
+	// Default is 0 (disabled, no marking applied).
+	DSCP int `mapstructure:"dscp,omitempty"`
 
 	// Endpoint the target to which the exporter is going to send traces or metrics, using the gRPC protocol.
 	// The valid syntax is described at https://github.com/grpc/grpc/blob/master/doc/naming.md.
@@ -74,6 +80,10 @@ type ClientConfig struct {
 // Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
 func (c *ClientConfig) Validate() error {
 	var err error
+
+	if inner_err := validateDSCP(c.DSCP); inner_err != nil {
+		err = errors.Join(err, inner_err)
+	}
 
 	if inner_err := validateClientConfig(c); inner_err != nil {
 		err = errors.Join(err, inner_err)
