@@ -9,8 +9,8 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
-	"go.opentelemetry.io/collector/pipeline"
 	queuebatchtelemetry "go.opentelemetry.io/collector/internal/telemetry/queuebatch"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 // expensiveRequest simulates tracesRequest where ItemsCount walks 2k spans.
@@ -22,7 +22,7 @@ func (r *expensiveRequest) ItemsCount() int {
 	r.itemsCalls++
 	// Simulate SpanCount walk over 2k spans.
 	n := 0
-	for i := 0; i < 2000; i++ {
+	for range 2000 {
 		n++
 	}
 	return n
