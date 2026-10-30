@@ -50,6 +50,15 @@ type Config struct {
 	QueueConfig  configoptional.Optional[exporterhelper.QueueBatchConfig] `mapstructure:"sending_queue"`
 	RetryConfig  configretry.BackOffConfig                                `mapstructure:"retry_on_failure"`
 
+	// Additional HTTP response status codes to treat as retryable, in addition
+	// to the codes defined by the OTLP specification (429, 502, 503 and 504).
+	// The specification requires all other 4xx and 5xx codes to be treated as
+	// non-retryable, so opting in here is a deliberate tradeoff: retrying such
+	// a response avoids dropping data, at the cost of possibly sending data
+	// that the server already rejected. Useful for intermediaries (proxies,
+	// load balancers) that answer with codes such as 408 Request Timeout.
+	RetryableHTTPStatusCodes []int `mapstructure:"retryable_http_status_codes"`
+
 	// The URL to send traces to. If omitted the Endpoint + "/v1/traces" will be used.
 	TracesEndpoint string `mapstructure:"traces_endpoint"`
 
@@ -72,6 +81,11 @@ var _ component.Config = (*Config)(nil)
 func (cfg *Config) Validate() error {
 	if cfg.ClientConfig.Endpoint == "" && cfg.TracesEndpoint == "" && cfg.MetricsEndpoint == "" && cfg.LogsEndpoint == "" && cfg.ProfilesEndpoint == "" {
 		return errors.New("at least one endpoint must be specified")
+	}
+	for _, code := range cfg.RetryableHTTPStatusCodes {
+		if code < 400 || code > 599 {
+			return fmt.Errorf("retryable_http_status_codes must only contain 4xx and 5xx status codes, got %d", code)
+		}
 	}
 	return nil
 }

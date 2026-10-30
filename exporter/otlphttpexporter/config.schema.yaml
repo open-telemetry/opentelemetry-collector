@@ -19,6 +19,11 @@ properties:
     type: string
   retry_on_failure:
     $ref: /config/configretry.back_off_config
+  retryable_http_status_codes:
+    description: 'Additional HTTP response status codes to treat as retryable, in addition to the codes defined by the OTLP specification (429, 502, 503 and 504). The specification requires all other 4xx and 5xx codes to be treated as non-retryable, so opting in here is a deliberate tradeoff: retrying such a response avoids dropping data, at the cost of possibly sending data that the server already rejected. Useful for intermediaries (proxies, load balancers) that answer with codes such as 408 Request Timeout.'
+    type: array
+    items:
+      type: integer
   sending_queue:
     x-optional: true
     $ref: /exporter/exporterhelper.queue_batch_config
