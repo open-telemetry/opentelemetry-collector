@@ -42,6 +42,7 @@ type partitionBatcher struct {
 	idleTimeout    time.Duration // duration after which an empty partition is removed.
 	lastDataTime   time.Time     // tracks when data was last present
 	active         bool          // indicates if partition is still active i.e timer is running and shutdown is not called yet. If Consume is called on inactive partition then data is flushed sync because timer is not running.
+	stopping       bool          // unlike active, set after the final flush, when shutdown starts waiting; subsequent flushes must not add to stopWG.
 }
 
 func newPartitionBatcher(
@@ -243,6 +244,15 @@ func (qb *partitionBatcher) shutdownInternal() {
 	close(qb.shutdownCh)
 	// Make sure execute one last flush if necessary.
 	qb.flushCurrentBatchOrRemovePartition()
+	// Block any further async flush before waiting: a stopWG.Add slipping in
+	// after Wait observes a zero counter panics with "sync: WaitGroup is reused
+	// before previous Wait has returned". The flag and the Add in flush() are
+	// serialized under currentBatchMu, so from here on every flush exports
+	// inline. The lock must be released before Wait because the timer goroutine
+	// (counted in stopWG) may need currentBatchMu to make progress.
+	qb.currentBatchMu.Lock()
+	qb.stopping = true
+	qb.currentBatchMu.Unlock()
 	qb.stopWG.Wait()
 }
 
@@ -285,8 +295,26 @@ func (qb *partitionBatcher) flushCurrentBatchOrRemovePartition() {
 }
 
 // flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
+// If shutdown has already started waiting for in-flight flushes (stopping is set), the batch can
+// no longer be handed to a worker: a stopWG.Add here would race WaitGroup.Wait and panic. Export
+// it synchronously, sharing the worker limit with asynchronous flushes.
+// During eviction, queue consumers may still hold a reference to this partition.
+// asyncQueue.Shutdown waits for those consumers, QueueBatch.Shutdown then drains
+// the batcher, and BaseExporter.Shutdown stops the wrapped exporter last.
 func (qb *partitionBatcher) flush(ctx context.Context, req request.Request, done queue.Done) {
+	// The Add and the stopping flag set in shutdownInternal are serialized under
+	// currentBatchMu, so an Add can never land after Wait has started observing.
+	qb.currentBatchMu.Lock()
+	if qb.stopping {
+		qb.currentBatchMu.Unlock()
+		// Do not hold currentBatchMu while waiting for an available worker.
+		<-qb.wp.workers
+		defer func() { qb.wp.workers <- struct{}{} }()
+		done.OnDone(qb.consumeFunc(ctx, req))
+		return
+	}
 	qb.stopWG.Add(1)
+	qb.currentBatchMu.Unlock()
 	qb.wp.execute(func() {
 		defer qb.stopWG.Done()
 		done.OnDone(qb.consumeFunc(ctx, req))

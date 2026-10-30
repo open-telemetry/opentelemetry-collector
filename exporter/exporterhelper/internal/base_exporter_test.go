@@ -6,7 +6,9 @@ package internal
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 	"testing"
+	"testing/synctest"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -314,4 +316,60 @@ func (f fakeEncoding) Marshal(context.Context, request.Request) ([]byte, error) 
 
 func (f fakeEncoding) Unmarshal([]byte) (context.Context, request.Request, error) {
 	return context.Background(), &requesttest.FakeRequest{}, nil
+}
+
+// Queue consumers and the final batch flush must finish before the wrapped
+// exporter is shut down. The queue-consumer case covers synchronous exports;
+// the final-batch case covers the subsequent batcher drain.
+func TestBaseExporter_ShutdownDrainsBeforeWrappedExporter(t *testing.T) {
+	for _, batching := range []bool{false, true} {
+		name := "queue_consumer"
+		if batching {
+			name = "final_batch"
+		}
+		t.Run(name, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				var exporterStopped atomic.Bool
+				var exports atomic.Int64
+				release := make(chan struct{})
+				qCfg := NewDefaultQueueConfig()
+				qCfg.NumConsumers = 1
+				if batching {
+					qCfg.Batch = configoptional.Some(queuebatch.BatchConfig{
+						Sizer:   request.SizerTypeItems,
+						MinSize: 10,
+					})
+				}
+				be, err := NewBaseExporter(
+					exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics,
+					func(context.Context, request.Request) error {
+						assert.False(t, exporterStopped.Load())
+						exports.Add(1)
+						<-release
+						assert.False(t, exporterStopped.Load())
+						return nil
+					},
+					WithTimeout(TimeoutConfig{}),
+					WithQueueBatch(configoptional.Some(qCfg), newFakeQueueBatch()),
+					WithShutdown(func(context.Context) error {
+						exporterStopped.Store(true)
+						return nil
+					}),
+				)
+				require.NoError(t, err)
+				require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+				require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 1}))
+				synctest.Wait()
+				shutdownDone := make(chan error, 1)
+				go func() { shutdownDone <- be.Shutdown(context.Background()) }()
+				synctest.Wait()
+				assert.EqualValues(t, 1, exports.Load())
+				assert.False(t, exporterStopped.Load(), "exporter shutdown must wait for queued exports")
+				assert.Empty(t, shutdownDone)
+				close(release)
+				require.NoError(t, <-shutdownDone)
+				assert.True(t, exporterStopped.Load())
+			})
+		})
+	}
 }
