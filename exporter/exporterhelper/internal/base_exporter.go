@@ -128,6 +128,11 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 	return be, nil
 }
 
+// ExporterHelperBatchingEnabled reports whether this exporter batches requests.
+func (be *BaseExporter) ExporterHelperBatchingEnabled() bool {
+	return be.queueCfg.HasValue() && be.queueCfg.Get().Batch.HasValue()
+}
+
 // Send sends the request using the first sender in the chain.
 func (be *BaseExporter) Send(ctx context.Context, req request.Request) error {
 	// Have to read the number of items before sending the request since the request can
