@@ -42,3 +42,26 @@ otelcol_memorylimiter_refused_requests: Number of requests refused by the memory
 Payloads refused by the extension never reach the receiver, so use `otelcol_memorylimiter_refused_requests` instead of `otelcol_receiver_refused_*` to track refused requests.
 
 see [memorylimiterprocessor](../../processor/memorylimiterprocessor/README.md) for additional details
+
+## Feature Gates
+
+See [documentation.md](./documentation.md) for the complete list of feature gates supported by this extension.
+
+### `extension.memorylimiter.UseGRPCTap`
+
+When this feature gate is enabled, the extension checks gRPC requests before the
+server reads and decodes the request message, instead of in the gRPC interceptors.
+Refused requests receive the same `ResourceExhausted` response and are counted in
+`otelcol_memorylimiter_refused_requests`.
+
+The check runs in the gRPC server tap handle, which `configgrpc` installs for the
+extensions listed in `middlewares`. gRPC servers that apply this extension by other
+means are not protected while the gate is enabled. The tap handle uses
+`google.golang.org/grpc/tap`, which grpc-go marks as experimental.
+
+Requests refused by the tap handle do not appear in the Collector's own gRPC server
+metrics and spans (`rpc.server.*`), because the server aborts them before its
+instrumentation runs.
+
+This feature gate is disabled by default. To enable it, use the flag:
+`--feature-gates=extension.memorylimiter.UseGRPCTap`
