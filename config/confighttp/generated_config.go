@@ -28,6 +28,9 @@ type AuthConfig struct {
 
 // ClientConfig defines settings for creating an HTTP client.
 type ClientConfig struct {
+	// DialerMiddleware dialer middleware is a handler customizing how the client will dial connections over TCP.
+	DialerMiddleware configoptional.Optional[configmiddleware.Config] `mapstructure:"dialer_middleware,omitempty"`
+
 	// Endpoint is the target URL to send data to (e.g.: http://some.url:9411/v1/traces).
 	Endpoint string `mapstructure:"endpoint,omitempty"`
 

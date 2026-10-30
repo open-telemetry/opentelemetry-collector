@@ -293,6 +293,13 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 		return nil, err
 	}
 	transport := http.DefaultTransport.(*http.Transport).Clone()
+	if cc.DialerMiddleware.HasValue() {
+		fn, rerr := cc.DialerMiddleware.Get().GetDialer(ctx, extensions)
+		if rerr != nil {
+			return nil, rerr
+		}
+		transport.DialContext = fn
+	}
 	if tlsCfg != nil {
 		transport.TLSClientConfig = tlsCfg
 	}

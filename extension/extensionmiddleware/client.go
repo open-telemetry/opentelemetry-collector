@@ -5,6 +5,7 @@ package extensionmiddleware // import "go.opentelemetry.io/collector/extension/e
 
 import (
 	"context"
+	"net"
 	"net/http"
 
 	"google.golang.org/grpc"
@@ -53,3 +54,22 @@ func (f GetGRPCClientOptionsFunc) GetGRPCClientOptions(ctx context.Context) ([]g
 // WrapHTTPRoundTripperFunc is called to initialize a new instance of
 // HTTP client middleware.
 type WrapHTTPRoundTripperFunc = func(context.Context, http.RoundTripper) (http.RoundTripper, error)
+
+// Dialer is an interface for network middleware extensions.
+type Dialer interface {
+	// GetDialContext returns the function to dial network connections.
+	GetDialContext(context.Context) (DialContextFunc, error)
+}
+
+// GetDialerFunc is called to initialize a new instance of network middleware extension.
+type GetDialerFunc func(context.Context) (DialContextFunc, error)
+
+func (f GetDialerFunc) GetDialContext(ctx context.Context) (DialContextFunc, error) {
+	if f == nil {
+		return nil, nil
+	}
+	return f(ctx)
+}
+
+// DialContextFunc is a dialer function as in [net.Dialer.DialContext].
+type DialContextFunc = func(ctx context.Context, network, address string) (net.Conn, error)
