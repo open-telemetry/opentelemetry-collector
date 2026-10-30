@@ -5,7 +5,11 @@
 
 package configtls // import "go.opentelemetry.io/collector/config/configtls"
 
-import "crypto/tls"
+import (
+	"crypto/tls"
+	"maps"
+	"slices"
+)
 
 // This mirrors allowedCurvePreferencesFIPS in crypto/tls/defaults_fips140.go,
 // the filter crypto/tls applies when FIPS-approved settings are required. The
@@ -22,3 +26,10 @@ var tlsCurveTypes = map[string]tls.CurveID{
 }
 
 const requireFIPSBuild = true
+
+// defaultCurvePreferences returns the FIPS-approved curves to use when the
+// configuration does not set curve_preferences. The build tag does not enforce
+// runtime FIPS mode, so this cannot be left to the crypto/tls defaults.
+func defaultCurvePreferences() []tls.CurveID {
+	return slices.Collect(maps.Values(tlsCurveTypes))
+}

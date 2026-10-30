@@ -18,3 +18,9 @@ var tlsCurveTypes = map[string]tls.CurveID{
 }
 
 const requireFIPSBuild = false
+
+// defaultCurvePreferences returns nil when the configuration does not set
+// curve_preferences, leaving the choice to the crypto/tls defaults.
+func defaultCurvePreferences() []tls.CurveID {
+	return nil
+}
