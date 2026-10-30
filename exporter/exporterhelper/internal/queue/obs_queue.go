@@ -55,9 +55,21 @@ func newObsQueue[T request.Request](
 func (or *obsQueue[T]) Offer(ctx context.Context, req T) error {
 	// Have to read the number of items before sending the request since the request can
 	// be modified by the downstream components like the batcher.
-	numItems := req.ItemsCount()
+	// ItemsCount can walk the full payload (SpanCount, etc.), so skip it when
+	// telemetry is disabled. RecordInt is a no-op when RecordIntFunc is nil,
+	// so skipping the count preserves behavior.
+	telemetryEnabled := or.obsMetrics.RecordIntFunc != nil
+	numItems := -1
+	getNumItems := func() int {
+		if numItems < 0 {
+			numItems = req.ItemsCount()
+		}
+		return numItems
+	}
 
-	or.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricEnqueueSize, int64(numItems))
+	if telemetryEnabled {
+		or.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricEnqueueSize, int64(getNumItems()))
+	}
 	if or.obsMetrics.ShouldRecord(ctx, queuebatchtelemetry.MetricEnqueueSizeBytes) {
 		or.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricEnqueueSizeBytes, int64(req.BytesSize()))
 	}
@@ -66,8 +78,8 @@ func (or *obsQueue[T]) Offer(ctx context.Context, req T) error {
 	err := or.Queue.Offer(ctx, req)
 	span.End()
 
-	if err != nil {
-		or.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricEnqueueFailure, int64(numItems))
+	if err != nil && telemetryEnabled {
+		or.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricEnqueueFailure, int64(getNumItems()))
 	}
 	return err
 }
