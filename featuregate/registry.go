@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 
 	"github.com/hashicorp/go-version"
+	"go.uber.org/zap"
 )
 
 var (
@@ -35,6 +36,13 @@ func GlobalRegistry() *Registry {
 
 type Registry struct {
 	gates sync.Map
+
+	warningsMu sync.Mutex
+	// warnings buffers messages produced by Set until a logger is available
+	// (see SetLogger), since Set is typically called from CLI flag parsing,
+	// before any Collector or logger exists.
+	warnings []string
+	logger   *zap.Logger
 }
 
 // NewRegistry returns a new empty Registry.
@@ -185,16 +193,42 @@ func (r *Registry) Set(id string, enabled bool) error {
 		if !enabled {
 			return fmt.Errorf("feature gate %q is stable, can not be disabled", id)
 		}
-		fmt.Printf("Feature gate %q is stable and already enabled. It will be removed in version %v and continued use of the gate after version %v will result in an error.\n", id, g.toVersion, g.toVersion)
+		r.warn(fmt.Sprintf("Feature gate %q is stable and already enabled. It will be removed in version %v and continued use of the gate after version %v will result in an error.", id, g.toVersion, g.toVersion))
 	case StageDeprecated:
 		if enabled {
 			return fmt.Errorf("feature gate %q is deprecated, can not be enabled", id)
 		}
-		fmt.Printf("Feature gate %q is deprecated and already disabled. It will be removed in version %v and continued use of the gate after version %v will result in an error.\n", id, g.toVersion, g.toVersion)
+		r.warn(fmt.Sprintf("Feature gate %q is deprecated and already disabled. It will be removed in version %v and continued use of the gate after version %v will result in an error.", id, g.toVersion, g.toVersion))
 	default:
 		g.enabled.Store(enabled)
 	}
 	return nil
+}
+
+// SetLogger sets the logger used to emit warnings from calls to Set, such as
+// those produced when setting a stable or deprecated Gate, and immediately
+// flushes through it any warnings buffered before a logger was available.
+func (r *Registry) SetLogger(logger *zap.Logger) {
+	r.warningsMu.Lock()
+	defer r.warningsMu.Unlock()
+	r.logger = logger
+	if logger == nil {
+		return
+	}
+	for _, w := range r.warnings {
+		logger.Warn(w)
+	}
+	r.warnings = nil
+}
+
+func (r *Registry) warn(msg string) {
+	r.warningsMu.Lock()
+	defer r.warningsMu.Unlock()
+	if r.logger != nil {
+		r.logger.Warn(msg)
+		return
+	}
+	r.warnings = append(r.warnings, msg)
 }
 
 // VisitAll visits all the gates in lexicographical order, calling fn for each.

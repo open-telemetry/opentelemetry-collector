@@ -9,6 +9,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -1724,4 +1725,85 @@ func TestCollectorLoggingOptions(t *testing.T) {
 	// which proves that LoggingOptions were applied.
 	entries := observedLogs.All()
 	require.NotEmpty(t, entries, "Logger should have logged messages")
+}
+
+// TestCollectorRoutesFeatureGateWarningsToLogger verifies that a feature gate warning produced
+// before the Collector (and therefore its logger) exists -- as happens with gates set from CLI
+// flags, which are parsed before the Collector is constructed -- is still routed through the
+// Collector's configured logger once it becomes available, rather than being lost or only ever
+// printed outside of it.
+func TestCollectorRoutesFeatureGateWarningsToLogger(t *testing.T) {
+	reg := featuregate.GlobalRegistry()
+	reg.SetLogger(nil)
+	t.Cleanup(func() { reg.SetLogger(nil) })
+
+	// Simulate a gate being set from a CLI flag: this happens during flag parsing, strictly
+	// before the Collector (and any logger) is constructed.
+	startupGateID := "otelcoltest.stableGateAtStartup"
+	_, err := reg.Register(startupGateID, featuregate.StageStable, featuregate.WithRegisterToVersion("v1.0.0"))
+	require.NoError(t, err)
+	require.NoError(t, reg.Set(startupGateID, true))
+
+	observerCore, observedLogs := observer.New(zapcore.InfoLevel)
+
+	factories, err := nopFactories()
+	require.NoError(t, err)
+
+	// Use a custom telemetry factory that builds the logger through
+	// BuildZapLogger, so LoggingOptions (and therefore our observer core)
+	// are applied to the logger returned by col.service.Logger().
+	factories.Telemetry = telemetry.NewFactory(
+		func() component.Config { return fakeTelemetryConfig{} },
+		telemetry.WithCreateLogger(
+			func(_ context.Context, set telemetry.LoggerSettings, _ component.Config) (
+				*zap.Logger, component.ShutdownFunc, error,
+			) {
+				logger, buildErr := set.BuildZapLogger(zap.NewDevelopmentConfig())
+				return logger, nil, buildErr
+			},
+		),
+	)
+
+	set := CollectorSettings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t,
+			[]string{filepath.Join("testdata", "otelcol-nop.yaml")},
+		),
+		LoggingOptions: []zap.Option{
+			zap.WrapCore(func(zapcore.Core) zapcore.Core {
+				return observerCore
+			}),
+		},
+	}
+
+	col, err := NewCollector(set)
+	require.NoError(t, err)
+
+	wg := startCollector(context.Background(), t, col)
+	assert.Eventually(t, func() bool {
+		return StateRunning == col.GetState() && col.service != nil
+	}, 2*time.Second, 200*time.Millisecond)
+
+	// Once the collector is running, it has installed its logger on the
+	// global registry, so a gate set afterwards should log through it
+	// instead of stdout.
+	runtimeGateID := "otelcoltest.stableGateAtRuntime"
+	_, err = reg.Register(runtimeGateID, featuregate.StageStable, featuregate.WithRegisterToVersion("v1.0.0"))
+	require.NoError(t, err)
+	require.NoError(t, reg.Set(runtimeGateID, true))
+
+	col.Shutdown()
+	wg.Wait()
+
+	for _, gateID := range []string{startupGateID, runtimeGateID} {
+		var found bool
+		for _, entry := range observedLogs.All() {
+			if entry.Level == zapcore.WarnLevel && strings.Contains(entry.Message, gateID) {
+				found = true
+				break
+			}
+		}
+		assert.True(t, found, "expected feature gate warning for %q to be logged through the configured logger", gateID)
+	}
 }

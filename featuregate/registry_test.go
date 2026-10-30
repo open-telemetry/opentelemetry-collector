@@ -8,6 +8,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestGlobalRegistry(t *testing.T) {
@@ -57,6 +60,47 @@ func TestRegistryApplyError(t *testing.T) {
 	require.Error(t, r.Set("deprecated", true))
 	r.MustRegister("deprecated", StageDeprecated, WithRegisterToVersion("v1.0.0"))
 	assert.Error(t, r.Set("deprecated", true))
+}
+
+func TestRegistrySetWarningsLogger(t *testing.T) {
+	r := NewRegistry()
+	core, observed := observer.New(zapcore.WarnLevel)
+	r.SetLogger(zap.New(core))
+
+	r.MustRegister("foo", StageStable, WithRegisterToVersion("v1.0.0"))
+	require.NoError(t, r.Set("foo", true))
+
+	r.MustRegister("bar", StageDeprecated, WithRegisterToVersion("v1.0.0"))
+	require.NoError(t, r.Set("bar", false))
+
+	entries := observed.All()
+	require.Len(t, entries, 2)
+	assert.Contains(t, entries[0].Message, `"foo"`)
+	assert.Contains(t, entries[0].Message, "stable")
+	assert.Contains(t, entries[1].Message, `"bar"`)
+	assert.Contains(t, entries[1].Message, "deprecated")
+}
+
+// TestRegistrySetWarningsBufferedUntilLoggerSet verifies that warnings produced by Set before a
+// logger is available (as happens when gates are set from CLI flags, well before a Collector or
+// its logger exist) are buffered rather than lost, and are flushed once SetLogger is called.
+func TestRegistrySetWarningsBufferedUntilLoggerSet(t *testing.T) {
+	r := NewRegistry()
+	r.MustRegister("foo", StageStable, WithRegisterToVersion("v1.0.0"))
+	require.NoError(t, r.Set("foo", true))
+
+	core, observed := observer.New(zapcore.WarnLevel)
+	r.SetLogger(zap.New(core))
+
+	entries := observed.All()
+	require.Len(t, entries, 1)
+	assert.Contains(t, entries[0].Message, `"foo"`)
+	assert.Contains(t, entries[0].Message, "stable")
+
+	// A subsequent SetLogger call must not replay already-flushed warnings.
+	core2, observed2 := observer.New(zapcore.WarnLevel)
+	r.SetLogger(zap.New(core2))
+	assert.Empty(t, observed2.All())
 }
 
 func TestRegistryApply(t *testing.T) {
