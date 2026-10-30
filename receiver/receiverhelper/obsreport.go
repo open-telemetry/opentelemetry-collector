@@ -9,14 +9,10 @@ import (
 	"context"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/receiver"
@@ -147,75 +143,6 @@ func (rec *ObsReport) EndProfilesOp(
 	rec.endOp(receiverCtx, format, numReceivedProfileSamples, err, xpipeline.SignalProfiles)
 }
 
-// EndProfilesOpBySampleType completes the receive operation that was started with
-// StartProfilesOp. In contrast to EndProfilesOp, the profile sample metrics are
-// recorded per sample type, as a single payload can hold multiple profiles with
-// different sample types. samplesByType maps the sample type, formatted as
-// "type:unit", to the number of received samples of this type.
-// Use ProfileSampleCountsByType to compute samplesByType before the profiles are
-// passed to the next consumer, as the data may be mutated downstream.
-func (rec *ObsReport) EndProfilesOpBySampleType(
-	receiverCtx context.Context,
-	format string,
-	samplesByType map[string]int,
-	err error,
-) {
-	numReceivedProfileSamples := 0
-	for _, n := range samplesByType {
-		numReceivedProfileSamples += n
-	}
-	rec.endOpBySampleType(receiverCtx, format, numReceivedProfileSamples, samplesByType, err, xpipeline.SignalProfiles)
-}
-
-// ProfileSampleCountsByType returns the number of samples for each sample type,
-// formatted as "type:unit", of the profiles in pd.
-//
-// The sample types are taken from the payload and are currently unbounded.
-// TODO: Cap the cardinality of the sample type once the Profiles specification
-// defines the list of known sample types, which the Profiling SIG is working on.
-// Sample types outside that list will then be reported as "unknown".
-func ProfileSampleCountsByType(pd pprofile.Profiles) map[string]int {
-	strTable := pd.Dictionary().StringTable()
-	counts := make(map[string]int)
-
-	rps := pd.ResourceProfiles()
-	for i := 0; i < rps.Len(); i++ {
-		sps := rps.At(i).ScopeProfiles()
-		for j := 0; j < sps.Len(); j++ {
-			ps := sps.At(j).Profiles()
-			for k := 0; k < ps.Len(); k++ {
-				p := ps.At(k)
-				st := p.SampleType()
-				sampleType := lookupString(strTable, st.TypeStrindex()) + ":" +
-					lookupString(strTable, st.UnitStrindex())
-				counts[sampleType] += p.Samples().Len()
-			}
-		}
-	}
-	return counts
-}
-
-const (
-	// unsetStrindex is used in place of a sample type or unit whose string
-	// table index is 0, which indicates an unset value.
-	unsetStrindex = "<unset>"
-	// invalidStrindex is used in place of a sample type or unit whose string
-	// table index is out of range.
-	invalidStrindex = "<invalid>"
-)
-
-// lookupString returns the string at idx in strTable, unsetStrindex if idx is 0
-// or invalidStrindex if idx is out of range.
-func lookupString(strTable pcommon.StringSlice, idx int32) string {
-	if idx == 0 {
-		return unsetStrindex
-	}
-	if idx < 0 || int(idx) >= strTable.Len() {
-		return invalidStrindex
-	}
-	return strTable.At(int(idx))
-}
-
 // startOp creates the span used to trace the operation. Returning
 // the updated context with the created span.
 func (rec *ObsReport) startOp(receiverCtx context.Context, operationSuffix string) context.Context {
@@ -254,98 +181,14 @@ func (rec *ObsReport) endOp(
 	err error,
 	signal pipeline.Signal,
 ) {
-	rec.endOpBySampleType(receiverCtx, format, numReceivedItems, nil, err, signal)
+	numAccepted, numRefused, numFailedErrors := internal.SplitItems(numReceivedItems, err)
+
+	rec.recordMetrics(receiverCtx, signal, numAccepted, numRefused, numFailedErrors)
+	internal.RecordRequests(receiverCtx, rec.telemetryBuilder.ReceiverRequests, rec.otelAttrs, err)
+	internal.EndSpan(trace.SpanFromContext(receiverCtx), format, signal, numAccepted, numRefused, numFailedErrors, err)
 }
 
-// endOpBySampleType records the observability signals at the end of an operation.
-// If samplesByType is not nil, the item metrics are recorded per sample type
-// instead of once for numReceivedItems.
-func (rec *ObsReport) endOpBySampleType(
-	receiverCtx context.Context,
-	format string,
-	numReceivedItems int,
-	samplesByType map[string]int,
-	err error,
-	signal pipeline.Signal,
-) {
-	numAccepted, numRefused, numFailedErrors := splitItems(numReceivedItems, err)
-
-	span := trace.SpanFromContext(receiverCtx)
-
-	if samplesByType == nil {
-		rec.recordMetrics(receiverCtx, signal, numAccepted, numRefused, numFailedErrors, rec.otelAttrs)
-	} else {
-		for sampleType, n := range samplesByType {
-			accepted, refused, failed := splitItems(n, err)
-			rec.recordMetrics(receiverCtx, signal, accepted, refused, failed, rec.otelAttrs,
-				metric.WithAttributes(attribute.String(internal.SampleTypeKey, sampleType)))
-		}
-	}
-
-	// The new otelcol_receiver_requests metric is only emitted when the feature gate is enabled.
-	if metadata.ReceiverhelperNewReceiverMetricsFeatureGate.IsEnabled() {
-		var outcome string
-		switch {
-		case err == nil:
-			outcome = "success"
-		case consumererror.IsDownstream(err):
-			outcome = "refused"
-		default:
-			outcome = "failure"
-		}
-		rec.telemetryBuilder.ReceiverRequests.Add(receiverCtx, 1, rec.otelAttrs, metric.WithAttributeSet(attribute.NewSet(attribute.String("outcome", outcome))))
-	}
-
-	// end span according to errors
-	if span.IsRecording() {
-		var acceptedItemsKey, refusedItemsKey, failedItemsKey string
-		switch signal {
-		case pipeline.SignalTraces:
-			acceptedItemsKey = internal.AcceptedSpansKey
-			refusedItemsKey = internal.RefusedSpansKey
-			failedItemsKey = internal.FailedSpansKey
-		case pipeline.SignalMetrics:
-			acceptedItemsKey = internal.AcceptedMetricPointsKey
-			refusedItemsKey = internal.RefusedMetricPointsKey
-			failedItemsKey = internal.FailedMetricPointsKey
-		case pipeline.SignalLogs:
-			acceptedItemsKey = internal.AcceptedLogRecordsKey
-			refusedItemsKey = internal.RefusedLogRecordsKey
-			failedItemsKey = internal.FailedLogRecordsKey
-		case xpipeline.SignalProfiles:
-			acceptedItemsKey = internal.AcceptedProfileSamplesKey
-			refusedItemsKey = internal.RefusedProfileSamplesKey
-			failedItemsKey = internal.FailedProfileSamplesKey
-		}
-
-		span.SetAttributes(
-			attribute.String(internal.FormatKey, format),
-			attribute.Int64(acceptedItemsKey, int64(numAccepted)),
-			attribute.Int64(refusedItemsKey, int64(numRefused)),
-			attribute.Int64(failedItemsKey, int64(numFailedErrors)),
-		)
-		if err != nil {
-			span.SetStatus(codes.Error, err.Error())
-		}
-	}
-	span.End()
-}
-
-// splitItems splits numReceivedItems into accepted, refused and failed items
-// depending on err.
-func splitItems(numReceivedItems int, err error) (numAccepted, numRefused, numFailedErrors int) {
-	if err == nil {
-		return numReceivedItems, 0, 0
-	}
-	// If gate is enabled, we distinguish between refused and failed.
-	if metadata.ReceiverhelperNewReceiverMetricsFeatureGate.IsEnabled() && !consumererror.IsDownstream(err) {
-		return 0, 0, numReceivedItems
-	}
-	// When the gate is disabled, all errors are considered "refused".
-	return 0, numReceivedItems, 0
-}
-
-func (rec *ObsReport) recordMetrics(receiverCtx context.Context, signal pipeline.Signal, numAccepted, numRefused, numFailedErrors int, opts ...metric.AddOption) {
+func (rec *ObsReport) recordMetrics(receiverCtx context.Context, signal pipeline.Signal, numAccepted, numRefused, numFailedErrors int) {
 	var acceptedMeasure, refusedMeasure, failedMeasure metric.Int64Counter
 	switch signal {
 	case pipeline.SignalTraces:
@@ -366,7 +209,7 @@ func (rec *ObsReport) recordMetrics(receiverCtx context.Context, signal pipeline
 		failedMeasure = rec.telemetryBuilder.ReceiverFailedProfileSamples
 	}
 
-	acceptedMeasure.Add(receiverCtx, int64(numAccepted), opts...)
-	refusedMeasure.Add(receiverCtx, int64(numRefused), opts...)
-	failedMeasure.Add(receiverCtx, int64(numFailedErrors), opts...)
+	acceptedMeasure.Add(receiverCtx, int64(numAccepted), rec.otelAttrs)
+	refusedMeasure.Add(receiverCtx, int64(numRefused), rec.otelAttrs)
+	failedMeasure.Add(receiverCtx, int64(numFailedErrors), rec.otelAttrs)
 }

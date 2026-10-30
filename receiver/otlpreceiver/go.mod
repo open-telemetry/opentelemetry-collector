@@ -28,6 +28,7 @@ require (
 	go.opentelemetry.io/collector/pdata/testdata v0.164.0
 	go.opentelemetry.io/collector/receiver v1.70.0
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.164.0
+	go.opentelemetry.io/collector/receiver/receiverhelper/xreceiverhelper v0.164.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.164.0
 	go.opentelemetry.io/collector/receiver/xreceiver v0.164.0
 	go.opentelemetry.io/otel v1.47.0
@@ -167,3 +168,5 @@ replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipe
 replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
 
 replace go.opentelemetry.io/collector/internal/statusutil => ../../internal/statusutil
+
+replace go.opentelemetry.io/collector/receiver/receiverhelper/xreceiverhelper => ../receiverhelper/xreceiverhelper
