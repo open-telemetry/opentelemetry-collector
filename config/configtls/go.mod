@@ -3,8 +3,8 @@ module go.opentelemetry.io/collector/config/configtls
 go 1.26.0
 
 require (
-	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250903184740-5d135037bd4d
-	github.com/google/go-tpm v0.9.8
+	github.com/foxboron/go-tpm-keyfiles v0.0.0-20260902202739-8c9c2d1005f4
+	github.com/google/go-tpm v0.9.9-0.20260124013517-8f8f42cba0de
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/config/configopaque v1.70.0
 	go.opentelemetry.io/collector/confmap v1.70.0
