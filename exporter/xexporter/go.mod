@@ -86,4 +86,6 @@ replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/
 
 replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipeline
 
+replace go.opentelemetry.io/collector/extension/diskqueueextension => ../../extension/diskqueueextension
+
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry

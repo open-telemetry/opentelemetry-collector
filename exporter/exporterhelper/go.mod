@@ -17,6 +17,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.164.0
 	go.opentelemetry.io/collector/exporter v1.70.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.164.0
+	go.opentelemetry.io/collector/extension/diskqueueextension v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/extension/extensiontest v0.164.0
 	go.opentelemetry.io/collector/extension/xextension v0.164.0
 	go.opentelemetry.io/collector/featuregate v1.70.0
@@ -127,3 +128,5 @@ replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/
 replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipeline
 
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
+
+replace go.opentelemetry.io/collector/extension/diskqueueextension => ../../extension/diskqueueextension

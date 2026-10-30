@@ -116,6 +116,7 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.164.0 // indirect
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.164.0 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.164.0 // indirect
+	go.opentelemetry.io/collector/extension/diskqueueextension v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.70.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.164.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.164.0 // indirect
@@ -332,3 +333,5 @@ replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testut
 replace go.opentelemetry.io/collector/internal/componentalias => ../componentalias
 
 replace go.opentelemetry.io/collector/internal/statusutil => ../statusutil
+
+replace go.opentelemetry.io/collector/extension/diskqueueextension => ../../extension/diskqueueextension
