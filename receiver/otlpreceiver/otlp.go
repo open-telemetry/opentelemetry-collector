@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/profiles"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/receiverhelper/xreceiverhelper"
 )
 
 // otlpReceiver is the type that exposes Trace and Metrics reception.
@@ -45,6 +46,11 @@ type otlpReceiver struct {
 
 	obsrepGRPC *receiverhelper.ObsReport
 	obsrepHTTP *receiverhelper.ObsReport
+
+	// Profiles are observed separately, as their telemetry is reported per
+	// sample type.
+	obsrepProfilesGRPC *xreceiverhelper.ObsReport
+	obsrepProfilesHTTP *xreceiverhelper.ObsReport
 
 	settings *receiver.Settings
 }
@@ -81,6 +87,22 @@ func newOtlpReceiver(cfg *Config, set *receiver.Settings) (*otlpReceiver, error)
 	if err != nil {
 		return nil, err
 	}
+	r.obsrepProfilesGRPC, err = xreceiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             set.ID,
+		Transport:              "grpc",
+		ReceiverCreateSettings: *set,
+	})
+	if err != nil {
+		return nil, err
+	}
+	r.obsrepProfilesHTTP, err = xreceiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             set.ID,
+		Transport:              "http",
+		ReceiverCreateSettings: *set,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	return r, nil
 }
@@ -110,7 +132,7 @@ func (r *otlpReceiver) startGRPCServer(ctx context.Context, host component.Host)
 	}
 
 	if r.nextProfiles != nil {
-		pprofileotlp.RegisterGRPCServer(r.serverGRPC, profiles.New(r.nextProfiles, r.obsrepGRPC))
+		pprofileotlp.RegisterGRPCServer(r.serverGRPC, profiles.New(r.nextProfiles, r.obsrepProfilesGRPC))
 	}
 
 	var gln net.Listener
@@ -157,7 +179,7 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	}
 
 	if r.nextProfiles != nil {
-		httpProfilesReceiver := profiles.New(r.nextProfiles, r.obsrepHTTP)
+		httpProfilesReceiver := profiles.New(r.nextProfiles, r.obsrepProfilesHTTP)
 		httpMux.HandleFunc(defaultProfilesURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleProfiles(resp, req, httpProfilesReceiver)
 		})

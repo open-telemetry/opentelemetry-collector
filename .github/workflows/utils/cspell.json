@@ -564,6 +564,7 @@
       "xprocessor",
       "xprocessorhelper",
       "xreceiver",
+      "xreceiverhelper",
       "xscraper",
       "xscraperhelper",
       "yamlmapprovider",

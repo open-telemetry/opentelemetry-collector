@@ -105,6 +105,7 @@ receiver/                                              @open-telemetry/collector
 receiver/nopreceiver/                                  @open-telemetry/collector-approvers @evan-bradley
 receiver/otlpreceiver/                                 @open-telemetry/collector-approvers
 receiver/receiverhelper/                               @open-telemetry/collector-approvers
+receiver/receiverhelper/xreceiverhelper/               @open-telemetry/collector-approvers @dmathieu @florianl
 receiver/receivertest/                                 @open-telemetry/collector-approvers
 receiver/xreceiver/                                    @open-telemetry/collector-approvers @mx-psi @dmathieu
 scraper/                                               @open-telemetry/collector-approvers

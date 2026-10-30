@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/receiverhelper/xreceiverhelper"
 )
 
 const dataFormatProtobuf = "protobuf"
@@ -18,11 +18,11 @@ const dataFormatProtobuf = "protobuf"
 type Receiver struct {
 	pprofileotlp.UnimplementedGRPCServer
 	nextConsumer xconsumer.Profiles
-	obsreport    *receiverhelper.ObsReport
+	obsreport    *xreceiverhelper.ObsReport
 }
 
 // New creates a new Receiver reference.
-func New(nextConsumer xconsumer.Profiles, obsreport *receiverhelper.ObsReport) *Receiver {
+func New(nextConsumer xconsumer.Profiles, obsreport *xreceiverhelper.ObsReport) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		obsreport:    obsreport,
@@ -38,9 +38,13 @@ func (r *Receiver) Export(ctx context.Context, req pprofileotlp.ExportRequest) (
 		return pprofileotlp.NewExportResponse(), nil
 	}
 
+	// Collect the counts before calling ConsumeProfiles as the data may be
+	// mutated downstream.
+	samplesByType := xreceiverhelper.ProfileSampleCountsByType(td)
+
 	ctx = r.obsreport.StartProfilesOp(ctx)
 	err := r.nextConsumer.ConsumeProfiles(ctx, td)
-	r.obsreport.EndProfilesOp(ctx, dataFormatProtobuf, numSamples, err)
+	r.obsreport.EndProfilesOpBySampleType(ctx, dataFormatProtobuf, samplesByType, err)
 
 	// Use appropriate status codes for permanent/non-permanent errors
 	// If we return the error straightaway, then the grpc implementation will set status code to Unknown

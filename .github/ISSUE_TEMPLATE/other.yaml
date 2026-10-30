@@ -65,6 +65,7 @@ body:
       - receiver/nop
       - receiver/otlp
       - receiver/receiverhelper
+      - receiver/receiverhelper/xreceiverhelper
       - receiver/x
       - scraper
       - scraper/scraperhelper

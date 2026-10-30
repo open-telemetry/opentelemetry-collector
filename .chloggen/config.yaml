@@ -89,6 +89,7 @@ components:
     - pkg/xprocessor
     - pkg/xprocessorhelper
     - pkg/xreceiver
+    - pkg/xreceiverhelper
     - pkg/xscraper
     - pkg/xscraperhelper
     - processor/batch
