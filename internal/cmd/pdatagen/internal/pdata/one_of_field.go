@@ -118,6 +118,11 @@ const oneOfUnmarshalProtoTemplate = `
 		{{ .GenUnmarshalProto }}
 	{{ end }}`
 
+const oneOfUnmarshalProtoNoDepthTemplate = `
+	{{- range .fields }}
+		{{ .GenUnmarshalProtoNoDepth }}
+	{{ end }}`
+
 type OneOfField struct {
 	originFieldName            string
 	typeName                   string
@@ -228,6 +233,11 @@ func (of *oneOfProtoField) GenMarshalProto() string {
 
 func (of *oneOfProtoField) GenUnmarshalProto() string {
 	t := tmplutil.Parse("oneOfUnmarshalProtoTemplate", []byte(oneOfUnmarshalProtoTemplate))
+	return tmplutil.Execute(t, of.templateFields())
+}
+
+func (of *oneOfProtoField) GenUnmarshalProtoNoDepth() string {
+	t := tmplutil.Parse("oneOfUnmarshalProtoNoDepthTemplate", []byte(oneOfUnmarshalProtoNoDepthTemplate))
 	return tmplutil.Execute(t, of.templateFields())
 }
 

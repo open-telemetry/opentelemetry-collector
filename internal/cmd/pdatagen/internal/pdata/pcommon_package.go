@@ -115,7 +115,8 @@ var keyValueStruct = &messageStruct{
 			protoType: proto.TypeInt32,
 		},
 	},
-	hasOnlyInternal: true,
+	hasOnlyInternal:       true,
+	requiresDepthTracking: true,
 }
 
 var anyValueClone = &messageStruct{
@@ -185,7 +186,8 @@ var anyValueStruct = &messageStruct{
 			},
 		},
 	},
-	hasOnlyInternal: true,
+	hasOnlyInternal:       true,
+	requiresDepthTracking: true,
 }
 
 var keyValueListStruct = &messageStruct{
@@ -201,7 +203,8 @@ var keyValueListStruct = &messageStruct{
 			returnSlice: mapStruct,
 		},
 	},
-	hasOnlyInternal: true,
+	hasOnlyInternal:       true,
+	requiresDepthTracking: true,
 }
 
 var arrayValueStruct = &messageStruct{
@@ -217,7 +220,8 @@ var arrayValueStruct = &messageStruct{
 			returnSlice: anyValueSlice,
 		},
 	},
-	hasOnlyInternal: true,
+	hasOnlyInternal:       true,
+	requiresDepthTracking: true,
 }
 
 var anyValueSlice = &messageSlice{
