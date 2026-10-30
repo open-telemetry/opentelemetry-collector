@@ -1,5 +1,11 @@
 # Threat model
 
+See
+[Security Policy](https://github.com/open-telemetry/.github/blob/main/SECURITY.md)
+for OpenTelemetry projects.
+
+Additional context specific to this project can be found in the sections below.
+
 ## What this project does and where untrusted input enters
 This is the core repository of the OpenTelemetry Collector: a Go framework and a set of core components that receive telemetry, process it, and export it. It contains multiple Go modules in one repository with no `go.work`. This repository does not build any official binary. `cmd/otelcorecol` is a small local binary for testing, and the real distributions are assembled elsewhere from these modules. The components here are the foundation that those distributions, and a large ecosystem of third-party components, build on.
 
