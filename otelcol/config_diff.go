@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
+	"maps"
 	"slices"
 
 	"go.opentelemetry.io/collector/component"
@@ -18,33 +19,28 @@ import (
 // to detect changes without retaining or re-decoding full configs. It is built
 // from the raw, pre-decode configuration map rather than decoded component.Config
 // values, since those are handed to live components and may be mutated in place.
-//
-// This at the moment is scoped to Phase 1 of the partial reload design, which only
-// supports receivers-only changes.
 type configFingerprint struct {
-	// nonReceiverHash hashes every section a running component (other than a
-	// plain receiver) could mutate: service telemetry, extensions,
-	// processors, exporters, and connectors. It must be identical between
-	// reloads for a change to qualify as receivers-only.
-	nonReceiverHash uint64
+	// otherHash hashes the sections that must not change: service telemetry,
+	// extensions, exporters, and connectors.
+	otherHash uint64
 
 	// receiverHashes hashes each receiver's raw configuration, keyed by ID.
 	receiverHashes map[component.ID]uint64
+
+	// processorHashes hashes each processor's raw configuration, keyed by ID.
+	processorHashes map[component.ID]uint64
 
 	// extensions is the ordered list of enabled extensions. It is plain
 	// plumbing, not a component.Config value handed to any component, so it
 	// is safe to compare directly rather than hash.
 	extensions []component.ID
 
-	// pipelines mirrors the service::pipelines structure needed to detect
-	// receivers-only changes. Like extensions, pipeline membership is plain
-	// plumbing, not a component.Config value, so it is compared directly.
+	// pipelines mirrors service::pipelines. Like extensions, it is plain
+	// plumbing, so it is compared directly.
 	pipelines map[pipeline.ID]pipelineFingerprint
 }
 
-// pipelineFingerprint captures one pipeline's component membership. Only
-// receivers may differ between two otherwise-equal fingerprints for a change
-// to qualify as receivers-only.
+// pipelineFingerprint captures one pipeline's component membership.
 type pipelineFingerprint struct {
 	receivers  []component.ID
 	processors []component.ID
@@ -53,7 +49,7 @@ type pipelineFingerprint struct {
 
 // fingerprintForPartialReload builds a configFingerprint from a configuration.
 func fingerprintForPartialReload(conf *confmap.Conf, cfg *Config) (configFingerprint, error) {
-	nonReceiverHash, err := hashSections(conf, "service::telemetry", "extensions", "processors", "exporters", "connectors")
+	otherHash, err := hashSections(conf, "service::telemetry", "extensions", "exporters", "connectors")
 	if err != nil {
 		return configFingerprint{}, fmt.Errorf("could not fingerprint configuration: %w", err)
 	}
@@ -61,6 +57,11 @@ func fingerprintForPartialReload(conf *confmap.Conf, cfg *Config) (configFingerp
 	receiverHashes, err := hashEntriesByID(conf, "receivers")
 	if err != nil {
 		return configFingerprint{}, fmt.Errorf("could not fingerprint receiver configuration: %w", err)
+	}
+
+	processorHashes, err := hashEntriesByID(conf, "processors")
+	if err != nil {
+		return configFingerprint{}, fmt.Errorf("could not fingerprint processor configuration: %w", err)
 	}
 
 	pipelineFingerprints := make(map[pipeline.ID]pipelineFingerprint, len(cfg.Service.Pipelines))
@@ -73,8 +74,9 @@ func fingerprintForPartialReload(conf *confmap.Conf, cfg *Config) (configFingerp
 	}
 
 	return configFingerprint{
-		nonReceiverHash: nonReceiverHash,
+		otherHash:       otherHash,
 		receiverHashes:  receiverHashes,
+		processorHashes: processorHashes,
 		extensions:      slices.Clone(cfg.Service.Extensions),
 		pipelines:       pipelineFingerprints,
 	}, nil
@@ -94,7 +96,7 @@ func hashSections(conf *confmap.Conf, keys ...string) (uint64, error) {
 
 // hashEntriesByID returns a stable hash of each entry under the given
 // top-level confmap.Conf key, keyed by parsed component.ID. Used for the
-// "receivers" section so each receiver can be compared individually.
+// "receivers" and "processors" sections.
 func hashEntriesByID(conf *confmap.Conf, key string) (map[component.ID]uint64, error) {
 	raw := conf.Get(key)
 	if raw == nil {
@@ -136,21 +138,23 @@ func hashValue(v any) (uint64, error) {
 	return h.Sum64(), nil
 }
 
-// receiversOnlyChanged returns true when the only differences between old
-// and cur are in receiver configurations and/or the set of pure-receiver
-// entries in pipeline receiver lists. Everything else (processors,
-// exporters, connectors, extensions, telemetry, pipeline structure) must be
-// identical.
+// partialReloadSupported reports whether every difference between old and cur
+// can be applied by a partial reload. Receiver differences are allowed only
+// with allowReceivers, and processor differences only with allowProcessors.
+// Everything else must be identical, including connector-as-receiver entries.
 //
-// isConnector reports whether a given component.ID refers to a connector
-// (as opposed to a regular receiver). Changes to connector-as-receiver
-// entries require a full reload. It is safe to derive isConnector from
-// either fingerprint's own point in time: by the time it is consulted below,
-// nonReceiverHash equality has already established that the set of
-// configured connectors (and their configuration) is identical between old
-// and cur.
-func receiversOnlyChanged(old, cur configFingerprint, isConnector func(component.ID) bool) bool {
-	if old.nonReceiverHash != cur.nonReceiverHash {
+// isConnector reports whether an ID is a connector. It is only used when
+// allowReceivers is set, and may be derived from either fingerprint: by the
+// time it is consulted, otherHash equality has already established that the
+// configured connectors are identical between old and cur.
+func partialReloadSupported(old, cur configFingerprint, isConnector func(component.ID) bool, allowReceivers, allowProcessors bool) bool {
+	if old.otherHash != cur.otherHash {
+		return false
+	}
+	if !allowReceivers && !maps.Equal(old.receiverHashes, cur.receiverHashes) {
+		return false
+	}
+	if !allowProcessors && !maps.Equal(old.processorHashes, cur.processorHashes) {
 		return false
 	}
 
@@ -168,24 +172,37 @@ func receiversOnlyChanged(old, cur configFingerprint, isConnector func(component
 			return false
 		}
 
-		if !slices.Equal(oldPipe.processors, curPipe.processors) {
-			return false
-		}
-
 		if !slices.Equal(oldPipe.exporters, curPipe.exporters) {
 			return false
 		}
 
-		// For receivers, connector-as-receiver entries must match. Only
-		// pure-receiver entries may differ.
-		oldConnReceivers := filterIDs(oldPipe.receivers, isConnector)
-		curConnReceivers := filterIDs(curPipe.receivers, isConnector)
-		if !slices.Equal(oldConnReceivers, curConnReceivers) {
+		if !allowProcessors && !slices.Equal(oldPipe.processors, curPipe.processors) {
+			return false
+		}
+
+		if allowReceivers {
+			// Only pure-receiver entries may differ.
+			oldConnReceivers := filterIDs(oldPipe.receivers, isConnector)
+			curConnReceivers := filterIDs(curPipe.receivers, isConnector)
+			if !slices.Equal(oldConnReceivers, curConnReceivers) {
+				return false
+			}
+		} else if !slices.Equal(oldPipe.receivers, curPipe.receivers) {
 			return false
 		}
 	}
 
 	return true
+}
+
+// receiversOnlyChanged reports whether only receivers differ.
+func receiversOnlyChanged(old, cur configFingerprint, isConnector func(component.ID) bool) bool {
+	return partialReloadSupported(old, cur, isConnector, true, false)
+}
+
+// processorsOnlyChanged reports whether only processors differ.
+func processorsOnlyChanged(old, cur configFingerprint) bool {
+	return partialReloadSupported(old, cur, nil, false, true)
 }
 
 // filterIDs returns only the IDs for which the predicate returns true,
@@ -212,13 +229,26 @@ func isConnectorID(connectors map[component.ID]component.Config) func(component.
 
 // changedReceivers returns the set of receiver IDs present in both old and
 // cur whose raw configuration hash differs. IDs only used for classifying
-// add/remove are intentionally omitted: graph.UpdateReceivers derives those
+// add/remove are intentionally omitted: graph.Update derives those
 // from pipeline membership on its own, so it only ever consults this set for
 // receivers it already considers "present in both".
 func changedReceivers(old, cur configFingerprint) map[component.ID]bool {
 	changed := make(map[component.ID]bool)
 	for id, curHash := range cur.receiverHashes {
 		if oldHash, ok := old.receiverHashes[id]; ok && oldHash != curHash {
+			changed[id] = true
+		}
+	}
+	return changed
+}
+
+// changedProcessors returns the processors present in both old and cur whose
+// config hash differs. Additions and removals are derived from the pipeline
+// processor lists.
+func changedProcessors(old, cur configFingerprint) map[component.ID]bool {
+	changed := make(map[component.ID]bool)
+	for id, curHash := range cur.processorHashes {
+		if oldHash, ok := old.processorHashes[id]; ok && oldHash != curHash {
 			changed[id] = true
 		}
 	}
