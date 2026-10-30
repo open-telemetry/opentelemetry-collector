@@ -81,6 +81,48 @@ Additionally certificates may be reloaded by setting the below configuration.
    Accepts a [duration string](https://pkg.go.dev/time#ParseDuration),
    valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 
+## CRL (Certificate Revocation List) Configuration
+
+CRL checking can be enabled to verify that peer certificates have not been
+revoked. When a CRL is configured, every peer certificate presented during
+the TLS handshake is checked against the revocation list. If a revoked
+certificate is found, the TLS handshake is aborted.
+
+- `crl_file`: Path to a CRL file in PEM format. (optional)
+
+- `crl_reload_interval` (optional): Specifies the duration after which the CRL file will be
+   reloaded from disk. If not set, the CRL is loaded once at startup and never refreshed.
+   Accepts a [duration string](https://pkg.go.dev/time#ParseDuration),
+   valid time units are "ns", "us" (or "Âµs"), "ms", "s", "m", "h".
+
+Example (client with CRL checking):
+```yaml
+exporters:
+  otlp:
+    endpoint: myserver.local:55690
+    tls:
+      ca_file: ca.crt
+      cert_file: client.crt
+      key_file: client.key
+      crl_file: revoked-certs.pem
+      crl_reload_interval: 1h
+```
+
+Example (server with CRL checking):
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: mysite.local:55690
+        tls:
+          cert_file: server.crt
+          key_file: server.key
+          client_ca_file: client-ca.crt
+          crl_file: revoked-certs.pem
+          crl_reload_interval: 30m
+```
+
 How TLS/mTLS is configured depends on whether configuring the client or server.
 See below for examples.
 
