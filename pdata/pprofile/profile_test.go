@@ -7,8 +7,11 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/open-telemetry/sig-profiling/profcheck"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	profilespb "go.opentelemetry.io/proto/otlp/profiles/v1development"
+	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -25,6 +28,10 @@ func TestProfileSwitchDictionary(t *testing.T) {
 		wantProfile    Profile
 		wantDictionary ProfilesDictionary
 		wantErr        error
+
+		// conformant marks cases whose result must be a spec-conformant
+		// Profiles. The other cases start from bare dictionaries or error out.
+		conformant bool
 	}{
 		{
 			name:    "with an empty profile",
@@ -242,7 +249,8 @@ func TestProfileSwitchDictionary(t *testing.T) {
 			}(),
 		},
 		{
-			name: "Profile with various elements",
+			name:       "Profile with various elements",
+			conformant: true,
 			profile: func() Profile {
 				p := NewProfile()
 
@@ -354,8 +362,44 @@ func TestProfileSwitchDictionary(t *testing.T) {
 
 			assert.Equal(t, tt.wantProfile, profile)
 			assert.Equal(t, tt.wantDictionary, dst)
+
+			// The result of a dictionary switch must itself be a spec-conformant
+			// Profiles, with every optional profcheck check enabled.
+			if tt.conformant {
+				assertConformant(t, dst, profile)
+			}
 		})
 	}
+}
+
+// assertConformant asserts that a Profiles assembled from dict and profile
+// conforms to the Profiles signal spec, as checked by
+// github.com/open-telemetry/sig-profiling/profcheck.ConformanceChecker with
+// every optional check enabled.
+//
+// profcheck works on the generated OTLP protobuf types rather than on pdata, so
+// the Profiles is round-tripped through the wire format. getOrig().MarshalProto
+// is used instead of ProtoMarshaler so that the bytes describe dict exactly:
+// ProtoMarshaler.MarshalProfiles first rewrites attribute strings into string
+// table references, which would change the dictionary under test.
+func assertConformant(tb testing.TB, dict ProfilesDictionary, profile Profile) {
+	tb.Helper()
+
+	p := NewProfiles()
+	dict.CopyTo(p.Dictionary())
+	profile.CopyTo(p.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty())
+
+	buf := make([]byte, p.getOrig().SizeProto())
+	_ = p.getOrig().MarshalProto(buf)
+
+	var data profilespb.ProfilesData
+	require.NoError(tb, proto.Unmarshal(buf, &data))
+
+	assert.NoError(tb, profcheck.ConformanceChecker{
+		CheckDictionaryDuplicates: true,
+		CheckSampleTimestampShape: true,
+		CheckDictionaryOrphans:    true,
+	}.Check(&data))
 }
 
 func BenchmarkProfileSwitchDictionary(b *testing.B) {
