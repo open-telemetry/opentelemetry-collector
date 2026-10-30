@@ -264,6 +264,7 @@ func benchmarkFlush(b *testing.B, batch int, fill func(dict ProfilesDictionary, 
 		for i := range srcs {
 			s := NewProfiles()
 			fill(s.Dictionary(), i)
+			referenceDictionary(s)
 			srcs[i] = s
 		}
 		b.StartTimer()
@@ -327,4 +328,63 @@ func BenchmarkDictionaryMergeHotKey(b *testing.B) {
 			})
 		})
 	}
+}
+
+// referenceDictionary appends a profile whose samples reference every stack,
+// plus a stack holding every location, so that MergeTo copies the dictionary
+// entries instead of skipping them as unreferenced.
+func referenceDictionary(p Profiles) {
+	d := p.Dictionary()
+	if d.StackTable().Len() == 0 {
+		d.StackTable().AppendEmpty()
+	}
+	all := d.StackTable().AppendEmpty()
+	for i := 1; i < d.LocationTable().Len(); i++ {
+		all.LocationIndices().Append(int32(i))
+	}
+	prof := p.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	for i := 1; i < d.StackTable().Len(); i++ {
+		prof.Samples().AppendEmpty().SetStackIndex(int32(i))
+	}
+}
+
+// BenchmarkNewProfilesFromDictionary splits one realistic Profiles into parts,
+// each part's samples referencing a share of the stacks, and builds each part
+// with its own dictionary.
+func BenchmarkNewProfilesFromDictionary(b *testing.B) {
+	for _, parts := range []int{2, 10, 100} {
+		b.Run(fmt.Sprintf("parts=%d", parts), func(b *testing.B) {
+			src := newSplitSource(parts)
+			b.ReportAllocs()
+			for b.Loop() {
+				b.StopTimer()
+				pd := NewProfiles()
+				src.CopyTo(pd)
+				b.StartTimer()
+
+				for i := range parts {
+					rps := NewResourceProfilesSlice()
+					pd.ResourceProfiles().At(i).MoveTo(rps.AppendEmpty())
+					if _, err := NewProfilesFromDictionary(pd.Dictionary(), rps); err != nil {
+						b.Fatal(err)
+					}
+				}
+			}
+		})
+	}
+}
+
+// newSplitSource returns a realistic Profiles with one resource profile per
+// part, whose samples reference every parts-th stack.
+func newSplitSource(parts int) Profiles {
+	pd := NewProfiles()
+	fillRealisticProfile(pd.Dictionary(), realisticSizes(1.0), 0.9, 0)
+	profs := make([]Profile, parts)
+	for i := range profs {
+		profs[i] = pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	}
+	for i := 1; i < pd.Dictionary().StackTable().Len(); i++ {
+		profs[i%parts].Samples().AppendEmpty().SetStackIndex(int32(i))
+	}
+	return pd
 }

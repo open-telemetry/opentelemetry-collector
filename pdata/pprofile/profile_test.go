@@ -303,11 +303,11 @@ func TestProfileSwitchDictionary(t *testing.T) {
 
 				// Order of entries depend on the order of
 				// processing in switchDictionary()
-				p.SampleType().SetTypeStrindex(3)
-				p.SampleType().SetUnitStrindex(4)
+				p.SampleType().SetTypeStrindex(5)
+				p.SampleType().SetUnitStrindex(6)
 
-				p.PeriodType().SetTypeStrindex(1)
-				p.PeriodType().SetUnitStrindex(2)
+				p.PeriodType().SetTypeStrindex(3)
+				p.PeriodType().SetUnitStrindex(4)
 
 				return p
 			}(),
@@ -322,17 +322,21 @@ func TestProfileSwitchDictionary(t *testing.T) {
 				d.AttributeTable().AppendEmpty()
 				d.StackTable().AppendEmpty()
 
+				// The attribute's key and unit are translated into
+				// this dictionary's string table along with it.
 				a := d.AttributeTable().AppendEmpty()
-				a.SetKeyStrindex(7)
-				a.SetUnitStrindex(8)
+				a.SetKeyStrindex(1)
+				a.SetUnitStrindex(2)
 				a.Value().SetStr("AnyValue")
 
 				// Order of entries depend on the order of
 				// processing in switchDictionary()
-				d.StringTable().Append("period-type") // 1
-				d.StringTable().Append("period-unit") // 2
-				d.StringTable().Append("sample-type") // 3
-				d.StringTable().Append("sample-unit") // 4
+				d.StringTable().Append("attribute-key")  // 1
+				d.StringTable().Append("attribute-unit") // 2
+				d.StringTable().Append("period-type")    // 3
+				d.StringTable().Append("period-unit")    // 4
+				d.StringTable().Append("sample-type")    // 5
+				d.StringTable().Append("sample-unit")    // 6
 				return d
 			}(),
 		},
