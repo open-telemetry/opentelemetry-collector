@@ -3,11 +3,13 @@ module go.opentelemetry.io/collector/pdata/pprofile
 go 1.26.0
 
 require (
+	github.com/open-telemetry/sig-profiling/profcheck v0.0.0-20261012114705-2b1781f8d2d6
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/featuregate v1.70.0
 	go.opentelemetry.io/collector/internal/testutil v0.164.0
 	go.opentelemetry.io/collector/pdata v1.70.0
 	go.opentelemetry.io/otel v1.47.0
+	go.opentelemetry.io/proto/otlp/profiles/v1development v0.4.0
 	go.opentelemetry.io/proto/slim/otlp/collector/profiles/v1development v0.4.1
 	go.opentelemetry.io/proto/slim/otlp/profiles/v1development v0.4.1
 	go.uber.org/goleak v1.3.0
@@ -21,6 +23,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
+	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
 	go.opentelemetry.io/proto/slim/otlp v1.11.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect

@@ -134,11 +134,7 @@ func hashStack(st Stack) uint64 {
 	return h
 }
 
-func hashAttribute(a KeyValueAndUnit) uint64 {
-	return hashAttributeFields(a.KeyStrindex(), a.UnitStrindex(), a.Value())
-}
-
-func hashAttributeFields(key, unit int32, value pcommon.Value) uint64 {
+func hashAttribute(key, unit int32, value pcommon.Value) uint64 {
 	h := fnvOffset64
 	h = mixU64(h, uint64(uint32(key)))
 	h = mixU64(h, uint64(uint32(unit)))
@@ -176,13 +172,14 @@ type mergeIndex struct {
 	links      map[uint64][]int32
 
 	// Source index to destination index for the merge in progress, so each
-	// referenced source entry is translated and copied at most once. Sized on
-	// first use; -1 marks an entry not translated yet.
-	attributeIdx indexMemo
-	functionIdx  indexMemo
-	mappingIdx   indexMemo
-	locationIdx  indexMemo
-	stackIdx     indexMemo
+	// referenced source entry is translated and copied at most once. Each is
+	// sized to its source table on first use; -1 marks an entry not
+	// translated yet.
+	attributeIdx []int32
+	functionIdx  []int32
+	mappingIdx   []int32
+	locationIdx  []int32
+	stackIdx     []int32
 
 	// Scratch values an entry is copied into and translated in before being
 	// deduplicated into the destination. One per type is enough because a
@@ -235,7 +232,8 @@ func newMergeIndex(dst ProfilesDictionary) *mergeIndex {
 	}
 	at := dst.AttributeTable()
 	for i := 0; i < at.Len(); i++ {
-		h := hashAttribute(at.At(i))
+		a := at.At(i)
+		h := hashAttribute(a.KeyStrindex(), a.UnitStrindex(), a.Value())
 		mi.attributes[h] = append(mi.attributes[h], int32(i))
 	}
 	lkt := dst.LinkTable()
@@ -324,14 +322,10 @@ func (mi *mergeIndex) setStack(table StackSlice, st Stack) (int32, error) {
 	return idx, nil
 }
 
-func (mi *mergeIndex) setAttribute(table KeyValueAndUnitSlice, attr KeyValueAndUnit) (int32, error) {
-	return mi.setAttributeFields(table, attr.KeyStrindex(), attr.UnitStrindex(), attr.Value())
-}
-
-// setAttributeFields is setAttribute for an attribute given by its fields, so
-// callers can translate the key and unit without copying the value first.
-func (mi *mergeIndex) setAttributeFields(table KeyValueAndUnitSlice, key, unit int32, value pcommon.Value) (int32, error) {
-	h := hashAttributeFields(key, unit, value)
+// setAttribute takes the attribute by its fields, so callers can translate the
+// key and unit without copying the value first.
+func (mi *mergeIndex) setAttribute(table KeyValueAndUnitSlice, key, unit int32, value pcommon.Value) (int32, error) {
+	h := hashAttribute(key, unit, value)
 	for _, idx := range mi.attributes[h] {
 		e := table.At(int(idx))
 		if e.KeyStrindex() == key && e.UnitStrindex() == unit && e.Value().Equal(value) {
@@ -366,32 +360,23 @@ func (mi *mergeIndex) setLink(table LinkSlice, li Link) (int32, error) {
 	return idx, nil
 }
 
-// indexMemo maps the source indices of one dictionary table to destination
-// indices.
-type indexMemo []int32
-
-// get returns the destination index of source index i of a table of length n.
-func (memo *indexMemo) get(n int, i int32) (int32, bool) {
-	if len(*memo) != n {
-		*memo = make([]int32, n)
-		for j := range *memo {
-			(*memo)[j] = -1
-		}
+// newIndexMemo returns a source to destination index table for a source
+// table of length n, with every entry marked as not translated yet.
+func newIndexMemo(n int) []int32 {
+	memo := make([]int32, n)
+	for i := range memo {
+		memo[i] = -1
 	}
-	v := (*memo)[i]
-	return v, v >= 0
-}
-
-// set records the destination index of source index i. get must have been
-// called for i first.
-func (memo *indexMemo) set(i, v int32) {
-	(*memo)[i] = v
+	return memo
 }
 
 // attribute returns the destination index of source attribute i. On first use
 // it copies the attribute, with its own references translated, into dst.
 func (mi *mergeIndex) attribute(src, dst ProfilesDictionary, i int32) (int32, error) {
-	if idx, ok := mi.attributeIdx.get(src.AttributeTable().Len(), i); ok {
+	if mi.attributeIdx == nil {
+		mi.attributeIdx = newIndexMemo(src.AttributeTable().Len())
+	}
+	if idx := mi.attributeIdx[i]; idx >= 0 {
 		return idx, nil
 	}
 	attr := src.AttributeTable().At(int(i))
@@ -399,18 +384,21 @@ func (mi *mergeIndex) attribute(src, dst ProfilesDictionary, i int32) (int32, er
 	if err != nil {
 		return 0, err
 	}
-	idx, err := mi.setAttributeFields(dst.AttributeTable(), key, unit, attr.Value())
+	idx, err := mi.setAttribute(dst.AttributeTable(), key, unit, attr.Value())
 	if err != nil {
 		return 0, err
 	}
-	mi.attributeIdx.set(i, idx)
+	mi.attributeIdx[i] = idx
 	return idx, nil
 }
 
 // function returns the destination index of source function i. On first use
 // it copies the function, with its own references translated, into dst.
 func (mi *mergeIndex) function(src, dst ProfilesDictionary, i int32) (int32, error) {
-	if idx, ok := mi.functionIdx.get(src.FunctionTable().Len(), i); ok {
+	if mi.functionIdx == nil {
+		mi.functionIdx = newIndexMemo(src.FunctionTable().Len())
+	}
+	if idx := mi.functionIdx[i]; idx >= 0 {
 		return idx, nil
 	}
 	if mi.functionScratch == nil {
@@ -426,14 +414,17 @@ func (mi *mergeIndex) function(src, dst ProfilesDictionary, i int32) (int32, err
 	if err != nil {
 		return 0, err
 	}
-	mi.functionIdx.set(i, idx)
+	mi.functionIdx[i] = idx
 	return idx, nil
 }
 
 // mapping returns the destination index of source mapping i. On first use it
 // copies the mapping, with its own references translated, into dst.
 func (mi *mergeIndex) mapping(src, dst ProfilesDictionary, i int32) (int32, error) {
-	if idx, ok := mi.mappingIdx.get(src.MappingTable().Len(), i); ok {
+	if mi.mappingIdx == nil {
+		mi.mappingIdx = newIndexMemo(src.MappingTable().Len())
+	}
+	if idx := mi.mappingIdx[i]; idx >= 0 {
 		return idx, nil
 	}
 	if mi.mappingScratch == nil {
@@ -449,14 +440,17 @@ func (mi *mergeIndex) mapping(src, dst ProfilesDictionary, i int32) (int32, erro
 	if err != nil {
 		return 0, err
 	}
-	mi.mappingIdx.set(i, idx)
+	mi.mappingIdx[i] = idx
 	return idx, nil
 }
 
 // location returns the destination index of source location i. On first use
 // it copies the location, with its own references translated, into dst.
 func (mi *mergeIndex) location(src, dst ProfilesDictionary, i int32) (int32, error) {
-	if idx, ok := mi.locationIdx.get(src.LocationTable().Len(), i); ok {
+	if mi.locationIdx == nil {
+		mi.locationIdx = newIndexMemo(src.LocationTable().Len())
+	}
+	if idx := mi.locationIdx[i]; idx >= 0 {
 		return idx, nil
 	}
 	if mi.locationScratch == nil {
@@ -472,14 +466,17 @@ func (mi *mergeIndex) location(src, dst ProfilesDictionary, i int32) (int32, err
 	if err != nil {
 		return 0, err
 	}
-	mi.locationIdx.set(i, idx)
+	mi.locationIdx[i] = idx
 	return idx, nil
 }
 
 // stack returns the destination index of source stack i. On first use it
 // copies the stack, with its own references translated, into dst.
 func (mi *mergeIndex) stack(src, dst ProfilesDictionary, i int32) (int32, error) {
-	if idx, ok := mi.stackIdx.get(src.StackTable().Len(), i); ok {
+	if mi.stackIdx == nil {
+		mi.stackIdx = newIndexMemo(src.StackTable().Len())
+	}
+	if idx := mi.stackIdx[i]; idx >= 0 {
 		return idx, nil
 	}
 	if mi.stackScratch == nil {
@@ -495,6 +492,6 @@ func (mi *mergeIndex) stack(src, dst ProfilesDictionary, i int32) (int32, error)
 	if err != nil {
 		return 0, err
 	}
-	mi.stackIdx.set(i, idx)
+	mi.stackIdx[i] = idx
 	return idx, nil
 }

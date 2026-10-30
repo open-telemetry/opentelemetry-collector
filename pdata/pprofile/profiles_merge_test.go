@@ -643,7 +643,9 @@ func TestProfilesMergeTo_OnlyReferencedEntries(t *testing.T) {
 
 	prof := newReferencingProfile(src)
 	prof.AttributeIndices().Append(attrIdx)
-	prof.Samples().AppendEmpty().SetStackIndex(stIdx)
+	sample := prof.Samples().AppendEmpty()
+	sample.SetStackIndex(stIdx)
+	sample.Values().Append(1)
 
 	before := NewProfilesDictionary()
 	d.CopyTo(before)
@@ -670,6 +672,8 @@ func TestProfilesMergeTo_OnlyReferencedEntries(t *testing.T) {
 	gotLoc := dd.LocationTable().At(int(dd.StackTable().At(int(got.Samples().At(0).StackIndex())).LocationIndices().At(0)))
 	assert.Equal(t, "used-file", dd.StringTable().At(int(dd.MappingTable().At(int(gotLoc.MappingIndex())).FilenameStrindex())))
 	assert.Equal(t, "used-function", dd.StringTable().At(int(dd.FunctionTable().At(int(gotLoc.Lines().At(0).FunctionIndex())).NameStrindex())))
+
+	assertConformant(t, dd, got)
 }
 
 // TestProfilesMergeTo_SwitchDictionaryErrors exercises each error-propagation
@@ -704,6 +708,20 @@ func TestProfilesMergeTo_SwitchDictionaryErrors(t *testing.T) {
 				p.Dictionary().MappingTable().AppendEmpty().SetFilenameStrindex(badIdx)
 			},
 			wantErr: "invalid filename index",
+		},
+		{
+			name: "dictionary mapping attribute index",
+			mutate: func(p Profiles) {
+				p.Dictionary().MappingTable().AppendEmpty().AttributeIndices().Append(badIdx)
+			},
+			wantErr: "invalid attribute index",
+		},
+		{
+			name: "dictionary location attribute index",
+			mutate: func(p Profiles) {
+				p.Dictionary().LocationTable().AppendEmpty().AttributeIndices().Append(badIdx)
+			},
+			wantErr: "invalid attribute index",
 		},
 		{
 			name: "dictionary stack location index",
