@@ -194,6 +194,9 @@ type ServerConfig struct {
 	Auth configoptional.Optional[AuthConfig] `mapstructure:"auth,omitempty"`
 
 	// MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.
+	// The limit is enforced on the bytes received and, when the request has a
+	// supported Content-Encoding (for example gzip), again on the decompressed
+	// body. Set it to the maximum expected decompressed payload size.
 	MaxRequestBodySize int64 `mapstructure:"max_request_body_size,omitempty"`
 
 	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers.

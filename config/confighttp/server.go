@@ -150,6 +150,9 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		}
 	}
 
+	// MaxRequestBodySize is enforced twice: on the received (possibly compressed)
+	// body by maxRequestBodySizeInterceptor, and on the decompressed body by
+	// httpContentDecompressor, which guards against small compressed payloads that expand to very large ones.
 	handler = httpContentDecompressor(
 		handler,
 		sc.MaxRequestBodySize,
