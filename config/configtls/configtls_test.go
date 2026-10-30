@@ -10,8 +10,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -911,12 +913,24 @@ func TestCurvePreferences(t *testing.T) {
 			expectedCurveIDs: []tls.CurveID{},
 			expectedErr:      "invalid curve type: P25223236",
 		},
-		{
-			// An unset curve_preferences must leave tls.Config.CurvePreferences nil so that crypto/tls applies its own defaults
+	}
+
+	// An unset curve_preferences must leave tls.Config.CurvePreferences nil so
+	// that crypto/tls applies its own defaults. requirefips builds instead
+	// default to the FIPS-approved curves, since the build tag does not enforce
+	// runtime FIPS mode.
+	if requireFIPSBuild {
+		tests = append(tests, testCase{
+			name:             "unset-defaults-to-fips-curves",
+			preferences:      nil,
+			expectedCurveIDs: slices.Collect(maps.Values(tlsCurveTypes)),
+		})
+	} else {
+		tests = append(tests, testCase{
 			name:             "unset-uses-stdlib-defaults",
 			preferences:      nil,
 			expectedCurveIDs: nil,
-		},
+		})
 	}
 
 	// The hybrid key exchanges are FIPS-approved, so they are configurable in

@@ -30,7 +30,8 @@ optional and requires additional configuration (see examples below).
   - SecP256r1MLKEM768
   - SecP384r1MLKEM1024
 
-  Builds using the `requirefips` tag accept the same list without `X25519`.
+  Builds using the `requirefips` tag accept the same list without `X25519`,
+  and default to that FIPS-approved list when `curve_preferences` is unset.
 
 The following certificate parameters can be configured:
 

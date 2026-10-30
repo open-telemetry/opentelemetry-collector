@@ -5,7 +5,7 @@ change_type: bug_fix
 component: pkg/config/configtls
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Use the `crypto/tls` default key exchanges when `curve_preferences` is unset, and accept hybrid post-quantum groups added in Go 1.24 (`X25519MLKEM768`) and Go 1.26 (`SecP256r1MLKEM768`, `SecP384r1MLKEM1024`)
+note: Use the `crypto/tls` default key exchanges when `curve_preferences` is unset, and accept hybrid post-quantum groups added in Go 1.24 (`X25519MLKEM768`) and Go 1.26 (`SecP256r1MLKEM768`, `SecP384r1MLKEM1024`). `requirefips` builds default to the FIPS-approved set
 
 # One or more tracking issues or pull requests related to the change
 issues: [14335]

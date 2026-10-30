@@ -16,3 +16,5 @@ var tlsCurveTypes = map[string]tls.CurveID{
 	"SecP256r1MLKEM768":  tls.SecP256r1MLKEM768,
 	"SecP384r1MLKEM1024": tls.SecP384r1MLKEM1024,
 }
+
+const requireFIPSBuild = false
