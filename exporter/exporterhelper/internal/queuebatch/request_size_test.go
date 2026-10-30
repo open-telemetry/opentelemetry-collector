@@ -35,17 +35,6 @@ type sizeCacheSignal struct {
 	// appendPayload adds more data to a request behind its back, without going
 	// through merge/split, so a cached size becomes observably stale.
 	appendPayload func(r request.Request, count int)
-	// exactByteSplitAccounting reports whether the incremental byte accounting in
-	// split matches a from-scratch marshal of the remainder.
-	//
-	// It does not for metrics, and the cause is in the extract*DataPoints
-	// functions rather than in the cache: they report a removed size that sums
-	// the moved data points, but ignore the enclosing Gauge/Sum/Histogram message
-	// losing a byte of length prefix when its content drops below a varint width
-	// boundary. The reported size is then too small and the remainder too large.
-	// This predates the cache; split has always stored the same value. Logs and
-	// traces apply that correction at every level they split, so they are exact.
-	exactByteSplitAccounting bool
 }
 
 func sizeCacheSignals() []sizeCacheSignal {
@@ -63,7 +52,6 @@ func sizeCacheSignals() []sizeCacheSignal {
 			appendPayload: func(r request.Request, count int) {
 				testdata.GenerateLogs(count).ResourceLogs().MoveAndAppendTo(r.(*logsRequest).ld.ResourceLogs())
 			},
-			exactByteSplitAccounting: true,
 		},
 		{
 			name:   "metrics",
@@ -92,7 +80,6 @@ func sizeCacheSignals() []sizeCacheSignal {
 			appendPayload: func(r request.Request, count int) {
 				testdata.GenerateTraces(count).ResourceSpans().MoveAndAppendTo(r.(*tracesRequest).td.ResourceSpans())
 			},
-			exactByteSplitAccounting: true,
 		},
 	}
 }
@@ -180,12 +167,6 @@ func TestRequestCachedSizeMatchesRecompute(t *testing.T) {
 
 		for _, tc := range cases {
 			t.Run(sig.name+"/"+tc.name, func(t *testing.T) {
-				// A bytes-dimension split feeds the incremental accounting of the
-				// extract* helpers into the cache, and that is not exact for metrics.
-				inexact := !sig.exactByteSplitAccounting &&
-					tc.szt == request.SizerTypeBytes && tc.maxSize > 0
-				sawDrift := false
-
 				batch := sig.newReq(3)
 				for i := range 50 {
 					res, err := batch.MergeSplit(context.Background(), tc.maxSize, tc.szt, sig.newReq(11))
@@ -194,24 +175,9 @@ func TestRequestCachedSizeMatchesRecompute(t *testing.T) {
 					for _, r := range res {
 						wantItems, wantBytes := sig.freshSizes(r)
 						assert.Equalf(t, wantItems, r.ItemsCount(), "iter %d: ItemsCount", i)
-						if !inexact {
-							assert.Equalf(t, wantBytes, r.BytesSize(), "iter %d: BytesSize", i)
-							continue
-						}
-						// Pin the direction of the drift rather than ignore it. The
-						// cached value must never undercount, so a batch built from
-						// it cannot exceed max_size.
-						gotBytes := r.BytesSize()
-						assert.GreaterOrEqualf(t, gotBytes, wantBytes, "iter %d: BytesSize must not undercount", i)
-						sawDrift = sawDrift || gotBytes != wantBytes
+						assert.Equalf(t, wantBytes, r.BytesSize(), "iter %d: BytesSize", i)
 					}
 					batch = res[len(res)-1]
-				}
-
-				if inexact {
-					// If the accounting ever becomes exact, drop exactByteSplitAccounting
-					// for this signal instead of leaving a check that no longer applies.
-					assert.True(t, sawDrift, "expected inexact byte accounting, but every value matched a recompute")
 				}
 			})
 		}
