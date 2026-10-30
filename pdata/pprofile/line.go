@@ -35,8 +35,7 @@ func (l Line) switchDictionary(src, dst ProfilesDictionary, mi *mergeIndex) erro
 			return fmt.Errorf("invalid function index %d", l.FunctionIndex())
 		}
 
-		fn := src.FunctionTable().At(int(l.FunctionIndex()))
-		idx, err := mi.setFunction(dst.FunctionTable(), fn)
+		idx, err := mi.function(src, dst, l.FunctionIndex())
 		if err != nil {
 			return fmt.Errorf("couldn't set function: %w", err)
 		}

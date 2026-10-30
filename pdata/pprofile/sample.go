@@ -13,8 +13,7 @@ func (ms Sample) switchDictionary(src, dst ProfilesDictionary, mi *mergeIndex) e
 			return fmt.Errorf("invalid attribute index %d", v)
 		}
 
-		attr := src.AttributeTable().At(int(v))
-		idx, err := mi.setAttribute(dst.AttributeTable(), attr)
+		idx, err := mi.attribute(src, dst, v)
 		if err != nil {
 			return fmt.Errorf("couldn't set attribute %d: %w", i, err)
 		}
@@ -38,8 +37,7 @@ func (ms Sample) switchDictionary(src, dst ProfilesDictionary, mi *mergeIndex) e
 			return fmt.Errorf("invalid stack index %d", ms.StackIndex())
 		}
 
-		stack := src.StackTable().At(int(ms.StackIndex()))
-		idx, err := mi.setStack(dst.StackTable(), stack)
+		idx, err := mi.stack(src, dst, ms.StackIndex())
 		if err != nil {
 			return fmt.Errorf("couldn't set stack: %w", err)
 		}

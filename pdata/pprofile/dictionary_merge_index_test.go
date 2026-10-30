@@ -137,7 +137,7 @@ func TestMergeIndex_SetAttribute_MatchesLinearScan(t *testing.T) {
 
 		refIdx, err := SetAttribute(ref, attr)
 		require.NoError(t, err)
-		gotIdx, err := mi.setAttribute(got, attr)
+		gotIdx, err := mi.setAttribute(got, attr.KeyStrindex(), attr.UnitStrindex(), attr.Value())
 		require.NoError(t, err)
 		assert.Equal(t, refIdx, gotIdx, "iter %d", i)
 	}
@@ -283,7 +283,7 @@ func TestMergeIndex_SetAttribute_SameKeyDistinctValues(t *testing.T) {
 
 			refIdx, err := SetAttribute(ref, attr)
 			require.NoError(t, err)
-			gotIdx, err := mi.setAttribute(got, attr)
+			gotIdx, err := mi.setAttribute(got, attr.KeyStrindex(), attr.UnitStrindex(), attr.Value())
 			require.NoError(t, err)
 			assert.Equal(t, refIdx, gotIdx, "pass %d, value %d", pass, i)
 		}
@@ -474,8 +474,163 @@ func TestMergeIndex_TableOverflowGuards(t *testing.T) {
 	require.ErrorIs(t, err, errTooManyLocationTableEntries)
 	_, err = mi.setStack(dic.StackTable(), st)
 	require.ErrorIs(t, err, errTooManyStackTableEntries)
-	_, err = mi.setAttribute(dic.AttributeTable(), attr)
+	_, err = mi.setAttribute(dic.AttributeTable(), attr.KeyStrindex(), attr.UnitStrindex(), attr.Value())
 	require.ErrorIs(t, err, errTooManyAttributeTableEntries)
 	_, err = mi.setLink(dic.LinkTable(), li)
 	require.ErrorIs(t, err, errTooManyLinkTableEntries)
+}
+
+// TestMergeIndex_TranslateErrors drives the error returns of the translate
+// methods. The destination is empty and maxTableLen is 0, so the first entry
+// added to any destination table overflows. Pre-seeding a memo makes a nested
+// reference resolve without touching dst, so only the outer entry overflows.
+func TestMergeIndex_TranslateErrors(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		run     func(src ProfilesDictionary, mi *mergeIndex) error
+		wantErr error
+	}{
+		{
+			name: "attribute key",
+			run: func(src ProfilesDictionary, mi *mergeIndex) error {
+				src.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+				_, err := mi.attribute(src, NewProfilesDictionary(), 0)
+				return err
+			},
+			wantErr: errTooManyStringTableEntries,
+		},
+		{
+			name: "attribute unit",
+			run: func(src ProfilesDictionary, mi *mergeIndex) error {
+				src.AttributeTable().AppendEmpty().SetUnitStrindex(1)
+				_, err := mi.attribute(src, NewProfilesDictionary(), 0)
+				return err
+			},
+			wantErr: errTooManyStringTableEntries,
+		},
+		{
+			name: "attribute table",
+			run: func(src ProfilesDictionary, mi *mergeIndex) error {
+				src.AttributeTable().AppendEmpty()
+				_, err := mi.attribute(src, NewProfilesDictionary(), 0)
+				return err
+			},
+			wantErr: errTooManyAttributeTableEntries,
+		},
+		{
+			name: "function strings",
+			run: func(src ProfilesDictionary, mi *mergeIndex) error {
+				src.FunctionTable().AppendEmpty().SetNameStrindex(1)
+				_, err := mi.function(src, NewProfilesDictionary(), 0)
+				return err
+			},
+			wantErr: errTooManyStringTableEntries,
+		},
+		{
+			name: "function table",
+			run: func(src ProfilesDictionary, mi *mergeIndex) error {
+				src.FunctionTable().AppendEmpty().SetStartLine(1)
+				_, err := mi.function(src, NewProfilesDictionary(), 0)
+				return err
+			},
+			wantErr: errTooManyFunctionTableEntries,
+		},
+		{
+			name: "mapping strings",
+			run: func(src ProfilesDictionary, mi *mergeIndex) error {
+				src.MappingTable().AppendEmpty().SetFilenameStrindex(1)
+				_, err := mi.mapping(src, NewProfilesDictionary(), 0)
+				return err
+			},
+			wantErr: errTooManyStringTableEntries,
+		},
+		{
+			name: "mapping table",
+			run: func(src ProfilesDictionary, mi *mergeIndex) error {
+				src.MappingTable().AppendEmpty().SetFileOffset(1)
+				_, err := mi.mapping(src, NewProfilesDictionary(), 0)
+				return err
+			},
+			wantErr: errTooManyMappingTableEntries,
+		},
+		{
+			name: "location mapping",
+			run: func(src ProfilesDictionary, mi *mergeIndex) error {
+				src.MappingTable().AppendEmpty()
+				src.MappingTable().AppendEmpty().SetFileOffset(1)
+				src.LocationTable().AppendEmpty().SetMappingIndex(1)
+				_, err := mi.location(src, NewProfilesDictionary(), 0)
+				return err
+			},
+			wantErr: errTooManyMappingTableEntries,
+		},
+		{
+			name: "location table",
+			run: func(src ProfilesDictionary, mi *mergeIndex) error {
+				src.LocationTable().AppendEmpty().SetAddress(1)
+				_, err := mi.location(src, NewProfilesDictionary(), 0)
+				return err
+			},
+			wantErr: errTooManyLocationTableEntries,
+		},
+		{
+			name: "stack location",
+			run: func(src ProfilesDictionary, mi *mergeIndex) error {
+				src.LocationTable().AppendEmpty().SetAddress(1)
+				src.StackTable().AppendEmpty().LocationIndices().Append(0)
+				_, err := mi.stack(src, NewProfilesDictionary(), 0)
+				return err
+			},
+			wantErr: errTooManyLocationTableEntries,
+		},
+		{
+			name: "stack table",
+			run: func(src ProfilesDictionary, mi *mergeIndex) error {
+				src.LocationTable().AppendEmpty().SetAddress(1)
+				src.StackTable().AppendEmpty().LocationIndices().Append(0)
+				mi.locationIdx = []int32{0}
+				_, err := mi.stack(src, NewProfilesDictionary(), 0)
+				return err
+			},
+			wantErr: errTooManyStackTableEntries,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			src := NewProfilesDictionary()
+			src.StringTable().Append("", "s")
+			mi := newMergeIndex(NewProfilesDictionary())
+			mi.maxTableLen = 0
+			require.ErrorIs(t, tt.run(src, mi), tt.wantErr)
+		})
+	}
+}
+
+// TestMergeIndex_TranslateMemoized checks that translating the same source
+// entry twice returns the first destination index without copying it again.
+func TestMergeIndex_TranslateMemoized(t *testing.T) {
+	src := NewProfilesDictionary()
+	src.StringTable().Append("", "s")
+	src.AttributeTable().AppendEmpty().SetKeyStrindex(1)
+	src.FunctionTable().AppendEmpty().SetNameStrindex(1)
+	src.MappingTable().AppendEmpty().SetFilenameStrindex(1)
+	src.LocationTable().AppendEmpty().SetAddress(1)
+	src.StackTable().AppendEmpty().LocationIndices().Append(0)
+
+	dst := NewProfilesDictionary()
+	size := func() int {
+		return dst.StringTable().Len() + dst.AttributeTable().Len() + dst.FunctionTable().Len() +
+			dst.MappingTable().Len() + dst.LocationTable().Len() + dst.StackTable().Len()
+	}
+	mi := newMergeIndex(dst)
+	for _, translate := range []func(src, dst ProfilesDictionary, i int32) (int32, error){
+		mi.attribute, mi.function, mi.mapping, mi.location, mi.stack,
+	} {
+		first, err := translate(src, dst, 0)
+		require.NoError(t, err)
+		before := size()
+		second, err := translate(src, dst, 0)
+		require.NoError(t, err)
+		assert.Equal(t, first, second)
+		assert.Equal(t, before, size())
+	}
 }
