@@ -1169,10 +1169,10 @@ func TestGenerateConfigGoStruct_InternalResolvedRefGeneratesLocalType(t *testing
 	generated := string(content)
 	require.Contains(t, generated, `"time"`)
 	require.Contains(t, generated, "type PlainConfig struct")
-	require.Contains(t, generated, "func NewDefaultPlainConfig() PlainConfig")
+	require.Contains(t, generated, "func newDefaultPlainConfig() PlainConfig")
 	require.Contains(t, generated, "Timeout: 30 * time.Second,")
 	require.Contains(t, generated, "Config PlainConfig `mapstructure:\"config\"`")
-	require.Contains(t, generated, "config := NewDefaultPlainConfig()")
+	require.Contains(t, generated, "config := newDefaultPlainConfig()")
 	require.Contains(t, generated, "config.Timeout = 30 * time.Second")
 	require.Contains(t, generated, "Config: config,")
 }
