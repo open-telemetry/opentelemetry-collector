@@ -6,6 +6,7 @@ package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 import (
 	"errors"
 	"fmt"
+	"path"
 	"regexp"
 	"slices"
 	"strconv"
@@ -466,7 +467,8 @@ func (md *Metadata) validateFeatureGates() error {
 
 	var componentPrefix string
 	if md.Status != nil && md.Status.Class != "" && md.Type != "" {
-		componentPrefix = md.Status.Class + "." + md.Type + "."
+		// Gate IDs cannot contain "/", so a type such as "config/configgrpc" uses only its last segment.
+		componentPrefix = md.Status.Class + "." + path.Base(md.Type) + "."
 	}
 
 	// Validate that feature gates are sorted by ID
@@ -488,7 +490,7 @@ func (md *Metadata) validateFeatureGates() error {
 			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": ID contains invalid characters, must match ^[0-9a-zA-Z._]*$`, gate.ID))
 		}
 
-		// Validate ID is prefixed with "<class>.<type>." so gates are namespaced to their component.
+		// Validate ID is prefixed with "<class>.<last segment of type>." so gates are namespaced to their component.
 		if !gate.SkipStrictValidation && componentPrefix != "" && !strings.HasPrefix(string(gate.ID), componentPrefix) {
 			errs = errors.Join(errs, fmt.Errorf(`feature gate "%v": ID must be prefixed with %q`, gate.ID, componentPrefix))
 		}
@@ -887,7 +889,7 @@ const (
 // FeatureGate represents a feature gate definition in metadata.
 type FeatureGate struct {
 	// ID is the unique identifier for the feature gate. Must be prefixed with
-	// "<status.class>.<type>." unless SkipStrictValidation is set.
+	// "<status.class>.<last segment of type>." unless SkipStrictValidation is set.
 	ID FeatureGateID `mapstructure:"id"`
 	// Description of the feature gate.
 	Description string `mapstructure:"description"`

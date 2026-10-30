@@ -1044,10 +1044,12 @@ func TestValidateFeatureGatesDuplicateID(t *testing.T) {
 
 func TestValidateFeatureGatesIDPrefix(t *testing.T) {
 	tests := []struct {
-		name       string
-		gateID     FeatureGateID
-		skipStrict bool
-		wantErr    string
+		name           string
+		componentClass string
+		componentType  string
+		gateID         FeatureGateID
+		skipStrict     bool
+		wantErr        string
 	}{
 		{
 			name:   "valid prefix",
@@ -1073,12 +1075,29 @@ func TestValidateFeatureGatesIDPrefix(t *testing.T) {
 			gateID:     "example",
 			skipStrict: true,
 		},
+		{
+			name:           "type with path uses its last segment",
+			componentClass: "pkg",
+			componentType:  "config/configgrpc",
+			gateID:         "pkg.configgrpc.example",
+		},
+		{
+			name:           "type with path rejects the full path",
+			componentClass: "pkg",
+			componentType:  "config/configgrpc",
+			gateID:         "pkg.config.configgrpc.example",
+			wantErr:        `ID must be prefixed with "pkg.configgrpc."`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			componentClass, componentType := tt.componentClass, tt.componentType
+			if componentType == "" {
+				componentClass, componentType = "receiver", "otlp"
+			}
 			md := &Metadata{
-				Type:   "otlp",
-				Status: &Status{Class: "receiver"},
+				Type:   componentType,
+				Status: &Status{Class: componentClass},
 				FeatureGates: []FeatureGate{
 					{
 						ID:                   tt.gateID,
