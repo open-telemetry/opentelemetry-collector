@@ -182,3 +182,9 @@ exported_configs:
         default:
           # We typically want to create a TCP server and listen over a network.
           transport: tcp
+feature_gates:
+  - id: pkg.configgrpc.PickFirstShuffleAddressList
+    description: When enabled, gRPC clients that use the pick_first balancer shuffle the resolved address list before connecting.
+    stage: beta
+    from_version: v0.165.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector/issues/16235

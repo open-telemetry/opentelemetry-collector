@@ -417,7 +417,7 @@ The feature gate definitions should correspond to actual gates registered in you
 
 By default, mdatagen applies strict validation to feature gate entries:
 
-- Every gate `id` must be prefixed with `<status.class>.<type>.` (e.g. `receiver.mycomponent.newFeature`), so gates are namespaced to the component that owns them.
+- Every gate `id` must be prefixed with `<status.class>.<type>.` (e.g. `receiver.mycomponent.newFeature`), so gates are namespaced to the component that owns them. If `type` contains `/`, only its last segment is used (e.g. `pkg.configgrpc.` for `config/configgrpc`).
 - Every `reference_url` must be a GitHub issue URL of the form `https://github.com/<owner>/<repo>/issues/<number>`. Pull requests, blog posts, and other URLs are rejected.
 
 Individual gates that predate these rules can be grandfathered in by setting `skip_strict_validation: true` on the gate entry itself. New gates should not set this flag.

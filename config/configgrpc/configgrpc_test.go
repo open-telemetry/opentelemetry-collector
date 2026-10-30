@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
+	internalmetadata "go.opentelemetry.io/collector/config/configgrpc/internal/metadata"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -33,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
@@ -280,6 +282,57 @@ func TestSanitizeEndpoint(t *testing.T) {
 	// Unparseable URI with :// falls back to returning the endpoint as-is.
 	cfg.Endpoint = "bad\x7f://host:4317"
 	assert.Equal(t, "bad\x7f://host:4317", cfg.sanitizedEndpoint())
+}
+
+func TestDefaultServiceConfig(t *testing.T) {
+	tests := []struct {
+		name         string
+		balancerName string
+		gateEnabled  bool
+		expected     string
+	}{
+		{
+			name:         "round_robin",
+			balancerName: "round_robin",
+			gateEnabled:  true,
+			expected:     `{"loadBalancingPolicy":"round_robin"}`,
+		},
+		{
+			name:         "pick_first shuffles addresses",
+			balancerName: "pick_first",
+			gateEnabled:  true,
+			expected:     `{"loadBalancingConfig":[{"pick_first":{"shuffleAddressList":true}}]}`,
+		},
+		{
+			name:         "pick_first keeps address order when the gate is disabled",
+			balancerName: "pick_first",
+			gateEnabled:  false,
+			expected:     `{"loadBalancingPolicy":"pick_first"}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setPickFirstShuffleGate(t, tt.gateEnabled)
+			cfg := NewDefaultClientConfig()
+			cfg.Endpoint = "localhost:4317"
+			cfg.BalancerName = tt.balancerName
+			assert.Equal(t, tt.expected, cfg.defaultServiceConfig())
+
+			// grpc.NewClient rejects a service config that the balancer cannot parse.
+			conn, err := cfg.ToClientConn(context.Background(), nil, componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+			require.NoError(t, conn.Close())
+		})
+	}
+}
+
+func setPickFirstShuffleGate(t *testing.T, enabled bool) {
+	gate := internalmetadata.PkgConfiggrpcPickFirstShuffleAddressListFeatureGate
+	previous := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), previous))
+	})
 }
 
 func TestGrpcDialTarget(t *testing.T) {
