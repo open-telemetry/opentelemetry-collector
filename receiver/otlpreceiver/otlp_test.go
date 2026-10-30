@@ -22,6 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
@@ -1010,6 +1012,51 @@ func newHTTPReceiver(t *testing.T, settings component.TelemetrySettings, endpoin
 	cfg := createDefaultConfig().(*Config)
 	cfg.Protocols.HTTP.GetOrInsertDefault().ServerConfig.NetAddr.Endpoint = endpoint
 	return newReceiver(t, settings, cfg, otlpReceiverID, c)
+}
+
+func TestNewOtlpReceiverTelemetryError(t *testing.T) {
+	// newOtlpReceiver requests one meter for each of the two receiverhelper
+	// ObsReports and two meters for each of the two xreceiverhelper ObsReports.
+	// Fail on each of them in turn to cover every error path.
+	const numMeters = 6
+	for failAt := range numMeters {
+		set := receivertest.NewNopSettings(metadata.Type)
+		set.MeterProvider = &failingMeterProvider{failAt: failAt}
+		_, err := newOtlpReceiver(createDefaultConfig().(*Config), &set)
+		require.ErrorIs(t, err, errCounter)
+	}
+
+	set := receivertest.NewNopSettings(metadata.Type)
+	set.MeterProvider = &failingMeterProvider{failAt: numMeters}
+	_, err := newOtlpReceiver(createDefaultConfig().(*Config), &set)
+	require.NoError(t, err)
+}
+
+var errCounter = errors.New("counter creation error")
+
+// failingMeterProvider returns meters that fail to create counters once
+// Meter has been called more than failAt times.
+type failingMeterProvider struct {
+	noop.MeterProvider
+	failAt int
+	calls  int
+}
+
+func (mp *failingMeterProvider) Meter(string, ...metric.MeterOption) metric.Meter {
+	defer func() { mp.calls++ }()
+	if mp.calls >= mp.failAt {
+		return errorMeter{}
+	}
+	return noop.Meter{}
+}
+
+// errorMeter is a meter that returns errors when creating counters.
+type errorMeter struct {
+	noop.Meter
+}
+
+func (errorMeter) Int64Counter(string, ...metric.Int64CounterOption) (metric.Int64Counter, error) {
+	return nil, errCounter
 }
 
 func newReceiver(t *testing.T, settings component.TelemetrySettings, cfg *Config, id component.ID, c consumertest.Consumer) component.Component {

@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
@@ -181,6 +183,49 @@ func TestProfileSampleCountsByType(t *testing.T) {
 		"samples:<invalid>":   1,
 	}, ProfileSampleCountsByType(pd))
 	assert.Empty(t, ProfileSampleCountsByType(pprofile.NewProfiles()))
+}
+
+func TestNewObsReportTelemetryError(t *testing.T) {
+	// NewObsReport creates two telemetry builders, each requesting one meter.
+	// Fail on each of them in turn to cover every error path.
+	for failAt := range 2 {
+		set := receiver.Settings{
+			ID:                receiverID,
+			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		}
+		set.MeterProvider = &failingMeterProvider{failAt: failAt}
+		_, err := NewObsReport(receiverhelper.ObsReportSettings{
+			ReceiverID:             receiverID,
+			Transport:              transport,
+			ReceiverCreateSettings: set,
+		})
+		require.ErrorIs(t, err, errFake)
+	}
+}
+
+// failingMeterProvider returns meters that fail to create counters once
+// Meter has been called more than failAt times.
+type failingMeterProvider struct {
+	noop.MeterProvider
+	failAt int
+	calls  int
+}
+
+func (mp *failingMeterProvider) Meter(string, ...metric.MeterOption) metric.Meter {
+	defer func() { mp.calls++ }()
+	if mp.calls >= mp.failAt {
+		return errorMeter{}
+	}
+	return noop.Meter{}
+}
+
+// errorMeter is a meter that returns errors when creating counters.
+type errorMeter struct {
+	noop.Meter
+}
+
+func (errorMeter) Int64Counter(string, ...metric.Int64CounterOption) (metric.Int64Counter, error) {
+	return nil, errFake
 }
 
 func testTelemetry(t *testing.T, testFunc func(t *testing.T, tt *componenttest.Telemetry)) {
