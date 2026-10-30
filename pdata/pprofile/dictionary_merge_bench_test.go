@@ -264,6 +264,7 @@ func benchmarkFlush(b *testing.B, batch int, fill func(dict ProfilesDictionary, 
 		for i := range srcs {
 			s := NewProfiles()
 			fill(s.Dictionary(), i)
+			referenceDictionary(s)
 			srcs[i] = s
 		}
 		b.StartTimer()
@@ -326,5 +327,23 @@ func BenchmarkDictionaryMergeHotKey(b *testing.B) {
 				fillHotKeyProfile(dict, attrs, 0.9, profileID)
 			})
 		})
+	}
+}
+
+// referenceDictionary appends a profile whose samples reference every stack,
+// plus a stack holding every location, so that MergeTo copies the dictionary
+// entries instead of skipping them as unreferenced.
+func referenceDictionary(p Profiles) {
+	d := p.Dictionary()
+	if d.StackTable().Len() == 0 {
+		d.StackTable().AppendEmpty()
+	}
+	all := d.StackTable().AppendEmpty()
+	for i := 1; i < d.LocationTable().Len(); i++ {
+		all.LocationIndices().Append(int32(i))
+	}
+	prof := p.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	for i := 1; i < d.StackTable().Len(); i++ {
+		prof.Samples().AppendEmpty().SetStackIndex(int32(i))
 	}
 }
