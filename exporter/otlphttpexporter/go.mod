@@ -72,6 +72,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.164.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.164.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.164.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.164.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.164.0 // indirect
 	go.opentelemetry.io/collector/pipeline v1.70.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.164.0 // indirect
@@ -87,7 +88,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
-	golang.org/x/net v0.61.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 )
@@ -180,5 +181,7 @@ replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testut
 replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
 
 replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
+
+replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
 
 replace go.opentelemetry.io/collector/internal/statusutil => ../../internal/statusutil

@@ -35,6 +35,7 @@ require (
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.164.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.164.0
 	go.opentelemetry.io/collector/extension v1.70.0
+	go.opentelemetry.io/collector/extension/xextension v0.164.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.164.0
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.164.0
 	go.opentelemetry.io/collector/internal/testutil v0.164.0
@@ -119,7 +120,6 @@ require (
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.164.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.164.0 // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.164.0 // indirect
-	go.opentelemetry.io/collector/extension/xextension v0.164.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.70.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.164.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.164.0 // indirect
@@ -170,7 +170,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/exp v0.0.0-20260908205506-85c1c2202aba // indirect
-	golang.org/x/net v0.61.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/term v0.47.0 // indirect
