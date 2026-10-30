@@ -682,6 +682,75 @@ func TestBuildEmbeddedSchemaJSONOnlyAndPermissiveFallback(t *testing.T) {
 	require.Equal(t, true, patterns["^nop_legacy(?:/.+)?$"].(map[string]any)["deprecated"])
 }
 
+func TestBuildEmbeddedSchemaMissingMetadataMakesSectionPermissive(t *testing.T) {
+	t.Parallel()
+
+	withJSON := writeSchemaModule(t, componentSchemaMetadata{Type: "otlp"}, map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"endpoint": map[string]any{"type": "string"},
+		},
+	})
+	withJSONExporter := writeSchemaModule(t, componentSchemaMetadata{Type: "debug"}, map[string]any{
+		"type": "object",
+	})
+	// A custom component without metadata.yaml: its type is unknown to the builder.
+	noMetadata := t.TempDir()
+
+	cfg := newTestConfig(t)
+	cfg.Receivers = []Module{
+		{GoMod: "example.com/withjson v0.0.1"},
+		{GoMod: "example.com/nometadata v0.0.1"},
+	}
+	cfg.Exporters = []Module{{GoMod: "example.com/debug v0.0.1"}}
+
+	schemaBytes, err := buildEmbeddedSchema(cfg, func(modulePath string) (string, error) {
+		switch modulePath {
+		case "example.com/withjson":
+			return withJSON, nil
+		case "example.com/nometadata":
+			return noMetadata, nil
+		case "example.com/debug":
+			return withJSONExporter, nil
+		default:
+			return "", fmt.Errorf("unexpected module path %q", modulePath)
+		}
+	})
+	require.NoError(t, err)
+	require.NotNil(t, schemaBytes)
+
+	var schema map[string]any
+	require.NoError(t, json.Unmarshal(schemaBytes, &schema))
+	properties := schema["properties"].(map[string]any)
+
+	// Known components in the section are still described.
+	receivers := properties["receivers"].(map[string]any)
+	patterns := receivers["patternProperties"].(map[string]any)
+	otlpSchema := nullableComponentSchema(t, patterns["^otlp(?:/.+)?$"])
+	require.Contains(t, otlpSchema["properties"].(map[string]any), "endpoint")
+
+	// The section with the unknown component accepts any component key.
+	require.NotContains(t, receivers, "additionalProperties")
+
+	// Sections without unknown components stay strict.
+	exporters := properties["exporters"].(map[string]any)
+	require.Equal(t, false, exporters["additionalProperties"])
+}
+
+func TestBuildEmbeddedSchemaOnlyMissingMetadata(t *testing.T) {
+	t.Parallel()
+
+	cfg := newTestConfig(t)
+	cfg.Receivers = []Module{{GoMod: "example.com/nometadata v0.0.1"}}
+
+	noMetadata := t.TempDir()
+	schemaBytes, err := buildEmbeddedSchema(cfg, func(string) (string, error) {
+		return noMetadata, nil
+	})
+	require.NoError(t, err)
+	require.Nil(t, schemaBytes)
+}
+
 func TestBuildEmbeddedSchemaIgnoresYAMLOnlyModules(t *testing.T) {
 	t.Parallel()
 
@@ -728,7 +797,7 @@ func TestLoadCollectorComponentSchemaErrors(t *testing.T) {
 
 	t.Run("missing metadata", func(t *testing.T) {
 		_, _, err := loadCollectorComponentSchema(t.TempDir())
-		require.ErrorContains(t, err, "failed to read metadata.yaml")
+		require.ErrorIs(t, err, errMissingComponentMetadata)
 	})
 
 	t.Run("invalid metadata", func(t *testing.T) {
@@ -835,6 +904,7 @@ func TestBuildEmbeddedSchemaLoadCollectorComponentSchemaError(t *testing.T) {
 	t.Parallel()
 
 	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "metadata.yaml"), []byte("{"), 0o600))
 	cfg := newTestConfig(t)
 	cfg.Receivers = []Module{{GoMod: "example.com/receiver v0.0.1"}}
 

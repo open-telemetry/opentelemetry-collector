@@ -11,10 +11,15 @@ import (
 	"path/filepath"
 	"strings"
 
+	"go.uber.org/zap"
 	"go.yaml.in/yaml/v3"
 
 	"go.opentelemetry.io/collector/internal/schemagen"
 )
+
+// errMissingComponentMetadata signals that a component module has no metadata.yaml,
+// so its component type cannot be determined and it cannot be described in the schema.
+var errMissingComponentMetadata = errors.New("metadata.yaml not found")
 
 // componentSchemaFileName is the only schema artifact accepted for embedding.
 // config.schema.yaml / .yml are unresolved bootstrap files with dangling $refs;
@@ -68,6 +73,10 @@ func buildEmbeddedSchema(cfg *Config, resolveModuleDir func(string) (string, err
 func buildEmbeddedSchemaWithDeps(cfg *Config, deps builderDeps, resolveModuleDir func(string) (string, error)) ([]byte, error) {
 	parts := schemagen.CollectorSchemaParts{}
 	schemaFileCount := 0
+	// permissiveSections collects the sections that contain at least one component whose
+	// type is unknown (no metadata.yaml). Those sections must accept any component key,
+	// otherwise the schema would reject valid configurations for that component.
+	permissiveSections := map[schemagen.CollectorSection]bool{}
 
 	for _, ref := range deps.selectedComponentSchemaRefs(cfg) {
 		modulePath, _, _ := strings.Cut(ref.module.GoMod, " ")
@@ -77,6 +86,12 @@ func buildEmbeddedSchemaWithDeps(cfg *Config, deps builderDeps, resolveModuleDir
 		}
 
 		componentSchema, hasSchemaFile, err := loadCollectorComponentSchema(moduleDir)
+		if errors.Is(err, errMissingComponentMetadata) {
+			cfg.Logger.Info("Component has no metadata.yaml, its configuration will not be validated by the embedded schema.",
+				zap.String("module", modulePath), zap.String("section", string(ref.section)))
+			permissiveSections[ref.section] = true
+			continue
+		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to load component schema for %q: %w", modulePath, err)
 		}
@@ -109,6 +124,12 @@ func buildEmbeddedSchemaWithDeps(cfg *Config, deps builderDeps, resolveModuleDir
 		return nil, fmt.Errorf("failed to combine collector schema: %w", err)
 	}
 
+	for section := range permissiveSections {
+		if sectionSchema := combined.Properties[string(section)]; sectionSchema != nil {
+			sectionSchema.AdditionalProperties = nil
+		}
+	}
+
 	return json.MarshalIndent(combined, "", "  ")
 }
 
@@ -137,6 +158,9 @@ func loadCollectorComponentSchema(moduleDir string) (schemagen.CollectorComponen
 	metadataPath := filepath.Join(moduleDir, "metadata.yaml")
 	// #nosec G304 -- moduleDir is resolved from go mod list command output
 	metadataBytes, err := os.ReadFile(metadataPath)
+	if errors.Is(err, os.ErrNotExist) {
+		return schemagen.CollectorComponentSchema{}, false, errMissingComponentMetadata
+	}
 	if err != nil {
 		return schemagen.CollectorComponentSchema{}, false, fmt.Errorf("failed to read metadata.yaml: %w", err)
 	}
