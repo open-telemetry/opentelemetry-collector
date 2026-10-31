@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -20,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp/internal/metadata"
+	"go.opentelemetry.io/collector/config/configmiddleware"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
@@ -33,6 +36,19 @@ type privateClientConfigFields struct {
 	// deprecationWarnings records use of deprecated fields observed while
 	// unmarshaling; ToClient logs them, as no logger is available here.
 	deprecationWarnings []string
+
+	// DSCP sets the Differentiated Services Code Point (DSCP) value
+	// on outgoing HTTP connections. This value is used to set the DS field
+	// in the IP header, enabling QoS classification by network devices.
+	// Valid values are 0 to 63. Common values:
+	//   - 0: Default/Best Effort (CS0)
+	//   - 46: Expedited Forwarding (EF) - for low-latency traffic
+	//   - 34: Assured Forwarding AF41
+	// Default is 0 (disabled, no marking applied).
+	DSCP int `mapstructure:"dscp,omitempty"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
@@ -268,6 +284,9 @@ func (cc *ClientConfig) Validate() error {
 			return err
 		}
 	}
+	if cc.DSCP < 0 || cc.DSCP > 63 {
+		return fmt.Errorf("invalid DSCP value %d: must be between 0 and 63", cc.DSCP)
+	}
 	return nil
 }
 
@@ -327,6 +346,16 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 			return nil, parseErr
 		}
 		transport.Proxy = http.ProxyURL(proxyURL)
+	}
+
+	// Set DSCP marking on outgoing connections if configured.
+	if cc.DSCP > 0 {
+		dialer := &net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			Control:   confignet.DSCPDialControl(cc.DSCP),
+		}
+		transport.DialContext = dialer.DialContext
 	}
 
 	if cc.HTTP2ReadIdleTimeout > 0 {
