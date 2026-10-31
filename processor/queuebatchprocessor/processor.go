@@ -33,7 +33,7 @@ func queueOptions(cfg *Config, next consumer.Capabilities, set processor.Setting
 	switch {
 	case cfg.Batch.HasValue():
 		mutates = true
-	case cfg.StorageID != nil:
+	case cfg.StorageID.HasValue():
 		mutates = false
 	default:
 		mutates = next.MutatesData

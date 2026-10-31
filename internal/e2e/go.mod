@@ -18,6 +18,7 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.70.0
 	go.opentelemetry.io/collector/config/configoptional v1.70.0
 	go.opentelemetry.io/collector/config/configretry v1.70.0
+	go.opentelemetry.io/collector/config/configstorage v0.164.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.164.0
 	go.opentelemetry.io/collector/config/configtls v1.70.0
 	go.opentelemetry.io/collector/confmap v1.70.0
@@ -346,3 +347,5 @@ replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testut
 replace go.opentelemetry.io/collector/internal/componentalias => ../componentalias
 
 replace go.opentelemetry.io/collector/internal/statusutil => ../statusutil
+
+replace go.opentelemetry.io/collector/config/configstorage => ../../config/configstorage
