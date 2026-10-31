@@ -1,0 +1,10 @@
+change_type: enhancement
+component: extension/memory_limiter
+note: Add the Alpha feature gate `extension.memorylimiter.UseGRPCTap` to reject gRPC requests before protobuf decoding under memory pressure.
+issues: [16184]
+subtext: |
+  The gate is disabled by default and applies to the existing gRPC middleware configuration.
+  When enabled, the tap handle replaces the gRPC interceptors, and refusals use the same response and metric.
+  Requests rejected by the tap handle are not reported by the gRPC server instrumentation (otelgrpc).
+  The tap handle uses `google.golang.org/grpc/tap`, which grpc-go marks as experimental.
+change_logs: [user]

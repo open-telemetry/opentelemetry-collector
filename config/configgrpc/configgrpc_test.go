@@ -20,6 +20,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/tap"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -1328,6 +1329,50 @@ func TestDefaultStreamInterceptorMissingMetadata(t *testing.T) {
 	assert.Equal(t, errMetadataNotFound, err)
 }
 
+func TestChainInTapHandles(t *testing.T) {
+	rejectErr := status.Error(codes.ResourceExhausted, "rejected")
+	rejectingInTapHandle := func(ctx context.Context, _ *tap.Info) (context.Context, error) {
+		return ctx, rejectErr
+	}
+
+	tests := []struct {
+		name      string
+		handles   []tap.ServerInHandle
+		wantCalls []string
+		wantErr   error
+	}{
+		{
+			name:      "single_handle",
+			handles:   []tap.ServerInHandle{recordingInTapHandle("tap1")},
+			wantCalls: []string{"tap1"},
+		},
+		{
+			name:      "calls_handles_in_order",
+			handles:   []tap.ServerInHandle{recordingInTapHandle("tap1"), recordingInTapHandle("tap2")},
+			wantCalls: []string{"tap1", "tap2"},
+		},
+		{
+			name:      "stops_at_first_error",
+			handles:   []tap.ServerInHandle{recordingInTapHandle("tap1"), rejectingInTapHandle, recordingInTapHandle("tap2")},
+			wantCalls: []string{"tap1"},
+			wantErr:   rejectErr,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, err := chainInTapHandles(tt.handles)(context.Background(), &tap.Info{})
+
+			if tt.wantErr != nil {
+				require.ErrorIs(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, tt.wantCalls, getMiddlewareCalls(ctx))
+		})
+	}
+}
+
 type mockServerStream struct {
 	grpc.ServerStream
 	ctx context.Context
@@ -1351,10 +1396,10 @@ func (gts *grpcTraceServer) startTestServer(t *testing.T, gss configoptional.Opt
 	return gts.startTestServerWithExtensions(t, gss, nil)
 }
 
-func (gts *grpcTraceServer) startTestServerWithExtensions(t *testing.T, gss configoptional.Optional[ServerConfig], extensions map[component.ID]component.Component, opts ...ToServerOption) (*grpc.Server, string) {
+func (gts *grpcTraceServer) startTestServerWithExtensions(t *testing.T, gss configoptional.Optional[ServerConfig], extensions map[component.ID]component.Component) (*grpc.Server, string) {
 	listener, err := gss.Get().NetAddr.Listen(context.Background())
 	require.NoError(t, err)
-	server, err := gss.Get().ToServer(context.Background(), extensions, componenttest.NewNopTelemetrySettings(), opts...)
+	server, err := gss.Get().ToServer(context.Background(), extensions, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	ptraceotlp.RegisterGRPCServer(server, gts)
 	go func() {

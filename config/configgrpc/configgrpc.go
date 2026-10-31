@@ -26,6 +26,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/tap"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -34,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/zstd"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 )
 
 // DefaultBalancerName is the name of the default load balancer.
@@ -336,7 +338,18 @@ func (sc *ServerConfig) ToServer(
 	if err != nil {
 		return nil, err
 	}
-	return grpc.NewServer(grpcOpts...), nil
+	return newGRPCServer(grpcOpts...)
+}
+
+// newGRPCServer calls grpc.NewServer and returns an error instead of panicking,
+// for example when the options set more than one tap handle.
+func newGRPCServer(opts ...grpc.ServerOption) (srv *grpc.Server, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("failed to create gRPC server: %v", r)
+		}
+	}()
+	return grpc.NewServer(opts...), nil
 }
 
 func (sc *ServerConfig) getGrpcServerOptions(
@@ -427,12 +440,32 @@ func (sc *ServerConfig) getGrpcServerOptions(
 	opts = append(opts, grpc.StatsHandler(otelgrpc.NewServerHandler(otelOpts...)), grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
 
 	// Apply middleware options. Note: OpenTelemetry could be registered as an extension.
+	var inTapHandles []tap.ServerInHandle
 	for _, middleware := range sc.Middlewares {
 		middlewareOptions, err := middleware.GetGRPCServerOptions(ctx, extensions)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get gRPC server options from middleware: %w", err)
 		}
 		opts = append(opts, middlewareOptions...)
+
+		// GetGRPCServerOptions already verified that the middleware extension exists.
+		tapServer, ok := extensions[middleware.ID].(extensionmiddleware.GRPCServerInTap)
+		if !ok {
+			continue
+		}
+		inTapHandle, err := tapServer.GetGRPCServerInTapHandle(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get gRPC server tap handle from middleware: %w", err)
+		}
+		if inTapHandle != nil {
+			inTapHandles = append(inTapHandles, inTapHandle)
+		}
+	}
+
+	// gRPC servers accept a single tap handle, so combine the middleware tap handles.
+	// If other options also set one, newGRPCServer returns an error.
+	if len(inTapHandles) > 0 {
+		opts = append(opts, grpc.InTapHandle(chainInTapHandles(inTapHandles)))
 	}
 
 	for _, opt := range extraOpts {
@@ -442,6 +475,23 @@ func (sc *ServerConfig) getGrpcServerOptions(
 	}
 
 	return opts, nil
+}
+
+// chainInTapHandles returns a tap handle that calls the given handles in order
+// and stops at the first error.
+func chainInTapHandles(handles []tap.ServerInHandle) tap.ServerInHandle {
+	if len(handles) == 1 {
+		return handles[0]
+	}
+	return func(ctx context.Context, info *tap.Info) (context.Context, error) {
+		for _, handle := range handles {
+			var err error
+			if ctx, err = handle(ctx, info); err != nil {
+				return ctx, err
+			}
+		}
+		return ctx, nil
+	}
 }
 
 // getGRPCCompressionName returns compression name registered in grpc.

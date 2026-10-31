@@ -1,0 +1,9 @@
+change_type: enhancement
+component: pkg/config/configgrpc
+note: Support gRPC server middlewares that implement `extensionmiddleware.GRPCServerInTap`.
+issues: [16184]
+subtext: |
+  `ServerConfig.ToServer` combines the tap handles of all configured middlewares into one `grpc.InTapHandle`
+  and calls them in the configured order. The first error rejects the request.
+  When the server options set more than one tap handle, `ToServer` returns an error instead of panicking.
+change_logs: [api]
