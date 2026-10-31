@@ -21,6 +21,19 @@ import (
 
 var testID = component.MustNewID("test")
 
+func TestIsCustomTCPRoutingEnabled(t *testing.T) {
+	gateID := metadata.PkgConfigmiddlewareCustomTCPRoutingFeatureGate.ID()
+	previous := IsCustomTCPRoutingEnabled()
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gateID, previous))
+	})
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(gateID, false))
+	require.False(t, IsCustomTCPRoutingEnabled())
+	require.NoError(t, featuregate.GlobalRegistry().Set(gateID, true))
+	require.True(t, IsCustomTCPRoutingEnabled())
+}
+
 type mockWrongType struct {
 	component.StartFunc
 	component.ShutdownFunc

@@ -36,6 +36,24 @@ func newTestDialerExtension(dial extensionmiddleware.DialContextFunc) component.
 	}
 }
 
+func TestClientConfigValidateDialerMiddlewareFeatureGate(t *testing.T) {
+	gateID := "pkg.configmiddleware.CustomTCPRouting"
+	previous := configmiddleware.IsCustomTCPRoutingEnabled()
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gateID, previous))
+	})
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(gateID, false))
+	config := NewDefaultClientConfig()
+	require.NoError(t, config.Validate())
+
+	config.DialerMiddleware = configoptional.Some(configmiddleware.Config{ID: component.MustNewID("dialer")})
+	require.ErrorContains(t, config.Validate(), gateID)
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(gateID, true))
+	require.NoError(t, config.Validate())
+}
+
 func TestToClientConnCustomDialer(t *testing.T) {
 	_ = featuregate.GlobalRegistry().Set("pkg.configmiddleware.CustomTCPRouting", true)
 	t.Cleanup(func() {

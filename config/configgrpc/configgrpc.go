@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/snappy"
 	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/zstd"
+	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
@@ -69,6 +70,10 @@ func validateClientConfig(cc *ClientConfig) error {
 		if balancer.Get(cc.BalancerName) == nil {
 			return fmt.Errorf("invalid balancer_name: %s", cc.BalancerName)
 		}
+	}
+
+	if cc.DialerMiddleware.HasValue() && !configmiddleware.IsCustomTCPRoutingEnabled() {
+		return errors.New("use of the dialer_middleware feature requires to enable the feature gate 'pkg.configmiddleware.CustomTCPRouting'")
 	}
 
 	return nil

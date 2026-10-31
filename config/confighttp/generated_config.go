@@ -3,7 +3,8 @@
 package confighttp
 
 import (
-	"errors"
+	"time"
+
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configmiddleware"
@@ -11,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
-	"time"
 )
 
 type AuthConfig struct {

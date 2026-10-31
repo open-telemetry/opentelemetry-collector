@@ -103,3 +103,7 @@ func (m Config) GetDialer(ctx context.Context, extensions map[component.ID]compo
 
 	return nil, fmt.Errorf("failed to resolve middleware %q: %w", m.ID, errMiddlewareNotFound)
 }
+
+func IsCustomTCPRoutingEnabled() bool {
+	return metadata.PkgConfigmiddlewareCustomTCPRoutingFeatureGate.IsEnabled()
+}

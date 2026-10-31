@@ -72,6 +72,24 @@ func newTestClientConfig(name string) configmiddleware.Config {
 	}
 }
 
+func TestClientConfigValidateDialerMiddlewareFeatureGate(t *testing.T) {
+	gateID := "pkg.configmiddleware.CustomTCPRouting"
+	previous := configmiddleware.IsCustomTCPRoutingEnabled()
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gateID, previous))
+	})
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(gateID, false))
+	config := NewDefaultClientConfig()
+	require.NoError(t, config.Validate())
+
+	config.DialerMiddleware = configoptional.Some(newTestClientConfig("dialer"))
+	require.ErrorContains(t, config.Validate(), gateID)
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(gateID, true))
+	require.NoError(t, config.Validate())
+}
+
 func TestClientMiddlewares(t *testing.T) {
 	// Create a test server that returns "OK"
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
