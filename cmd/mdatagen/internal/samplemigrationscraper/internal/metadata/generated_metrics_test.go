@@ -60,18 +60,11 @@ func TestMetricsBuilder(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := scrapertest.NewNopSettings(scrapertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
-			if tt.name == "all_set" {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.samplemigration.EmitV1SystemConventions", true))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.samplemigration.EmitV1SystemConventions", false)
-				})
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.samplemigration.EmitV1SystemConventions", true))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.samplemigration.EmitV1SystemConventions", false)
-				})
-			}
+			// Pin migration gates so expectations don't depend on the gates' registered stage.
+			setFeatureGateForTest(t, ScraperSamplemigrationDontEmitV0SystemConventionsFeatureGate, false)
+			setFeatureGateForTest(t, ScraperSamplemigrationEmitV1SystemConventionsFeatureGate, tt.name == "all_set")
+			setFeatureGateForTest(t, ScraperSamplemigrationDontEmitV0SystemConventionsFeatureGate, false)
+			setFeatureGateForTest(t, ScraperSamplemigrationEmitV1SystemConventionsFeatureGate, tt.name == "all_set")
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["system.cpu.utilization"] = mb.metricSystemCPUUtilization.config.AggregationStrategy
@@ -186,14 +179,8 @@ func TestVersionedMetrics(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.samplemigration.DontEmitV0SystemConventions", tt.disableOld))
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.samplemigration.EmitV1SystemConventions", tt.enableNew))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.samplemigration.DontEmitV0SystemConventions", false)
-					featuregate.GlobalRegistry().Set("scraper.samplemigration.EmitV1SystemConventions", false)
-				})
+				setFeatureGateForTest(t, ScraperSamplemigrationDontEmitV0SystemConventionsFeatureGate, tt.disableOld)
+				setFeatureGateForTest(t, ScraperSamplemigrationEmitV1SystemConventionsFeatureGate, tt.enableNew)
 
 				start := pcommon.Timestamp(1_000_000_000)
 				ts := pcommon.Timestamp(1_000_001_000)
@@ -274,14 +261,8 @@ func TestVersionedMetrics(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.samplemigration.DontEmitV0SystemConventions", tt.disableOld))
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"scraper.samplemigration.EmitV1SystemConventions", tt.enableNew))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("scraper.samplemigration.DontEmitV0SystemConventions", false)
-					featuregate.GlobalRegistry().Set("scraper.samplemigration.EmitV1SystemConventions", false)
-				})
+				setFeatureGateForTest(t, ScraperSamplemigrationDontEmitV0SystemConventionsFeatureGate, tt.disableOld)
+				setFeatureGateForTest(t, ScraperSamplemigrationEmitV1SystemConventionsFeatureGate, tt.enableNew)
 
 				start := pcommon.Timestamp(1_000_000_000)
 				ts := pcommon.Timestamp(1_000_001_000)
@@ -325,5 +306,15 @@ func TestVersionedMetrics(t *testing.T) {
 				assert.Equal(t, tt.expectNewMetric, newFound)
 			})
 		}
+	})
+}
+
+// setFeatureGateForTest sets the gate for the duration of the test and restores its previous state afterwards.
+func setFeatureGateForTest(t *testing.T, gate *featuregate.Gate, enabled bool) {
+	t.Helper()
+	prev := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
 	})
 }

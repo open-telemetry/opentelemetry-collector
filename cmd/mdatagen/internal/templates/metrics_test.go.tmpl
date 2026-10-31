@@ -90,17 +90,13 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 
 			{{- if $hasVersionedMetrics }}
-			if tt.name == "all_set" {
-				{{- range $name, $metric := .Metrics }}
-				{{- if $metric.Migration }}
-				require.NoError(t, featuregate.GlobalRegistry().Set(
-					"{{ $metric.Migration.ThroughGates.EnableNew }}", true))
-				t.Cleanup(func() {
-					featuregate.GlobalRegistry().Set("{{ $metric.Migration.ThroughGates.EnableNew }}", false)
-				})
-				{{- end }}
-				{{- end }}
-			}
+			// Pin migration gates so expectations don't depend on the gates' registered stage.
+			{{- range $name, $metric := .Metrics }}
+			{{- if $metric.Migration }}
+			setFeatureGateForTest(t, {{ printf "%s" $metric.Migration.ThroughGates.DisableOld | publicVar }}FeatureGate, false)
+			setFeatureGateForTest(t, {{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar }}FeatureGate, tt.name == "all_set")
+			{{- end }}
+			{{- end }}
 			{{- end }}
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
@@ -569,14 +565,8 @@ func TestVersionedMetrics(t *testing.T) {
 
         for _, tt := range tests {
             t.Run(tt.name, func(t *testing.T) {
-                require.NoError(t, featuregate.GlobalRegistry().Set(
-                    "{{ $metric.Migration.ThroughGates.DisableOld }}", tt.disableOld))
-                require.NoError(t, featuregate.GlobalRegistry().Set(
-                    "{{ $metric.Migration.ThroughGates.EnableNew }}", tt.enableNew))
-                t.Cleanup(func() {
-                    featuregate.GlobalRegistry().Set("{{ $metric.Migration.ThroughGates.DisableOld }}", false)
-                    featuregate.GlobalRegistry().Set("{{ $metric.Migration.ThroughGates.EnableNew }}", false)
-                })
+                setFeatureGateForTest(t, {{ printf "%s" $metric.Migration.ThroughGates.DisableOld | publicVar }}FeatureGate, tt.disableOld)
+                setFeatureGateForTest(t, {{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar }}FeatureGate, tt.enableNew)
 
                 start := pcommon.Timestamp(1_000_000_000)
                 ts := pcommon.Timestamp(1_000_001_000)
@@ -723,5 +713,15 @@ func TestVersionedMetrics(t *testing.T) {
     })
     {{- end }}
     {{- end }}
+}
+
+// setFeatureGateForTest sets the gate for the duration of the test and restores its previous state afterwards.
+func setFeatureGateForTest(t *testing.T, gate *featuregate.Gate, enabled bool) {
+    t.Helper()
+    prev := gate.IsEnabled()
+    require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+    t.Cleanup(func() {
+        require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
+    })
 }
 {{- end }}
