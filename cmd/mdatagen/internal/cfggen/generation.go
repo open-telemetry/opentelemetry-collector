@@ -14,15 +14,16 @@ import (
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 )
 
-// NewCfgFns returns template functions for config generation with rootPackage and componentPackage
-// baked into closures. This way the template itself never needs to pass these context values around.
-func NewCfgFns(rootPackage, componentPackage string) map[string]any {
+// NewCfgFns returns template functions for config generation with GeneratorEnv
+// baked into closures. This way the template itself never needs to pass these
+// context values around.
+func NewCfgFns(env GeneratorEnv) map[string]any {
 	return map[string]any{
 		"extractImports": func(md *ConfigsMetadata) []string {
 			if md == nil {
 				return nil
 			}
-			imports, err := ExtractImports(md, rootPackage, componentPackage)
+			imports, err := ExtractImports(md, env)
 			if err != nil {
 				panic(err)
 			}
@@ -40,11 +41,12 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			}
 			return ExtractValidators(name, cfg)
 		},
+		"anyValidatorEmits": AnyValidatorEmits,
 		"mapGoType": func(cfg *ConfigMetadata, propName string) string {
 			if cfg == nil {
 				return "any"
 			}
-			goType, err := MapGoType(cfg, propName, rootPackage, componentPackage)
+			goType, err := MapGoType(cfg, propName, env)
 			if err != nil {
 				panic(err)
 			}
@@ -52,14 +54,14 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 		},
 		"isPrimitiveSchema": IsPrimitiveSchema,
 		"primitiveGoType": func(cfg *ConfigMetadata) string {
-			goType, err := PrimitiveGoType(cfg, rootPackage, componentPackage)
+			goType, err := PrimitiveGoType(cfg, env)
 			if err != nil {
 				panic(err)
 			}
 			return goType
 		},
 		"publicType": func(ref string) string {
-			typeName, err := FormatTypeName(ref, rootPackage, componentPackage)
+			typeName, err := FormatTypeName(ref, env)
 			if err != nil {
 				panic(err)
 			}
@@ -67,14 +69,14 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 		},
 		"camelVar": CamelVar,
 		"formatDefaultValue": func(md *ConfigMetadata, name string, defaultValue any) string {
-			return FormatDefaultValue(md, name, defaultValue, rootPackage, componentPackage)
+			return FormatDefaultValue(md, name, defaultValue, env)
 		},
 		"formatBaseValue": func(md *ConfigMetadata, name string, defaultValue any) string {
-			return FormatBaseValue(md, name, defaultValue, rootPackage, componentPackage)
+			return FormatBaseValue(md, name, defaultValue, env)
 		},
 		"wrapDefaultValue": WrapDefaultValue,
 		"mapCustomDefaults": func(schema *ConfigMetadata, defaultValue any) []string {
-			return MapCustomDefaults(schema, defaultValue, rootPackage, componentPackage)
+			return MapCustomDefaults(schema, defaultValue, env)
 		},
 		"hasDefaultValue":  hasDefaultValue,
 		"formatEnumSlice":  formatEnumSlice,
@@ -84,11 +86,11 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 			if ref == "" {
 				return false
 			}
-			tr, err := ResolveGoTypeRef(ref, rootPackage, componentPackage)
+			tr, err := ResolveGoTypeRef(ref, env.rootPackage, env.componentPackage)
 			return err == nil && tr.ImportPath != ""
 		},
 		"externalDefaultCall": func(ref string) string {
-			call, err := ExternalDefaultCall(ref, rootPackage, componentPackage)
+			call, err := ExternalDefaultCall(ref, env)
 			if err != nil {
 				panic(err)
 			}
@@ -119,6 +121,34 @@ func NewCfgFns(rootPackage, componentPackage string) map[string]any {
 	}
 }
 
+// GeneratorEnv provides selected attributes of the environment surrounding config
+// that's being generated, such as: rootPackage, componentPackage, isComponent.
+type GeneratorEnv struct {
+	rootPackage      string
+	componentPackage string
+	isComponent      bool
+}
+
+func NewGeneratorEnv(rootPackage, componentPackage string, isComponent bool) GeneratorEnv {
+	return GeneratorEnv{
+		rootPackage:      rootPackage,
+		componentPackage: componentPackage,
+		isComponent:      isComponent,
+	}
+}
+
+// defaultCtorName returns the name of the default-value constructor for typeName.
+// Inside a component package, constructors for the component's own (non-external)
+// types are unexported; everything else (external references, or non-component
+// packages) keeps the exported NewDefault name so it stays part of the package's
+// public API.
+func defaultCtorName(typeName string, isExternal bool, env GeneratorEnv) string {
+	if env.isComponent && !isExternal {
+		return "newDefault" + typeName
+	}
+	return "NewDefault" + typeName
+}
+
 func isRequired(md *ConfigMetadata, propName string) bool {
 	return slices.Contains(md.Required, propName)
 }
@@ -142,12 +172,12 @@ func orderedProps(md *ConfigMetadata) []NamedProp {
 
 // ExternalDefaultCall returns the Go expression that delegates to the upstream package's
 // NewDefault constructor for an external type reference (e.g. "controller.NewDefaultControllerConfig()").
-func ExternalDefaultCall(ref, rootPackage, componentPackage string) (string, error) {
-	tr, err := ResolveGoTypeRef(ref, rootPackage, componentPackage)
+func ExternalDefaultCall(ref string, env GeneratorEnv) (string, error) {
+	tr, err := ResolveGoTypeRef(ref, env.rootPackage, env.componentPackage)
 	if err != nil {
 		return "", err
 	}
-	fnCall := fmt.Sprintf("NewDefault%s()", tr.TypeName)
+	fnCall := defaultCtorName(tr.TypeName, tr.ImportPath != "", env) + "()"
 	if tr.Qualifier() != "" {
 		fnCall = tr.Qualifier() + "." + fnCall
 	}
@@ -156,8 +186,8 @@ func ExternalDefaultCall(ref, rootPackage, componentPackage string) (string, err
 
 // WithCfgFns merges config generation template functions into the given function map.
 // The rootPackage and componentPackage are captured in closures so the template doesn't need to thread them through.
-func WithCfgFns(fns map[string]any, rootPackage, componentPackage string) map[string]any {
-	cfgFns := NewCfgFns(rootPackage, componentPackage)
+func WithCfgFns(fns map[string]any, env GeneratorEnv) map[string]any {
+	cfgFns := NewCfgFns(env)
 	maps.Copy(fns, cfgFns)
 	maps.Copy(fns, NewCfgDocFns())
 	return fns
@@ -191,7 +221,7 @@ func IsPrimitiveSchema(md *ConfigMetadata) bool {
 	return ok
 }
 
-func PrimitiveGoType(md *ConfigMetadata, rootPackage, componentPackage string) (string, error) {
+func PrimitiveGoType(md *ConfigMetadata, env GeneratorEnv) (string, error) {
 	if md == nil {
 		return "", errors.New("nil ConfigMetadata")
 	}
@@ -200,7 +230,7 @@ func PrimitiveGoType(md *ConfigMetadata, rootPackage, componentPackage string) (
 		return "", fmt.Errorf("unsupported primitive type: %q", md.Type)
 	}
 	if md.GoStruct.Type != "" {
-		typeName, err := FormatTypeName(md.GoStruct.Type, rootPackage, componentPackage)
+		typeName, err := FormatTypeName(md.GoStruct.Type, env)
 		if err != nil {
 			return "", fmt.Errorf("failed to format custom type %q: %w", md.GoStruct.Type, err)
 		}
@@ -210,11 +240,11 @@ func PrimitiveGoType(md *ConfigMetadata, rootPackage, componentPackage string) (
 }
 
 // MapGoType maps a ConfigMetadata to its corresponding Go type as a string.
-func MapGoType(md *ConfigMetadata, propName, rootPackage, componentPackage string) (string, error) {
+func MapGoType(md *ConfigMetadata, propName string, env GeneratorEnv) (string, error) {
 	if md == nil {
 		return "", errors.New("nil ConfigMetadata")
 	}
-	goType, err := resolveGoType(md, propName, rootPackage, componentPackage)
+	goType, err := resolveGoType(md, propName, env)
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve Go type for property %q: %w", propName, err)
 	}
@@ -227,16 +257,16 @@ func MapGoType(md *ConfigMetadata, propName, rootPackage, componentPackage strin
 	return goType, nil
 }
 
-func resolveGoType(md *ConfigMetadata, propName, rootPackage, componentPackage string) (string, error) {
+func resolveGoType(md *ConfigMetadata, propName string, env GeneratorEnv) (string, error) {
 	if md.Ref != "" {
-		typeName, err := FormatTypeName(md.Ref, rootPackage, componentPackage)
+		typeName, err := FormatTypeName(md.Ref, env)
 		if err != nil {
 			return "", fmt.Errorf("failed to format reference type %q: %w", md.Ref, err)
 		}
 		return typeName, nil
 	}
 	if md.GoStruct.Type != "" {
-		typeName, err := FormatTypeName(md.GoStruct.Type, rootPackage, componentPackage)
+		typeName, err := FormatTypeName(md.GoStruct.Type, env)
 		if err != nil {
 			return "", fmt.Errorf("failed to format custom type %q: %w", md.GoStruct.Type, err)
 		}
@@ -253,14 +283,14 @@ func resolveGoType(md *ConfigMetadata, propName, rootPackage, componentPackage s
 		if md.Values == nil {
 			return "[]any", nil
 		}
-		itemType, err := MapGoType(md.Values, propName+"_item", rootPackage, componentPackage)
+		itemType, err := MapGoType(md.Values, propName+"_item", env)
 		if err != nil {
 			return "", fmt.Errorf("failed to resolve slice value type: %w", err)
 		}
 		return "[]" + itemType, nil
 	case MapType:
 		if md.Values != nil {
-			valueType, err := MapGoType(md.Values, propName, rootPackage, componentPackage)
+			valueType, err := MapGoType(md.Values, propName, env)
 			if err != nil {
 				return "", fmt.Errorf("failed to resolve map value type: %w", err)
 			}
@@ -283,11 +313,11 @@ func resolveGoType(md *ConfigMetadata, propName, rootPackage, componentPackage s
 	}
 }
 
-func ExtractImports(md *ConfigsMetadata, rootPackage, componentPackage string) ([]string, error) {
+func ExtractImports(md *ConfigsMetadata, env GeneratorEnv) ([]string, error) {
 	imports := make(map[string]bool)
 	if md.Config != nil {
 		imports["go.opentelemetry.io/collector/component"] = true
-		collected, err := ExtractImportsFromConfig(md.Config, rootPackage, componentPackage)
+		collected, err := ExtractImportsFromConfig(md.Config, env)
 		if err != nil {
 			return nil, err
 		}
@@ -300,7 +330,7 @@ func ExtractImports(md *ConfigsMetadata, rootPackage, componentPackage string) (
 			if expCfg.InternalOnly {
 				continue
 			}
-			collected, err := ExtractImportsFromConfig(expCfg, rootPackage, componentPackage)
+			collected, err := ExtractImportsFromConfig(expCfg, env)
 			if err != nil {
 				return nil, err
 			}
@@ -313,26 +343,26 @@ func ExtractImports(md *ConfigsMetadata, rootPackage, componentPackage string) (
 }
 
 // ExtractImportsFromConfig recursively scans the ConfigMetadata and collects all unique import paths needed for the generated Go code.
-func ExtractImportsFromConfig(md *ConfigMetadata, rootPackage, componentPackage string) ([]string, error) {
+func ExtractImportsFromConfig(md *ConfigMetadata, env GeneratorEnv) ([]string, error) {
 	if md == nil {
 		return nil, nil
 	}
 
 	imports := make(map[string]bool)
-	if err := collectImports(md, imports, rootPackage, componentPackage); err != nil {
+	if err := collectImports(md, imports, env); err != nil {
 		return nil, err
 	}
 
 	return slices.Collect(maps.Keys(imports)), nil
 }
 
-func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, componentPackage string) error {
+func collectImports(md *ConfigMetadata, imports map[string]bool, env GeneratorEnv) error {
 	if md == nil {
 		return nil
 	}
 
 	if md.GoStruct.Type != "" {
-		ref, err := ResolveGoTypeRef(md.GoStruct.Type, rootPackage, componentPackage)
+		ref, err := ResolveGoTypeRef(md.GoStruct.Type, env.rootPackage, env.componentPackage)
 		if err != nil {
 			return fmt.Errorf("failed to resolve import for custom type %q: %w", md.GoStruct.Type, err)
 		}
@@ -350,7 +380,7 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 	}
 
 	if md.Ref != "" {
-		ref, err := ResolveGoTypeRef(md.Ref, rootPackage, componentPackage)
+		ref, err := ResolveGoTypeRef(md.Ref, env.rootPackage, env.componentPackage)
 		if err != nil {
 			return fmt.Errorf("failed to resolve import for reference %q: %w", md.Ref, err)
 		}
@@ -359,7 +389,7 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 		}
 		refDesc := NewRef(md.Ref)
 		if !refDesc.IsInternal() {
-			if err := collectCustomDefaultImports(md, md.Default, imports, rootPackage, componentPackage); err != nil {
+			if err := collectCustomDefaultImports(md, md.Default, imports, env); err != nil {
 				return err
 			}
 			return nil
@@ -379,13 +409,13 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 	}
 
 	for _, prop := range md.Properties {
-		if err := collectImports(prop, imports, rootPackage, componentPackage); err != nil {
+		if err := collectImports(prop, imports, env); err != nil {
 			return err
 		}
 	}
 
 	if md.Values != nil {
-		if err := collectImports(md.Values, imports, rootPackage, componentPackage); err != nil {
+		if err := collectImports(md.Values, imports, env); err != nil {
 			return err
 		}
 	}
@@ -393,7 +423,7 @@ func collectImports(md *ConfigMetadata, imports map[string]bool, rootPackage, co
 	return nil
 }
 
-func collectCustomDefaultImports(md *ConfigMetadata, defaultValue any, imports map[string]bool, rootPackage, componentPackage string) error {
+func collectCustomDefaultImports(md *ConfigMetadata, defaultValue any, imports map[string]bool, env GeneratorEnv) error {
 	if md == nil || md.GoStruct.IgnoreDefault {
 		return nil
 	}
@@ -408,10 +438,10 @@ func collectCustomDefaultImports(md *ConfigMetadata, defaultValue any, imports m
 			if prop == nil {
 				continue
 			}
-			if err := collectImports(prop, imports, rootPackage, componentPackage); err != nil {
+			if err := collectImports(prop, imports, env); err != nil {
 				return err
 			}
-			if err := collectCustomDefaultImports(prop, value, imports, rootPackage, componentPackage); err != nil {
+			if err := collectCustomDefaultImports(prop, value, imports, env); err != nil {
 				return err
 			}
 		}
@@ -420,7 +450,7 @@ func collectCustomDefaultImports(md *ConfigMetadata, defaultValue any, imports m
 			return nil
 		}
 		for _, item := range typedValue {
-			if err := collectCustomDefaultImports(md.Values, item, imports, rootPackage, componentPackage); err != nil {
+			if err := collectCustomDefaultImports(md.Values, item, imports, env); err != nil {
 				return err
 			}
 		}
@@ -438,11 +468,11 @@ func hasValidators(md *ConfigMetadata) bool {
 }
 
 // FormatTypeName resolves a reference string to a Go type expression using GoTypeRef.
-func FormatTypeName(ref, rootPackage, componentPackage string) (string, error) {
+func FormatTypeName(ref string, env GeneratorEnv) (string, error) {
 	if p, ok := primitiveSchemaGoTypes[SchemaType(ref)]; ok {
 		return p, nil
 	}
-	tr, err := ResolveGoTypeRef(ref, rootPackage, componentPackage)
+	tr, err := ResolveGoTypeRef(ref, env.rootPackage, env.componentPackage)
 	if err != nil {
 		return "", err
 	}
@@ -575,6 +605,25 @@ func (v Validator) RequiredCheckEmitted() bool {
 	}
 }
 
+func (v Validator) Emits() bool {
+	if v.CustomValidator != "" {
+		return true
+	}
+	if v.Rules.HasValueRule() {
+		return true
+	}
+	return v.Rules.Required && v.RequiredCheckEmitted()
+}
+
+func AnyValidatorEmits(validators []Validator) bool {
+	for _, v := range validators {
+		if v.Emits() {
+			return true
+		}
+	}
+	return false
+}
+
 func createValidator(validators *[]Validator, fieldName string, md *ConfigMetadata, isType, required bool) {
 	rules := ValidationRules{
 		Required:         required,
@@ -670,25 +719,25 @@ func generateValidatorName(propName string, desc *CustomValidatorConfig) string 
 	return "validate" + id
 }
 
-func generateDefaultCall(md *ConfigMetadata, name, rootPackage, componentPackage string) string {
+func generateDefaultCall(md *ConfigMetadata, name string, env GeneratorEnv) string {
 	baseName := md.GoStruct.CustomDefault.Name
 	qualifier := ""
 
 	if md.Ref != "" {
-		refType, err := ResolveGoTypeRef(md.Ref, rootPackage, componentPackage)
+		refType, err := ResolveGoTypeRef(md.Ref, env.rootPackage, env.componentPackage)
 		if err != nil {
 			panic(err)
 		}
 		qualifier = refType.Qualifier()
 		if baseName == "" {
-			baseName = "NewDefault" + refType.TypeName
+			baseName = defaultCtorName(refType.TypeName, refType.ImportPath != "", env)
 		}
 	}
 
 	if baseName == "" {
 		id, _ := helpers.FormatIdentifier(name, true)
 		if md.Type == ObjectType {
-			baseName = "NewDefault" + id
+			baseName = defaultCtorName(id, false, env)
 		} else {
 			baseName = "getDefault" + id
 		}
@@ -704,7 +753,7 @@ func isStructSchema(md *ConfigMetadata) bool {
 	return (md.Ref != "" && !IsPrimitiveSchema(md)) || md.Type == ObjectType
 }
 
-func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, componentPackage string) []string {
+func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, env GeneratorEnv) []string {
 	if schema.GoStruct.IgnoreDefault {
 		return nil
 	}
@@ -727,7 +776,7 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 				varName, _ := helpers.FormatIdentifier(key, true)
 
 				if value == nil {
-					cleared := clearedValueExpr(propSchema, key, rootPackage, componentPackage)
+					cleared := clearedValueExpr(propSchema, key, env)
 					if cleared == "" {
 						panic(fmt.Sprintf("cannot represent an explicit null default for required, non-optional field %q", key))
 					}
@@ -736,13 +785,13 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 				}
 
 				if nestedValue, ok := value.(map[string]any); ok && isStructSchema(propSchema) {
-					for _, nestedExp := range MapCustomDefaults(propSchema, nestedValue, rootPackage, componentPackage) {
+					for _, nestedExp := range MapCustomDefaults(propSchema, nestedValue, env) {
 						exps = append(exps, fmt.Sprintf(".%s%s", varName, nestedExp))
 					}
 					continue
 				}
 
-				exp := fmt.Sprintf(".%s = %s", varName, FormatDefaultValue(propSchema, key, value, rootPackage, componentPackage))
+				exp := fmt.Sprintf(".%s = %s", varName, FormatDefaultValue(propSchema, key, value, env))
 				exps = append(exps, exp)
 			}
 		} else if schema.Values.Type == ObjectType { // is a map of object
@@ -754,7 +803,7 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 			return nil
 		}
 		for i, item := range typedValue {
-			nestedExps := MapCustomDefaults(schema.Values, item, rootPackage, componentPackage)
+			nestedExps := MapCustomDefaults(schema.Values, item, env)
 			for _, exp := range nestedExps {
 				exps = append(exps, fmt.Sprintf("[%d]%s", i, exp))
 			}
@@ -764,27 +813,27 @@ func MapCustomDefaults(schema *ConfigMetadata, defaultValue any, rootPackage, co
 	return exps
 }
 
-func clearedValueExpr(md *ConfigMetadata, name, rootPackage, componentPackage string) string {
+func clearedValueExpr(md *ConfigMetadata, name string, env GeneratorEnv) string {
 	if md.IsPointer {
 		return "nil"
 	}
 	if md.IsOptional {
-		t, _ := resolveGoType(md, name, rootPackage, componentPackage)
+		t, _ := resolveGoType(md, name, env)
 		return fmt.Sprintf("configoptional.None[%s]()", t)
 	}
 	return ""
 }
 
-func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
+func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, env GeneratorEnv) string {
 	validateOptionalMode(md)
 	if md.IsOptional && md.GoStruct.OptionalMode == OptionalModeDefault {
-		return wrapOptionalValue(md, formatOptionalDefaultValue(md, name, defaultValue, rootPackage, componentPackage))
+		return wrapOptionalValue(md, formatOptionalDefaultValue(md, name, defaultValue, env))
 	}
 
 	if md.GoStruct.IgnoreDefault || (defaultValue == nil && !hasDefaultValue(md)) {
-		return clearedValueExpr(md, name, rootPackage, componentPackage)
+		return clearedValueExpr(md, name, env)
 	}
-	exp := formatSimpleValue(md, name, defaultValue, rootPackage, componentPackage)
+	exp := formatSimpleValue(md, name, defaultValue, env)
 	if md.IsPointer {
 		return "&" + exp
 	}
@@ -794,14 +843,14 @@ func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootP
 	return exp
 }
 
-func formatOptionalDefaultValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
+func formatOptionalDefaultValue(md *ConfigMetadata, name string, defaultValue any, env GeneratorEnv) string {
 	if !md.GoStruct.IgnoreDefault && (defaultValue != nil || hasDefaultValue(md)) {
-		if exp := formatSimpleValue(md, name, defaultValue, rootPackage, componentPackage); exp != "" {
+		if exp := formatSimpleValue(md, name, defaultValue, env); exp != "" {
 			return exp
 		}
 	}
 
-	t, err := resolveGoType(md, name, rootPackage, componentPackage)
+	t, err := resolveGoType(md, name, env)
 	if err != nil {
 		panic(err)
 	}
@@ -844,8 +893,8 @@ func validateOptionalMode(md *ConfigMetadata) {
 
 // FormatBaseValue returns the default value expression without IsPointer/IsOptional wrappers.
 // Use this when initializing a local variable that will be mutated before wrapping.
-func FormatBaseValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
-	return formatSimpleValue(md, name, defaultValue, rootPackage, componentPackage)
+func FormatBaseValue(md *ConfigMetadata, name string, defaultValue any, env GeneratorEnv) string {
+	return formatSimpleValue(md, name, defaultValue, env)
 }
 
 // WrapDefaultValue wraps a variable name expression with IsPointer/IsOptional modifiers.
@@ -910,10 +959,10 @@ func CamelVar(ref string) string {
 	return name
 }
 
-func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPackage, componentPackage string) string {
+func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, env GeneratorEnv) string {
 	// A custom default takes precedence over any schema-derived expression.
 	if md.GoStruct.CustomDefault != nil {
-		return generateDefaultCall(md, name, rootPackage, componentPackage)
+		return generateDefaultCall(md, name, env)
 	}
 
 	// handle references
@@ -921,19 +970,20 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 	if isStructSchema(md) {
 		if hasDefaultValue(md) {
 			if isReference {
-				refType, err := ResolveGoTypeRef(md.Ref, rootPackage, componentPackage)
+				refType, err := ResolveGoTypeRef(md.Ref, env.rootPackage, env.componentPackage)
 				if err != nil {
 					panic(err)
 				}
 
-				fnCall := fmt.Sprintf("NewDefault%s()", refType.TypeName)
+				fnCall := defaultCtorName(refType.TypeName, refType.ImportPath != "", env) + "()"
 				if refType.Qualifier() != "" {
 					fnCall = refType.Qualifier() + "." + fnCall
 				}
+
 				return fnCall
 			}
 			typeName, _ := helpers.FormatIdentifier(name, true)
-			return fmt.Sprintf("NewDefault%s()", typeName)
+			return defaultCtorName(typeName, false, env) + "()"
 		}
 		// no defaults, skip it
 		return ""
@@ -946,12 +996,12 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 
 	switch md.Type {
 	case SliceType:
-		typeExpr, err := resolveGoType(md.Values, name+"_item", "", "")
+		typeExpr, err := resolveGoType(md.Values, name+"_item", GeneratorEnv{})
 		if err == nil {
 			if defaultValues, ok := defaultValue.([]any); ok {
 				exps := make([]string, 0, len(defaultValues))
 				for _, defaultValue := range defaultValues {
-					exps = append(exps, FormatDefaultValue(md.Values, name+"_item", defaultValue, rootPackage, componentPackage))
+					exps = append(exps, FormatDefaultValue(md.Values, name+"_item", defaultValue, env))
 				}
 				return fmt.Sprintf("[]%s{%s}", typeExpr, strings.Join(exps, ", "))
 			}
@@ -959,7 +1009,7 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 		}
 		panic(fmt.Sprintf("Could not resolve type, due to %e", err))
 	case MapType:
-		typeExpr, err := resolveGoType(md.Values, name, "", "")
+		typeExpr, err := resolveGoType(md.Values, name, GeneratorEnv{})
 		if err == nil {
 			if defaultValues, ok := defaultValue.(map[string]any); ok {
 				exps := make([]string, 0, len(defaultValues))
@@ -967,7 +1017,7 @@ func formatSimpleValue(md *ConfigMetadata, name string, defaultValue any, rootPa
 					value := defaultValues[keyName]
 					exps = append(
 						exps,
-						fmt.Sprintf("%q: %v", keyName, FormatDefaultValue(md.Values, name, value, rootPackage, componentPackage)),
+						fmt.Sprintf("%q: %v", keyName, FormatDefaultValue(md.Values, name, value, env)),
 					)
 				}
 				return fmt.Sprintf("map[string]%s{%s}", typeExpr, strings.Join(exps, ", "))

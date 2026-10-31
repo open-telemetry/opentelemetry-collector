@@ -1169,10 +1169,10 @@ func TestGenerateConfigGoStruct_InternalResolvedRefGeneratesLocalType(t *testing
 	generated := string(content)
 	require.Contains(t, generated, `"time"`)
 	require.Contains(t, generated, "type PlainConfig struct")
-	require.Contains(t, generated, "func NewDefaultPlainConfig() PlainConfig")
+	require.Contains(t, generated, "func newDefaultPlainConfig() PlainConfig")
 	require.Contains(t, generated, "Timeout: 30 * time.Second,")
 	require.Contains(t, generated, "Config PlainConfig `mapstructure:\"config\"`")
-	require.Contains(t, generated, "config := NewDefaultPlainConfig()")
+	require.Contains(t, generated, "config := newDefaultPlainConfig()")
 	require.Contains(t, generated, "config.Timeout = 30 * time.Second")
 	require.Contains(t, generated, "Config: config,")
 }
@@ -2076,6 +2076,43 @@ func TestGenerateConfigGoStruct_TestFileContainsValidateTestWhenValidatorsPresen
 	require.NoError(t, err)
 	require.Contains(t, string(content), "func TestCreateDefaultConfig(")
 	require.Contains(t, string(content), "func TestPortValidate_MinimumPort(")
+}
+
+func TestGenerateConfigGoStruct_RequiredObjectFieldOmitsEmptyValidate(t *testing.T) {
+	root := t.TempDir()
+	outputDir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(outputDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "testmodule/shortname",
+		Status:      &Status{Class: "receiver"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{
+				Type:     "object",
+				Required: []string{"protocols"},
+				Properties: map[string]*cfggen.ConfigMetadata{
+					"protocols": {
+						Type:     cfggen.ObjectType,
+						GoStruct: cfggen.GoStructConfig{FieldName: "Protocols"},
+						Properties: map[string]*cfggen.ConfigMetadata{
+							"grpc": {Type: "string", GoStruct: cfggen.GoStructConfig{FieldName: "GRPC"}},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	require.NoError(t, generateConfigGoStruct(md, outputDir))
+
+	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config.go")) // #nosec G304
+	require.NoError(t, err)
+	// "protocols" is a required, non-pointer object field: the generated
+	// required-check has no rendering branch for that type, so no validator
+	// actually emits any code and the wrapper Validate() must not be generated.
+	require.NotContains(t, string(content), "func (c *Config) Validate()")
 }
 
 func TestGenerateConfigGoStruct_DefsOnlyConfigGeneratesLibraryTypes(t *testing.T) {

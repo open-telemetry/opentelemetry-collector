@@ -433,7 +433,7 @@
         },
         "max_request_body_size": {
           "type": "integer",
-          "description": "Sets the maximum request body size in bytes. Default: 20MiB."
+          "description": "Sets the maximum request body size in bytes. Default: 20MiB.\nThe limit is enforced on the bytes received and, when the request has a\nsupported Content-Encoding (for example gzip), again on the decompressed\nbody. Set it to the maximum expected decompressed payload size.\n"
         },
         "middlewares": {
           "type": "array",
