@@ -27,7 +27,9 @@
 {{- if .SemConvVersion }}
 | Semantic Conventions Version | {{ if .SemConvURL }}[{{ .SemConvVersion }}]({{ .SemConvURL }}){{ else }}{{ .SemConvVersion }}{{ end }} |
 {{- end }}
-{{- if .Status.UnsupportedPlatforms }}
+{{- if .Status.SupportedPlatforms }}
+| Supported Platforms | {{ stringsJoin .Status.SupportedPlatforms ", " }} |
+{{- else if .Status.UnsupportedPlatforms }}
 | Unsupported Platforms | {{ stringsJoin .Status.UnsupportedPlatforms ", " }} |
 {{- end }}
 {{- if and (ne $class "cmd") (ne $class "pkg")  }}

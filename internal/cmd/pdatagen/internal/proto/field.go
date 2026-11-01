@@ -15,8 +15,6 @@ type FieldInterface interface {
 
 	GenTestEncodingValues() string
 
-	GenPool() string
-
 	GenDelete() string
 
 	GenCopy() string

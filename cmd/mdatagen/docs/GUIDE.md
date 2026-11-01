@@ -701,14 +701,18 @@ squashed in alongside your own hand-declared fields, and the README table gets `
 
 For a component with a `config:` block, `generated_config_test.go` includes
 `TestCreateDefaultConfig`, asserting `createDefaultConfig()` returns a non-nil config. When
-`Config` has validators, it also includes `TestConfigValidate_DefaultValid` and generated
-failure cases for required fields, numeric bounds, and enum values. The generator does not add
+`Config` has validators, it also includes generated failure cases for required fields, numeric
+bounds, and enum values — one atomic test per rule, each mutating a single field away from its
+default and asserting the specific `Validate()` error it produces. The generator does not add
 failure cases for `minLength`, `maxLength`, `pattern`, or custom validators; add tests for those
 rules yourself. A package with only `exported_configs` has no `TestCreateDefaultConfig`.
 
-Generated tests also cover supported rules on exported and nested types. If an object definition
-has validators but no default, mdatagen emits a failing test asking you to add one. If there are
-no supported validation rules, the file contains a comment instead of validation tests.
+Generated tests also cover supported rules on exported and nested types the same way, one atomic
+test per rule. mdatagen does not generate a test asserting that the default or zero value passes
+`Validate()` as a whole: whether a default is "valid" can depend on a `custom_validator` whose
+logic mdatagen cannot evaluate at generation time, so there is no way to generate that assertion
+deterministically. If there are no supported validation rules at all, the file contains a comment
+instead of validation tests.
 
 ## Config docs
 
