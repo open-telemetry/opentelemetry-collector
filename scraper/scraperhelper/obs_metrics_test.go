@@ -54,6 +54,11 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		{items: 29, err: errFake},
 		{items: 15, err: nil},
 	}
+	// The `scraped_metric_points` telemetry counts individual data points, not metrics.
+	dataPoints := make([]int64, len(params))
+	for i := range params {
+		dataPoints[i] = int64(testdata.GenerateMetrics(params[i].items).DataPointCount())
+	}
 	for i := range params {
 		sm, err := scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
 			return testdata.GenerateMetrics(params[i].items), params[i].err
@@ -68,13 +73,13 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 	spans := tel.SpanRecorder.Ended()
 	require.Len(t, spans, len(params))
 
-	var scrapedMetricPoints, erroredMetricPoints int
+	var scrapedMetricPoints, erroredMetricPoints int64
 	for i, span := range spans {
 		assert.Equal(t, "scraper/"+scraperID.String()+"/ScrapeMetrics", span.Name())
 		switch {
 		case params[i].err == nil:
-			scrapedMetricPoints += params[i].items
-			require.Contains(t, span.Attributes(), attribute.Int64(scrapedMetricPointsKey, int64(params[i].items)))
+			scrapedMetricPoints += dataPoints[i]
+			require.Contains(t, span.Attributes(), attribute.Int64(scrapedMetricPointsKey, dataPoints[i]))
 			require.Contains(t, span.Attributes(), attribute.Int64(erroredMetricPointsKey, 0))
 			assert.Equal(t, codes.Unset, span.Status().Code)
 		case errors.Is(params[i].err, errFake):
@@ -84,9 +89,9 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 			assert.Equal(t, codes.Error, span.Status().Code)
 			assert.Equal(t, params[i].err.Error(), span.Status().Description)
 		case errors.Is(params[i].err, partialErrFake):
-			scrapedMetricPoints += params[i].items
+			scrapedMetricPoints += dataPoints[i]
 			erroredMetricPoints += 2
-			require.Contains(t, span.Attributes(), attribute.Int64(scrapedMetricPointsKey, int64(params[i].items)))
+			require.Contains(t, span.Attributes(), attribute.Int64(scrapedMetricPointsKey, dataPoints[i]))
 			require.Contains(t, span.Attributes(), attribute.Int64(erroredMetricPointsKey, 2))
 			assert.Equal(t, codes.Error, span.Status().Code)
 			assert.Equal(t, params[i].err.Error(), span.Status().Description)
@@ -95,7 +100,34 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		}
 	}
 
-	checkScraperMetrics(t, tel, receiverID, scraperID, int64(scrapedMetricPoints), int64(erroredMetricPoints))
+	checkScraperMetrics(t, tel, receiverID, scraperID, scrapedMetricPoints, erroredMetricPoints)
+}
+
+// TestScrapeMetricsDataOp_CountsDataPoints ensures the
+// `otelcol_scraper_scraped_metric_points` counter (unit "{datapoint}") counts
+// individual data points, not metric objects, consistent with the
+// `otelcol_receiver_accepted_metric_points` counter on the receiving side.
+// See https://github.com/open-telemetry/opentelemetry-collector/issues/16228
+func TestScrapeMetricsDataOp_CountsDataPoints(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+
+	set := tel.NewTelemetrySettings()
+	const metricCount = 3
+	expectedDataPoints := int64(testdata.GenerateMetrics(metricCount).DataPointCount())
+	require.Greater(t, expectedDataPoints, int64(metricCount),
+		"test data must contain more than one data point per metric for this regression test to be meaningful")
+
+	sm, err := scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
+		return testdata.GenerateMetrics(metricCount), nil
+	})
+	require.NoError(t, err)
+	sf, err := wrapObsMetrics(sm, receiverID, scraperID, set)
+	require.NoError(t, err)
+	_, err = sf.ScrapeMetrics(context.Background())
+	require.NoError(t, err)
+
+	checkScraperMetrics(t, tel, receiverID, scraperID, expectedDataPoints, 0)
 }
 
 func TestCheckScraperMetrics(t *testing.T) {
@@ -111,7 +143,7 @@ func TestCheckScraperMetrics(t *testing.T) {
 	_, err = sf.ScrapeMetrics(context.Background())
 	require.NoError(t, err)
 
-	checkScraperMetrics(t, tel, receiverID, scraperID, 7, 0)
+	checkScraperMetrics(t, tel, receiverID, scraperID, int64(testdata.GenerateMetrics(7).DataPointCount()), 0)
 }
 
 func TestScrapeMetricsDataOp_LogsScraperID(t *testing.T) {

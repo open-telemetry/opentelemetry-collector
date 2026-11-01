@@ -61,10 +61,10 @@ func wrapObsMetrics(sc scraper.Metrics, receiverID, scraperID component.ID, set 
 			set.Logger.Error("Error scraping metrics", zap.Error(err))
 			if partialErr, ok := errors.AsType[scrapererror.PartialScrapeError](err); ok {
 				numErroredMetrics = partialErr.Failed
-				numScrapedMetrics = md.MetricCount()
+				numScrapedMetrics = md.DataPointCount()
 			}
 		} else {
-			numScrapedMetrics = md.MetricCount()
+			numScrapedMetrics = md.DataPointCount()
 		}
 
 		telemetryBuilder.ScraperScrapedMetricPoints.Add(ctx, int64(numScrapedMetrics), otelAttrs)
