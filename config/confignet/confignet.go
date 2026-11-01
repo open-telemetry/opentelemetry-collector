@@ -9,6 +9,8 @@ import (
 	"net"
 	"strconv"
 	"strings"
+
+	"go.opentelemetry.io/collector/config/confignet/internal/metadata"
 )
 
 const (
@@ -63,6 +65,9 @@ func (na *AddrConfig) Dial(ctx context.Context) (net.Conn, error) {
 	case TransportTypeNpipe:
 		return dialNpipe(ctx, na.Endpoint, na.DialerConfig.Timeout)
 	case TransportTypeVsock:
+		if err := checkVsockFeatureGate(); err != nil {
+			return nil, err
+		}
 		return dialVsock(ctx, na.Endpoint, na.DialerConfig.Timeout)
 	}
 	d := net.Dialer{Timeout: na.DialerConfig.Timeout}
@@ -75,6 +80,9 @@ func (na *AddrConfig) Listen(ctx context.Context) (net.Listener, error) {
 	case TransportTypeNpipe:
 		return listenNpipe(na.Endpoint)
 	case TransportTypeVsock:
+		if err := checkVsockFeatureGate(); err != nil {
+			return nil, err
+		}
 		return listenVsock(na.Endpoint)
 	}
 	lc := net.ListenConfig{}
@@ -99,6 +107,9 @@ func (na *AddrConfig) Validate() error {
 	case TransportTypeNpipe:
 		return validateNpipePath(na.Endpoint)
 	case TransportTypeVsock:
+		if err := checkVsockFeatureGate(); err != nil {
+			return err
+		}
 		return validateVsockEndpoint(na.Endpoint)
 	default:
 		return fmt.Errorf("invalid transport type %q", na.Transport)
@@ -133,6 +144,18 @@ func validateNpipePath(endpoint string) error {
 		return fmt.Errorf("named pipe name must not contain backslashes: %q", endpoint)
 	}
 	return nil
+}
+
+// checkVsockFeatureGate returns an error if the experimental vsock transport
+// has not been enabled through its feature gate.
+func checkVsockFeatureGate() error {
+	if metadata.PkgConfignetVsockTransportFeatureGate.IsEnabled() {
+		return nil
+	}
+	return fmt.Errorf("transport type %q is experimental and requires the %q feature gate to be enabled (e.g. --feature-gates=%s)",
+		TransportTypeVsock,
+		metadata.PkgConfignetVsockTransportFeatureGate.ID(),
+		metadata.PkgConfignetVsockTransportFeatureGate.ID())
 }
 
 func validateVsockEndpoint(endpoint string) error {

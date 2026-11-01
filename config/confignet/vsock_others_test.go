@@ -14,6 +14,7 @@ import (
 )
 
 func TestVsockDialUnsupported(t *testing.T) {
+	setVsockFeatureGate(t, true)
 	nac := &AddrConfig{
 		Endpoint:  "2:8080",
 		Transport: TransportTypeVsock,
@@ -24,6 +25,7 @@ func TestVsockDialUnsupported(t *testing.T) {
 }
 
 func TestVsockListenUnsupported(t *testing.T) {
+	setVsockFeatureGate(t, true)
 	nas := &AddrConfig{
 		Endpoint:  "2:8080",
 		Transport: TransportTypeVsock,

@@ -1,4 +1,12 @@
 exclusions:
+  # The "<class>.<type>." prefix for this component is "pkg.config/confignet.",
+  # which contains a character that feature gate IDs do not allow.
+  - component: go.opentelemetry.io/collector/config/confignet
+    feature_gates:
+      - name: pkg.confignet.VsockTransport
+        validation:
+          enabled: false
+
   - component: go.opentelemetry.io/collector/confmap
     feature_gates:
       - name: confmap.enableMergeAppendOption

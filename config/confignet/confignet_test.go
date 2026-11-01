@@ -13,7 +13,21 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/config/confignet/internal/metadata"
+	"go.opentelemetry.io/collector/featuregate"
 )
+
+// setVsockFeatureGate sets the vsock feature gate for the duration of the test.
+func setVsockFeatureGate(t *testing.T, enabled bool) {
+	t.Helper()
+	gate := metadata.PkgConfignetVsockTransportFeatureGate
+	prev := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
+	})
+}
 
 func TestNewDefaultDialerConfig(t *testing.T) {
 	expectedDialerConfig := DialerConfig{}
@@ -200,7 +214,28 @@ func Test_TransportType_UnmarshalText(t *testing.T) {
 	require.Error(t, err)
 }
 
+func Test_NetAddr_Vsock_FeatureGateDisabled(t *testing.T) {
+	setVsockFeatureGate(t, false)
+	na := &AddrConfig{
+		Transport: TransportTypeVsock,
+		Endpoint:  "2:8080",
+	}
+	gateID := metadata.PkgConfignetVsockTransportFeatureGate.ID()
+
+	err := na.Validate()
+	require.ErrorContains(t, err, gateID)
+
+	conn, err := na.Dial(context.Background())
+	require.ErrorContains(t, err, gateID)
+	assert.Nil(t, conn)
+
+	ln, err := na.Listen(context.Background())
+	require.ErrorContains(t, err, gateID)
+	assert.Nil(t, ln)
+}
+
 func Test_NetAddr_Validate_Vsock(t *testing.T) {
+	setVsockFeatureGate(t, true)
 	tests := []struct {
 		name     string
 		endpoint string

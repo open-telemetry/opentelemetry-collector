@@ -18,6 +18,7 @@ import (
 )
 
 func TestVsockDialErrors(t *testing.T) {
+	setVsockFeatureGate(t, true)
 	canceledCtx, cancel := context.WithCancel(context.Background())
 	cancel()
 
@@ -55,6 +56,7 @@ func TestVsockDialErrors(t *testing.T) {
 }
 
 func TestVsockDialHonorsContext(t *testing.T) {
+	setVsockFeatureGate(t, true)
 	tests := []struct {
 		name    string
 		timeout time.Duration
@@ -66,18 +68,13 @@ func TestVsockDialHonorsContext(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			release := make(chan struct{})
 			dialStarted := make(chan struct{})
-			client, server := net.Pipe()
-			t.Cleanup(func() { _ = server.Close() })
-			lateConn := &closeTrackingConn{Conn: client, closed: make(chan struct{})}
-
-			origDial := vsockDial
-			t.Cleanup(func() { vsockDial = origDial })
-			vsockDial = func(uint32, uint32) (net.Conn, error) {
+			origDial := vsockDialContext
+			t.Cleanup(func() { vsockDialContext = origDial })
+			vsockDialContext = func(ctx context.Context, _, _ uint32) (net.Conn, error) {
 				close(dialStarted)
-				<-release
-				return lateConn, nil
+				<-ctx.Done()
+				return nil, ctx.Err()
 			}
 
 			ctx, cancel := context.WithCancel(context.Background())
@@ -100,29 +97,12 @@ func TestVsockDialHonorsContext(t *testing.T) {
 			if conn != nil {
 				t.Errorf("expected nil connection, got %#v", conn)
 			}
-
-			// A connection established after the context is done must be closed.
-			close(release)
-			select {
-			case <-lateConn.closed:
-			case <-time.After(5 * time.Second):
-				t.Fatal("connection established after the context was done was not closed")
-			}
 		})
 	}
 }
 
-type closeTrackingConn struct {
-	net.Conn
-	closed chan struct{}
-}
-
-func (c *closeTrackingConn) Close() error {
-	close(c.closed)
-	return c.Conn.Close()
-}
-
 func TestVsockListenErrors(t *testing.T) {
+	setVsockFeatureGate(t, true)
 	tests := []struct {
 		name     string
 		endpoint string
@@ -148,6 +128,7 @@ func TestVsockListenErrors(t *testing.T) {
 }
 
 func TestVsockListenAndDial(t *testing.T) {
+	setVsockFeatureGate(t, true)
 	// Don't gate on /dev/vsock: it only appears once the vsock module is
 	// loaded, and the kernel loads vsock and vsock_loopback on demand when
 	// the first AF_VSOCK socket is created.

@@ -13,9 +13,9 @@ import (
 	"github.com/mdlayher/vsock"
 )
 
-// vsockDial is a variable so tests can substitute a dialer that blocks.
-var vsockDial = func(cid, port uint32) (net.Conn, error) {
-	conn, err := vsock.Dial(cid, port, nil)
+// vsockDialContext is a variable so tests can substitute a dialer that blocks.
+var vsockDialContext = func(ctx context.Context, cid, port uint32) (net.Conn, error) {
+	conn, err := vsock.DialContext(ctx, cid, port, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -35,33 +35,7 @@ func dialVsock(ctx context.Context, endpoint string, timeout time.Duration) (net
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-
-	// vsock.Dial does not accept a context, so run it in a goroutine to honor
-	// the timeout and cancellation.
-	// TODO: Replace this wrapper with vsock.DialContext once the upstream
-	// package supports it (https://github.com/mdlayher/vsock/pull/78).
-	type dialResult struct {
-		conn net.Conn
-		err  error
-	}
-	resCh := make(chan dialResult, 1)
-	go func() {
-		conn, dialErr := vsockDial(cid, port)
-		resCh <- dialResult{conn: conn, err: dialErr}
-	}()
-
-	select {
-	case res := <-resCh:
-		return res.conn, res.err
-	case <-ctx.Done():
-		// Close any connection that is established after the context is done.
-		go func() {
-			if res := <-resCh; res.err == nil {
-				_ = res.conn.Close()
-			}
-		}()
-		return nil, ctx.Err()
-	}
+	return vsockDialContext(ctx, cid, port)
 }
 
 func listenVsock(endpoint string) (net.Listener, error) {
