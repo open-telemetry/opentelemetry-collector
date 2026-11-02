@@ -7,6 +7,19 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.70.0/v0.164.0
+
+### 💡 Enhancements 💡
+
+- `pkg/xpdata`: Add `xhash.WithUint64` to hash a `uint64` value without converting it to `int64`. (#16176)
+  It produces the same hash as `xhash.WithValue(pcommon.NewValueInt(int64(v)))`.
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/exporterhelper`: Expose PartitionConfig and NewDefaultPartitionConfig so that users can modify it. (#16197)
+
+<!-- previous-version -->
+
 ## v1.69.0/v0.163.0
 
 ### 💡 Enhancements 💡
