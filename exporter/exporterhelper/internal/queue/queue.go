@@ -16,10 +16,10 @@ import (
 // ReferenceCounter is an optional interface that can be implemented to provide a way for the request data
 // to manage internal locally allocated memory and re-use across multiple requests, etc.
 //
-// Ref and Unref are only called by the in-memory queue, which holds the reference from the moment a
-// request is offered until it is reported as done. The persistent queue takes no reference: it
-// serializes the request while the caller still holds it, and what it hands to a consumer is a new
-// request deserialized from the storage.
+// Ref and Unref are only called when requests are consumed asynchronously, by the in-memory queue,
+// which holds the reference from the moment a request is offered until it is reported as done.
+// Nothing else takes a reference: the persistent queue serializes the request while the caller still
+// holds it, and with WaitForResult the caller stays blocked until the request is done.
 type ReferenceCounter[T any] interface {
 	Ref(T)
 	Unref(T)

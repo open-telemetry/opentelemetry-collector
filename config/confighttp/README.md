@@ -115,6 +115,9 @@ will not be enabled.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 - `transport`: The transport protocol to use. Defaults to `tcp`. See the [confignet README](../confignet/README.md) for more information.
 - `max_request_body_size`: configures the maximum allowed body size in bytes for a single request. Default: `20971520` (20MiB)
+  - The limit is checked on the bytes received over the wire and, if the request is compressed (see `compression_algorithms`), again on the **decompressed** body. A compressed request is therefore rejected if its decompressed size exceeds the limit, even when its compressed size is well below it. This protects the collector from memory exhaustion caused by a small compressed payload that expands to a very large one.
+  - Set it to the maximum expected **decompressed** payload size, not the compressed size.
+  - Requests over the limit are rejected. To stay under the limit, have clients send smaller batches (recommended) or raise this value.
 - `include_metadata`: propagates the client metadata from the incoming requests to the downstream consumers. Default: `false`
 - `response_headers`: Additional headers attached to each HTTP response sent to the client. Header values are opaque since they may be sensitive
 - `compression_algorithms`: configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4"]
