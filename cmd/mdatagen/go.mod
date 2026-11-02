@@ -54,6 +54,8 @@ require (
 require (
 	github.com/cenkalti/backoff/v7 v7.0.1 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
+	github.com/mdlayher/socket v0.8.0 // indirect
+	github.com/mdlayher/vsock v1.4.0 // indirect
 	go.opentelemetry.io/collector/client v1.70.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.70.0 // indirect
 	go.opentelemetry.io/collector/exporter v1.70.0 // indirect
@@ -61,6 +63,7 @@ require (
 	go.opentelemetry.io/collector/extension/xextension v0.164.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.164.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
 )
 
 require (
