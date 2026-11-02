@@ -306,13 +306,13 @@ func TestAsyncDiskQueueReferenceCounting(t *testing.T) {
 		Telemetry:        componenttest.NewNopTelemetrySettings(),
 	}
 
-	dq := newDiskQueue[request.Request](set)
 	ext := newDiskAccessExtensionForTest(t, t.TempDir())
 	host := hosttest.NewHost(map[component.ID]component.Component{storageID: ext})
-	asyncQueue := newAsyncQueue[request.Request](dq, 1,
+	asyncQueue, err := NewQueue[request.Request](set,
 		func(_ context.Context, _ request.Request, done Done) {
 			done.OnDone(nil)
-		}, set.ReferenceCounter)
+		})
+	require.NoError(t, err)
 	require.NoError(t, asyncQueue.Start(context.Background(), host))
 
 	req := &refCountedRequest{}
