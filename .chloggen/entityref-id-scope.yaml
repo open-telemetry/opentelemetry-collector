@@ -1,0 +1,5 @@
+change_type: enhancement
+component: pdata/xpdata
+note: Add `IdScope` and `IdScopeEntityType` to `xpdata/entity.EntityRef` and `entity.ResolveGlobalIdentity`.
+issues: [16287]
+change_logs: [api]

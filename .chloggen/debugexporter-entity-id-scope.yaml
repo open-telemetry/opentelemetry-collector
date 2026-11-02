@@ -1,0 +1,5 @@
+change_type: enhancement
+component: exporter/debug
+note: Print entity ID scope and scope entity type in detailed verbosity.
+issues: [16287]
+change_logs: [user]
