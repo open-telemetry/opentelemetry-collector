@@ -177,7 +177,19 @@ func (orig *{{ .messageName }}) MarshalProto(buf []byte) int {
 	return len(buf) - pos
 }
 
+{{ if .requiresDepthTracking -}}
 func (orig *{{ .messageName }}) UnmarshalProto(buf []byte) error {
+	return orig.unmarshalProto(buf, 0)
+}
+
+func (orig *{{ .messageName }}) unmarshalProto(buf []byte, depth int) error {
+	if depth >= proto.RecursionLimit {
+		return proto.ErrRecursionDepth
+	}
+	depth++
+{{- else -}}
+func (orig *{{ .messageName }}) UnmarshalProto(buf []byte) error {
+{{- end }}
 	var err error
 	var fieldNum int32
 	var wireType proto.WireType
@@ -192,7 +204,7 @@ func (orig *{{ .messageName }}) UnmarshalProto(buf []byte) error {
 		}
 		switch fieldNum {
 			{{ range .fields -}}
-			{{ .GenUnmarshalProto }}
+			{{ if $.requiresDepthTracking }}{{ .GenUnmarshalProto }}{{ else }}{{ .GenUnmarshalProtoNoDepth }}{{ end }}
 			{{ end -}}
 			default:
 				pos, err = proto.ConsumeUnknown(buf, pos, wireType)
