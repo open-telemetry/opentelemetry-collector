@@ -20,6 +20,8 @@ func addEntityRefsToResource(resource pcommon.Resource) {
 	if _, exists := resource.Attributes().Get("host.name"); exists {
 		hostRef := entityRefs.AppendEmpty()
 		hostRef.SetType("host")
+		hostRef.SetIdScope(entity.IdScopeLocal)
+		hostRef.SetIdScopeEntityType("cloud")
 		hostRef.IdKeys().Append("host.name")
 	}
 }

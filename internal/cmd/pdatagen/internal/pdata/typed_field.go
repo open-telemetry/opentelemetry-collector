@@ -12,13 +12,13 @@ import (
 
 const typedAccessorsTemplate = `// {{ .fieldName }} returns the {{ .lowerFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType }} {
-	return {{ .packageName }}{{ .returnType }}(ms.orig.{{ .originFieldName }})
+	return {{ .packageName }}{{ .returnType }}(ms.{{ .origAccessor }}.{{ .originFieldName }})
 }
 
 // Set{{ .fieldName }} replaces the {{ .lowerFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) Set{{ .fieldName }}(v {{ .packageName }}{{ .returnType }}) {
-	ms.state.AssertMutable()
-	ms.orig.{{ .originFieldName }} = {{ .messageType }}(v)
+	ms.{{ .stateAccessor }}.AssertMutable()
+	ms.{{ .origAccessor }}.{{ .originFieldName }} = {{ .messageType }}(v)
 }`
 
 const typedAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(t *testing.T) {
@@ -119,6 +119,8 @@ func (ptf *TypedField) templateFields(ms *messageStruct) map[string]any {
 		"lowerFieldName":  strings.ToLower(ptf.fieldName),
 		"testValue":       testVal,
 		"messageType":     messageType,
+		"origAccessor":    origAccessor(usedByOtherDataTypes(ms.packageName)),
+		"stateAccessor":   stateAccessor(usedByOtherDataTypes(ms.packageName)),
 	}
 }
 
