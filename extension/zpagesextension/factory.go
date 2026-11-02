@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	defaultEndpoint = "localhost:55679"
+	defaultEndpoint                 = "localhost:55679"
+	defaultSupportBundleArchiveName = "otelcol-support-bundle"
 )
 
 // NewFactory creates a factory for Z-Pages extension.
@@ -26,10 +27,16 @@ func createDefaultConfig() component.Config {
 	serverConfig.NetAddr.Endpoint = defaultEndpoint
 	return &Config{
 		ServerConfig: serverConfig,
+		SupportBundle: SupportBundleConfig{
+			ArchiveName: defaultSupportBundleArchiveName,
+			Gatherers: GatherersConfig{
+				PProf: GathererConfig{Enabled: true},
+			},
+		},
 	}
 }
 
 // create creates the extension based on this config.
 func create(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
-	return newServer(cfg.(*Config), set.TelemetrySettings), nil
+	return newServer(cfg.(*Config), set.TelemetrySettings, set.BuildInfo), nil
 }

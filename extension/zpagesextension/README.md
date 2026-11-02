@@ -30,6 +30,14 @@ The following settings can be optionally configured:
 
 - `expvar`
   - `enabled` (default = false): Enable the expvar services. For detail see [ExpvarZ](#expvarz).
+- `support_bundle`: Configure the support bundle endpoint. For detail see [Support bundle](#support-bundle).
+  - `enabled` (default = false): Serve support bundles at `/debug/supportbundle`.
+  - `archive_name` (default = otelcol-support-bundle): The name of the archive.
+    The download file name starts with it, and it is the name of the top
+    directory in the archive.
+  - `gatherers`: Enable or disable each gatherer.
+    - `pprof`
+      - `enabled` (default = true): Collect heap and goroutine profiles.
 
 Example:
 ```yaml
@@ -87,6 +95,74 @@ Example URL: http://localhost:55679/debug/tracez
 The ExpvarZ exposes the useful information about Go runtime, OTel components could leverage [expvar](https://pkg.go.dev/expvar) library to expose their own state.
 
 Example URL: http://localhost:55679/debug/expvarz
+
+## Support bundle
+
+The support bundle is in **alpha**. Its config, its endpoint and the bundle
+contents can change in a future release.
+
+A support bundle is a zip archive of diagnostic files from the running
+collector. It can be collected when an issue is observed to help debug what is happening with your collector.
+
+Example URL: http://localhost:55679/debug/supportbundle
+
+```yaml
+extensions:
+  zpages:
+    support_bundle:
+      enabled: true
+```
+
+### Security
+
+The bundle can hold sensitive data about the collector and its host.
+
+- Do not expose this endpoint to the public Internet. Keep the default
+  `localhost` endpoint, or use TLS and an `auth` extension.
+- Treat a downloaded bundle as sensitive data and be careful how you store and share it.
+- The extension builds one bundle at a time. It rejects a request that arrives
+  while a bundle is in progress with status `429`.
+
+### Gatherers
+
+A gatherer collects one set of files for the bundle. You can disable each
+gatherer in the config. A request cannot run a gatherer that the config disables.
+
+| Gatherer | Files | Description |
+| -------- | ----- | ----------- |
+| `pprof`  | `pprof/heap.pprof`, `pprof/goroutine.pprof` | Point-in-time heap and goroutine profiles. Open them with `go tool pprof`. |
+
+To run only some of the enabled gatherers, use the `gatherers` query parameter
+with a comma-separated list of names:
+
+```sh
+curl -o bundle.zip 'http://localhost:55679/debug/supportbundle?gatherers=pprof'
+```
+
+If a gatherer fails, the bundle holds the files from the other gatherers. If no
+gatherer can run, the request fails. A request that names only disabled or
+unknown gatherers gets status `400`.
+
+### Bundle contents
+
+All files are in one top directory of the archive. Its name comes from
+`archive_name`. The default is `otelcol-support-bundle/`.
+
+`manifest.yaml` is always present. It holds:
+
+- `bundle_id`: A unique ID for the bundle.
+- `capture`: The start and end time of the collection.
+- `collector`: The command, description and version of the collector build.
+- `runtime`: The Go version, the OS, the architecture, the CPU count,
+  `GOMAXPROCS` and the hostname.
+- `resource`: The resource attributes of the collector telemetry, for example
+  `service.instance.id`.
+- `gatherers`: The gatherers that the request asked for (`requested`), the
+  gatherers that ran (`ran`) and the gatherers that were skipped (`skipped`).
+  Each skipped gatherer has a reason: `disabled_in_config`, `unknown`,
+  `unavailable` or `failed`. A failed gatherer also has its error.
+- `files`: Each file in the bundle, with the gatherer that made it, the time
+  it was collected, its size and its SHA-256 hash.
 
 ## Warnings
 

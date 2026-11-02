@@ -23,7 +23,13 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	expectedServerConfig.NetAddr.Endpoint = "localhost:55679"
 
 	cfg := createDefaultConfig()
-	assert.Equal(t, &Config{ServerConfig: expectedServerConfig}, cfg)
+	assert.Equal(t, &Config{
+		ServerConfig: expectedServerConfig,
+		SupportBundle: SupportBundleConfig{
+			ArchiveName: "otelcol-support-bundle",
+			Gatherers:   GatherersConfig{PProf: GathererConfig{Enabled: true}},
+		},
+	}, cfg)
 
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ext, err := create(context.Background(), extensiontest.NewNopSettings(metadata.Type), cfg)

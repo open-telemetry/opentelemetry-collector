@@ -33,23 +33,57 @@ func TestUnmarshalConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&cfg))
 
-	expectedServerConfig := confighttp.NewDefaultServerConfig()
-	expectedServerConfig.NetAddr.Endpoint = "localhost:56888"
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.ServerConfig = confighttp.NewDefaultServerConfig()
+	expected.ServerConfig.NetAddr.Endpoint = "localhost:56888"
 
-	assert.Equal(t, &Config{ServerConfig: expectedServerConfig}, cfg)
+	assert.Equal(t, expected, cfg)
 }
 
-// Fields declared next to the squashed ServerConfig must still be decoded.
-func TestUnmarshalConfigWithExpvar(t *testing.T) {
+func TestUnmarshalConfigWithSupportBundle(t *testing.T) {
 	cm := confmap.NewFromStringMap(map[string]any{
-		"endpoint": "localhost:56888",
-		"expvar":   map[string]any{"enabled": true},
+		"support_bundle": map[string]any{
+			"enabled":      true,
+			"archive_name": "my-bundle",
+			"gatherers": map[string]any{
+				"pprof": map[string]any{"enabled": false},
+			},
+		},
 	})
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	zCfg := cfg.(*Config)
-	assert.Equal(t, "localhost:56888", zCfg.ServerConfig.NetAddr.Endpoint)
-	assert.True(t, zCfg.Expvar.Enabled)
+	assert.True(t, zCfg.SupportBundle.Enabled)
+	assert.Equal(t, "my-bundle", zCfg.SupportBundle.ArchiveName)
+	assert.False(t, zCfg.SupportBundle.Gatherers.PProf.Enabled)
+}
+
+func TestValidateSupportBundleArchiveName(t *testing.T) {
+	tests := []struct {
+		archiveName string
+		valid       bool
+	}{
+		{archiveName: "otelcol-support-bundle", valid: true},
+		{archiveName: "", valid: false},
+		{archiveName: ".", valid: false},
+		{archiveName: "..", valid: false},
+		{archiveName: "a/b", valid: false},
+		{archiveName: `a\b`, valid: false},
+		{archiveName: "/abs", valid: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.archiveName, func(t *testing.T) {
+			cfg := SupportBundleConfig{Enabled: true, ArchiveName: tt.archiveName}
+			if tt.valid {
+				assert.NoError(t, cfg.Validate())
+			} else {
+				assert.ErrorContains(t, cfg.Validate(), `"archive_name" must be a valid file name with no path separators`)
+			}
+		})
+	}
+
+	// The extension ignores archive_name when the support bundle is disabled.
+	assert.NoError(t, (&SupportBundleConfig{ArchiveName: ""}).Validate())
 }

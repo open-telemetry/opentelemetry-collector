@@ -6,10 +6,40 @@ $defs:
       enabled:
         description: Enabled indicates whether to enable expvar service. (default = false)
         type: boolean
+  gatherer_config:
+    description: GathererConfig has the configuration that every gatherer shares.
+    type: object
+    properties:
+      enabled:
+        description: Enabled indicates whether the gatherer can run. (default = true)
+        type: boolean
+  gatherers_config:
+    description: GatherersConfig has the configuration for each support bundle gatherer.
+    type: object
+    properties:
+      pprof:
+        description: PProf collects point-in-time heap and goroutine profiles.
+        $ref: gatherer_config
+  support_bundle_config:
+    description: SupportBundleConfig has the configuration for the support bundle endpoint.
+    type: object
+    properties:
+      archive_name:
+        description: ArchiveName names the archive. The download file name starts with it, and it is the name of the top directory in the archive. (default = otelcol-support-bundle)
+        type: string
+      enabled:
+        description: Enabled indicates whether to serve support bundles at /debug/supportbundle. (default = false)
+        type: boolean
+      gatherers:
+        description: Gatherers enables or disables each gatherer. A request can select only enabled gatherers.
+        $ref: gatherers_config
 description: Config has the configuration for the extension enabling the zPages extension.
 type: object
 properties:
   expvar:
     $ref: expvar_config
+  support_bundle:
+    description: SupportBundle configures the support bundle endpoint.
+    $ref: support_bundle_config
 allOf:
   - $ref: /config/confighttp.server_config
