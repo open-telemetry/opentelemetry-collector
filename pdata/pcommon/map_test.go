@@ -5,6 +5,7 @@ package pcommon
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -784,7 +785,7 @@ func BenchmarkMapLookup(b *testing.B) {
 
 func BenchmarkMapGetOrPutExisting(b *testing.B) {
 	for _, size := range []int{1, 8, 32, 128} {
-		b.Run(fmt.Sprint(size), func(b *testing.B) {
+		b.Run(strconv.Itoa(size), func(b *testing.B) {
 			m := NewMap()
 			for i := range size {
 				m.PutInt(fmt.Sprintf("attribute.%03d", i), int64(i))
