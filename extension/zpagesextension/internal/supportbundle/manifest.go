@@ -59,11 +59,12 @@ type Selection struct {
 	Skipped   []Skipped `yaml:"skipped,omitempty"`
 }
 
-// Skipped records a gatherer that did not contribute to the bundle.
+// Skipped records a gatherer that did not contribute to the bundle. The JSON
+// tags keep the log keys the same as the manifest keys.
 type Skipped struct {
-	Name   string     `yaml:"name"`
-	Reason SkipReason `yaml:"reason"`
-	Error  string     `yaml:"error,omitempty"`
+	Name   string     `yaml:"name" json:"name"`
+	Reason SkipReason `yaml:"reason" json:"reason"`
+	Error  string     `yaml:"error,omitempty" json:"error,omitempty"`
 }
 
 func (s *Selection) skip(name string, reason SkipReason, err error) {

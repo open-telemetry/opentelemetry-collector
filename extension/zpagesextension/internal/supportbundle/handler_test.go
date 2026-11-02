@@ -19,12 +19,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"go.yaml.in/yaml/v3"
 
 	"go.opentelemetry.io/collector/component"
 )
 
-const rootDir = "test-bundle"
+const archiveName = "test-bundle"
 
 type fakeGatherer struct {
 	name  string
@@ -55,7 +56,7 @@ func newFake(name string, paths ...string) *fakeGatherer {
 
 func newTestBundler(entries ...Entry) *Bundler {
 	return NewBundler(Settings{
-		ArchiveName: rootDir,
+		ArchiveName: archiveName,
 		BuildInfo:   component.BuildInfo{Command: "otelcol", Description: "test collector", Version: "1.2.3"},
 		Resource:    map[string]string{"service.instance.id": "instance-1"},
 		Logger:      zap.NewNop(),
@@ -89,7 +90,7 @@ func readBundle(t *testing.T, body []byte) bundle {
 		require.NoError(t, rc.Close())
 		got.files[f.Name] = content
 	}
-	manifest, ok := got.files[rootDir+"/"+manifestPath]
+	manifest, ok := got.files[archiveName+"/"+manifestPath]
 	require.True(t, ok, "the bundle must hold a manifest")
 	require.NoError(t, yaml.Unmarshal(manifest, &got.manifest))
 	return got
@@ -123,7 +124,7 @@ func TestServeAllEnabled(t *testing.T) {
 	// Every file is under the root directory and matches its manifest entry.
 	require.Len(t, m.Files, 3)
 	for _, fi := range m.Files {
-		content, ok := got.files[rootDir+"/"+fi.Path]
+		content, ok := got.files[archiveName+"/"+fi.Path]
 		require.True(t, ok, fi.Path)
 		sum := sha256.Sum256(content)
 		assert.Equal(t, hex.EncodeToString(sum[:]), fi.SHA256, fi.Path)
@@ -154,9 +155,9 @@ func TestServeRequestedSelection(t *testing.T) {
 			{Name: "nope", Reason: SkipUnknown},
 		},
 	}, got.manifest.Gatherers)
-	assert.Contains(t, got.files, rootDir+"/c.txt")
-	assert.NotContains(t, got.files, rootDir+"/a.txt")
-	assert.NotContains(t, got.files, rootDir+"/b.txt")
+	assert.Contains(t, got.files, archiveName+"/c.txt")
+	assert.NotContains(t, got.files, archiveName+"/a.txt")
+	assert.NotContains(t, got.files, archiveName+"/b.txt")
 }
 
 func TestServeOnlySkippedRequested(t *testing.T) {
@@ -200,7 +201,7 @@ func TestServeGathererFailures(t *testing.T) {
 		{Name: "unavailable", Reason: SkipUnavailable, Error: "hook is off: gatherer is unavailable"},
 	}, got.manifest.Gatherers.Skipped)
 	// A failed gatherer contributes no files, even if it returned some.
-	assert.NotContains(t, got.files, rootDir+"/failing.txt")
+	assert.NotContains(t, got.files, archiveName+"/failing.txt")
 }
 
 func TestServeAllGatherersFail(t *testing.T) {
@@ -264,6 +265,16 @@ func TestServeRejectsConcurrentBundles(t *testing.T) {
 	// The bundler accepts a new request when the first one is done.
 	slow.started, slow.release = nil, nil
 	assert.Equal(t, http.StatusOK, get(t, b, "").Code)
+}
+
+func TestServeLogsSkippedWithManifestKeys(t *testing.T) {
+	var logs bytes.Buffer
+	core := zapcore.NewCore(zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()), zapcore.AddSync(&logs), zap.InfoLevel)
+	b := NewBundler(Settings{ArchiveName: archiveName, Logger: zap.New(core)},
+		[]Entry{{Gatherer: newFake("a", "a.txt"), Enabled: true}})
+
+	require.Equal(t, http.StatusOK, get(t, b, "?gatherers=a,nope").Code)
+	assert.Contains(t, logs.String(), `"skipped":[{"name":"nope","reason":"unknown"}]`)
 }
 
 func TestServeMethodNotAllowed(t *testing.T) {
