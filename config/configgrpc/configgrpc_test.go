@@ -34,7 +34,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
-	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
@@ -312,7 +312,7 @@ func TestDefaultServiceConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			setPickFirstShuffleGate(t, tt.gateEnabled)
+			testutil.SetFeatureGate(t, internalmetadata.PkgConfiggrpcPickFirstShuffleAddressListFeatureGate.ID(), tt.gateEnabled)
 			cfg := NewDefaultClientConfig()
 			cfg.Endpoint = "localhost:4317"
 			cfg.BalancerName = tt.balancerName
@@ -324,15 +324,6 @@ func TestDefaultServiceConfig(t *testing.T) {
 			require.NoError(t, conn.Close())
 		})
 	}
-}
-
-func setPickFirstShuffleGate(t *testing.T, enabled bool) {
-	gate := internalmetadata.PkgConfiggrpcPickFirstShuffleAddressListFeatureGate
-	previous := gate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), previous))
-	})
 }
 
 func TestGrpcDialTarget(t *testing.T) {
