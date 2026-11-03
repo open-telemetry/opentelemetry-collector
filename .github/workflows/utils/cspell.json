@@ -577,7 +577,9 @@
       "zipkinv",
       "zpages",
       "zpagesextension",
-      "zstd"
+      "zstd",
+      "GOMAXPROCS",
+      "supportbundle"
     ],
     "enableGlobDot": true,
     "useGitignore": true,
