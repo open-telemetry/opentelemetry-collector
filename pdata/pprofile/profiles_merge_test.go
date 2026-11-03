@@ -681,58 +681,56 @@ func TestProfilesMergeTo_OnlyReferencedEntries(t *testing.T) {
 // into an otherwise spec-conformant source. Every case asserts the wrapped
 // error surfaces and that the destination is left untouched.
 func TestProfilesMergeTo_SwitchDictionaryErrors(t *testing.T) {
-	const badIdx = 99
-
 	for _, tt := range []struct {
 		name    string
-		mutate  func(Profiles)
+		mutate  func(p Profiles, badIdx int32)
 		wantErr string
 	}{
 		{
 			name: "dictionary attribute key index",
-			mutate: func(p Profiles) {
+			mutate: func(p Profiles, badIdx int32) {
 				p.Dictionary().AttributeTable().AppendEmpty().SetKeyStrindex(badIdx)
 			},
 			wantErr: "invalid key index",
 		},
 		{
 			name: "dictionary function name index",
-			mutate: func(p Profiles) {
+			mutate: func(p Profiles, badIdx int32) {
 				p.Dictionary().FunctionTable().AppendEmpty().SetNameStrindex(badIdx)
 			},
 			wantErr: "invalid name index",
 		},
 		{
 			name: "dictionary mapping filename index",
-			mutate: func(p Profiles) {
+			mutate: func(p Profiles, badIdx int32) {
 				p.Dictionary().MappingTable().AppendEmpty().SetFilenameStrindex(badIdx)
 			},
 			wantErr: "invalid filename index",
 		},
 		{
 			name: "dictionary mapping attribute index",
-			mutate: func(p Profiles) {
+			mutate: func(p Profiles, badIdx int32) {
 				p.Dictionary().MappingTable().AppendEmpty().AttributeIndices().Append(badIdx)
 			},
 			wantErr: "invalid attribute index",
 		},
 		{
 			name: "dictionary location attribute index",
-			mutate: func(p Profiles) {
+			mutate: func(p Profiles, badIdx int32) {
 				p.Dictionary().LocationTable().AppendEmpty().AttributeIndices().Append(badIdx)
 			},
 			wantErr: "invalid attribute index",
 		},
 		{
 			name: "dictionary stack location index",
-			mutate: func(p Profiles) {
+			mutate: func(p Profiles, badIdx int32) {
 				p.Dictionary().StackTable().AppendEmpty().LocationIndices().Append(badIdx)
 			},
 			wantErr: "invalid location index",
 		},
 		{
 			name: "dictionary location line function index",
-			mutate: func(p Profiles) {
+			mutate: func(p Profiles, badIdx int32) {
 				loc := p.Dictionary().LocationTable().AppendEmpty()
 				loc.Lines().AppendEmpty().SetFunctionIndex(badIdx)
 			},
@@ -740,7 +738,7 @@ func TestProfilesMergeTo_SwitchDictionaryErrors(t *testing.T) {
 		},
 		{
 			name: "sample attribute index",
-			mutate: func(p Profiles) {
+			mutate: func(p Profiles, badIdx int32) {
 				s := p.ResourceProfiles().AppendEmpty().
 					ScopeProfiles().AppendEmpty().
 					Profiles().AppendEmpty().
@@ -751,7 +749,7 @@ func TestProfilesMergeTo_SwitchDictionaryErrors(t *testing.T) {
 		},
 		{
 			name: "profile period type index",
-			mutate: func(p Profiles) {
+			mutate: func(p Profiles, badIdx int32) {
 				prof := p.ResourceProfiles().AppendEmpty().
 					ScopeProfiles().AppendEmpty().
 					Profiles().AppendEmpty()
@@ -761,7 +759,7 @@ func TestProfilesMergeTo_SwitchDictionaryErrors(t *testing.T) {
 		},
 		{
 			name: "profile sample type index",
-			mutate: func(p Profiles) {
+			mutate: func(p Profiles, badIdx int32) {
 				prof := p.ResourceProfiles().AppendEmpty().
 					ScopeProfiles().AppendEmpty().
 					Profiles().AppendEmpty()
@@ -769,17 +767,47 @@ func TestProfilesMergeTo_SwitchDictionaryErrors(t *testing.T) {
 			},
 			wantErr: "error switching dictionary for sample type",
 		},
+		{
+			name: "dictionary location mapping index",
+			mutate: func(p Profiles, badIdx int32) {
+				p.Dictionary().LocationTable().AppendEmpty().SetMappingIndex(badIdx)
+			},
+			wantErr: "invalid mapping index",
+		},
+		{
+			name: "sample stack index",
+			mutate: func(p Profiles, badIdx int32) {
+				newReferencingProfile(p).Samples().AppendEmpty().SetStackIndex(badIdx)
+			},
+			wantErr: "invalid stack index",
+		},
+		{
+			name: "sample link index",
+			mutate: func(p Profiles, badIdx int32) {
+				newReferencingProfile(p).Samples().AppendEmpty().SetLinkIndex(badIdx)
+			},
+			wantErr: "invalid link index",
+		},
+		{
+			name: "profile sample type unit index",
+			mutate: func(p Profiles, badIdx int32) {
+				newReferencingProfile(p).SampleType().SetUnitStrindex(badIdx)
+			},
+			wantErr: "invalid unit index",
+		},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
-			src := newConformantProfiles()
-			tt.mutate(src)
-			dest := newConformantProfiles()
+		for _, badIdx := range []int32{99, -1} {
+			t.Run(fmt.Sprintf("%s/%d", tt.name, badIdx), func(t *testing.T) {
+				src := newConformantProfiles()
+				tt.mutate(src, badIdx)
+				dest := newConformantProfiles()
 
-			err := src.MergeTo(dest)
-			require.ErrorContains(t, err, tt.wantErr)
-			assert.Equal(t, 0, dest.ResourceProfiles().Len(),
-				"destination must be left untouched on error")
-		})
+				err := src.MergeTo(dest)
+				require.ErrorContains(t, err, tt.wantErr)
+				assert.Equal(t, 0, dest.ResourceProfiles().Len(),
+					"destination must be left untouched on error")
+			})
+		}
 	}
 }
 

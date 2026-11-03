@@ -634,3 +634,47 @@ func TestMergeIndex_TranslateMemoized(t *testing.T) {
 		assert.Equal(t, before, size())
 	}
 }
+
+// TestMergeIndex_ScratchTakenWhileInUse checks that a translation holds its
+// type's scratch value off the index while using it, so a nested translation of
+// the same type could not overwrite it. A translation that fails part way does
+// not put the value back, which makes that observable.
+func TestMergeIndex_ScratchTakenWhileInUse(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		translate func(mi *mergeIndex, src, dst ProfilesDictionary, i int32) (int32, error)
+		held      func(mi *mergeIndex) bool
+	}{
+		{"function", (*mergeIndex).function, func(mi *mergeIndex) bool { return mi.functionScratch != nil }},
+		{"mapping", (*mergeIndex).mapping, func(mi *mergeIndex) bool { return mi.mappingScratch != nil }},
+		{"location", (*mergeIndex).location, func(mi *mergeIndex) bool { return mi.locationScratch != nil }},
+		{"stack", (*mergeIndex).stack, func(mi *mergeIndex) bool { return mi.stackScratch != nil }},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			// Entry 0 of every type translates without new strings; entry 1
+			// references a string, directly or through the entries it points to.
+			src := NewProfilesDictionary()
+			src.StringTable().Append("", "s")
+			src.FunctionTable().AppendEmpty().SetStartLine(1)
+			src.FunctionTable().AppendEmpty().SetNameStrindex(1)
+			src.MappingTable().AppendEmpty().SetFileOffset(1)
+			src.MappingTable().AppendEmpty().SetFilenameStrindex(1)
+			src.LocationTable().AppendEmpty().SetAddress(1)
+			src.LocationTable().AppendEmpty().SetMappingIndex(1)
+			src.StackTable().AppendEmpty().LocationIndices().Append(0)
+			src.StackTable().AppendEmpty().LocationIndices().Append(1)
+
+			dst := NewProfilesDictionary()
+			mi := newMergeIndex(dst)
+			_, err := tt.translate(mi, src, dst, 0)
+			require.NoError(t, err)
+			require.True(t, tt.held(mi), "a finished translation puts its scratch value back")
+
+			// No new string fits, so translating entry 1 fails part way.
+			mi.maxTableLen = 0
+			_, err = tt.translate(mi, src, dst, 1)
+			require.ErrorIs(t, err, errTooManyStringTableEntries)
+			assert.False(t, tt.held(mi), "a translation in progress must not leave its scratch value on the index")
+		})
+	}
+}

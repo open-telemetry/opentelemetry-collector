@@ -30,8 +30,8 @@ func (ms KeyValueAndUnit) switchDictionary(src, dst ProfilesDictionary, mi *merg
 func (ms KeyValueAndUnit) translateStrings(src, dst ProfilesDictionary, mi *mergeIndex) (key, unit int32, err error) {
 	key, unit = ms.KeyStrindex(), ms.UnitStrindex()
 
-	if key > 0 {
-		if src.StringTable().Len() <= int(key) {
+	if key != 0 {
+		if key < 0 || src.StringTable().Len() <= int(key) {
 			return 0, 0, fmt.Errorf("invalid key index %d", key)
 		}
 
@@ -41,8 +41,8 @@ func (ms KeyValueAndUnit) translateStrings(src, dst ProfilesDictionary, mi *merg
 		}
 	}
 
-	if unit > 0 {
-		if src.StringTable().Len() <= int(unit) {
+	if unit != 0 {
+		if unit < 0 || src.StringTable().Len() <= int(unit) {
 			return 0, 0, fmt.Errorf("invalid unit index %d", unit)
 		}
 

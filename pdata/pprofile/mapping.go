@@ -17,8 +17,8 @@ func (ms Mapping) Equal(val Mapping) bool {
 // switchDictionary updates the Mapping, switching its indices from one
 // dictionary to another.
 func (ms Mapping) switchDictionary(src, dst ProfilesDictionary, mi *mergeIndex) error {
-	if ms.FilenameStrindex() > 0 {
-		if src.StringTable().Len() <= int(ms.FilenameStrindex()) {
+	if ms.FilenameStrindex() != 0 {
+		if ms.FilenameStrindex() < 0 || src.StringTable().Len() <= int(ms.FilenameStrindex()) {
 			return fmt.Errorf("invalid filename index %d", ms.FilenameStrindex())
 		}
 

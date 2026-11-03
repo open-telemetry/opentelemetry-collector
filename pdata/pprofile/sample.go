@@ -20,8 +20,8 @@ func (ms Sample) switchDictionary(src, dst ProfilesDictionary, mi *mergeIndex) e
 		ms.AttributeIndices().SetAt(i, idx)
 	}
 
-	if ms.LinkIndex() > 0 {
-		if src.LinkTable().Len() <= int(ms.LinkIndex()) {
+	if ms.LinkIndex() != 0 {
+		if ms.LinkIndex() < 0 || src.LinkTable().Len() <= int(ms.LinkIndex()) {
 			return fmt.Errorf("invalid link index %d", ms.LinkIndex())
 		}
 
@@ -32,8 +32,8 @@ func (ms Sample) switchDictionary(src, dst ProfilesDictionary, mi *mergeIndex) e
 		ms.SetLinkIndex(idx)
 	}
 
-	if ms.StackIndex() > 0 {
-		if src.StackTable().Len() <= int(ms.StackIndex()) {
+	if ms.StackIndex() != 0 {
+		if ms.StackIndex() < 0 || src.StackTable().Len() <= int(ms.StackIndex()) {
 			return fmt.Errorf("invalid stack index %d", ms.StackIndex())
 		}
 

@@ -74,7 +74,7 @@ func (ms Profiles) ProfileCount() int {
 func validateDictionary(d ProfilesDictionary) error {
 	strs, attrs := d.StringTable().Len(), d.AttributeTable().Len()
 	checkStr := func(idx int32, name string) error {
-		if idx > 0 && strs <= int(idx) {
+		if idx < 0 || (idx > 0 && strs <= int(idx)) {
 			return fmt.Errorf("invalid %s index %d", name, idx)
 		}
 		return nil
@@ -105,12 +105,12 @@ func validateDictionary(d ProfilesDictionary) error {
 	}
 	for i, loc := range d.LocationTable().All() {
 		var err error
-		if idx := loc.MappingIndex(); idx > 0 && d.MappingTable().Len() <= int(idx) {
+		if idx := loc.MappingIndex(); idx < 0 || (idx > 0 && d.MappingTable().Len() <= int(idx)) {
 			err = fmt.Errorf("invalid mapping index %d", idx)
 		}
 		err = errors.Join(err, checkAttrs(loc.AttributeIndices()))
 		for j, l := range loc.Lines().All() {
-			if idx := l.FunctionIndex(); idx > 0 && d.FunctionTable().Len() <= int(idx) {
+			if idx := l.FunctionIndex(); idx < 0 || (idx > 0 && d.FunctionTable().Len() <= int(idx)) {
 				err = errors.Join(err, fmt.Errorf("couldn't switch dictionary for line %d: invalid function index %d", j, idx))
 			}
 		}

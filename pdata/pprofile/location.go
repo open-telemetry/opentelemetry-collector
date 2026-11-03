@@ -16,8 +16,8 @@ func (ms Location) Equal(val Location) bool {
 // switchDictionary updates the Location, switching its indices from one
 // dictionary to another.
 func (ms Location) switchDictionary(src, dst ProfilesDictionary, mi *mergeIndex) error {
-	if ms.MappingIndex() > 0 {
-		if src.MappingTable().Len() <= int(ms.MappingIndex()) {
+	if ms.MappingIndex() != 0 {
+		if ms.MappingIndex() < 0 || src.MappingTable().Len() <= int(ms.MappingIndex()) {
 			return fmt.Errorf("invalid mapping index %d", ms.MappingIndex())
 		}
 

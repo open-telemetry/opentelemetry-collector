@@ -182,8 +182,10 @@ type mergeIndex struct {
 	stackIdx     []int32
 
 	// Scratch values an entry is copied into and translated in before being
-	// deduplicated into the destination. One per type is enough because a
-	// translation never recurses into another entry of the same type.
+	// deduplicated into the destination, reused across entries of a type. A
+	// translation takes its scratch value while using it and puts it back when
+	// done, so a nested translation of the same type would get its own value
+	// instead of overwriting one in use.
 	functionScratch *Function
 	mappingScratch  *Mapping
 	locationScratch *Location
@@ -401,11 +403,13 @@ func (mi *mergeIndex) function(src, dst ProfilesDictionary, i int32) (int32, err
 	if idx := mi.functionIdx[i]; idx >= 0 {
 		return idx, nil
 	}
-	if mi.functionScratch == nil {
+	scratch := mi.functionScratch
+	mi.functionScratch = nil
+	if scratch == nil {
 		v := NewFunction()
-		mi.functionScratch = &v
+		scratch = &v
 	}
-	fn := *mi.functionScratch
+	fn := *scratch
 	src.FunctionTable().At(int(i)).CopyTo(fn)
 	if err := fn.switchDictionary(src, dst, mi); err != nil {
 		return 0, err
@@ -414,6 +418,7 @@ func (mi *mergeIndex) function(src, dst ProfilesDictionary, i int32) (int32, err
 	if err != nil {
 		return 0, err
 	}
+	mi.functionScratch = scratch
 	mi.functionIdx[i] = idx
 	return idx, nil
 }
@@ -427,11 +432,13 @@ func (mi *mergeIndex) mapping(src, dst ProfilesDictionary, i int32) (int32, erro
 	if idx := mi.mappingIdx[i]; idx >= 0 {
 		return idx, nil
 	}
-	if mi.mappingScratch == nil {
+	scratch := mi.mappingScratch
+	mi.mappingScratch = nil
+	if scratch == nil {
 		v := NewMapping()
-		mi.mappingScratch = &v
+		scratch = &v
 	}
-	ma := *mi.mappingScratch
+	ma := *scratch
 	src.MappingTable().At(int(i)).CopyTo(ma)
 	if err := ma.switchDictionary(src, dst, mi); err != nil {
 		return 0, err
@@ -440,6 +447,7 @@ func (mi *mergeIndex) mapping(src, dst ProfilesDictionary, i int32) (int32, erro
 	if err != nil {
 		return 0, err
 	}
+	mi.mappingScratch = scratch
 	mi.mappingIdx[i] = idx
 	return idx, nil
 }
@@ -453,11 +461,13 @@ func (mi *mergeIndex) location(src, dst ProfilesDictionary, i int32) (int32, err
 	if idx := mi.locationIdx[i]; idx >= 0 {
 		return idx, nil
 	}
-	if mi.locationScratch == nil {
+	scratch := mi.locationScratch
+	mi.locationScratch = nil
+	if scratch == nil {
 		v := NewLocation()
-		mi.locationScratch = &v
+		scratch = &v
 	}
-	loc := *mi.locationScratch
+	loc := *scratch
 	src.LocationTable().At(int(i)).CopyTo(loc)
 	if err := loc.switchDictionary(src, dst, mi); err != nil {
 		return 0, err
@@ -466,6 +476,7 @@ func (mi *mergeIndex) location(src, dst ProfilesDictionary, i int32) (int32, err
 	if err != nil {
 		return 0, err
 	}
+	mi.locationScratch = scratch
 	mi.locationIdx[i] = idx
 	return idx, nil
 }
@@ -479,11 +490,13 @@ func (mi *mergeIndex) stack(src, dst ProfilesDictionary, i int32) (int32, error)
 	if idx := mi.stackIdx[i]; idx >= 0 {
 		return idx, nil
 	}
-	if mi.stackScratch == nil {
+	scratch := mi.stackScratch
+	mi.stackScratch = nil
+	if scratch == nil {
 		v := NewStack()
-		mi.stackScratch = &v
+		scratch = &v
 	}
-	st := *mi.stackScratch
+	st := *scratch
 	src.StackTable().At(int(i)).CopyTo(st)
 	if err := st.switchDictionary(src, dst, mi); err != nil {
 		return 0, err
@@ -492,6 +505,7 @@ func (mi *mergeIndex) stack(src, dst ProfilesDictionary, i int32) (int32, error)
 	if err != nil {
 		return 0, err
 	}
+	mi.stackScratch = scratch
 	mi.stackIdx[i] = idx
 	return idx, nil
 }
