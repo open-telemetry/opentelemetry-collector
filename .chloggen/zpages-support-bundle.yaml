@@ -7,7 +7,7 @@ change_type: enhancement
 component: extension/zpages
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add an alpha support bundle endpoint at `/debug/supportbundle` that returns a zip archive of collector diagnostics.
+note: Add an alpha support bundle endpoint at `/debug/v1/supportbundle` that returns a zip archive of collector diagnostics.
 
 # One or more tracking issues or pull requests related to the change
 issues: [16017]

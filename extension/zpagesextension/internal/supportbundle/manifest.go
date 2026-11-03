@@ -13,10 +13,16 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-const manifestPath = "manifest.yaml"
+const (
+	manifestPath = "manifest.yaml"
+	// formatVersion changes when the bundle layout or the manifest changes in
+	// a way that breaks readers.
+	formatVersion = "v1"
+)
 
 // Manifest describes a bundle. It is always present in the bundle.
 type Manifest struct {
+	Format    string            `yaml:"format"`
 	BundleID  string            `yaml:"bundle_id"`
 	Capture   Capture           `yaml:"capture"`
 	Collector CollectorInfo     `yaml:"collector"`
@@ -88,6 +94,7 @@ func newManifest(bundleID string, start, end time.Time, buildInfo component.Buil
 	// The hostname is useful but not required, so an error leaves it empty.
 	hostname, _ := os.Hostname()
 	m := Manifest{
+		Format:   formatVersion,
 		BundleID: bundleID,
 		Capture:  Capture{Start: start.UTC(), End: end.UTC()},
 		Collector: CollectorInfo{

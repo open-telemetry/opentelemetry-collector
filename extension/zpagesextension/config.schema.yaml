@@ -28,7 +28,7 @@ $defs:
         description: ArchiveName names the archive. The download file name starts with it, and it is the name of the top directory in the archive. (default = otelcol-support-bundle)
         type: string
       enabled:
-        description: Enabled indicates whether to serve support bundles at /debug/supportbundle. (default = false)
+        description: Enabled indicates whether to serve support bundles at /debug/v1/supportbundle. (default = false)
         type: boolean
       gatherers:
         description: Gatherers enables or disables each gatherer. A request can select only enabled gatherers.

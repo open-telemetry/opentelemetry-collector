@@ -72,7 +72,7 @@ type bundle struct {
 func get(t *testing.T, b *Bundler, query string) *httptest.ResponseRecorder {
 	t.Helper()
 	rec := httptest.NewRecorder()
-	b.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/debug/supportbundle"+query, http.NoBody))
+	b.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/debug/v1/supportbundle"+query, http.NoBody))
 	return rec
 }
 
@@ -111,6 +111,7 @@ func TestServeAllEnabled(t *testing.T) {
 
 	got := readBundle(t, rec.Body.Bytes())
 	m := got.manifest
+	assert.Equal(t, "v1", m.Format)
 	assert.NotEmpty(t, m.BundleID)
 	assert.False(t, m.Capture.End.Before(m.Capture.Start))
 	assert.Equal(t, CollectorInfo{Command: "otelcol", Description: "test collector", Version: "1.2.3"}, m.Collector)
@@ -281,7 +282,7 @@ func TestServeMethodNotAllowed(t *testing.T) {
 	b := newTestBundler(Entry{Gatherer: newFake("a", "a.txt"), Enabled: true})
 
 	rec := httptest.NewRecorder()
-	b.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/debug/supportbundle", http.NoBody))
+	b.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/debug/v1/supportbundle", http.NoBody))
 	assert.Equal(t, http.StatusMethodNotAllowed, rec.Code)
 	assert.Equal(t, http.MethodGet, rec.Header().Get("Allow"))
 }

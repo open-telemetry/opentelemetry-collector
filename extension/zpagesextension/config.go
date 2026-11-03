@@ -36,7 +36,7 @@ type ExpvarConfig struct {
 
 // SupportBundleConfig has the configuration for the support bundle endpoint.
 type SupportBundleConfig struct {
-	// Enabled indicates whether to serve support bundles at /debug/supportbundle.
+	// Enabled indicates whether to serve support bundles at /debug/v1/supportbundle.
 	// (default = false)
 	Enabled bool `mapstructure:"enabled"`
 	// ArchiveName names the archive. The download file name starts with it, and

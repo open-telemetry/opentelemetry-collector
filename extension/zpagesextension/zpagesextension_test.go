@@ -229,7 +229,7 @@ func TestZPagesSupportBundle(t *testing.T) {
 	require.NoError(t, zpagesExt.Start(context.Background(), newZPagesHost()))
 	t.Cleanup(func() { require.NoError(t, zpagesExt.Shutdown(context.Background())) })
 
-	resp, err := http.Get("http://" + addr + "/debug/supportbundle")
+	resp, err := http.Get("http://" + addr + "/debug/v1/supportbundle")
 	require.NoError(t, err)
 	defer resp.Body.Close()
 	require.Equal(t, http.StatusOK, resp.StatusCode)
@@ -267,7 +267,7 @@ func TestZPagesSupportBundleDisabled(t *testing.T) {
 	require.NoError(t, zpagesExt.Start(context.Background(), newZPagesHost()))
 	t.Cleanup(func() { require.NoError(t, zpagesExt.Shutdown(context.Background())) })
 
-	resp, err := http.Get("http://" + addr + "/debug/supportbundle")
+	resp, err := http.Get("http://" + addr + "/debug/v1/supportbundle")
 	require.NoError(t, err)
 	defer resp.Body.Close()
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)

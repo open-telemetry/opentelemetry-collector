@@ -31,7 +31,7 @@ The following settings can be optionally configured:
 - `expvar`
   - `enabled` (default = false): Enable the expvar services. For detail see [ExpvarZ](#expvarz).
 - `support_bundle`: Configure the support bundle endpoint. For detail see [Support bundle](#support-bundle).
-  - `enabled` (default = false): Serve support bundles at `/debug/supportbundle`.
+  - `enabled` (default = false): Serve support bundles at `/debug/v1/supportbundle`.
   - `archive_name` (default = otelcol-support-bundle): The name of the archive.
     The download file name starts with it, and it is the name of the top
     directory in the archive.
@@ -104,7 +104,7 @@ contents can change in a future release.
 A support bundle is a zip archive of diagnostic files from the running
 collector. It can be collected when an issue is observed to help debug what is happening with your collector.
 
-Example URL: http://localhost:55679/debug/supportbundle
+Example URL: http://localhost:55679/debug/v1/supportbundle
 
 ```yaml
 extensions:
@@ -136,7 +136,7 @@ To run only some of the enabled gatherers, use the `gatherers` query parameter
 with a comma-separated list of names:
 
 ```sh
-curl -o bundle.zip 'http://localhost:55679/debug/supportbundle?gatherers=pprof'
+curl -o bundle.zip 'http://localhost:55679/debug/v1/supportbundle?gatherers=pprof'
 ```
 
 If a gatherer fails, the bundle holds the files from the other gatherers. If no
@@ -150,6 +150,8 @@ All files are in one top directory of the archive. Its name comes from
 
 `manifest.yaml` is always present. It holds:
 
+- `format`: The version of the bundle format. It is `v1`. A change that breaks
+  readers of the bundle uses a new version.
 - `bundle_id`: A unique ID for the bundle.
 - `capture`: The start and end time of the collection.
 - `collector`: The command, description and version of the collector build.

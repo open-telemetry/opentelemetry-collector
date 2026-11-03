@@ -21,9 +21,10 @@ import (
 )
 
 const (
-	tracezPath        = "tracez"
-	expvarzPath       = "expvarz"
-	supportBundlePath = "supportbundle"
+	tracezPath  = "tracez"
+	expvarzPath = "expvarz"
+	// The version lets a later breaking change use a new path.
+	supportBundlePath = "v1/supportbundle"
 )
 
 type zpagesExtension struct {
