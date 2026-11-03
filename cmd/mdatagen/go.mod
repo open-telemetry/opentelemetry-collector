@@ -46,13 +46,13 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.28.0
-	go.yaml.in/yaml/v3 v3.0.5
+	go.yaml.in/yaml/v3 v3.0.6
 	golang.org/x/text v0.43.0
 	golang.org/x/tools v0.52.0
 )
 
 require (
-	github.com/cenkalti/backoff/v7 v7.0.1 // indirect
+	github.com/cenkalti/backoff/v7 v7.0.3 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	go.opentelemetry.io/collector/client v1.70.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.70.0 // indirect
