@@ -6,11 +6,13 @@ package pprofile
 import (
 	"fmt"
 	"math/rand/v2"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -1056,6 +1058,21 @@ func TestProfilesMergeTo_EmptyDestination(t *testing.T) {
 	// The zero value entry plus one entry per distinct chain; the link is shared.
 	assert.Equal(t, 3, d.StackTable().Len())
 	assert.Equal(t, 2, d.LinkTable().Len())
+}
+
+// TestAddMissingZeroEntries_EveryTable fails when ProfilesDictionary gains a
+// table that addMissingZeroEntries does not cover, and checks that tables which
+// already have entries are left as they are.
+func TestAddMissingZeroEntries_EveryTable(t *testing.T) {
+	d := newProfilesDictionary(&internal.ProfilesDictionary{}, internal.NewState())
+	addMissingZeroEntries(d)
+	addMissingZeroEntries(d)
+
+	v := reflect.ValueOf(d.orig).Elem()
+	for i := range v.NumField() {
+		require.Equal(t, reflect.Slice, v.Field(i).Kind(), "every dictionary field is a table")
+		assert.Equal(t, 1, v.Field(i).Len(), "table %s must hold exactly its zero value entry", v.Type().Field(i).Name)
+	}
 }
 
 // newChainProfiles returns a Profiles with the zero value entries and one
