@@ -344,17 +344,6 @@ func (d *Sum) Unmarshal(parser *confmap.Conf) error {
 	return parser.Unmarshal(d, confmap.WithIgnoreUnused())
 }
 
-// TODO: Currently, this func will not be called because of https://github.com/open-telemetry/opentelemetry-collector/issues/6671. Uncomment function and
-// add a test case to Test_LoadMetadata for file no_monotonic.yaml once the issue is solved.
-//
-// Unmarshal is a custom unmarshaler for Mono.
-// func (m *Mono) Unmarshal(parser *confmap.Conf) error {
-// 	if !parser.IsSet("monotonic") {
-// 		return errors.New("missing required field: `monotonic`")
-// 	}
-// 	return parser.Unmarshal(m)
-// }
-
 func (d *Sum) Type() string {
 	return "Sum"
 }

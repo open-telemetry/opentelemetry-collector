@@ -215,7 +215,7 @@ type ServerConfig struct {
 	// (https://godoc.org/google.golang.org/grpc#WriteBufferSize).
 	WriteBufferSize int `mapstructure:"write_buffer_size,omitempty"`
 
-	// Represents a network endpoint address.
+	// NetAddr represents a network endpoint address.
 	NetAddr confignet.AddrConfig `mapstructure:",squash"`
 
 	// prevent unkeyed literal initialization
