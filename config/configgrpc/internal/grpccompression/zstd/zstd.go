@@ -84,9 +84,12 @@ func SetMaxRecvMsgSize(size int) {
 	if size <= 0 {
 		return
 	}
+	// Never allow more than the library's own ceiling, even when a peer is
+	// configured to accept larger messages.
+	window := min(uint64(size), uint64(zstd.MaxWindowSize))
 	for {
 		current := maxWindow.Load()
-		if uint64(size) <= current || maxWindow.CompareAndSwap(current, uint64(size)) {
+		if window <= current || maxWindow.CompareAndSwap(current, window) {
 			return
 		}
 	}

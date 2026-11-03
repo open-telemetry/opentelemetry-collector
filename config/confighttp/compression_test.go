@@ -1146,6 +1146,23 @@ func TestZstdDecodesFrameFromDefaultEncoder(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.Code)
 }
 
+func TestZstdWindowBound(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		maxBody int64
+		want    uint64
+	}{
+		{name: "unset", maxBody: 0, want: zstdDefaultEncoderWindow},
+		{name: "below default encoder window", maxBody: 1 << 20, want: zstdDefaultEncoderWindow},
+		{name: "above default encoder window", maxBody: 20 << 20, want: 20 << 20},
+		{name: "clamped to the library ceiling", maxBody: 1 << 30, want: zstd.MaxWindowSize},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, zstdWindowBound(tc.maxBody))
+		})
+	}
+}
+
 // allocatedBytes reports the bytes allocated while fn runs.
 func allocatedBytes(fn func()) uint64 {
 	var before, after runtime.MemStats

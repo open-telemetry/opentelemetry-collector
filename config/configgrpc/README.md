@@ -109,6 +109,8 @@ README](../confignet/README.md).
     - `timeout`
 - [`max_concurrent_streams`](https://godoc.org/google.golang.org/grpc#MaxConcurrentStreams)
 - [`max_recv_msg_size_mib`](https://godoc.org/google.golang.org/grpc#MaxRecvMsgSize)
+  - This also bounds the zstd decoder window. A compressed message declares a window in its frame header that the decoder allocates before producing any output, so a `zstd` frame declaring a larger window is rejected. The bound never drops below 8MiB, so frames from encoders with default settings keep decoding, and never rises above 512MiB, the library's ceiling.
+  - Setting `grpc.MaxRecvMsgSize` through [`WithGrpcServerOption`](https://pkg.go.dev/go.opentelemetry.io/collector/config/configgrpc#WithGrpcServerOption) instead of this field does not raise the decoder's window bound, so a client compressing with a window larger than the default bound will be rejected.
 - [`read_buffer_size`](https://godoc.org/google.golang.org/grpc#ReadBufferSize)
 - [`tls`](../configtls/README.md)
 - [`write_buffer_size`](https://godoc.org/google.golang.org/grpc#WriteBufferSize)

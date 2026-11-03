@@ -74,10 +74,7 @@ const zstdDefaultEncoderWindow = 8 * 1024 * 1024
 // unbounded decoder lets a tiny crafted frame allocate hundreds of megabytes
 // before http.MaxBytesReader sees a single decoded byte.
 func newZstdHandler(maxRequestBodySize int64) func(io.ReadCloser) (io.ReadCloser, error) {
-	maxWindow := uint64(zstdDefaultEncoderWindow)
-	if maxRequestBodySize > int64(maxWindow) {
-		maxWindow = uint64(maxRequestBodySize)
-	}
+	maxWindow := zstdWindowBound(maxRequestBodySize)
 	// Decoders are bound at creation, so each bound gets its own pool.
 	pool := &sync.Pool{}
 
@@ -101,6 +98,19 @@ func newZstdHandler(maxRequestBodySize int64) func(io.ReadCloser) (io.ReadCloser
 		}
 		return &pooledZstdReadCloser{inner: zr, pool: pool}, nil
 	}
+}
+
+// zstdWindowBound returns the largest window a zstd decoder may allocate for a
+// server that accepts maxRequestBodySize bytes. It never goes below
+// zstdDefaultEncoderWindow, so frames from default encoders still decode, and
+// never above zstd.MaxWindowSize, so configuring a larger body size cannot make
+// the decoder allocate more than the library allows by default.
+func zstdWindowBound(maxRequestBodySize int64) uint64 {
+	bound := uint64(zstdDefaultEncoderWindow)
+	if maxRequestBodySize > int64(bound) {
+		bound = uint64(maxRequestBodySize)
+	}
+	return min(bound, uint64(zstd.MaxWindowSize))
 }
 
 var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, error){

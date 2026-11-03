@@ -334,6 +334,9 @@ func TestSetMaxRecvMsgSizeRaisesWindowBound(t *testing.T) {
 
 	SetMaxRecvMsgSize(4 << 20)
 	assert.Equal(t, uint64(64<<20), maxWindow.Load(), "a smaller peer limit must not tighten the bound")
+
+	SetMaxRecvMsgSize(1 << 30)
+	assert.Equal(t, uint64(kzstd.MaxWindowSize), maxWindow.Load(), "the bound must be clamped to the library ceiling")
 }
 
 // allocatedBytes reports the bytes allocated while fn runs.
