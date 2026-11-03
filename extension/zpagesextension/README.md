@@ -99,8 +99,9 @@ Example URL: http://localhost:55679/debug/expvarz
 
 ## Support bundle
 
-The support bundle is in **alpha**. Its config, its endpoint and the bundle
-contents can change in a future release.
+> [!WARNING]
+> The support bundle is in **alpha**. Its config, its endpoint and the bundle
+> contents can change in a future release.
 
 A support bundle is a zip archive of diagnostic files from the running
 collector. It can be collected when an issue is observed to help debug what is happening with your collector.
@@ -118,6 +119,10 @@ extensions:
 
 The bundle can hold sensitive data about the collector and its host.
 
+- The endpoint is **not** protected against denial-of-service attacks. Each
+  request collects profiles and builds the archive in memory, which uses CPU
+  and memory. The one-bundle-at-a-time limit restricts concurrent requests,
+  not how often requests arrive.
 - Do not expose this endpoint to the public Internet. Keep the default
   `localhost` endpoint, or use TLS and an `auth` extension.
 - Treat a downloaded bundle as sensitive data and be careful how you store and share it.
