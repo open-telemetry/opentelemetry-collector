@@ -116,6 +116,11 @@ func (b *ProcessorBuilder) Factory(componentType component.Type) component.Facto
 	return b.factories[componentType]
 }
 
+// Config returns the component.Config registered for the given component ID, or nil if not found.
+func (b *ProcessorBuilder) Config(id component.ID) component.Config {
+	return b.cfgs[id]
+}
+
 // NewNopProcessorConfigsAndFactories returns a configuration and factories that allows building a new nop processor.
 func NewNopProcessorConfigsAndFactories() (map[component.ID]component.Config, map[component.Type]processor.Factory) {
 	nopFactory := processortest.NewNopFactory()

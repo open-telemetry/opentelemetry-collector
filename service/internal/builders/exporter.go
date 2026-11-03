@@ -102,6 +102,11 @@ func (b *ExporterBuilder) Factory(componentType component.Type) component.Factor
 	return b.factories[componentType]
 }
 
+// Config returns the component.Config registered for the given component ID, or nil if not found.
+func (b *ExporterBuilder) Config(id component.ID) component.Config {
+	return b.cfgs[id]
+}
+
 // NewNopExporterConfigsAndFactories returns a configuration and factories that allows building a new nop exporter.
 func NewNopExporterConfigsAndFactories() (map[component.ID]component.Config, map[component.Type]exporter.Factory) {
 	nopFactory := exportertest.NewNopFactory()

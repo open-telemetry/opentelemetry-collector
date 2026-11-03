@@ -92,6 +92,7 @@ func Build(ctx context.Context, set Settings) (*Graph, error) {
 		return nil, err
 	}
 	pipelines.createEdges()
+	warnDoubleBatching(set.Telemetry.Logger, set.PipelineConfigs, set.ExporterBuilder)
 	err := pipelines.buildComponents(ctx, set)
 	return pipelines, err
 }
