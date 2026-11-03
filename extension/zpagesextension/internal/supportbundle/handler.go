@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"path"
 	"strings"
@@ -76,8 +77,10 @@ func (b *Bundler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	m := newManifest(uuid.NewString(), start, end, b.set.BuildInfo, b.set.Resource, res)
-	body, err := writeZip(b.set.ArchiveName, m, res.files)
-	if err != nil {
+	// Build the archive in memory, so that a failure can still send an error
+	// status instead of a partial archive.
+	var body bytes.Buffer
+	if err := writeZip(&body, b.set.ArchiveName, m, res.files); err != nil {
 		b.set.Logger.Error("Support bundle not generated", zap.Error(err))
 		http.Error(w, "failed to write the support bundle", http.StatusInternalServerError)
 		return
@@ -88,7 +91,7 @@ func (b *Bundler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
 	// The bundle can hold sensitive data, so no cache may keep a copy.
 	w.Header().Set("Cache-Control", "no-store")
-	if _, err := w.Write(body); err != nil {
+	if _, err := w.Write(body.Bytes()); err != nil {
 		b.set.Logger.Warn("Failed to send the support bundle", zap.String("bundle_id", m.BundleID), zap.Error(err))
 		return
 	}
@@ -132,14 +135,13 @@ func failureText(err error, sel Selection) string {
 	return sb.String()
 }
 
-func writeZip(rootDir string, m Manifest, files []gatheredFile) ([]byte, error) {
+func writeZip(w io.Writer, rootDir string, m Manifest, files []gatheredFile) error {
 	manifest, err := yaml.Marshal(m)
 	if err != nil {
-		return nil, fmt.Errorf("marshal manifest: %w", err)
+		return fmt.Errorf("marshal manifest: %w", err)
 	}
 
-	var buf bytes.Buffer
-	zw := zip.NewWriter(&buf)
+	zw := zip.NewWriter(w)
 	write := func(name string, modified time.Time, content []byte) error {
 		fw, err := zw.CreateHeader(&zip.FileHeader{
 			Name:     path.Join(rootDir, name),
@@ -154,15 +156,12 @@ func writeZip(rootDir string, m Manifest, files []gatheredFile) ([]byte, error) 
 	}
 
 	if err := write(manifestPath, m.Capture.End, manifest); err != nil {
-		return nil, err
+		return err
 	}
 	for _, f := range files {
 		if err := write(f.Path, f.collectedAt, f.Content); err != nil {
-			return nil, err
+			return err
 		}
 	}
-	if err := zw.Close(); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	return zw.Close()
 }

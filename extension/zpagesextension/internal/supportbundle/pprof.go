@@ -27,13 +27,10 @@ func (PProfGatherer) Gather(ctx context.Context) ([]File, error) {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		p := pprof.Lookup(name)
-		if p == nil {
-			return nil, fmt.Errorf("profile %q not found", name)
-		}
 		var buf bytes.Buffer
+		// The runtime always defines these profiles, so Lookup cannot return nil.
 		// A debug value of 0 writes the gzipped protobuf format that "go tool pprof" reads.
-		if err := p.WriteTo(&buf, 0); err != nil {
+		if err := pprof.Lookup(name).WriteTo(&buf, 0); err != nil {
 			return nil, fmt.Errorf("write %s profile: %w", name, err)
 		}
 		files = append(files, File{Path: "pprof/" + name + ".pprof", Content: buf.Bytes()})

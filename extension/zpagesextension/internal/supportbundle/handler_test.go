@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand/v2"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -20,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 	"go.yaml.in/yaml/v3"
 
 	"go.opentelemetry.io/collector/component"
@@ -276,6 +278,71 @@ func TestServeLogsSkippedWithManifestKeys(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, get(t, b, "?gatherers=a,nope").Code)
 	assert.Contains(t, logs.String(), `"skipped":[{"name":"nope","reason":"unknown"}]`)
+}
+
+// failingResponseWriter accepts headers but fails every body write.
+type failingResponseWriter struct {
+	*httptest.ResponseRecorder
+}
+
+func (failingResponseWriter) Write([]byte) (int, error) {
+	return 0, errors.New("connection reset")
+}
+
+func TestServeResponseWriteError(t *testing.T) {
+	core, logs := observer.New(zap.InfoLevel)
+	b := NewBundler(Settings{ArchiveName: archiveName, Logger: zap.New(core)},
+		[]Entry{{Gatherer: newFake("a", "a.txt"), Enabled: true}})
+
+	b.ServeHTTP(failingResponseWriter{httptest.NewRecorder()},
+		httptest.NewRequest(http.MethodGet, "/debug/v1/supportbundle", http.NoBody))
+
+	require.Equal(t, 1, logs.Len())
+	entry := logs.All()[0]
+	assert.Equal(t, "Failed to send the support bundle", entry.Message)
+	assert.Equal(t, "connection reset", entry.ContextMap()["error"])
+}
+
+// limitWriter accepts n bytes and then fails.
+type limitWriter struct {
+	n int
+}
+
+func (w *limitWriter) Write(p []byte) (int, error) {
+	if len(p) > w.n {
+		written := w.n
+		w.n = 0
+		return written, errors.New("write limit reached")
+	}
+	w.n -= len(p)
+	return len(p), nil
+}
+
+func TestWriteZipWriteErrors(t *testing.T) {
+	// Random content does not compress, so the archive holds the full size and
+	// every write reaches the output.
+	rnd := rand.New(rand.NewPCG(1, 2))
+	newContent := func() []byte {
+		content := make([]byte, 32*1024)
+		for i := range content {
+			content[i] = byte(rnd.Uint32())
+		}
+		return content
+	}
+	files := []gatheredFile{
+		{File: File{Path: "a.bin", Content: newContent()}, gatherer: "a"},
+		{File: File{Path: "b.bin", Content: newContent()}, gatherer: "b"},
+	}
+	m := Manifest{Format: formatVersion, BundleID: "id"}
+
+	var full bytes.Buffer
+	require.NoError(t, writeZip(&full, archiveName, m, files))
+
+	// The archive must fail at every point where the output stops accepting data.
+	for limit := 0; limit < full.Len(); limit += full.Len()/64 + 1 {
+		require.Error(t, writeZip(&limitWriter{n: limit}, archiveName, m, files), "limit %d", limit)
+	}
+	assert.NoError(t, writeZip(&limitWriter{n: full.Len()}, archiveName, m, files))
 }
 
 func TestServeMethodNotAllowed(t *testing.T) {

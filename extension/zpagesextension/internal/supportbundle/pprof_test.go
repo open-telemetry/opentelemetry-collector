@@ -31,6 +31,10 @@ func TestPProfGatherer(t *testing.T) {
 	}
 }
 
+func TestPProfGathererName(t *testing.T) {
+	assert.Equal(t, PProfName, PProfGatherer{}.Name())
+}
+
 func TestPProfGathererCanceled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
