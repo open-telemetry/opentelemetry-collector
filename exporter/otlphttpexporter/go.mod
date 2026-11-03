@@ -35,7 +35,7 @@ require (
 
 require (
 	github.com/Microsoft/go-winio v0.6.4 // indirect
-	github.com/cenkalti/backoff/v7 v7.0.1 // indirect
+	github.com/cenkalti/backoff/v7 v7.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20260902202739-8c9c2d1005f4 // indirect
