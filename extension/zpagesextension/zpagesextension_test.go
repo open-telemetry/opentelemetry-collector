@@ -215,11 +215,10 @@ func TestZPagesSupportBundle(t *testing.T) {
 				Transport: confignet.TransportTypeTCP,
 			},
 		},
-		SupportBundle: SupportBundleConfig{
-			Enabled:     true,
+		SupportBundle: configoptional.Some(SupportBundleConfig{
 			ArchiveName: "my-bundle",
 			Gatherers:   GatherersConfig{PProf: GathererConfig{Enabled: true}},
-		},
+		}),
 	}
 	set := newZpagesTelemetrySettings()
 	set.Resource.Attributes().PutStr("service.instance.id", "instance-1")

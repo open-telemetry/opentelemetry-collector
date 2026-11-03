@@ -27,9 +27,6 @@ $defs:
       archive_name:
         description: ArchiveName names the archive. The download file name starts with it, and it is the name of the top directory in the archive. (default = otelcol-support-bundle)
         type: string
-      enabled:
-        description: Enabled indicates whether to serve support bundles at /debug/v1/supportbundle. (default = false)
-        type: boolean
       gatherers:
         description: Gatherers enables or disables each gatherer. A request can select only enabled gatherers.
         $ref: gatherers_config
@@ -39,7 +36,8 @@ properties:
   expvar:
     $ref: expvar_config
   support_bundle:
-    description: SupportBundle configures the support bundle endpoint.
+    description: SupportBundle configures the support bundle endpoint at /debug/v1/supportbundle. The extension serves the endpoint only when this section is set.
+    x-optional: true
     $ref: support_bundle_config
 allOf:
   - $ref: /config/confighttp.server_config

@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/zpagesextension/internal/metadata"
 )
@@ -27,12 +28,12 @@ func createDefaultConfig() component.Config {
 	serverConfig.NetAddr.Endpoint = defaultEndpoint
 	return &Config{
 		ServerConfig: serverConfig,
-		SupportBundle: SupportBundleConfig{
+		SupportBundle: configoptional.Default(SupportBundleConfig{
 			ArchiveName: defaultSupportBundleArchiveName,
 			Gatherers: GatherersConfig{
 				PProf: GathererConfig{Enabled: true},
 			},
-		},
+		}),
 	}
 }
 

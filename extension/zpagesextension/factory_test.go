@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension/internal/metadata"
 	"go.opentelemetry.io/collector/internal/testutil"
@@ -25,10 +26,10 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
 		ServerConfig: expectedServerConfig,
-		SupportBundle: SupportBundleConfig{
+		SupportBundle: configoptional.Default(SupportBundleConfig{
 			ArchiveName: "otelcol-support-bundle",
 			Gatherers:   GatherersConfig{PProf: GathererConfig{Enabled: true}},
-		},
+		}),
 	}, cfg)
 
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))

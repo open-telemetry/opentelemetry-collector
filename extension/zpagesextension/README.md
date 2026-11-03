@@ -30,8 +30,9 @@ The following settings can be optionally configured:
 
 - `expvar`
   - `enabled` (default = false): Enable the expvar services. For detail see [ExpvarZ](#expvarz).
-- `support_bundle`: Configure the support bundle endpoint. For detail see [Support bundle](#support-bundle).
-  - `enabled` (default = false): Serve support bundles at `/debug/v1/supportbundle`.
+- `support_bundle` (default = not set): Serve support bundles at
+  `/debug/v1/supportbundle`. The endpoint is off when this section is not set
+  or has `enabled: false`. For detail see [Support bundle](#support-bundle).
   - `archive_name` (default = otelcol-support-bundle): The name of the archive.
     The download file name starts with it, and it is the name of the top
     directory in the archive.
@@ -109,8 +110,8 @@ Example URL: http://localhost:55679/debug/v1/supportbundle
 ```yaml
 extensions:
   zpages:
+    # An empty section turns on the support bundle with the default settings.
     support_bundle:
-      enabled: true
 ```
 
 ### Security

@@ -78,8 +78,8 @@ func (zpe *zpagesExtension) Start(ctx context.Context, host component.Host) erro
 		zpe.telemetry.Logger.Info("Registered zPages expvar handler")
 	}
 
-	if zpe.config.SupportBundle.Enabled {
-		zPagesMux.Handle(path.Join("/debug", supportBundlePath), zpe.newBundleGenerator())
+	if zpe.config.SupportBundle.HasValue() {
+		zPagesMux.Handle(path.Join("/debug", supportBundlePath), zpe.newBundleGenerator(zpe.config.SupportBundle.Get()))
 		zpe.telemetry.Logger.Info("Registered zPages support bundle handler")
 	}
 
@@ -137,21 +137,20 @@ func (zpe *zpagesExtension) Shutdown(context.Context) error {
 	return err
 }
 
-func (zpe *zpagesExtension) newBundleGenerator() *supportbundle.Bundler {
+func (zpe *zpagesExtension) newBundleGenerator(cfg *SupportBundleConfig) *supportbundle.Bundler {
 	resource := map[string]string{}
 	for k, v := range zpe.telemetry.Resource.Attributes().All() {
 		resource[k] = v.AsString()
 	}
-	gatherers := zpe.config.SupportBundle.Gatherers
 	return supportbundle.NewBundler(
 		supportbundle.Settings{
-			ArchiveName: zpe.config.SupportBundle.ArchiveName,
+			ArchiveName: cfg.ArchiveName,
 			BuildInfo:   zpe.buildInfo,
 			Resource:    resource,
 			Logger:      zpe.telemetry.Logger,
 		},
 		[]supportbundle.Entry{
-			{Gatherer: supportbundle.PProfGatherer{}, Enabled: gatherers.PProf.Enabled},
+			{Gatherer: supportbundle.PProfGatherer{}, Enabled: cfg.Gatherers.PProf.Enabled},
 		},
 	)
 }
