@@ -298,6 +298,29 @@ func TestCloseAfterPartialReadReleasesDecoder(t *testing.T) {
 	assert.Len(t, resetArgs, 1, "a second Close must not release the decoder again")
 }
 
+func TestDecoderMaxWindow(t *testing.T) {
+	old := maxWindow.Load()
+	t.Cleanup(func() { maxWindow.Store(old) })
+	maxWindow.Store(defaultEncoderWindow)
+
+	assert.Equal(t, uint64(defaultEncoderWindow), DecoderMaxWindow())
+
+	SetMaxRecvMsgSize(32 << 20)
+	assert.Equal(t, uint64(32<<20), DecoderMaxWindow())
+}
+
+func TestTakeDecoderDropsDecoderBuiltWithAnotherWindow(t *testing.T) {
+	stale, err := kzstd.NewReader(bytes.NewReader(nil), decoderOptions...)
+	require.NoError(t, err)
+
+	c := &compressor{}
+	c.decoderPool.New = func() any { return &pooledDecoder{decoder: stale, window: 1 << 20} }
+
+	// Raising the bound must not hand back a decoder that would reject a frame
+	// the new bound allows.
+	assert.Nil(t, c.takeDecoder(defaultEncoderWindow))
+}
+
 func TestSetMaxRecvMsgSizeRaisesWindowBound(t *testing.T) {
 	old := maxWindow.Load()
 	t.Cleanup(func() { maxWindow.Store(old) })
