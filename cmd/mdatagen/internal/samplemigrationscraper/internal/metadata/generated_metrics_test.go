@@ -310,8 +310,15 @@ func TestVersionedMetrics(t *testing.T) {
 }
 
 // setFeatureGateForTest sets the gate for the duration of the test and restores its previous state afterwards.
+// It skips the test if the gate's stage does not allow the requested state.
 func setFeatureGateForTest(t *testing.T, gate *featuregate.Gate, enabled bool) {
 	t.Helper()
+	if gate.IsEnabled() == enabled {
+		return
+	}
+	if stage := gate.Stage(); stage == featuregate.StageStable || stage == featuregate.StageDeprecated {
+		t.Skipf("feature gate %q is %s and cannot be set to %t", gate.ID(), stage, enabled)
+	}
 	prev := gate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
 	t.Cleanup(func() {

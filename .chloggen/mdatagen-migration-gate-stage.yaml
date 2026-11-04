@@ -18,6 +18,7 @@ issues: [16249]
 subtext: |
   The generated tests now explicitly set the migration feature gates for each test case and restore
   their previous state on cleanup, instead of assuming the gates are disabled by default.
+  Test cases that need a state the gate's stage does not allow, such as disabling a stable gate, are skipped.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
