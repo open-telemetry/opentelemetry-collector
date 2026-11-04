@@ -6,20 +6,14 @@ $defs:
       enabled:
         description: Enabled indicates whether to enable expvar service. (default = false)
         type: boolean
-  gatherer_config:
-    description: GathererConfig has the configuration that every gatherer shares.
-    type: object
-    properties:
-      enabled:
-        description: Enabled indicates whether the gatherer can run. (default = true)
-        type: boolean
   gatherers_config:
-    description: GatherersConfig has the configuration for each support bundle gatherer.
+    description: 'GatherersConfig has the configuration for each support bundle gatherer. Set "enabled: false" on a gatherer to disable it.'
     type: object
     properties:
       pprof:
-        description: PProf collects point-in-time heap and goroutine profiles.
-        $ref: gatherer_config
+        description: PProf collects point-in-time heap and goroutine profiles. (default = enabled)
+        x-optional: true
+        $ref: p_prof_config
   support_bundle_config:
     description: SupportBundleConfig has the configuration for the support bundle endpoint.
     type: object

@@ -44,7 +44,7 @@ func TestUnmarshalConfig(t *testing.T) {
 func TestUnmarshalConfigWithSupportBundle(t *testing.T) {
 	defaults := SupportBundleConfig{
 		ArchiveName: "otelcol-support-bundle",
-		Gatherers:   GatherersConfig{PProf: GathererConfig{Enabled: true}},
+		Gatherers:   GatherersConfig{PProf: configoptional.Some(PProfConfig{})},
 	}
 	tests := []struct {
 		name string
@@ -76,6 +76,30 @@ func TestUnmarshalConfigWithSupportBundle(t *testing.T) {
 			}
 			require.True(t, sb.HasValue())
 			assert.Equal(t, tt.want, sb.Get())
+		})
+	}
+}
+
+func TestUnmarshalGathererConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		pprof   map[string]any
+		enabled bool
+	}{
+		{name: "absent", pprof: map[string]any{}, enabled: true},
+		{name: "empty", pprof: map[string]any{"pprof": nil}, enabled: true},
+		{name: "enabled", pprof: map[string]any{"pprof": map[string]any{"enabled": true}}, enabled: true},
+		{name: "disabled", pprof: map[string]any{"pprof": map[string]any{"enabled": false}}, enabled: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := NewFactory().CreateDefaultConfig()
+			raw := map[string]any{"support_bundle": map[string]any{"gatherers": tt.pprof}}
+			require.NoError(t, confmap.NewFromStringMap(raw).Unmarshal(&cfg))
+
+			sb := cfg.(*Config).SupportBundle
+			require.True(t, sb.HasValue())
+			assert.Equal(t, tt.enabled, sb.Get().Gatherers.PProf.HasValue())
 		})
 	}
 }

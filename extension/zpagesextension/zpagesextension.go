@@ -150,7 +150,7 @@ func (zpe *zpagesExtension) newBundleGenerator(cfg *SupportBundleConfig) *suppor
 			Logger:      zpe.telemetry.Logger,
 		},
 		[]supportbundle.Entry{
-			{Gatherer: supportbundle.PProfGatherer{}, Enabled: cfg.Gatherers.PProf.Enabled},
+			{Gatherer: supportbundle.PProfGatherer{}, Enabled: cfg.Gatherers.PProf.HasValue()},
 		},
 	)
 }

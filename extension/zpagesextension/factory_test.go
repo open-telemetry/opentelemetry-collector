@@ -28,7 +28,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 		ServerConfig: expectedServerConfig,
 		SupportBundle: configoptional.Default(SupportBundleConfig{
 			ArchiveName: "otelcol-support-bundle",
-			Gatherers:   GatherersConfig{PProf: GathererConfig{Enabled: true}},
+			Gatherers:   GatherersConfig{PProf: configoptional.Some(PProfConfig{})},
 		}),
 	}, cfg)
 

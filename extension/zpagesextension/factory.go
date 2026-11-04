@@ -30,8 +30,9 @@ func createDefaultConfig() component.Config {
 		ServerConfig: serverConfig,
 		SupportBundle: configoptional.Default(SupportBundleConfig{
 			ArchiveName: defaultSupportBundleArchiveName,
+			// Some, not Default, keeps a gatherer on until the user disables it.
 			Gatherers: GatherersConfig{
-				PProf: GathererConfig{Enabled: true},
+				PProf: configoptional.Some(PProfConfig{}),
 			},
 		}),
 	}

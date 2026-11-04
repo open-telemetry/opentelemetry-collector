@@ -50,19 +50,18 @@ type SupportBundleConfig struct {
 	_ struct{}
 }
 
-// GatherersConfig has the configuration for each support bundle gatherer.
+// GatherersConfig has the configuration for each support bundle gatherer. Set
+// "enabled: false" on a gatherer to disable it.
 type GatherersConfig struct {
 	// PProf collects point-in-time heap and goroutine profiles.
-	PProf GathererConfig `mapstructure:"pprof"`
+	// (default = enabled)
+	PProf configoptional.Optional[PProfConfig] `mapstructure:"pprof"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
-// GathererConfig has the configuration that every gatherer shares.
-type GathererConfig struct {
-	// Enabled indicates whether the gatherer can run.
-	// (default = true)
-	Enabled bool `mapstructure:"enabled"`
+// PProfConfig has the configuration for the pprof gatherer.
+type PProfConfig struct {
 	// prevent unkeyed literal initialization
 	_ struct{}
 }

@@ -217,7 +217,7 @@ func TestZPagesSupportBundle(t *testing.T) {
 		},
 		SupportBundle: configoptional.Some(SupportBundleConfig{
 			ArchiveName: "my-bundle",
-			Gatherers:   GatherersConfig{PProf: GathererConfig{Enabled: true}},
+			Gatherers:   GatherersConfig{PProf: configoptional.Some(PProfConfig{})},
 		}),
 	}
 	set := newZpagesTelemetrySettings()
