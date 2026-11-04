@@ -194,6 +194,80 @@ func TestResolvePreservesAnnotations(t *testing.T) {
 	assert.True(t, resolved.(*ObjectSchemaElement).IsPointer)
 }
 
+func TestResolveLocalRefDoesNotShareAnnotationsBetweenOccurrences(t *testing.T) {
+	cfg := &Config{Mode: Component, Namespace: "example.com/mod", AllowedRefs: []string{"example.com/mod"}}
+
+	root := CreateSchema()
+	inner := CreateObjectField("")
+	inner.AddProperty("x", CreateSimpleField(SchemaTypeString, ""))
+	root.Defs["inner_type"] = inner
+
+	first := CreateRefField("inner_type", "first description")
+	first.IsOptional = true
+	root.AddProperty("first", first)
+
+	second := CreateRefField("inner_type", "second description")
+	second.IsPointer = true
+	root.AddProperty("second", second)
+
+	got, err := resolverWithStub(cfg, nil).Resolve(root)
+	require.NoError(t, err)
+
+	firstResolved, ok := got.Properties["first"].(*ObjectSchemaElement)
+	require.True(t, ok)
+	secondResolved, ok := got.Properties["second"].(*ObjectSchemaElement)
+	require.True(t, ok)
+
+	assert.Equal(t, "first description", firstResolved.Description)
+	assert.True(t, firstResolved.IsOptional)
+	assert.False(t, firstResolved.IsPointer)
+
+	assert.Equal(t, "second description", secondResolved.Description)
+	assert.False(t, secondResolved.IsOptional)
+	assert.True(t, secondResolved.IsPointer)
+
+	assert.NotSame(t, firstResolved, secondResolved)
+}
+
+func TestResolveExternalRefDoesNotShareAnnotationsBetweenOccurrences(t *testing.T) {
+	cfg := &Config{Mode: Component, Namespace: "example.com/mod", AllowedRefs: []string{"example.com/mod"}}
+
+	extSchema := CreateSchema()
+	extObj := CreateObjectField("")
+	extObj.AddProperty("port", CreateSimpleField(SchemaTypeInteger, ""))
+	extSchema.Defs["ServerConfig"] = extObj
+
+	root := CreateSchema()
+
+	first := CreateRefField("example.com/mod/sub.ServerConfig", "first description")
+	first.IsOptional = true
+	root.AddProperty("first", first)
+
+	second := CreateRefField("example.com/mod/sub.ServerConfig", "second description")
+	second.IsPointer = true
+	root.AddProperty("second", second)
+
+	got, err := resolverWithStub(cfg, map[string]*Schema{
+		"example.com/mod/sub": extSchema,
+	}).Resolve(root)
+	require.NoError(t, err)
+
+	firstResolved, ok := got.Properties["first"].(*ObjectSchemaElement)
+	require.True(t, ok)
+	secondResolved, ok := got.Properties["second"].(*ObjectSchemaElement)
+	require.True(t, ok)
+
+	assert.Equal(t, "first description", firstResolved.Description)
+	assert.True(t, firstResolved.IsOptional)
+	assert.False(t, firstResolved.IsPointer)
+
+	assert.Equal(t, "second description", secondResolved.Description)
+	assert.False(t, secondResolved.IsOptional)
+	assert.True(t, secondResolved.IsPointer)
+
+	assert.NotSame(t, firstResolved, secondResolved)
+}
+
 func TestNotFoundError(t *testing.T) {
 	assert.Equal(t, `reference type "Foo" not found`, (&NotFoundError{TypeName: "Foo"}).Error())
 	assert.Equal(t, `reference type "Foo" not found in package "a/b"`, (&NotFoundError{TypeName: "Foo", PackageName: "a/b"}).Error())

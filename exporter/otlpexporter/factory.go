@@ -49,7 +49,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutConfig: exporterhelper.NewDefaultTimeoutConfig(),
 		RetryConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueConfig:   configoptional.Some(exporterhelper.NewDefaultQueueConfig()),
+		QueueConfig:   metadata.NewDefaultSendingQueueConfig(),
 		ClientConfig:  clientCfg,
 	}
 }

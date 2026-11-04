@@ -25,6 +25,9 @@ type QueueBatchConfig = queuebatch.Config
 // BatchConfig defines a configuration for batching requests based on a timeout and a minimum number of items.
 type BatchConfig = queuebatch.BatchConfig
 
+// PartitionConfig defines a configuration for partitioning requests based on metadata keys.
+type PartitionConfig = queuebatch.PartitionConfig
+
 // QueueBatchEncoding defines the encoding to be used if persistent queue is configured.
 // Duplicate definition with queuebatch.Encoding since aliasing generics is not supported by default.
 type QueueBatchEncoding[T any] interface {
@@ -40,3 +43,9 @@ var ErrQueueIsFull = queue.ErrQueueIsFull
 // NewDefaultQueueConfig returns the default config for QueueBatchConfig.
 // By default, the queue stores 1000 requests of telemetry and is non-blocking when full.
 var NewDefaultQueueConfig = internal.NewDefaultQueueConfig
+
+// NewDefaultBatchConfig returns the default config for BatchConfig.
+var NewDefaultBatchConfig = queuebatch.NewDefaultBatchConfig
+
+// NewDefaultPartitionConfig returns the default config for PartitionConfig.
+var NewDefaultPartitionConfig = queuebatch.NewDefaultPartitionConfig

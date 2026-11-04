@@ -11,10 +11,6 @@ import (
 // ClientConfig contains TLS configurations that are specific to client connections in addition to the common configurations.
 // This should be used by components configuring TLS client connections.
 type ClientConfig struct {
-	// Exposes the common client and server TLS configurations.
-	// Note: Since there isn''t anything specific to a server connection. Components with server connections should use Config.
-	Config `mapstructure:",squash"`
-
 	// Insecure in gRPC and HTTP when set to true, this is used to disable the client transport security.
 	// See https://godoc.org/google.golang.org/grpc#WithInsecure for gRPC.
 	// Please refer to https://godoc.org/crypto/tls#Config for more information. (optional, default false)
@@ -27,11 +23,16 @@ type ClientConfig struct {
 	// Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)
 	ServerName string `mapstructure:"server_name_override,omitempty"`
 
+	// Exposes the common client and server TLS configurations.
+	// Note: Since there isn''t anything specific to a server connection. Components with server connections should use Config.
+	Config `mapstructure:",squash"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
-// NewDefaultClientConfig returns a new ClientConfig with default values consistent with the annotations in the schema.
+// NewDefaultClientConfig returns a new ClientConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
 		Config: NewDefaultConfig(),
@@ -58,15 +59,15 @@ type Config struct {
 	// See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.
 	CipherSuites []string `mapstructure:"cipher_suites,omitempty"`
 
-	// CurvePreferences contains the elliptic curves that will be used in an ECDHE handshake,
-	// in preference order Defaults to empty list and "crypto/tls" defaults are used, internally.
-	CurvePreferences []string `mapstructure:"curve_preferences,omitempty"`
-
 	// IncludeInsecureCipherSuites enables support for insecure cipher suites. When set to true, cipher suites returned by
 	// tls.InsecureCipherSuites() will be available for selection in addition to the secure ones.
 	// This should only be used when working with legacy systems that require insecure cipher suites.
 	// (optional, default false)
 	IncludeInsecureCipherSuites bool `mapstructure:"include_insecure_cipher_suites,omitempty"`
+
+	// CurvePreferences contains the elliptic curves that will be used in an ECDHE handshake,
+	// in preference order Defaults to empty list and "crypto/tls" defaults are used, internally.
+	CurvePreferences []string `mapstructure:"curve_preferences,omitempty"`
 
 	// IncludeSystemCACertsPool if true, load system CA certificates pool in addition to the certificates configured in this struct.
 	IncludeSystemCACertsPool bool `mapstructure:"include_system_ca_certs_pool,omitempty"`
@@ -93,7 +94,8 @@ type Config struct {
 	_ struct{}
 }
 
-// NewDefaultConfig returns a new Config with default values consistent with the annotations in the schema.
+// NewDefaultConfig returns a new Config with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultConfig() Config {
 	return Config{}
 }
@@ -101,10 +103,6 @@ func NewDefaultConfig() Config {
 // ServerConfig contains TLS configurations that are specific to server connections in addition to the common configurations.
 // This should be used by components configuring TLS server connections.
 type ServerConfig struct {
-	// Exposes the common client and server TLS configurations.
-	// Note: Since there isn''t anything specific to a server connection. Components with server connections should use Config.
-	Config `mapstructure:",squash"`
-
 	// ClientCAFile path to the TLS cert to use by the server to verify a client certificate. (optional)
 	// This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig.
 	// Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)
@@ -113,11 +111,16 @@ type ServerConfig struct {
 	// ReloadClientCAFile reload the ClientCAs file when it is modified (optional, default false)
 	ReloadClientCAFile bool `mapstructure:"client_ca_file_reload,omitempty"`
 
+	// Exposes the common client and server TLS configurations.
+	// Note: Since there isn''t anything specific to a server connection. Components with server connections should use Config.
+	Config `mapstructure:",squash"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
-// NewDefaultServerConfig returns a new ServerConfig with default values consistent with the annotations in the schema.
+// NewDefaultServerConfig returns a new ServerConfig with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultServerConfig() ServerConfig {
 	return ServerConfig{
 		Config: NewDefaultConfig(),

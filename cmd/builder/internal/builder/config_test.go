@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -373,6 +374,138 @@ func TestBuildTagConfig(t *testing.T) {
 	}
 	require.NoError(t, cfg.Validate())
 	assert.Equal(t, "customTag", cfg.Distribution.BuildTags)
+}
+
+// wantOmitTags returns the expected comma-joined omit_detector_<name> tags for every
+// knownResourceDetectors entry not present in keep, preserving knownResourceDetectors order.
+func wantOmitTags(keep ...string) string {
+	keepSet := make(map[string]struct{}, len(keep))
+	for _, k := range keep {
+		keepSet[k] = struct{}{}
+	}
+	var tags []string
+	for _, name := range knownResourceDetectors {
+		if _, ok := keepSet[name]; !ok {
+			tags = append(tags, omitDetectorBuildTag+name)
+		}
+	}
+	return strings.Join(tags, ",")
+}
+
+func TestDistributionBuildTags(t *testing.T) {
+	tests := []struct {
+		name string
+		dist Distribution
+		want string
+	}{
+		{
+			name: "no build tags or detectors",
+			dist: Distribution{},
+			want: "",
+		},
+		{
+			name: "build tags only, no detectors configured leaves all detectors in",
+			dist: Distribution{BuildTags: "customTag"},
+			want: "customTag",
+		},
+		{
+			name: "detectors configured omits every other known detector",
+			dist: Distribution{
+				Resource: Resource{
+					Detection: ResourceDetection{
+						Detectors: []ResourceDetector{
+							{"system": nil},
+							{"env": nil},
+						},
+					},
+				},
+			},
+			want: wantOmitTags("system", "env"),
+		},
+		{
+			name: "build tags and detectors combined",
+			dist: Distribution{
+				BuildTags: "customTag",
+				Resource: Resource{
+					Detection: ResourceDetection{
+						Detectors: []ResourceDetector{
+							{"gcp": nil},
+						},
+					},
+				},
+			},
+			want: "customTag," + wantOmitTags("gcp"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.dist.buildTags())
+		})
+	}
+}
+
+func TestValidateResourceDetectors(t *testing.T) {
+	tests := []struct {
+		name      string
+		detectors []ResourceDetector
+		wantErr   error
+	}{
+		{
+			name:      "no detectors configured",
+			detectors: nil,
+			wantErr:   nil,
+		},
+		{
+			name:      "known detectors",
+			detectors: []ResourceDetector{{"env": nil}, {"gcp": nil}},
+			wantErr:   nil,
+		},
+		{
+			name:      "unknown detector",
+			detectors: []ResourceDetector{{"not_a_real_detector": nil}},
+			wantErr:   errUnknownResourceDetector,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := Config{
+				Logger: zap.NewNop(),
+				Distribution: Distribution{
+					Resource: Resource{Detection: ResourceDetection{Detectors: tt.detectors}},
+				},
+			}
+			if tt.wantErr == nil {
+				assert.NoError(t, cfg.Validate())
+			} else {
+				assert.ErrorIs(t, cfg.Validate(), tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestResourceDetectorsUnmarshal(t *testing.T) {
+	cfgFile := filepath.Join(t.TempDir(), "builder-config.yaml")
+	require.NoError(t, os.WriteFile(cfgFile, []byte(`
+dist:
+  name: test
+  resource:
+    detection:
+      detectors:
+        - env:
+        - system:
+`), 0o600))
+
+	k := koanf.New(".")
+	require.NoError(t, k.Load(file.Provider(cfgFile), yaml.Parser()))
+
+	cfg := Config{Logger: zap.NewNop()}
+	require.NoError(t, k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{Tag: "mapstructure"}))
+
+	require.Len(t, cfg.Distribution.Resource.Detection.Detectors, 2)
+	require.NoError(t, cfg.Validate())
+	assert.Equal(t, wantOmitTags("env", "system"), cfg.Distribution.buildTags())
 }
 
 func TestDebugOptionSetConfig(t *testing.T) {

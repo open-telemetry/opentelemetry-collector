@@ -21,7 +21,7 @@ func TestExpandExtendedType_StandardTypes_NoOp(t *testing.T) {
 			md := &ConfigMetadata{Type: SchemaType(typ)}
 			require.NoError(t, expandExtendedType(md))
 			assert.Equal(t, SchemaType(typ), md.Type, "standard type should not be modified")
-			assert.Empty(t, md.GoType)
+			assert.Empty(t, md.GoStruct.Type)
 			assert.Empty(t, md.Format)
 			assert.Nil(t, md.Values)
 		})
@@ -45,7 +45,7 @@ func TestExpandExtendedType_IntegerAliases(t *testing.T) {
 			md := &ConfigMetadata{Type: SchemaType(alias)}
 			require.NoError(t, expandExtendedType(md))
 			assert.Equal(t, SchemaType(alias), md.Type, "integer aliases are passed through unchanged")
-			assert.Empty(t, md.GoType)
+			assert.Empty(t, md.GoStruct.Type)
 			assert.Empty(t, md.Format)
 			assert.Nil(t, md.Values)
 		})
@@ -66,7 +66,7 @@ func TestExpandExtendedType_FloatAliases(t *testing.T) {
 			md := &ConfigMetadata{Type: tc.alias}
 			require.NoError(t, expandExtendedType(md))
 			assert.Equal(t, tc.wantType, md.Type)
-			assert.Empty(t, md.GoType)
+			assert.Empty(t, md.GoStruct.Type)
 		})
 	}
 }
@@ -78,7 +78,7 @@ func TestExpandExtendedType_NativeFloatTypes_NoOp(t *testing.T) {
 			md := &ConfigMetadata{Type: typ}
 			require.NoError(t, expandExtendedType(md))
 			assert.Equal(t, typ, md.Type)
-			assert.Empty(t, md.GoType)
+			assert.Empty(t, md.GoStruct.Type)
 		})
 	}
 }
@@ -87,14 +87,14 @@ func TestExpandExtendedType_Duration(t *testing.T) {
 	md := &ConfigMetadata{Type: DurationType}
 	require.NoError(t, expandExtendedType(md))
 	assert.Equal(t, StringType, md.Type)
-	assert.Equal(t, "time.Duration", md.GoType)
+	assert.Equal(t, "time.Duration", md.GoStruct.Type)
 }
 
 func TestExpandExtendedType_Time(t *testing.T) {
 	md := &ConfigMetadata{Type: TimeType}
 	require.NoError(t, expandExtendedType(md))
 	assert.Equal(t, StringType, md.Type)
-	assert.Equal(t, "time.Time", md.GoType)
+	assert.Equal(t, "time.Time", md.GoStruct.Type)
 	assert.Equal(t, "date-time", md.Format)
 }
 
@@ -102,7 +102,7 @@ func TestExpandExtendedType_OpaqueString(t *testing.T) {
 	md := &ConfigMetadata{Type: OpaqueStringType}
 	require.NoError(t, expandExtendedType(md))
 	assert.Equal(t, StringType, md.Type)
-	assert.Equal(t, "go.opentelemetry.io/collector/config/configopaque.String", md.GoType)
+	assert.Equal(t, "go.opentelemetry.io/collector/config/configopaque.String", md.GoStruct.Type)
 	assert.Empty(t, md.Format)
 }
 
@@ -110,26 +110,26 @@ func TestExpandExtendedType_ID(t *testing.T) {
 	md := &ConfigMetadata{Type: ComponentIDType}
 	require.NoError(t, expandExtendedType(md))
 	assert.Equal(t, StringType, md.Type)
-	assert.Equal(t, "go.opentelemetry.io/collector/component.ID", md.GoType)
+	assert.Equal(t, "go.opentelemetry.io/collector/component.ID", md.GoStruct.Type)
 }
 
 func TestExpandExtendedType_OpaqueMap(t *testing.T) {
 	md := &ConfigMetadata{Type: OpaqueMapType}
 	require.NoError(t, expandExtendedType(md))
 	assert.Equal(t, MapType, md.Type)
-	assert.Equal(t, "go.opentelemetry.io/collector/config/configopaque.MapList", md.GoType)
+	assert.Equal(t, "go.opentelemetry.io/collector/config/configopaque.MapList", md.GoStruct.Type)
 	require.NotNil(t, md.Values)
 	assert.Equal(t, StringType, md.Values.Type)
 }
 
-// TestExpandExtendedType_DoesNotClobberExplicitGoType verifies that an explicit x-customType
-// on the alias node is preserved (e.g. type: int64 + x-customType: myapp.SpecialInt).
+// TestExpandExtendedType_DoesNotClobberExplicitGoType verifies that an explicit go_struct.type
+// on the alias node is preserved (e.g. type: int64 + go_struct.type: myapp.SpecialInt).
 func TestExpandExtendedType_DoesNotClobberExplicitGoType(t *testing.T) {
-	// "float" expands to "float32" but must not overwrite an explicit GoType.
-	md := &ConfigMetadata{Type: FloatType, GoType: "myapp/pkg.SpecialFloat"}
+	// "float" expands to "float32" but must not overwrite an explicit go_struct.type.
+	md := &ConfigMetadata{Type: FloatType, GoStruct: GoStructConfig{Type: "myapp/pkg.SpecialFloat"}}
 	require.NoError(t, expandExtendedType(md))
 	assert.Equal(t, Float32Type, md.Type)
-	assert.Equal(t, "myapp/pkg.SpecialFloat", md.GoType, "explicit GoType must not be overwritten")
+	assert.Equal(t, "myapp/pkg.SpecialFloat", md.GoStruct.Type, "explicit go_struct.type must not be overwritten")
 }
 
 // TestExpandExtendedType_DoesNotClobberExplicitFormat verifies that an explicit format

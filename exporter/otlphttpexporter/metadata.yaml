@@ -3,6 +3,9 @@ type: otlp_http
 deprecated_type: otlphttp
 github_project: open-telemetry/opentelemetry-collector
 
+sending_queue:
+  support: default
+
 status:
   disable_codecov_badge: true
   class: exporter

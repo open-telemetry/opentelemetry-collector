@@ -22,119 +22,21 @@ import (
 	"golang.org/x/net/http2"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp/internal"
-	"go.opentelemetry.io/collector/config/configmiddleware"
+	"go.opentelemetry.io/collector/config/confighttp/internal/metadata"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
-	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
 const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
 
 // ServerConfig defines settings for creating an HTTP server.
-type ServerConfig struct {
-	// NetAddr holds configuration for the network listener.
-	//
-	// Transport defaults to "tcp" if unspecified, and only
-	// "tcp", "tcp4", "tcp6", and "unix" are valid options.
-	NetAddr confignet.AddrConfig `mapstructure:",squash"`
-
-	// TLS struct exposes TLS server configuration.
-	TLS configoptional.Optional[configtls.ServerConfig] `mapstructure:"tls"`
-
-	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
-	CORS configoptional.Optional[CORSConfig] `mapstructure:"cors"`
-
-	// Auth for this receiver
-	Auth configoptional.Optional[AuthConfig] `mapstructure:"auth,omitempty"`
-
-	// MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.
-	MaxRequestBodySize int64 `mapstructure:"max_request_body_size,omitempty"`
-
-	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
-	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
-
-	// Additional headers attached to each HTTP response sent to the client.
-	// Header values are opaque since they may be sensitive.
-	ResponseHeaders configopaque.MapList `mapstructure:"response_headers,omitempty"`
-
-	// CompressionAlgorithms configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
-	CompressionAlgorithms []string `mapstructure:"compression_algorithms,omitempty"`
-
-	// ReadTimeout is the maximum duration for reading the entire
-	// request, including the body. A zero or negative value means
-	// there will be no timeout.
-	//
-	// Because ReadTimeout does not let Handlers make per-request
-	// decisions on each request body's acceptable deadline or
-	// upload rate, most users will prefer to use
-	// ReadHeaderTimeout. It is valid to use them both.
-	ReadTimeout time.Duration `mapstructure:"read_timeout,omitempty"`
-
-	// ReadHeaderTimeout is the amount of time allowed to read
-	// request headers. The connection's read deadline is reset
-	// after reading the headers and the Handler can decide what
-	// is considered too slow for the body. If ReadHeaderTimeout
-	// is zero, the value of ReadTimeout is used. If both are
-	// zero, there is no timeout.
-	ReadHeaderTimeout time.Duration `mapstructure:"read_header_timeout"`
-
-	// WriteTimeout is the maximum duration before timing out
-	// writes of the response. It is reset whenever a new
-	// request's header is read. Like ReadTimeout, it does not
-	// let Handlers make decisions on a per-request basis.
-	// A zero or negative value means there will be no timeout.
-	WriteTimeout time.Duration `mapstructure:"write_timeout"`
-
-	// Middlewares are used to add custom functionality to the HTTP server.
-	// Middleware handlers are called in the order they appear in this list,
-	// with the first middleware becoming the outermost handler.
-	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
-
-	// Keepalive controls HTTP keep-alives.
-	// By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
-	// Unmarshal folds this section into the deprecated fields below, which
-	// remain the source of truth during their deprecation window, and always
-	// resets it to None. A value visible to ToServer was therefore set
-	// programmatically after unmarshaling (or the config was never unmarshaled)
-	// and takes precedence over the deprecated fields.
-	Keepalive configoptional.Optional[KeepaliveServerConfig] `mapstructure:"keepalive,omitempty"`
-
-	// Deprecated: [v0.160.0] use Keepalive.IdleTimeout instead.
-	IdleTimeout time.Duration `mapstructure:"idle_timeout,omitempty"`
-	// Deprecated: [v0.160.0] set 'keepalive::enabled' to false to disable keep-alives.
-	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled,omitempty"`
-
+type privateServerConfigFields struct {
 	// deprecationWarnings records use of deprecated fields observed while
 	// unmarshaling; ToServer logs them, as no logger is available here.
 	deprecationWarnings []string
-
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-type KeepaliveServerConfig struct {
-	// IdleTimeout is the maximum amount of time to wait for the
-	// next request when keep-alives are enabled. If IdleTimeout
-	// is zero, the value of ReadTimeout is used. If both are
-	// zero, there is no timeout.
-	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
-
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-// NewDefaultKeepaliveServerConfig returns a KeepaliveServerConfig with the same
-// defaults that NewDefaultServerConfig sets on the corresponding deprecated
-// fields.
-func NewDefaultKeepaliveServerConfig() KeepaliveServerConfig {
-	return KeepaliveServerConfig{
-		IdleTimeout: 1 * time.Minute,
-	}
 }
 
 // NewDefaultServerConfig returns ServerConfig type object with default values.
@@ -144,110 +46,21 @@ func NewDefaultServerConfig() ServerConfig {
 	// We typically want to create a TCP server and listen over a network.
 	netAddr.Transport = confignet.TransportTypeTCP
 
+	if metadata.PkgConfighttpPrioritizeNewKeepaliveFeatureGate.IsEnabled() {
+		return ServerConfig{
+			NetAddr:           netAddr,
+			WriteTimeout:      30 * time.Second,
+			ReadHeaderTimeout: 1 * time.Minute,
+			Keepalive:         configoptional.Some(NewDefaultKeepaliveServerConfig()),
+		}
+	}
+
 	return ServerConfig{
 		NetAddr:           netAddr,
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
-		// The deprecated flat fields keep carrying the defaults so that
-		// configurations and code which still use them behave as before.
-		// Keepalive stays None; see its documentation.
-		IdleTimeout:       1 * time.Minute,
-		KeepAlivesEnabled: true,
+		Keepalive:         configoptional.Some(NewDefaultKeepaliveServerConfig()),
 	}
-}
-
-var _ confmap.Unmarshaler = (*ServerConfig)(nil)
-
-// Unmarshal implements confmap.Unmarshaler. The keepalive settings can arrive
-// through two representations (the deprecated flat fields and the 'keepalive'
-// section) and two channels (programmatic changes to the struct and the
-// configuration). Unmarshal resolves them by folding everything into the
-// deprecated fields, in order of increasing precedence:
-//
-//  1. programmatic values already on the struct, in either representation;
-//  2. deprecated keys present in the configuration;
-//  3. the 'keepalive' section present in the configuration.
-//
-// Mixing 2 and 3 is rejected, so their relative precedence never matters in
-// practice. Deprecated keys in the configuration are also recorded as warnings
-// for ToServer to log. Only keys present in the configuration count for the
-// error and the warnings: programmatic values are neither deprecated usage nor
-// a conflict.
-//
-// The deprecated fields end up holding the effective settings and remain the
-// sole source of truth for ToServer during their deprecation window; Keepalive
-// is always left as None.
-func (sc *ServerConfig) Unmarshal(conf *confmap.Conf) error {
-	// Step 1: fold a programmatically set Keepalive into the deprecated
-	// fields. This must precede decoding so that the configuration overrides
-	// it. A present value can only mean keep-alives enabled with these
-	// settings.
-	if ka := sc.Keepalive.Get(); ka != nil {
-		sc.IdleTimeout = ka.IdleTimeout
-		sc.KeepAlivesEnabled = true
-	}
-
-	// Step 2: decode the configuration. Deprecated keys overwrite their
-	// fields directly; the 'keepalive' section decodes into Keepalive and is
-	// folded in step 4. WithIgnoreUnused is needed because ServerConfig is
-	// commonly squash-embedded into component configs, in which case conf
-	// also holds the parent's sibling fields.
-	if err := conf.Unmarshal(sc, confmap.WithIgnoreUnused()); err != nil {
-		return err
-	}
-
-	// A null 'keepalive' key carries no settings, but decodes as an enabled
-	// section. Marshaling produces it for an unset Keepalive, so treat it as
-	// unset to keep marshaled configurations loadable.
-	keepaliveSet := conf.IsSet("keepalive") && conf.Get("keepalive") != nil
-
-	// Step 3: with the decoded values at hand, reject configurations mixing
-	// both representations, and record uses of the deprecated keys for
-	// ToServer to warn about. Values which are no-ops in the legacy logic (a
-	// zero idle_timeout, or keep_alives_enabled: true) neither conflict with
-	// the 'keepalive' section nor deserve a warning.
-	var deprecated []string
-	if conf.IsSet("idle_timeout") && sc.IdleTimeout != 0 {
-		deprecated = append(deprecated, "'idle_timeout' is deprecated; use 'keepalive::idle_timeout' instead")
-	}
-	if conf.IsSet("keep_alives_enabled") && !sc.KeepAlivesEnabled {
-		deprecated = append(deprecated, "'keep_alives_enabled' is deprecated; set 'keepalive::enabled' to false to disable keep-alives")
-	}
-	if keepaliveSet && len(deprecated) > 0 {
-		return errors.New("confighttp.ServerConfig: cannot use deprecated keepalive fields (idle_timeout, keep_alives_enabled) alongside the 'keepalive' section; migrate to the 'keepalive' section")
-	}
-	sc.deprecationWarnings = deprecated
-
-	// Step 4: fold the decoded 'keepalive' section into the deprecated
-	// fields. Only keys present in the configuration are copied; the
-	// deprecated fields keep supplying the values for the rest. Decoding
-	// leaves Keepalive without a value only for 'keepalive::enabled: false',
-	// so a present section fully determines whether keep-alives are on.
-	if keepaliveSet {
-		if ka := sc.Keepalive.Get(); ka != nil {
-			if conf.IsSet("keepalive::idle_timeout") {
-				sc.IdleTimeout = ka.IdleTimeout
-			}
-		}
-		sc.KeepAlivesEnabled = sc.Keepalive.HasValue()
-	}
-
-	// Step 5: the deprecated fields now hold the effective settings; restore
-	// the invariant that Keepalive is None after unmarshaling (see the field
-	// documentation).
-	sc.Keepalive = configoptional.None[KeepaliveServerConfig]()
-	return nil
-}
-
-type AuthConfig struct {
-	// Auth for this receiver.
-	Config configauth.Config `mapstructure:",squash"`
-
-	// RequestParameters is a list of parameters that should be extracted from the request and added to the context.
-	// When a parameter is found in both the query string and the header, the value from the query string will be used.
-	RequestParameters []string `mapstructure:"request_params,omitempty"`
-	// prevent unkeyed literal initialization
-	_ struct{}
 }
 
 // ToListener creates a net.Listener.
@@ -337,6 +150,9 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		}
 	}
 
+	// MaxRequestBodySize is enforced twice: on the received (possibly compressed)
+	// body by maxRequestBodySizeInterceptor, and on the decompressed body by
+	// httpContentDecompressor, which guards against small compressed payloads that expand to very large ones.
 	handler = httpContentDecompressor(
 		handler,
 		sc.MaxRequestBodySize,
@@ -429,12 +245,6 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		// Unmarshal always leaves Keepalive at None, so a value here was set
 		// programmatically afterwards and takes precedence.
 		idleTimeout = kaCfg.IdleTimeout
-	} else {
-		// Apply the deprecated flat fields exactly as the code before the
-		// 'keepalive' section's introduction did; Unmarshal has already folded
-		// the section into them.
-		keepAlivesEnabled = sc.KeepAlivesEnabled
-		idleTimeout = sc.IdleTimeout
 	}
 
 	server := &http.Server{
@@ -461,39 +271,6 @@ func responseHeadersHandler(handler http.Handler, headers configopaque.MapList) 
 
 		handler.ServeHTTP(w, r)
 	})
-}
-
-// CORSConfig configures a receiver for HTTP cross-origin resource sharing (CORS).
-// See the underlying https://github.com/rs/cors package for details.
-type CORSConfig struct {
-	// AllowedOrigins sets the allowed values of the Origin header for
-	// HTTP/JSON requests to an OTLP receiver. An origin may contain a
-	// wildcard (*) to replace 0 or more characters (e.g.,
-	// "http://*.domain.com", or "*" to allow any origin).
-	AllowedOrigins []string `mapstructure:"allowed_origins,omitempty"`
-
-	// AllowedHeaders sets what headers will be allowed in CORS requests.
-	// The Accept, Accept-Language, Content-Type, and Content-Language
-	// headers are implicitly allowed. If no headers are listed,
-	// X-Requested-With will also be accepted by default. Include "*" to
-	// allow any request header.
-	AllowedHeaders []string `mapstructure:"allowed_headers,omitempty"`
-
-	// ExposedHeaders sets the value of the Access-Control-Expose-Headers response
-	// header, indicating which headers are safe to expose to the API of a CORS response.
-	ExposedHeaders []string `mapstructure:"exposed_headers,omitempty"`
-
-	// MaxAge sets the value of the Access-Control-Max-Age response header.
-	// Set it to the number of seconds that browsers should cache a CORS
-	// preflight response for.
-	MaxAge int `mapstructure:"max_age,omitempty"`
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
-
-// NewDefaultCORSConfig creates a default cross-origin resource sharing (CORS) configuration.
-func NewDefaultCORSConfig() CORSConfig {
-	return CORSConfig{}
 }
 
 func authInterceptor(next http.Handler, server extensionauth.Server, requestParams []string, serverOpts *internal.ToServerOptions) http.Handler {

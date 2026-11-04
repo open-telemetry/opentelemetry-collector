@@ -12,3 +12,7 @@ status:
     beta: [traces, metrics, logs]
     alpha: [profiles]
   distributions: [core, contrib, k8s]
+
+sending_queue:
+  support: omitted
+  rationale: No-op drops telemetry.

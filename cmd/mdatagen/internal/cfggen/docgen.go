@@ -5,7 +5,6 @@ package cfggen // import "go.opentelemetry.io/collector/cmd/mdatagen/internal/cf
 
 import (
 	"fmt"
-	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -39,22 +38,19 @@ func CfgSubSection(cfg *ConfigMetadata, anchor, title string) DocSection {
 	return DocSection{Schema: cfg, Anchor: anchor, Title: title}
 }
 
-// CfgPropDocs returns a sorted slice of PropDoc for all YAML-visible properties
-// of cfg: direct Properties plus properties flattened from AllOf embeds.
+// CfgPropDocs returns a slice of PropDoc, in declaration order, for all YAML-visible
+// properties of cfg: direct Properties plus properties flattened from embeds.
 func CfgPropDocs(cfg *ConfigMetadata) []PropDoc {
 	if cfg == nil {
 		return nil
 	}
 	var docs []PropDoc
 	collectPropDocs(cfg, &docs)
-	slices.SortFunc(docs, func(a, b PropDoc) int {
-		return strings.Compare(a.Name, b.Name)
-	})
 	return docs
 }
 
 func collectPropDocs(cfg *ConfigMetadata, docs *[]PropDoc) {
-	for _, name := range slices.Sorted(maps.Keys(cfg.Properties)) {
+	for _, name := range OrderedPropNames(cfg) {
 		prop := cfg.Properties[name]
 
 		if prop.Embed {
@@ -67,7 +63,7 @@ func collectPropDocs(cfg *ConfigMetadata, docs *[]PropDoc) {
 			Schema:      prop,
 			Required:    slices.Contains(cfg.Required, name),
 			Description: prop.Description,
-			Deprecated:  prop.Deprecated,
+			Deprecated:  prop.Deprecated != nil,
 		})
 	}
 }
@@ -97,10 +93,10 @@ func CfgDocType(cfg *ConfigMetadata) string {
 	}
 	switch cfg.Type {
 	case StringType:
-		if cfg.GoType == "time.Duration" || cfg.Format == "duration" {
+		if cfg.GoStruct.Type == "time.Duration" || cfg.Format == "duration" {
 			return "duration"
 		}
-		if cfg.GoType == "time.Time" || cfg.Format == "date-time" {
+		if cfg.GoStruct.Type == "time.Time" || cfg.Format == "date-time" {
 			return "datetime"
 		}
 		if len(cfg.Enum) > 0 {

@@ -8,8 +8,8 @@ import (
 )
 
 // splitMetrics removes metrics from the input data and returns a new data of the specified size.
-func splitMetrics(size int, src pmetric.Metrics) pmetric.Metrics {
-	dataPoints := src.DataPointCount()
+// dataPoints must equal src.DataPointCount(); callers pass it to avoid recounting.
+func splitMetrics(size int, src pmetric.Metrics, dataPoints int) pmetric.Metrics {
 	if dataPoints <= size {
 		return src
 	}

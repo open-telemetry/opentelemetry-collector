@@ -215,7 +215,7 @@ func parseFieldWithTag(t *testing.T, tagContent string) *ast.Field {
 
 	tag := ""
 	if tagContent != "" {
-		tag = fmt.Sprintf(" `%s`", tagContent)
+		tag = fmt.Sprintf(" %#q", tagContent)
 	}
 
 	src := fmt.Sprintf(`package test

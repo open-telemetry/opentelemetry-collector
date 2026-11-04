@@ -37,4 +37,8 @@ extensions:
     spike_limit_percentage: 0.05
 ```
 
+otelcol_memorylimiter_refused_requests: Number of requests refused by the memory limiter extension (Attributes: transport="http" or transport="grpc").
+
+Payloads refused by the extension never reach the receiver, so use `otelcol_memorylimiter_refused_requests` instead of `otelcol_receiver_refused_*` to track refused requests.
+
 see [memorylimiterprocessor](../../processor/memorylimiterprocessor/README.md) for additional details

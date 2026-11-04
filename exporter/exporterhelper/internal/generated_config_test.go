@@ -8,12 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTimeoutConfigValidate_DefaultValid(t *testing.T) {
-	cfg := NewDefaultTimeoutConfig()
-
-	require.NoError(t, cfg.Validate())
-}
-
 func TestTimeoutConfigValidate_MinimumTimeout(t *testing.T) {
 	cfg := NewDefaultTimeoutConfig()
 	cfg.Timeout = 0 - 1

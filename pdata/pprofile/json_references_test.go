@@ -60,7 +60,7 @@ func TestJSONUnmarshalResolvesReferences(t *testing.T) {
 	// Manually convert to references before marshaling, so the JSON output
 	// contains key_ref/string_value_ref regardless of whether the JSON
 	// marshaler itself calls convertProfilesToReferences.
-	convertProfilesToReferences(profiles)
+	require.NoError(t, convertProfilesToReferences(profiles))
 
 	marshaler := JSONMarshaler{}
 	jsonBytes, err := marshaler.MarshalProfiles(profiles)

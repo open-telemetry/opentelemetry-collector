@@ -8,11 +8,13 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/otelgrpc"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
 // GRPCClient is the client API for OTLP-GRPC Profiles service.
@@ -40,6 +42,23 @@ type grpcClient struct {
 
 // Export implements the Client interface.
 func (c *grpcClient) Export(ctx context.Context, request ExportRequest, opts ...grpc.CallOption) (ExportResponse, error) {
+	// Dictionary conversion mutates the request. Always copy it because even
+	// mutable pdata may be shared with other non-mutating consumers.
+	profilesCopy := pprofile.NewProfiles()
+	request.Profiles().CopyTo(profilesCopy)
+	request = NewExportRequestFromProfiles(profilesCopy)
+	if err := otlp.ConvertProfilesToReferences(request.orig); err != nil {
+		return ExportResponse{}, err
+	}
+
+	// FromOutgoingContext returns a copy. Replace any supplied version rather
+	// than appending: the metadata must identify the schema we actually encode.
+	md, _ := metadata.FromOutgoingContext(ctx)
+	if md == nil {
+		md = metadata.MD{}
+	}
+	md.Set(DevelopmentVersionHeader, DevelopmentVersion)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 	rsp, err := c.rawClient.Export(ctx, request.orig, opts...)
 	if err != nil {
 		return ExportResponse{}, err
@@ -84,6 +103,9 @@ type rawProfilesServer struct {
 
 func (s rawProfilesServer) Export(ctx context.Context, request *internal.ExportProfilesServiceRequest) (*internal.ExportProfilesServiceResponse, error) {
 	otlp.MigrateProfiles(request.ResourceProfiles)
+	if err := otlp.ResolveProfilesReferences(request); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 	rsp, err := s.srv.Export(ctx, ExportRequest{orig: request, state: internal.NewState()})
 	return rsp.orig, err
 }

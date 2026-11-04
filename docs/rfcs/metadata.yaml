@@ -6,7 +6,4 @@ status:
   class: docs
   codeowners:
     active:
-      - codeboten
-      - bogdandrutu
-      - dmitryax
-      - mx-psi
+      - open-telemetry/collector-maintainers

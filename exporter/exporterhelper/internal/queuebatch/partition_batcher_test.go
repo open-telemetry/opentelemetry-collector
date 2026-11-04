@@ -17,7 +17,6 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 )
@@ -566,7 +565,7 @@ func TestPartitionBatcher_OnEmptyCallbackTriggered(t *testing.T) {
 		FlushTimeout: 10 * time.Millisecond,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      100, // High min size to ensure data doesn't flush immediately
-		Partition:    PartitionConfig{IdleTimeout: configoptional.Some(100 * time.Millisecond)},
+		Partition:    PartitionConfig{IdleTimeout: 100 * time.Millisecond},
 	}
 
 	sink := requesttest.NewSink()
@@ -603,6 +602,7 @@ func TestPartitionBatcher_OnEmptyNotCalledWithActiveData(t *testing.T) {
 		FlushTimeout: 20 * time.Millisecond,
 		Sizer:        request.SizerTypeItems,
 		MinSize:      5,
+		Partition:    NewDefaultPartitionConfig(),
 	}
 
 	sink := requesttest.NewSink()

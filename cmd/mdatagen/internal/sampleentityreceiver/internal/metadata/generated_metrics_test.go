@@ -87,6 +87,9 @@ func TestMetricsBuilder(t *testing.T) {
 			ebK8sPod.RecordK8sPodPhaseDataPoint(ts, 1, AttributePhasePending)
 			if tt.name == "reaggregate_set" {
 				ebK8sPod.RecordK8sPodPhaseDataPoint(ts, 3, AttributePhaseRunning)
+				// a different timestamp is a different key: must not merge with the above.
+				ebK8sPod.RecordK8sPodPhaseDataPoint(ts+1, 3, AttributePhaseRunning)
+				assert.Equal(t, 2, mb.metricK8sPodPhase.data.Gauge().DataPoints().Len())
 			}
 			defaultMetricsCount++
 			allMetricsCount++
@@ -165,7 +168,9 @@ func TestMetricsBuilder(t *testing.T) {
 						assert.False(t, validatedMetrics["k8s.pod.phase"], "Found a duplicate in the metrics slice: k8s.pod.phase")
 						validatedMetrics["k8s.pod.phase"] = true
 						assert.Equal(t, pmetric.MetricTypeGauge, mi.Type())
-						assert.Equal(t, 1, mi.Gauge().DataPoints().Len())
+						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
+						assert.Equal(t, 2, mi.Gauge().DataPoints().Len())
+						assert.Equal(t, ts+1, mi.Gauge().DataPoints().At(1).Timestamp())
 						assert.Equal(t, "Current phase of the pod", mi.Description())
 						assert.Equal(t, "1", mi.Unit())
 						dp := mi.Gauge().DataPoints().At(0)

@@ -56,7 +56,7 @@ func TestMapGoType_BasicTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := MapGoType(tt.metadata, tt.propName, "", "")
+			result, err := MapGoType(tt.metadata, tt.propName, GeneratorEnv{rootPackage: "", componentPackage: ""})
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, result)
 		})
@@ -92,7 +92,7 @@ func TestPrimitiveGoType(t *testing.T) {
 		},
 		{
 			name:     "custom primitive Go type",
-			metadata: &ConfigMetadata{Type: "string", GoType: "github.com/example/pkg.CustomString"},
+			metadata: &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "github.com/example/pkg.CustomString"}},
 			expected: "pkg.CustomString",
 		},
 		{
@@ -109,7 +109,7 @@ func TestPrimitiveGoType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require.Equal(t, !tt.wantErr, IsPrimitiveSchema(tt.metadata))
-			result, err := PrimitiveGoType(tt.metadata, "", "")
+			result, err := PrimitiveGoType(tt.metadata, GeneratorEnv{rootPackage: "", componentPackage: ""})
 			if tt.wantErr {
 				require.Error(t, err)
 				return
@@ -146,10 +146,10 @@ func TestMapGoType_FormattedStrings(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			md := &ConfigMetadata{
-				Type:   "string",
-				GoType: tt.goType,
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: tt.goType},
 			}
-			result, err := MapGoType(md, "field", "", "")
+			result, err := MapGoType(md, "field", GeneratorEnv{rootPackage: "", componentPackage: ""})
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, result)
 		})
@@ -213,7 +213,7 @@ func TestMapGoType_Arrays(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := MapGoType(tt.metadata, "field", "", compPkg)
+			result, err := MapGoType(tt.metadata, "field", GeneratorEnv{rootPackage: "", componentPackage: compPkg})
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, result)
 		})
@@ -296,7 +296,7 @@ func TestMapGoType_Objects(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := MapGoType(tt.metadata, tt.propName, "", compPkg)
+			result, err := MapGoType(tt.metadata, tt.propName, GeneratorEnv{rootPackage: "", componentPackage: compPkg})
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, result)
 		})
@@ -310,7 +310,7 @@ func TestMapGoType_CustomTypes(t *testing.T) {
 		expected string
 	}{
 		{
-			name: "custom type with primitive go type — uses type field not GoType",
+			name: "custom type with primitive go type — uses type field not go_struct.type",
 			metadata: &ConfigMetadata{
 				Type: "rune",
 			},
@@ -319,16 +319,16 @@ func TestMapGoType_CustomTypes(t *testing.T) {
 		{
 			name: "custom type with external package",
 			metadata: &ConfigMetadata{
-				Type:   "object",
-				GoType: "github.com/example/pkg.CustomType",
+				Type:     "object",
+				GoStruct: GoStructConfig{Type: "github.com/example/pkg.CustomType"},
 			},
 			expected: "pkg.CustomType",
 		},
 		{
 			name: "custom type without package",
 			metadata: &ConfigMetadata{
-				Type:   "object",
-				GoType: "my_custom_type",
+				Type:     "object",
+				GoStruct: GoStructConfig{Type: "my_custom_type"},
 			},
 			expected: "MyCustomType",
 		},
@@ -336,7 +336,7 @@ func TestMapGoType_CustomTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := MapGoType(tt.metadata, "field", "", "")
+			result, err := MapGoType(tt.metadata, "field", GeneratorEnv{rootPackage: "", componentPackage: ""})
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, result)
 		})
@@ -366,7 +366,7 @@ func TestMapGoType_References(t *testing.T) {
 			md := &ConfigMetadata{
 				Ref: tt.ref,
 			}
-			result, err := MapGoType(md, "field", "", "")
+			result, err := MapGoType(md, "field", GeneratorEnv{rootPackage: "", componentPackage: ""})
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, result)
 		})
@@ -419,7 +419,7 @@ func TestMapGoType_Modifiers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := MapGoType(tt.metadata, "field", "", "")
+			result, err := MapGoType(tt.metadata, "field", GeneratorEnv{rootPackage: "", componentPackage: ""})
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, result)
 		})
@@ -427,18 +427,18 @@ func TestMapGoType_Modifiers(t *testing.T) {
 }
 
 func TestMapGoType_NilInput(t *testing.T) {
-	_, err := MapGoType(nil, "field", "", "")
+	_, err := MapGoType(nil, "field", GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "nil ConfigMetadata")
 }
 
 func TestMapGoType_UnknownTypePassThrough(t *testing.T) {
 	// Unknown types are passed through as-is so metadata.yaml authors can reference
-	// custom Go types directly in the type field without a GoType override.
+	// custom Go types directly in the type field without a go_struct.type override.
 	md := &ConfigMetadata{
 		Type: "custom_vendor_type",
 	}
-	result, err := MapGoType(md, "field", "", "")
+	result, err := MapGoType(md, "field", GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.NoError(t, err)
 	require.Equal(t, "custom_vendor_type", result)
 }
@@ -457,16 +457,16 @@ func TestExtractImports_BasicTypes(t *testing.T) {
 		{
 			name: "time import for date-time format",
 			metadata: &ConfigMetadata{
-				Type:   "string",
-				GoType: "time.Time",
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "time.Time"},
 			},
 			expected: []string{"time"},
 		},
 		{
 			name: "time import for duration format",
 			metadata: &ConfigMetadata{
-				Type:   "string",
-				GoType: "time.Duration",
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "time.Duration"},
 			},
 			expected: []string{"time"},
 		},
@@ -474,7 +474,7 @@ func TestExtractImports_BasicTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := ExtractImportsFromConfig(tt.metadata, "", "")
+			result, err := ExtractImportsFromConfig(tt.metadata, GeneratorEnv{rootPackage: "", componentPackage: ""})
 			require.NoError(t, err)
 			require.ElementsMatch(t, tt.expected, result)
 		})
@@ -490,8 +490,8 @@ func TestExtractImports_CustomTypes(t *testing.T) {
 		{
 			name: "external custom type",
 			metadata: &ConfigMetadata{
-				Type:   "object",
-				GoType: "github.com/example/pkg.CustomType",
+				Type:     "object",
+				GoStruct: GoStructConfig{Type: "github.com/example/pkg.CustomType"},
 			},
 			expected: []string{"github.com/example/pkg"},
 		},
@@ -513,7 +513,7 @@ func TestExtractImports_CustomTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := ExtractImportsFromConfig(tt.metadata, "", "")
+			result, err := ExtractImportsFromConfig(tt.metadata, GeneratorEnv{rootPackage: "", componentPackage: ""})
 			require.NoError(t, err)
 			require.ElementsMatch(t, tt.expected, result)
 		})
@@ -547,7 +547,7 @@ func TestExtractImports_LocalRef(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := ExtractImportsFromConfig(tt.metadata, rootPkg, compPkg)
+			result, err := ExtractImportsFromConfig(tt.metadata, GeneratorEnv{rootPackage: rootPkg, componentPackage: compPkg})
 			require.NoError(t, err)
 			require.ElementsMatch(t, tt.expected, result)
 		})
@@ -559,7 +559,7 @@ func TestExtractImports_Optional(t *testing.T) {
 		Type:       "string",
 		IsOptional: true,
 	}
-	result, err := ExtractImportsFromConfig(md, "", "")
+	result, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.NoError(t, err)
 	require.Contains(t, result, "go.opentelemetry.io/collector/config/configoptional")
 }
@@ -570,14 +570,14 @@ func TestExtractImports_ResolvedReferenceIncludesDefaultOverrideImports(t *testi
 		Ref:  "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
 		Properties: map[string]*ConfigMetadata{
 			"timeout": {
-				Type:   "string",
-				GoType: "time.Duration",
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "time.Duration"},
 			},
 		},
 		Default: defaultValue(map[string]any{"timeout": "30s"}),
 	}
 
-	result, err := ExtractImportsFromConfig(md, "", "")
+	result, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.NoError(t, err)
 	require.ElementsMatch(t, []string{"go.opentelemetry.io/collector/scraper/scraperhelper", "time"}, result)
 }
@@ -599,7 +599,7 @@ func TestCollectCustomDefaultImports(t *testing.T) {
 				Type:     "object",
 				GoStruct: GoStructConfig{IgnoreDefault: true},
 				Properties: map[string]*ConfigMetadata{
-					"timeout": {Type: "string", GoType: "time.Duration"},
+					"timeout": {Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 				},
 			},
 			defaultValue: map[string]any{"timeout": "30s"},
@@ -608,7 +608,7 @@ func TestCollectCustomDefaultImports(t *testing.T) {
 			name: "map schema does not inspect entries",
 			metadata: &ConfigMetadata{
 				Type:   "map",
-				Values: &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+				Values: &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 			},
 			defaultValue: map[string]any{"timeout": "30s"},
 		},
@@ -625,7 +625,7 @@ func TestCollectCustomDefaultImports(t *testing.T) {
 			metadata: &ConfigMetadata{
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
-					"timeout": {Type: "string", GoType: "time.Duration"},
+					"timeout": {Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 				},
 			},
 			defaultValue: map[string]any{"timeout": "30s"},
@@ -638,7 +638,7 @@ func TestCollectCustomDefaultImports(t *testing.T) {
 				Values: &ConfigMetadata{
 					Type: "object",
 					Properties: map[string]*ConfigMetadata{
-						"timestamp": {Type: "string", GoType: "time.Time"},
+						"timestamp": {Type: "string", GoStruct: GoStructConfig{Type: "time.Time"}},
 					},
 				},
 			},
@@ -649,7 +649,7 @@ func TestCollectCustomDefaultImports(t *testing.T) {
 			name: "slice default with non-object value type does not inspect entries",
 			metadata: &ConfigMetadata{
 				Type:   "slice",
-				Values: &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+				Values: &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 			},
 			defaultValue: []any{"30s"},
 		},
@@ -658,7 +658,9 @@ func TestCollectCustomDefaultImports(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			imports := map[string]bool{}
-			require.NoError(t, collectCustomDefaultImports(tt.metadata, tt.defaultValue, imports, "", ""))
+			env := GeneratorEnv{rootPackage: "", componentPackage: ""}
+
+			require.NoError(t, collectCustomDefaultImports(tt.metadata, tt.defaultValue, imports, env))
 			require.ElementsMatch(t, tt.expected, slices.Collect(maps.Keys(imports)))
 		})
 	}
@@ -670,13 +672,13 @@ func TestExtractImports_InternalResolvedReferenceIncludesNestedImports(t *testin
 		Ref:  "plain_config",
 		Properties: map[string]*ConfigMetadata{
 			"timeout": {
-				Type:   "string",
-				GoType: "time.Duration",
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "time.Duration"},
 			},
 		},
 	}
 
-	result, err := ExtractImportsFromConfig(md, "", "")
+	result, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.NoError(t, err)
 	require.Equal(t, []string{"time"}, result)
 }
@@ -688,7 +690,7 @@ func TestExtractImports_ResolvedReferenceOptional(t *testing.T) {
 		IsOptional: true,
 	}
 
-	result, err := ExtractImportsFromConfig(md, "", "")
+	result, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.NoError(t, err)
 	require.ElementsMatch(t, []string{
 		"go.opentelemetry.io/collector/config/confighttp",
@@ -701,21 +703,21 @@ func TestExtractImports_Nested(t *testing.T) {
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"timeout": {
-				Type:   "string",
-				GoType: "time.Duration",
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "time.Duration"},
 			},
 			"nested": {
 				Type: "object",
 				Properties: map[string]*ConfigMetadata{
 					"timestamp": {
-						Type:   "string",
-						GoType: "time.Time",
+						Type:     "string",
+						GoStruct: GoStructConfig{Type: "time.Time"},
 					},
 				},
 			},
 		},
 	}
-	result, err := ExtractImportsFromConfig(md, "", "")
+	result, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.NoError(t, err)
 	require.Contains(t, result, "time")
 }
@@ -725,12 +727,12 @@ func TestExtractImports_AllOf(t *testing.T) {
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"time": {
-				Type:   "string",
-				GoType: "time.Duration",
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "time.Duration"},
 			},
 		},
 	}
-	result, err := ExtractImportsFromConfig(md, "", "")
+	result, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.NoError(t, err)
 	require.Contains(t, result, "time")
 }
@@ -739,11 +741,11 @@ func TestExtractImports_SliceValueType(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "slice",
 		Values: &ConfigMetadata{
-			Type:   "string",
-			GoType: "time.Time",
+			Type:     "string",
+			GoStruct: GoStructConfig{Type: "time.Time"},
 		},
 	}
-	result, err := ExtractImportsFromConfig(md, "", "")
+	result, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.NoError(t, err)
 	require.Contains(t, result, "time")
 }
@@ -752,11 +754,11 @@ func TestExtractImports_MapValueType(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "map",
 		Values: &ConfigMetadata{
-			Type:   "string",
-			GoType: "time.Duration",
+			Type:     "string",
+			GoStruct: GoStructConfig{Type: "time.Duration"},
 		},
 	}
-	result, err := ExtractImportsFromConfig(md, "", "")
+	result, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.NoError(t, err)
 	require.Contains(t, result, "time")
 }
@@ -765,18 +767,18 @@ func TestExtractImports_Defs(t *testing.T) {
 	md := &ConfigsMetadata{
 		ExportedConfigs: map[string]*ConfigMetadata{
 			"CustomType": {
-				Type:   "string",
-				GoType: "time.Time",
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "time.Time"},
 			},
 		},
 	}
-	result, err := ExtractImports(md, "", "")
+	result, err := ExtractImports(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.NoError(t, err)
 	require.Contains(t, result, "time")
 }
 
 func TestExtractImports_NilInput(t *testing.T) {
-	result, err := ExtractImportsFromConfig(nil, "", "")
+	result, err := ExtractImportsFromConfig(nil, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -806,7 +808,34 @@ func TestFormatTypeName_InternalReferences(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := FormatTypeName(tt.ref, "", "")
+			result, err := FormatTypeName(tt.ref, GeneratorEnv{rootPackage: "", componentPackage: ""})
+			require.NoError(t, err)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestFormatTypeName_PrimitiveTypes(t *testing.T) {
+	tests := []struct {
+		name     string
+		ref      string
+		expected string
+	}{
+		{
+			name:     "string",
+			ref:      "string",
+			expected: "string",
+		},
+		{
+			name:     "int",
+			ref:      "int",
+			expected: "int",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := FormatTypeName(tt.ref, GeneratorEnv{rootPackage: "", componentPackage: ""})
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, result)
 		})
@@ -838,7 +867,7 @@ func TestFormatTypeName_ExternalReferences(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := FormatTypeName(tt.ref, "", "")
+			result, err := FormatTypeName(tt.ref, GeneratorEnv{rootPackage: "", componentPackage: ""})
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, result)
 		})
@@ -868,7 +897,7 @@ func TestFormatTypeName_LocalReferences(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := FormatTypeName(tt.ref, rootPkg, compPkg)
+			result, err := FormatTypeName(tt.ref, GeneratorEnv{rootPackage: rootPkg, componentPackage: compPkg})
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, result)
 		})
@@ -888,7 +917,7 @@ func TestFormatTypeName_InvalidInput(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := FormatTypeName(tt.ref, "", "")
+			_, err := FormatTypeName(tt.ref, GeneratorEnv{rootPackage: "", componentPackage: ""})
 			require.Error(t, err)
 		})
 	}
@@ -945,8 +974,8 @@ func TestExtractDefs_MapValueObject(t *testing.T) {
 				},
 			},
 			"custom": {
-				Type:   "object",
-				GoType: "github.com/example/pkg.Custom",
+				Type:     "object",
+				GoStruct: GoStructConfig{Type: "github.com/example/pkg.Custom"},
 				Properties: map[string]*ConfigMetadata{
 					"ignored": {Type: "string"},
 				},
@@ -1171,7 +1200,7 @@ func TestExtractDefs_AllOfInternalRefWithNestedProperties(t *testing.T) {
 }
 
 func TestNewCfgFns_ExtractImports(t *testing.T) {
-	fns := NewCfgFns("go.opentelemetry.io/collector", "go.opentelemetry.io/collector/comp")
+	fns := NewCfgFns(GeneratorEnv{rootPackage: "go.opentelemetry.io/collector", componentPackage: "go.opentelemetry.io/collector/comp"})
 
 	extractImports := fns["extractImports"].(func(*ConfigsMetadata) []string)
 
@@ -1180,20 +1209,20 @@ func TestNewCfgFns_ExtractImports(t *testing.T) {
 
 	// valid input returns imports
 	md := &ConfigsMetadata{
-		Config: &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+		Config: &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 	}
 	result := extractImports(md)
 	require.Contains(t, result, "time")
 
-	// unresolvable GoType: extractImports panics
+	// unresolvable go_struct.type: extractImports panics
 	errMd := &ConfigsMetadata{
-		Config: &ConfigMetadata{GoType: "github.com/pkg."},
+		Config: &ConfigMetadata{GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 	}
 	require.Panics(t, func() { extractImports(errMd) })
 }
 
 func TestNewCfgFns_ExtractDefs(t *testing.T) {
-	fns := NewCfgFns("", "")
+	fns := NewCfgFns(GeneratorEnv{rootPackage: "", componentPackage: ""})
 
 	extractDefs := fns["extractDefs"].(func(*ConfigsMetadata) map[string]*ConfigMetadata)
 
@@ -1218,8 +1247,19 @@ func TestNewCfgFns_ExtractDefs(t *testing.T) {
 	require.Contains(t, result, "my_type")
 }
 
+func TestNewCfgFns_Entry(t *testing.T) {
+	fns := NewCfgFns(GeneratorEnv{rootPackage: "", componentPackage: ""})
+	entry := fns["entry"].(func(string, *ConfigMetadata) map[string]any)
+	metadata := &ConfigMetadata{Type: ObjectType}
+
+	require.Equal(t, map[string]any{
+		"name": "Config",
+		"data": metadata,
+	}, entry("Config", metadata))
+}
+
 func TestNewCfgFns_MapGoType(t *testing.T) {
-	fns := NewCfgFns("", "")
+	fns := NewCfgFns(GeneratorEnv{rootPackage: "", componentPackage: ""})
 
 	mapGoType := fns["mapGoType"].(func(*ConfigMetadata, string) string)
 
@@ -1229,12 +1269,12 @@ func TestNewCfgFns_MapGoType(t *testing.T) {
 	// valid input
 	require.Equal(t, "string", mapGoType(&ConfigMetadata{Type: "string"}, "field"))
 	require.Panics(t, func() {
-		mapGoType(&ConfigMetadata{GoType: "github.com/pkg."}, "field")
+		mapGoType(&ConfigMetadata{GoStruct: GoStructConfig{Type: "github.com/pkg."}}, "field")
 	})
 }
 
 func TestNewCfgFns_PublicType(t *testing.T) {
-	fns := NewCfgFns("", "")
+	fns := NewCfgFns(GeneratorEnv{rootPackage: "", componentPackage: ""})
 
 	publicType := fns["publicType"].(func(string) string)
 
@@ -1253,7 +1293,7 @@ func TestCamelVar(t *testing.T) {
 }
 
 func TestNewCfgFns_CamelVar(t *testing.T) {
-	fns := NewCfgFns("", "")
+	fns := NewCfgFns(GeneratorEnv{rootPackage: "", componentPackage: ""})
 	camelVar := fns["camelVar"].(func(string) string)
 	require.Equal(t, "controllerConfig",
 		camelVar("go.opentelemetry.io/collector/scraper/scraperhelper.controller_config"))
@@ -1262,7 +1302,7 @@ func TestNewCfgFns_CamelVar(t *testing.T) {
 
 func TestWithCfgFns(t *testing.T) {
 	base := map[string]any{"existing": "value"}
-	result := WithCfgFns(base, "", "")
+	result := WithCfgFns(base, GeneratorEnv{rootPackage: "", componentPackage: ""})
 
 	require.Equal(t, "value", result["existing"])
 	require.Contains(t, result, "mapGoType")
@@ -1279,12 +1319,12 @@ func TestWithCfgFns(t *testing.T) {
 
 func TestExtractValidators_DurationPattern(t *testing.T) {
 	md := &ConfigMetadata{
-		Type:    StringType,
-		GoType:  "time.Duration",
-		Pattern: `^duration$`,
+		Type:     StringType,
+		GoStruct: GoStructConfig{Type: "time.Duration"},
+		Pattern:  `^duration$`,
 	}
 
-	require.Empty(t, ExtractValidators(md))
+	require.Empty(t, ExtractValidators("config", md))
 }
 
 func TestExtractValidators_RefDoesNotStopSiblingValidation(t *testing.T) {
@@ -1297,15 +1337,15 @@ func TestExtractValidators_RefDoesNotStopSiblingValidation(t *testing.T) {
 		},
 	}
 
-	validators := ExtractValidators(md)
+	validators := ExtractValidators("config", md)
 	require.Len(t, validators, 1)
 	require.Equal(t, "name", validators[0].FieldName)
 }
 
 func TestResolveGoType_CustomTypeFormatError(t *testing.T) {
-	// GoType with invalid empty type name after dot triggers FormatTypeName error
-	md := &ConfigMetadata{GoType: "github.com/pkg."}
-	_, err := MapGoType(md, "field", "", "")
+	// go_struct.type with invalid empty type name after dot triggers FormatTypeName error
+	md := &ConfigMetadata{GoStruct: GoStructConfig{Type: "github.com/pkg."}}
+	_, err := MapGoType(md, "field", GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to format custom type")
 }
@@ -1313,29 +1353,29 @@ func TestResolveGoType_CustomTypeFormatError(t *testing.T) {
 func TestResolveGoType_RefFormatError(t *testing.T) {
 	// Ref with invalid empty type name after dot triggers FormatTypeName error
 	md := &ConfigMetadata{Ref: "github.com/pkg."}
-	_, err := MapGoType(md, "field", "", "")
+	_, err := MapGoType(md, "field", GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to format reference type")
 }
 
 func TestResolveGoType_SliceValueTypeError(t *testing.T) {
-	// Slice whose value type GoType is malformed
+	// Slice whose value type go_struct.type is malformed
 	md := &ConfigMetadata{
 		Type:   "slice",
-		Values: &ConfigMetadata{GoType: "github.com/pkg."},
+		Values: &ConfigMetadata{GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 	}
-	_, err := MapGoType(md, "field", "", "")
+	_, err := MapGoType(md, "field", GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to resolve slice value type")
 }
 
 func TestResolveGoType_MapValueTypeError(t *testing.T) {
-	// Map whose value type GoType is malformed
+	// Map whose value type go_struct.type is malformed
 	md := &ConfigMetadata{
 		Type:   "map",
-		Values: &ConfigMetadata{GoType: "github.com/pkg."},
+		Values: &ConfigMetadata{GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 	}
-	_, err := MapGoType(md, "field", "", "")
+	_, err := MapGoType(md, "field", GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to resolve map value type")
 }
@@ -1348,7 +1388,7 @@ func TestResolveGoType_EmbeddedObjectNameError(t *testing.T) {
 			"x": {Type: "string"},
 		},
 	}
-	_, err := MapGoType(md, "", "", "")
+	_, err := MapGoType(md, "", GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to format embedded object type name")
 }
@@ -1357,24 +1397,24 @@ func TestExtractImports_PropError(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
-			"bad": {GoType: "github.com/pkg.", Type: "object"},
+			"bad": {GoStruct: GoStructConfig{Type: "github.com/pkg."}, Type: "object"},
 		},
 	}
-	_, err := ExtractImportsFromConfig(md, "", "")
+	_, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to resolve import for custom type")
 }
 
 func TestExtractImports_GoTypeError(t *testing.T) {
-	md := &ConfigMetadata{GoType: "github.com/pkg."}
-	_, err := ExtractImportsFromConfig(md, "", "")
+	md := &ConfigMetadata{GoStruct: GoStructConfig{Type: "github.com/pkg."}}
+	_, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to resolve import for custom type")
 }
 
 func TestExtractImports_RefError(t *testing.T) {
 	md := &ConfigMetadata{Ref: "github.com/pkg."}
-	_, err := ExtractImportsFromConfig(md, "", "")
+	_, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to resolve import for reference")
 }
@@ -1382,9 +1422,9 @@ func TestExtractImports_RefError(t *testing.T) {
 func TestExtractImports_SliceValueTypeError(t *testing.T) {
 	md := &ConfigMetadata{
 		Type:   "slice",
-		Values: &ConfigMetadata{GoType: "github.com/pkg."},
+		Values: &ConfigMetadata{GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 	}
-	_, err := ExtractImportsFromConfig(md, "", "")
+	_, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to resolve import for custom type")
 }
@@ -1393,10 +1433,10 @@ func TestExtractImports_AllOfError(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
-			"bad": {GoType: "github.com/pkg."},
+			"bad": {GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 		},
 	}
-	_, err := ExtractImportsFromConfig(md, "", "")
+	_, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to resolve import for custom type")
 }
@@ -1405,10 +1445,10 @@ func TestExtractImports_DefsError(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
-			"bad": {GoType: "github.com/pkg."},
+			"bad": {GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 		},
 	}
-	_, err := ExtractImportsFromConfig(md, "", "")
+	_, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to resolve import for custom type")
 }
@@ -1416,9 +1456,9 @@ func TestExtractImports_DefsError(t *testing.T) {
 func TestExtractImports_MapValueTypeError(t *testing.T) {
 	md := &ConfigMetadata{
 		Type:   "map",
-		Values: &ConfigMetadata{GoType: "github.com/pkg."},
+		Values: &ConfigMetadata{GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 	}
-	_, err := ExtractImportsFromConfig(md, "", "")
+	_, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to resolve import for custom type")
 }
@@ -1427,10 +1467,10 @@ func TestExtractImports_ContentSchemaError(t *testing.T) {
 	md := &ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
-			"bad": {GoType: "github.com/pkg."},
+			"bad": {GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 		},
 	}
-	_, err := ExtractImportsFromConfig(md, "", "")
+	_, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to resolve import for custom type")
 }
@@ -1440,28 +1480,23 @@ func TestExtractImports_ExternalRefDefaultsError(t *testing.T) {
 	md := &ConfigMetadata{
 		Ref: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
 		Properties: map[string]*ConfigMetadata{
-			"timeout": {GoType: "github.com/pkg."},
+			"timeout": {GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 		},
 		Default: defaultValue(map[string]any{"timeout": "30s"}),
 	}
-	_, err := ExtractImportsFromConfig(md, "", "")
+	_, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to resolve import for custom type")
 }
 
 func TestExtractImports_ExternalRefNestedDefaultsError(t *testing.T) {
-	// "nested" has an external Ref with no Default, so collectImports(nested) succeeds:
-	// it short-circuits after processing nested.Default=nil without descending into nested.Properties.
-	// collectCustomDefaultImports(nested, {"bad": "x"}) then walks the override value and calls
-	// collectImports on nested.Properties["bad"] which has an invalid GoType — this error propagates
-	// back to the caller at line 297-298 in the outer collectCustomDefaultImports.
 	md := &ConfigMetadata{
 		Ref: "go.opentelemetry.io/collector/scraper/scraperhelper.ControllerConfig",
 		Properties: map[string]*ConfigMetadata{
 			"nested": {
 				Ref: "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
 				Properties: map[string]*ConfigMetadata{
-					"bad": {GoType: "github.com/pkg."},
+					"bad": {GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 				},
 			},
 		},
@@ -1469,7 +1504,7 @@ func TestExtractImports_ExternalRefNestedDefaultsError(t *testing.T) {
 			"nested": map[string]any{"bad": "value"},
 		}),
 	}
-	_, err := ExtractImportsFromConfig(md, "", "")
+	_, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to resolve import for custom type")
 }
@@ -1482,12 +1517,12 @@ func TestExtractImports_ExternalRefSliceDefaultsError(t *testing.T) {
 		Values: &ConfigMetadata{
 			Type: "object",
 			Properties: map[string]*ConfigMetadata{
-				"bad": {GoType: "github.com/pkg."},
+				"bad": {GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 			},
 		},
 		Default: defaultValue([]any{map[string]any{"bad": "value"}}),
 	}
-	_, err := ExtractImportsFromConfig(md, "", "")
+	_, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to resolve import for custom type")
 }
@@ -1500,7 +1535,7 @@ func TestExtractImports_SliceValueTypePath(t *testing.T) {
 			IsOptional: true,
 		},
 	}
-	result, err := ExtractImportsFromConfig(md, "", "")
+	result, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.NoError(t, err)
 	require.Contains(t, result, "go.opentelemetry.io/collector/config/configoptional")
 }
@@ -1515,7 +1550,7 @@ func TestExtractImports_DefsPath(t *testing.T) {
 			},
 		},
 	}
-	result, err := ExtractImportsFromConfig(md, "", "")
+	result, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.NoError(t, err)
 	require.Contains(t, result, "go.opentelemetry.io/collector/config/configoptional")
 }
@@ -1525,12 +1560,12 @@ func TestExtractImports_ContentSchema(t *testing.T) {
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
 			"content": {
-				Type:   "string",
-				GoType: "time.Duration",
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "time.Duration"},
 			},
 		},
 	}
-	result, err := ExtractImportsFromConfig(md, "", "")
+	result, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.NoError(t, err)
 	require.Contains(t, result, "time")
 }
@@ -1564,7 +1599,7 @@ func TestExtractImports_Pattern(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := ExtractImportsFromConfig(tt.metadata, "", "")
+			result, err := ExtractImportsFromConfig(tt.metadata, GeneratorEnv{rootPackage: "", componentPackage: ""})
 			require.NoError(t, err)
 			require.Contains(t, result, "regexp")
 		})
@@ -1573,7 +1608,7 @@ func TestExtractImports_Pattern(t *testing.T) {
 
 func TestExtractImports_NoPatternNoRegexpImport(t *testing.T) {
 	md := &ConfigMetadata{Type: "string"}
-	result, err := ExtractImportsFromConfig(md, "", "")
+	result, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.NoError(t, err)
 	require.NotContains(t, result, "regexp")
 }
@@ -1641,7 +1676,7 @@ func TestExtractImports_ErrorsImportForValidators(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := ExtractImportsFromConfig(tt.metadata, "", "")
+			result, err := ExtractImportsFromConfig(tt.metadata, GeneratorEnv{rootPackage: "", componentPackage: ""})
 			require.NoError(t, err)
 			require.Contains(t, result, "errors")
 		})
@@ -1655,7 +1690,7 @@ func TestExtractImports_NoErrorsImportWithoutValidators(t *testing.T) {
 			"name": {Type: "string"},
 		},
 	}
-	result, err := ExtractImportsFromConfig(md, "", "")
+	result, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.NoError(t, err)
 	require.NotContains(t, result, "errors")
 }
@@ -1818,7 +1853,7 @@ func TestExtractValidators(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result := ExtractValidators(test.metadata)
+			result := ExtractValidators("config", test.metadata)
 			require.Equal(t, test.expected, result)
 		})
 	}
@@ -1928,7 +1963,7 @@ func TestExtractValidators_StringValidators(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ExtractValidators(tt.metadata)
+			result := ExtractValidators("config", tt.metadata)
 			require.Equal(t, tt.expected, result)
 		})
 	}
@@ -2072,7 +2107,7 @@ func TestExtractValidators_NumericValidators(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ExtractValidators(tt.metadata)
+			result := ExtractValidators("config", tt.metadata)
 			require.Equal(t, tt.expected, result)
 		})
 	}
@@ -2083,7 +2118,7 @@ func TestExtractValidators_InternalRefFromDefs_NoValidators(t *testing.T) {
 		Ref: "plain_config",
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Empty(t, result)
 }
 
@@ -2092,7 +2127,7 @@ func TestExtractValidators_InternalRefFromDefs_RefNotFound(t *testing.T) {
 		Ref: "missing_def",
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Empty(t, result)
 }
 
@@ -2109,7 +2144,7 @@ func TestExtractValidators_AllOf_NoRef(t *testing.T) {
 		},
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Empty(t, result)
 }
 
@@ -2121,7 +2156,7 @@ func TestExtractValidators_AllOf_RefWithNoValidators(t *testing.T) {
 		},
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Empty(t, result)
 }
 
@@ -2138,7 +2173,7 @@ func TestExtractValidators_CustomValidator(t *testing.T) {
 		},
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Len(t, result, 1)
 	require.Equal(t, "http_client", result[0].FieldName)
 	require.Equal(t, "validateHTTPClient", result[0].CustomValidator)
@@ -2160,7 +2195,7 @@ func TestExtractValidators_RequiredAndCustomValidator(t *testing.T) {
 		},
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Len(t, result, 2)
 
 	// First validator is the required check
@@ -2173,6 +2208,158 @@ func TestExtractValidators_RequiredAndCustomValidator(t *testing.T) {
 	require.Equal(t, "http_client", result[1].FieldName)
 	require.Empty(t, result[1].Rules)
 	require.Equal(t, "validateHTTPClient", result[1].CustomValidator)
+}
+
+func TestExtractValidators_NestedObjectPropertyCustomValidatorNotDuplicated(t *testing.T) {
+	nonNil := new(CustomValidatorConfig)
+	protocols := &ConfigMetadata{
+		Type:     ObjectType,
+		GoStruct: GoStructConfig{CustomValidator: nonNil},
+		Properties: map[string]*ConfigMetadata{
+			"grpc": {Type: "string"},
+		},
+	}
+	md := &ConfigMetadata{
+		Type:     "object",
+		Required: []string{"protocols"},
+		Properties: map[string]*ConfigMetadata{
+			"protocols": protocols,
+		},
+	}
+
+	result := ExtractValidators("config", md)
+	require.Len(t, result, 1)
+	require.Equal(t, "protocols", result[0].FieldName)
+	require.True(t, result[0].Rules.Required)
+	require.Empty(t, result[0].CustomValidator)
+
+	defResult := ExtractValidators("protocols", protocols)
+	require.Len(t, defResult, 1)
+	require.Equal(t, "validateProtocols", defResult[0].CustomValidator)
+	require.True(t, defResult[0].IsType)
+
+	// Regression check for the bug this test's scenario reproduces: the
+	// "protocols" entry is Required on a non-pointer object field, which the
+	// requiredValidator template has no branch for, so it renders no code.
+	require.False(t, AnyValidatorEmits(result), "required-only validator on a non-pointer object field must not be treated as emitting code")
+	require.True(t, AnyValidatorEmits(defResult), "custom validator must be treated as emitting code")
+}
+
+func TestValidator_RequiredCheckEmitted(t *testing.T) {
+	tests := []struct {
+		name      string
+		validator Validator
+		expected  bool
+	}{
+		{
+			name:      "pointer field",
+			validator: Validator{IsPointer: true, FieldType: ObjectType},
+			expected:  true,
+		},
+		{
+			name:      "string field",
+			validator: Validator{FieldType: StringType},
+			expected:  true,
+		},
+		{
+			name:      "slice field",
+			validator: Validator{FieldType: SliceType},
+			expected:  true,
+		},
+		{
+			name:      "map field",
+			validator: Validator{FieldType: MapType},
+			expected:  true,
+		},
+		{
+			name:      "non-pointer object field",
+			validator: Validator{FieldType: ObjectType},
+			expected:  false,
+		},
+		{
+			name:      "non-pointer numeric field",
+			validator: Validator{FieldType: IntType},
+			expected:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, tt.validator.RequiredCheckEmitted())
+		})
+	}
+}
+
+func TestValidator_Emits(t *testing.T) {
+	tests := []struct {
+		name      string
+		validator Validator
+		expected  bool
+	}{
+		{
+			name:      "custom validator always emits",
+			validator: Validator{CustomValidator: "validateFoo"},
+			expected:  true,
+		},
+		{
+			name:      "value rule emits regardless of field type",
+			validator: Validator{FieldType: ObjectType, Rules: ValidationRules{MinLength: new(1)}},
+			expected:  true,
+		},
+		{
+			name:      "required string field emits",
+			validator: Validator{FieldType: StringType, Rules: ValidationRules{Required: true}},
+			expected:  true,
+		},
+		{
+			name:      "required non-pointer object field does not emit",
+			validator: Validator{FieldType: ObjectType, Rules: ValidationRules{Required: true}},
+			expected:  false,
+		},
+		{
+			name:      "required pointer object field emits",
+			validator: Validator{FieldType: ObjectType, IsPointer: true, Rules: ValidationRules{Required: true}},
+			expected:  true,
+		},
+		{
+			name:      "no rules and no custom validator does not emit",
+			validator: Validator{FieldType: ObjectType},
+			expected:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, tt.validator.Emits())
+		})
+	}
+}
+
+func TestAnyValidatorEmits(t *testing.T) {
+	require.False(t, AnyValidatorEmits(nil))
+	require.False(t, AnyValidatorEmits([]Validator{}))
+
+	require.False(t, AnyValidatorEmits([]Validator{
+		{FieldName: "protocols", FieldType: ObjectType, Rules: ValidationRules{Required: true}},
+	}), "a slice with only no-op validators must report no emission")
+
+	require.True(t, AnyValidatorEmits([]Validator{
+		{FieldName: "protocols", FieldType: ObjectType, Rules: ValidationRules{Required: true}},
+		{FieldName: "endpoint", FieldType: StringType, Rules: ValidationRules{Required: true}},
+	}), "a slice mixing a no-op validator with an emitting one must report emission")
+}
+
+func TestNewCfgFns_AnyValidatorEmits(t *testing.T) {
+	fns := NewCfgFns(GeneratorEnv{rootPackage: "", componentPackage: ""})
+	anyValidatorEmits := fns["anyValidatorEmits"].(func([]Validator) bool)
+
+	require.False(t, anyValidatorEmits(nil))
+	require.False(t, anyValidatorEmits([]Validator{
+		{FieldType: ObjectType, Rules: ValidationRules{Required: true}},
+	}))
+	require.True(t, anyValidatorEmits([]Validator{
+		{FieldType: StringType, Rules: ValidationRules{Required: true}},
+	}))
 }
 
 func TestExtractValidators_RootCustomValidatorLast(t *testing.T) {
@@ -2188,12 +2375,12 @@ func TestExtractValidators_RootCustomValidatorLast(t *testing.T) {
 		},
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Len(t, result, 2)
 	require.NotNil(t, result[1].Rules.Required)
 	require.True(t, result[1].Rules.Required)
 	require.Empty(t, result[1].CustomValidator)
-	require.Equal(t, ".", result[0].FieldName)
+	require.Equal(t, "config", result[0].FieldName)
 	require.Equal(t, "validateConfig", result[0].CustomValidator)
 }
 
@@ -2208,7 +2395,7 @@ func TestExtractValidators_NoCustomValidator(t *testing.T) {
 		},
 	}
 
-	result := ExtractValidators(md)
+	result := ExtractValidators("config", md)
 	require.Empty(t, result)
 }
 
@@ -2293,10 +2480,10 @@ func TestValidationRules_HasValueRule(t *testing.T) {
 }
 
 func TestNewCfgFns_ExtractValidators(t *testing.T) {
-	fns := NewCfgFns("", "")
-	extractValidators := fns["extractValidators"].(func(*ConfigMetadata) []Validator)
+	fns := NewCfgFns(GeneratorEnv{rootPackage: "", componentPackage: ""})
+	extractValidators := fns["extractValidators"].(func(string, *ConfigMetadata) []Validator)
 
-	require.Nil(t, extractValidators(nil))
+	require.Nil(t, extractValidators("", nil))
 
 	md := &ConfigMetadata{
 		Type:     "object",
@@ -2305,7 +2492,7 @@ func TestNewCfgFns_ExtractValidators(t *testing.T) {
 			"name": {Type: "string"},
 		},
 	}
-	result := extractValidators(md)
+	result := extractValidators("config", md)
 	require.Len(t, result, 1)
 	require.Equal(t, "name", result[0].FieldName)
 	require.NotNil(t, result[0].Rules.Required)
@@ -2345,7 +2532,7 @@ func TestExternalDefaultCall(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := ExternalDefaultCall(tt.ref, rootPkg, compPkg)
+			result, err := ExternalDefaultCall(tt.ref, GeneratorEnv{rootPackage: rootPkg, componentPackage: compPkg})
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, result)
 		})
@@ -2355,7 +2542,7 @@ func TestExternalDefaultCall(t *testing.T) {
 func TestNewCfgFns_ExternalDefaultCall(t *testing.T) {
 	rootPkg := "go.opentelemetry.io/collector"
 	compPkg := "go.opentelemetry.io/collector/scraper/scraperhelper"
-	fns := NewCfgFns(rootPkg, compPkg)
+	fns := NewCfgFns(GeneratorEnv{rootPackage: rootPkg, componentPackage: compPkg})
 	externalDefaultCall := fns["externalDefaultCall"].(func(string) string)
 
 	require.Equal(t, "controller.NewDefaultControllerConfig()", externalDefaultCall("./internal/controller.controller_config"))
@@ -2379,28 +2566,28 @@ func TestFormatDefaultValue_ScalarDefaults(t *testing.T) {
 		},
 		{
 			name:         "duration",
-			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			schema:       &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 			propName:     "timeout",
 			defaultValue: defaultValue("30s"),
 			expected:     "30*time.Second",
 		},
 		{
 			name:         "duration zero int",
-			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			schema:       &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 			propName:     "timeout",
 			defaultValue: defaultValue(0),
 			expected:     "0",
 		},
 		{
 			name:         "duration zero float",
-			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			schema:       &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 			propName:     "timeout",
 			defaultValue: defaultValue(float64(0)),
 			expected:     "0",
 		},
 		{
 			name:         "optional duration",
-			schema:       &ConfigMetadata{Type: "string", GoType: "time.Duration", IsOptional: true},
+			schema:       &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}, IsOptional: true},
 			propName:     "interval",
 			defaultValue: defaultValue("10s"),
 			expected:     "configoptional.Some(10*time.Second)",
@@ -2409,9 +2596,116 @@ func TestFormatDefaultValue_ScalarDefaults(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.expected, FormatDefaultValue(tt.schema, tt.propName, tt.defaultValue, "", ""))
+			require.Equal(t, tt.expected, FormatDefaultValue(tt.schema, tt.propName, tt.defaultValue, GeneratorEnv{rootPackage: "", componentPackage: ""}))
 		})
 	}
+}
+
+func TestFormatDefaultValue_CustomDefault(t *testing.T) {
+	tests := []struct {
+		name     string
+		schema   *ConfigMetadata
+		expected string
+	}{
+		{
+			name:     "bare custom_default on an inline scalar property derives getDefault<PropName>",
+			schema:   &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "int", CustomDefault: &CustomDefaultConfig{}}},
+			expected: "getDefaultProtocol()",
+		},
+		{
+			name:     "bare custom_default on an object schema derives NewDefault<TypeName>",
+			schema:   &ConfigMetadata{Type: "object", GoStruct: GoStructConfig{CustomDefault: &CustomDefaultConfig{}}},
+			expected: "NewDefaultProtocol()",
+		},
+		{
+			name:     "custom_default with explicit name ignores the derivation rules",
+			schema:   &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "int", CustomDefault: &CustomDefaultConfig{Name: "newProtocol"}}},
+			expected: "newProtocol()",
+		},
+		{
+			name: "custom_default takes precedence over a pointer wrapper",
+			schema: &ConfigMetadata{
+				Type:      "string",
+				IsPointer: true,
+				GoStruct:  GoStructConfig{CustomDefault: &CustomDefaultConfig{Name: "defaultProtocol"}},
+			},
+			expected: "&defaultProtocol()",
+		},
+		{
+			name: "custom_default takes precedence over an optional wrapper",
+			schema: &ConfigMetadata{
+				Type:       "string",
+				IsOptional: true,
+				GoStruct:   GoStructConfig{CustomDefault: &CustomDefaultConfig{Name: "defaultProtocol"}},
+			},
+			expected: "configoptional.Some(defaultProtocol())",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, FormatDefaultValue(tt.schema, "protocol", nil, GeneratorEnv{rootPackage: "", componentPackage: ""}))
+		})
+	}
+}
+
+func TestFormatDefaultValue_CustomDefaultResolvesRefTypeName(t *testing.T) {
+	// Simulates two properties that each $ref the same shared definition, which carries
+	// go_struct.custom_default (merged in by schema resolution). The derived function name must
+	// come from the referenced type, not the local field name, so both call sites resolve to the
+	// same hand-written function instead of needing one per field name.
+	customDefault := &CustomDefaultConfig{}
+	proto := &ConfigMetadata{Type: "string", Ref: "protocol", GoStruct: GoStructConfig{Type: "int", CustomDefault: customDefault}}
+	sourceProtocol := &ConfigMetadata{Type: "string", Ref: "protocol", GoStruct: GoStructConfig{Type: "int", CustomDefault: customDefault}}
+
+	require.Equal(t, "NewDefaultProtocol()", FormatDefaultValue(proto, "proto", nil, GeneratorEnv{rootPackage: "", componentPackage: ""}))
+	require.Equal(t, "NewDefaultProtocol()", FormatDefaultValue(sourceProtocol, "source_protocol", nil, GeneratorEnv{rootPackage: "", componentPackage: ""}))
+}
+
+func TestFormatDefaultValue_CustomDefaultExternalRefIsQualified(t *testing.T) {
+	// An unnamed custom_default on a property that $refs an external package's definition must
+	// call the exported, package-qualified constructor, the same way the ordinary (non-custom)
+	// default path already qualifies NewDefault<TypeName>() for external refs.
+	md := &ConfigMetadata{
+		Type:     "object",
+		Ref:      "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
+		GoStruct: GoStructConfig{CustomDefault: &CustomDefaultConfig{}},
+	}
+
+	require.Equal(t,
+		"confighttp.NewDefaultClientConfig()",
+		FormatDefaultValue(md, "client", nil, GeneratorEnv{rootPackage: "go.opentelemetry.io/collector", componentPackage: "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"}),
+	)
+}
+
+func TestFormatDefaultValue_CustomDefaultExplicitNameIsQualifiedForExternalRef(t *testing.T) {
+	// An explicit go_struct.custom_default.name must still get the target package prepended for
+	// an external $ref - the explicit name is written unqualified, exactly like the derived one.
+	md := &ConfigMetadata{
+		Type:     "object",
+		Ref:      "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
+		GoStruct: GoStructConfig{CustomDefault: &CustomDefaultConfig{Name: "NewCustomClientConfig"}},
+	}
+
+	require.Equal(t,
+		"confighttp.NewCustomClientConfig()",
+		FormatDefaultValue(md, "client", nil, GeneratorEnv{rootPackage: "go.opentelemetry.io/collector", componentPackage: "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"}),
+	)
+}
+
+func TestFormatDefaultValue_CustomDefaultExplicitlyQualifiedNameIsNotDoubleQualified(t *testing.T) {
+	// If the author already wrote a fully qualified name themselves, don't prepend the resolved
+	// $ref qualifier on top of it.
+	md := &ConfigMetadata{
+		Type:     "object",
+		Ref:      "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
+		GoStruct: GoStructConfig{CustomDefault: &CustomDefaultConfig{Name: "otherpkg.NewCustomClientConfig"}},
+	}
+
+	require.Equal(t,
+		"otherpkg.NewCustomClientConfig()",
+		FormatDefaultValue(md, "client", nil, GeneratorEnv{rootPackage: "go.opentelemetry.io/collector", componentPackage: "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"}),
+	)
 }
 
 func TestRenderDurationExpr_InvalidInputs(t *testing.T) {
@@ -2444,7 +2738,8 @@ func TestFormatDefaultValue_MapDefault(t *testing.T) {
 		Values: &ConfigMetadata{Type: "string"},
 	}
 
-	require.Equal(t, `map[string]string{"env": "prod"}`, FormatDefaultValue(md, "labels", defaultValue(map[string]any{"env": "prod"}), "", ""))
+	val := FormatDefaultValue(md, "labels", defaultValue(map[string]any{"env": "prod"}), GeneratorEnv{rootPackage: "", componentPackage: ""})
+	require.Equal(t, `map[string]string{"env": "prod"}`, val)
 }
 
 func TestFormatDefaultValue_OptionalObjectDefault(t *testing.T) {
@@ -2456,7 +2751,35 @@ func TestFormatDefaultValue_OptionalObjectDefault(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, "configoptional.Some(NewDefaultClient())", FormatDefaultValue(md, "client", defaultValue(map[string]any{"endpoint": "localhost"}), "", ""))
+	val := FormatDefaultValue(md, "client", defaultValue(map[string]any{"endpoint": "localhost"}), GeneratorEnv{rootPackage: "", componentPackage: ""})
+	require.Equal(t, "configoptional.Some(NewDefaultClient())", val)
+}
+
+func TestFormatDefaultValue_OptionalObjectDefaultMode(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:       "object",
+		IsOptional: true,
+		Properties: map[string]*ConfigMetadata{
+			"endpoint": {Type: "string", Default: defaultValue("localhost")},
+		},
+		GoStruct: GoStructConfig{OptionalMode: OptionalModeDefault},
+	}
+
+	val := FormatDefaultValue(md, "client", defaultValue(map[string]any{"endpoint": "localhost"}),
+		GeneratorEnv{rootPackage: "", componentPackage: ""})
+	require.Equal(t, "configoptional.Default(NewDefaultClient())", val)
+}
+
+func TestFormatDefaultValue_OptionalObjectDefaultModeWithoutSchemaDefault(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:       "object",
+		IsOptional: true,
+		Properties: map[string]*ConfigMetadata{"endpoint": {Type: "string"}},
+		GoStruct:   GoStructConfig{OptionalMode: OptionalModeDefault},
+	}
+
+	val := FormatDefaultValue(md, "client", nil, GeneratorEnv{rootPackage: "", componentPackage: ""})
+	require.Equal(t, "configoptional.Default(Client{})", val)
 }
 
 func TestFormatDefaultValue_PointerSliceOfObjects(t *testing.T) {
@@ -2471,7 +2794,8 @@ func TestFormatDefaultValue_PointerSliceOfObjects(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, "&[]TargetsItem{NewDefaultTargetsItem()}", FormatDefaultValue(md, "targets", defaultValue([]any{map[string]any{}}), "", ""))
+	val := FormatDefaultValue(md, "targets", defaultValue([]any{map[string]any{}}), GeneratorEnv{rootPackage: "", componentPackage: ""})
+	require.Equal(t, "&[]TargetsItem{NewDefaultTargetsItem()}", val)
 }
 
 func TestFormatDefaultValue_NilDefault(t *testing.T) {
@@ -2499,7 +2823,8 @@ func TestFormatDefaultValue_NilDefault(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.expected, FormatDefaultValue(tt.metadata, "endpoint", defaultValue(nil), "", ""))
+			val := FormatDefaultValue(tt.metadata, "endpoint", defaultValue(nil), GeneratorEnv{rootPackage: "", componentPackage: ""})
+			require.Equal(t, tt.expected, val)
 		})
 	}
 }
@@ -2511,18 +2836,12 @@ func TestFormatBaseValue(t *testing.T) {
 		IsOptional: true,
 	}
 
-	require.Equal(t, `"localhost"`, FormatBaseValue(md, "endpoint", defaultValue("localhost"), "", ""))
-	require.Empty(t, FormatBaseValue(
-		&ConfigMetadata{Type: "string", GoStruct: GoStructConfig{IgnoreDefault: true}},
-		"endpoint",
-		defaultValue("localhost"),
-		"",
-		"",
-	))
+	require.Equal(t, `"localhost"`, FormatBaseValue(md, "endpoint", defaultValue("localhost"), GeneratorEnv{rootPackage: "", componentPackage: ""}))
+	require.Empty(t, FormatBaseValue(&ConfigMetadata{Type: "string", GoStruct: GoStructConfig{IgnoreDefault: true}}, "endpoint", defaultValue("localhost"), GeneratorEnv{rootPackage: "", componentPackage: ""}))
 }
 
 func TestFormatDefaultValue_UnsetDefault(t *testing.T) {
-	require.Empty(t, FormatDefaultValue(&ConfigMetadata{Type: "integer"}, "port", nil, "", ""))
+	require.Empty(t, FormatDefaultValue(&ConfigMetadata{Type: "integer"}, "port", nil, GeneratorEnv{rootPackage: "", componentPackage: ""}))
 }
 
 func TestFormatDefaultValue_Panics(t *testing.T) {
@@ -2548,10 +2867,10 @@ func TestFormatDefaultValue_Panics(t *testing.T) {
 			defaultValue: defaultValue("localhost"),
 		},
 		{
-			name: "invalid slice value type GoType",
+			name: "invalid slice value type go_struct.type",
 			metadata: &ConfigMetadata{
 				Type:   "slice",
-				Values: &ConfigMetadata{GoType: "github.com/pkg."},
+				Values: &ConfigMetadata{GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 			},
 			defaultValue: defaultValue([]any{"localhost"}),
 		},
@@ -2564,16 +2883,16 @@ func TestFormatDefaultValue_Panics(t *testing.T) {
 			defaultValue: defaultValue("localhost"),
 		},
 		{
-			name: "invalid map value type GoType",
+			name: "invalid map value type go_struct.type",
 			metadata: &ConfigMetadata{
 				Type:   "map",
-				Values: &ConfigMetadata{GoType: "github.com/pkg."},
+				Values: &ConfigMetadata{GoStruct: GoStructConfig{Type: "github.com/pkg."}},
 			},
 			defaultValue: defaultValue(map[string]any{"endpoint": "localhost"}),
 		},
 		{
 			name:         "invalid duration default value",
-			metadata:     &ConfigMetadata{Type: "string", GoType: "time.Duration"},
+			metadata:     &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}},
 			defaultValue: defaultValue("invalid-duration"),
 		},
 	}
@@ -2581,7 +2900,7 @@ func TestFormatDefaultValue_Panics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require.Panics(t, func() {
-				FormatDefaultValue(tt.metadata, "endpoint", tt.defaultValue, "", "")
+				FormatDefaultValue(tt.metadata, "endpoint", tt.defaultValue, GeneratorEnv{rootPackage: "", componentPackage: ""})
 			})
 		})
 	}
@@ -2624,6 +2943,16 @@ func TestWrapDefaultValue(t *testing.T) {
 			},
 			expected: "configoptional.Some(defaultValue)",
 		},
+		{
+			name: "optional object default mode",
+			metadata: &ConfigMetadata{
+				Type:       "object",
+				IsOptional: true,
+				Properties: map[string]*ConfigMetadata{"name": {Type: "string"}},
+				GoStruct:   GoStructConfig{OptionalMode: OptionalModeDefault},
+			},
+			expected: "configoptional.Default(defaultValue)",
+		},
 	}
 
 	for _, tt := range tests {
@@ -2638,13 +2967,14 @@ func TestFormatDefaultValue_ResolvedReferenceWithDefaults(t *testing.T) {
 		Type: "object",
 		Ref:  "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
 		Properties: map[string]*ConfigMetadata{
-			"timeout": {Type: "string", GoType: "time.Duration", Default: defaultValue("30s")},
+			"timeout": {Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}, Default: defaultValue("30s")},
 		},
 	}
 
+	env := GeneratorEnv{rootPackage: "go.opentelemetry.io/collector", componentPackage: "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"}
 	require.Equal(t,
 		"confighttp.NewDefaultClientConfig()",
-		FormatDefaultValue(md, "client", defaultValue(map[string]any{"timeout": "30s"}), "go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"),
+		FormatDefaultValue(md, "client", defaultValue(map[string]any{"timeout": "30s"}), env),
 	)
 }
 
@@ -2655,7 +2985,7 @@ func TestFormatDefaultValue_ResolvedPrimitiveReferenceWithDefault(t *testing.T) 
 		Default: defaultValue(8080),
 	}
 
-	require.Equal(t, "8080", FormatDefaultValue(md, "port", defaultValue(8080), "", ""))
+	require.Equal(t, "8080", FormatDefaultValue(md, "port", defaultValue(8080), GeneratorEnv{rootPackage: "", componentPackage: ""}))
 }
 
 func TestFormatDefaultValue_ResolvedReferenceWithoutDefaults(t *testing.T) {
@@ -2665,8 +2995,9 @@ func TestFormatDefaultValue_ResolvedReferenceWithoutDefaults(t *testing.T) {
 		Ref:  "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
 	}
 
+	env := GeneratorEnv{rootPackage: "go.opentelemetry.io/collector", componentPackage: "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"}
 	require.Empty(t,
-		FormatDefaultValue(md, "client", defaultValue(map[string]any{}), "go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"),
+		FormatDefaultValue(md, "client", defaultValue(map[string]any{}), env),
 	)
 }
 
@@ -2676,7 +3007,7 @@ func TestHasDefaultValue(t *testing.T) {
 	require.True(t, hasDefaultValue(&ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
-			"timeout": {Type: "string", GoType: "time.Duration", Default: defaultValue("30s")},
+			"timeout": {Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}, Default: defaultValue("30s")},
 		},
 	}))
 	require.True(t, hasDefaultValue(&ConfigMetadata{
@@ -2690,10 +3021,38 @@ func TestHasDefaultValue(t *testing.T) {
 		Default:  defaultValue("value"),
 		GoStruct: GoStructConfig{IgnoreDefault: true},
 	}))
+	require.False(t, hasDefaultValue(&ConfigMetadata{
+		Type:     "object",
+		GoStruct: GoStructConfig{IgnoreDefault: true},
+		Properties: map[string]*ConfigMetadata{
+			"timeout": {Type: "string", Default: defaultValue("30s")},
+		},
+	}))
+	require.False(t, hasDefaultValue(&ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"ignored": {
+				Type:     "object",
+				GoStruct: GoStructConfig{IgnoreDefault: true},
+				Properties: map[string]*ConfigMetadata{
+					"timeout": {Type: "string", Default: defaultValue("30s")},
+				},
+			},
+		},
+	}))
 	// External ref without any property defaults must not be treated as having defaults.
 	require.False(t, hasDefaultValue(&ConfigMetadata{
 		Type: "object",
 		Ref:  "go.opentelemetry.io/collector/config/confighttp.ClientConfig",
+	}))
+	// go_struct.custom_default alone (no literal "default") still counts as having a default.
+	require.True(t, hasDefaultValue(&ConfigMetadata{
+		Type:     "string",
+		GoStruct: GoStructConfig{CustomDefault: &CustomDefaultConfig{}},
+	}))
+	require.False(t, hasDefaultValue(&ConfigMetadata{
+		Type:     "string",
+		GoStruct: GoStructConfig{CustomDefault: &CustomDefaultConfig{}, IgnoreDefault: true},
 	}))
 }
 
@@ -2712,7 +3071,7 @@ func TestHasNonZeroDefault(t *testing.T) {
 	require.True(t, hasNonZeroDefault(&ConfigMetadata{
 		Type: "object",
 		Properties: map[string]*ConfigMetadata{
-			"timeout": {Type: "string", GoType: "time.Duration", Default: defaultValue("30s")},
+			"timeout": {Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}, Default: defaultValue("30s")},
 		},
 	}))
 	require.False(t, hasNonZeroDefault(&ConfigMetadata{
@@ -2720,6 +3079,30 @@ func TestHasNonZeroDefault(t *testing.T) {
 		Properties: map[string]*ConfigMetadata{
 			"base": {Type: "object", Default: defaultValue(map[string]any{})},
 		},
+	}))
+	require.False(t, hasNonZeroDefault(&ConfigMetadata{
+		Type:       "object",
+		IsOptional: true,
+		Properties: map[string]*ConfigMetadata{
+			"base": {Type: "object", Default: defaultValue(map[string]any{})},
+		},
+	}))
+	require.False(t, hasNonZeroDefault(&ConfigMetadata{
+		Type:      "object",
+		IsPointer: true,
+		Properties: map[string]*ConfigMetadata{
+			"base": {Type: "object", Default: defaultValue(map[string]any{})},
+		},
+	}))
+	// go_struct.custom_default is always treated as a non-zero default, since the actual
+	// runtime value cannot be inspected statically.
+	require.True(t, hasNonZeroDefault(&ConfigMetadata{
+		Type:     "string",
+		GoStruct: GoStructConfig{CustomDefault: &CustomDefaultConfig{}},
+	}))
+	require.False(t, hasNonZeroDefault(&ConfigMetadata{
+		Type:     "string",
+		GoStruct: GoStructConfig{CustomDefault: &CustomDefaultConfig{}, IgnoreDefault: true},
 	}))
 }
 
@@ -2733,7 +3116,7 @@ func TestIsRequired(t *testing.T) {
 }
 
 func TestNewCfgFns_ShouldOmitEmpty(t *testing.T) {
-	fns := NewCfgFns("", "")
+	fns := NewCfgFns(GeneratorEnv{rootPackage: "", componentPackage: ""})
 	shouldOmitEmpty := fns["shouldOmitEmpty"].(func(*ConfigMetadata, string, *ConfigMetadata) bool)
 
 	md := &ConfigMetadata{Required: []string{"endpoint"}}
@@ -2758,12 +3141,100 @@ func TestMapCustomDefaults_NestedObjectOverrides(t *testing.T) {
 	exprs := MapCustomDefaults(md, defaultValue(map[string]any{
 		"host": "localhost",
 		"port": float64(9090),
-	}), "", "")
+	}), GeneratorEnv{rootPackage: "", componentPackage: ""})
 
 	require.ElementsMatch(t, []string{
 		`.Host = "localhost"`,
 		`.Port = 9090`,
 	}, exprs)
+}
+
+func TestMapCustomDefaults_StableOrderAcrossRuns(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"zulu":  {Type: "string"},
+			"alpha": {Type: "string"},
+			"mike":  {Type: "string"},
+			"bravo": {Type: "string"},
+		},
+	}
+	input := defaultValue(map[string]any{
+		"zulu":  "z",
+		"alpha": "a",
+		"mike":  "m",
+		"bravo": "b",
+	})
+
+	want := []string{`.Alpha = "a"`, `.Bravo = "b"`, `.Mike = "m"`, `.Zulu = "z"`}
+	for range 20 {
+		require.Equal(t, want, MapCustomDefaults(md, input, GeneratorEnv{rootPackage: "", componentPackage: ""}))
+	}
+}
+
+func TestMapCustomDefaults_NestedStructFieldOverride(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"server_config": {
+				Type: "object",
+				Ref:  "go.opentelemetry.io/collector/config/confighttp.server_config",
+				Properties: map[string]*ConfigMetadata{
+					"read_header_timeout": {
+						Type:     "string",
+						Default:  "1m",
+						GoStruct: GoStructConfig{Type: "time.Duration"},
+					},
+					"write_timeout": {
+						Type:     "string",
+						Default:  "30s",
+						GoStruct: GoStructConfig{Type: "time.Duration"},
+					},
+				},
+			},
+		},
+	}
+
+	exprs := MapCustomDefaults(md, defaultValue(map[string]any{
+		"server_config": map[string]any{"read_header_timeout": "0s"},
+	}), GeneratorEnv{rootPackage: "go.opentelemetry.io/collector", componentPackage: ""})
+
+	require.Equal(t, []string{
+		".ServerConfig.ReadHeaderTimeout = 0",
+	}, exprs)
+}
+
+func TestMapCustomDefaults_ExplicitNullOverride(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"tls": {
+				Type:       "object",
+				Ref:        "go.opentelemetry.io/collector/config/configtls.server_config",
+				IsOptional: true,
+				Properties: map[string]*ConfigMetadata{
+					"min_version": {Type: "string", Default: "1.2"},
+				},
+			},
+		},
+	}
+
+	exprs := MapCustomDefaults(md, defaultValue(map[string]any{"tls": nil}), GeneratorEnv{rootPackage: "go.opentelemetry.io/collector", componentPackage: ""})
+
+	require.Equal(t, []string{".TLS = configoptional.None[configtls.ServerConfig]()"}, exprs)
+}
+
+func TestMapCustomDefaults_ExplicitNullOverride_RequiredFieldPanics(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"host": {Type: "string"},
+		},
+	}
+
+	require.Panics(t, func() {
+		MapCustomDefaults(md, defaultValue(map[string]any{"host": nil}), GeneratorEnv{rootPackage: "", componentPackage: ""})
+	})
 }
 
 func TestMapCustomDefaults_SliceOfObjectsOverrides(t *testing.T) {
@@ -2779,7 +3250,7 @@ func TestMapCustomDefaults_SliceOfObjectsOverrides(t *testing.T) {
 
 	exprs := MapCustomDefaults(md, defaultValue([]any{
 		map[string]any{"url": "http://example.com"},
-	}), "", "")
+	}), GeneratorEnv{rootPackage: "", componentPackage: ""})
 
 	require.Equal(t, []string{`[0].URL = "http://example.com"`}, exprs)
 }
@@ -2811,14 +3282,14 @@ func TestMapCustomDefaults_Panics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require.Panics(t, func() {
-				MapCustomDefaults(tt.metadata, tt.defaultValue, "", "")
+				MapCustomDefaults(tt.metadata, tt.defaultValue, GeneratorEnv{rootPackage: "", componentPackage: ""})
 			})
 		})
 	}
 }
 
 func TestMapCustomDefaults_EmptyInput(t *testing.T) {
-	require.Empty(t, MapCustomDefaults(&ConfigMetadata{Type: "string"}, nil, "", ""))
+	require.Empty(t, MapCustomDefaults(&ConfigMetadata{Type: "string"}, nil, GeneratorEnv{rootPackage: "", componentPackage: ""}))
 }
 
 func TestMapCustomDefaults_ScalarSlice(t *testing.T) {
@@ -2827,7 +3298,7 @@ func TestMapCustomDefaults_ScalarSlice(t *testing.T) {
 		Values: &ConfigMetadata{Type: "string"},
 	}
 
-	require.Empty(t, MapCustomDefaults(md, defaultValue([]any{"value"}), "", ""))
+	require.Empty(t, MapCustomDefaults(md, defaultValue([]any{"value"}), GeneratorEnv{rootPackage: "", componentPackage: ""}))
 }
 
 func TestMapCustomDefaults_IgnoreDefault(t *testing.T) {
@@ -2839,11 +3310,11 @@ func TestMapCustomDefaults_IgnoreDefault(t *testing.T) {
 		},
 	}
 
-	require.Empty(t, MapCustomDefaults(md, defaultValue(map[string]any{"host": "localhost"}), "", ""))
+	require.Empty(t, MapCustomDefaults(md, defaultValue(map[string]any{"host": "localhost"}), GeneratorEnv{rootPackage: "", componentPackage: ""}))
 }
 
 func TestIsExternalRef(t *testing.T) {
-	fns := NewCfgFns("go.opentelemetry.io/collector", "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper")
+	fns := NewCfgFns(GeneratorEnv{rootPackage: "go.opentelemetry.io/collector", componentPackage: "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper"})
 	isExternalRef := fns["isExternalRef"].(func(string) bool)
 
 	tests := []struct {
@@ -2891,19 +3362,19 @@ func TestMapCustomDefaults_ExternalRefWithProperties(t *testing.T) {
 		Ref:  "go.opentelemetry.io/collector/scraper/scraperhelper.controller_config",
 		Properties: map[string]*ConfigMetadata{
 			"timeout": {
-				Type:   "string",
-				GoType: "time.Duration",
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "time.Duration"},
 			},
 		},
 	}
 
-	exprs := MapCustomDefaults(md, map[string]any{"timeout": "30s"}, "", "")
+	exprs := MapCustomDefaults(md, map[string]any{"timeout": "30s"}, GeneratorEnv{rootPackage: "", componentPackage: ""})
 	require.Len(t, exprs, 1)
 	require.Equal(t, ".Timeout = 30*time.Second", exprs[0])
 }
 
 func TestNewCfgFns_DefaultHelpers(t *testing.T) {
-	fns := NewCfgFns("", "")
+	fns := NewCfgFns(GeneratorEnv{rootPackage: "", componentPackage: ""})
 
 	formatDefaultValue := fns["formatDefaultValue"].(func(*ConfigMetadata, string, any) string)
 	formatBaseValue := fns["formatBaseValue"].(func(*ConfigMetadata, string, any) string)
@@ -3005,9 +3476,9 @@ func TestExtractValidators_DefsValidatorNotOverwrittenByRefSite(t *testing.T) {
 	defs := ExtractDefsFromConfig(md)
 	require.Contains(t, defs, "batch_config")
 
-	validators := ExtractValidators(defs["batch_config"])
+	validators := ExtractValidators("batch_config", defs["batch_config"])
 	require.Len(t, validators, 1)
-	require.Equal(t, ".", validators[0].FieldName)
+	require.Equal(t, "batch_config", validators[0].FieldName)
 	require.Equal(t, "validateBatchConfig", validators[0].CustomValidator,
 		"struct-level validator must come from the type definition, not the ref-site property")
 }
@@ -3038,10 +3509,26 @@ func TestExtractValidators_EnumValidators(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ExtractValidators(tt.metadata)
+			result := ExtractValidators("config", tt.metadata)
 			require.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestExtractValidators_EnumWithDifferentCustomTypeIsOmitted(t *testing.T) {
+	md := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"protocol": {
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "int"},
+				Enum:     []any{"http", "tcp"},
+			},
+		},
+	}
+
+	validators := ExtractValidators("config", md)
+	require.Empty(t, validators)
 }
 
 func TestExtractImports_EnumAddsSlices(t *testing.T) {
@@ -3051,9 +3538,31 @@ func TestExtractImports_EnumAddsSlices(t *testing.T) {
 			"level": {Type: "string", Enum: []any{"a", "b"}},
 		},
 	}
-	imports, err := ExtractImportsFromConfig(md, "example.com/root", "example.com/component")
+	imports, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "example.com/root", componentPackage: "example.com/component"})
 	require.NoError(t, err)
 	require.Contains(t, imports, "slices")
+}
+
+func TestExtractImports_EnumWithMatchingCustomTypeAddsSlices(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:     "string",
+		GoStruct: GoStructConfig{Type: "string"},
+		Enum:     []any{"a", "b"},
+	}
+	imports, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "example.com/root", componentPackage: "example.com/component"})
+	require.NoError(t, err)
+	require.Contains(t, imports, "slices")
+}
+
+func TestExtractImports_EnumWithDifferentCustomTypeOmitsSlices(t *testing.T) {
+	md := &ConfigMetadata{
+		Type:     "string",
+		GoStruct: GoStructConfig{Type: "int"},
+		Enum:     []any{"a", "b"},
+	}
+	imports, err := ExtractImportsFromConfig(md, GeneratorEnv{rootPackage: "example.com/root", componentPackage: "example.com/component"})
+	require.NoError(t, err)
+	require.NotContains(t, imports, "slices")
 }
 
 func TestFormatEnumSlice(t *testing.T) {

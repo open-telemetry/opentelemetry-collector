@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
-// Partitioner is an interface that returns the the partition key of the given element.
+// Partitioner is an interface that returns the partition key of the given element.
 type Partitioner[T any] interface {
 	GetKey(context.Context, T) string
 }

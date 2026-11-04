@@ -75,6 +75,51 @@ func TestResolver_ResolveSchema_InternalReference(t *testing.T) {
 	require.Equal(t, "Target type description", result.Config.Properties["config"].Description)
 }
 
+func TestResolver_ResolveSchema_RefGoStructOptions(t *testing.T) {
+	resolver := &Resolver{loader: NewLoader("")}
+	typeValidator := &CustomValidatorConfig{Name: "validateTarget"}
+	refValidator := &CustomValidatorConfig{Name: "validateRef"}
+	typeDefault := &CustomDefaultConfig{Name: "NewDefaultTarget"}
+	src := &ConfigsMetadata{
+		Config: &ConfigMetadata{
+			Type: ObjectType,
+			Properties: map[string]*ConfigMetadata{
+				"inherited": {Ref: "target_type"},
+				"overridden": {
+					Ref: "target_type",
+					GoStruct: GoStructConfig{
+						CustomValidator: refValidator,
+					},
+				},
+			},
+		},
+		ExportedConfigs: map[string]*ConfigMetadata{
+			"target_type": {
+				Type:         ObjectType,
+				InternalOnly: true,
+				GoStruct: GoStructConfig{
+					CustomValidator: typeValidator,
+					CustomDefault:   typeDefault,
+				},
+			},
+		},
+	}
+
+	result, err := resolver.ResolveSchema(src)
+	require.NoError(t, err)
+
+	inherited := result.Config.Properties["inherited"].GoStruct
+	assert.Nil(t, inherited.CustomValidator, "definition validator must not become a property validator")
+	assert.Equal(t, typeDefault, inherited.CustomDefault, "custom default should carry over from the definition")
+
+	overridden := result.Config.Properties["overridden"].GoStruct
+	assert.Equal(t, refValidator, overridden.CustomValidator, "an explicit ref-site validator should be retained")
+	assert.Equal(t, typeDefault, overridden.CustomDefault, "custom default should carry over from the definition")
+
+	assert.Equal(t, typeValidator, result.ExportedConfigs["target_type"].GoStruct.CustomValidator,
+		"the definition should retain its own validator")
+}
+
 func TestResolver_ResolveSchema_UnknownInternalReference(t *testing.T) {
 	resolver := &Resolver{
 		loader: NewLoader(""),
@@ -364,14 +409,14 @@ func TestResolver_ResolveSchema_DurationFormat(t *testing.T) {
 	timeout := result.Config.Properties["timeout"]
 	require.Equal(t, SchemaType("string"), timeout.Type)
 	require.Empty(t, timeout.Format, "format should be cleared")
-	require.Equal(t, "time.Duration", timeout.GoType)
+	require.Equal(t, "time.Duration", timeout.GoStruct.Type)
 	require.Equal(t, `^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$`, timeout.Pattern)
 	require.Equal(t, "Request timeout", timeout.Description)
 
 	interval := result.Config.Properties["interval"]
 	require.Equal(t, SchemaType("string"), interval.Type)
 	require.Empty(t, interval.Format)
-	require.Equal(t, "time.Duration", interval.GoType)
+	require.Equal(t, "time.Duration", interval.GoStruct.Type)
 	require.Equal(t, `^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$`, interval.Pattern)
 }
 
@@ -755,8 +800,8 @@ func TestResolver_ResolveSchema_DecoratesPropNames(t *testing.T) {
 		Properties: map[string]*ConfigMetadata{
 			"endpoint": {Type: "string"},
 			"storage": {
-				Type:   "string",
-				GoType: "go.opentelemetry.io/collector/component.ID",
+				Type:     "string",
+				GoStruct: GoStructConfig{Type: "go.opentelemetry.io/collector/component.ID"},
 			},
 		},
 	}}
@@ -795,34 +840,34 @@ func TestResolver_ResolveSchema_ExtendedTypes_InProperties(t *testing.T) {
 	count := result.Config.Properties["count"]
 	require.NotNil(t, count)
 	assert.Equal(t, SchemaType("int64"), count.Type)
-	assert.Empty(t, count.GoType)
+	assert.Empty(t, count.GoStruct.Type)
 
 	ratio := result.Config.Properties["ratio"]
 	require.NotNil(t, ratio)
 	assert.Equal(t, SchemaType("float32"), ratio.Type)
-	assert.Empty(t, ratio.GoType)
+	assert.Empty(t, ratio.GoStruct.Type)
 
 	timeout := result.Config.Properties["timeout"]
 	require.NotNil(t, timeout)
 	assert.Equal(t, SchemaType("string"), timeout.Type)
-	assert.Equal(t, "time.Duration", timeout.GoType)
+	assert.Equal(t, "time.Duration", timeout.GoStruct.Type)
 	assert.Equal(t, goDurationPattern, timeout.Pattern)
 	assert.Empty(t, timeout.Format)
 
 	ts := result.Config.Properties["ts"]
 	require.NotNil(t, ts)
 	assert.Equal(t, SchemaType("string"), ts.Type)
-	assert.Equal(t, "time.Time", ts.GoType)
+	assert.Equal(t, "time.Time", ts.GoStruct.Type)
 
 	token := result.Config.Properties["token"]
 	require.NotNil(t, token)
 	assert.Equal(t, SchemaType("string"), token.Type)
-	assert.Equal(t, "go.opentelemetry.io/collector/config/configopaque.String", token.GoType)
+	assert.Equal(t, "go.opentelemetry.io/collector/config/configopaque.String", token.GoStruct.Type)
 
 	comp := result.Config.Properties["component"]
 	require.NotNil(t, comp)
 	assert.Equal(t, SchemaType("string"), comp.Type)
-	assert.Equal(t, "go.opentelemetry.io/collector/component.ID", comp.GoType)
+	assert.Equal(t, "go.opentelemetry.io/collector/component.ID", comp.GoStruct.Type)
 }
 
 func TestResolver_ResolveSchema_ExtendedType_InArrayItems(t *testing.T) {
@@ -847,7 +892,7 @@ func TestResolver_ResolveSchema_ExtendedType_InArrayItems(t *testing.T) {
 	assert.Equal(t, SchemaType("slice"), ids.Type)
 	require.NotNil(t, ids.Values)
 	assert.Equal(t, SchemaType("string"), ids.Values.Type)
-	assert.Equal(t, "go.opentelemetry.io/collector/component.ID", ids.Values.GoType)
+	assert.Equal(t, "go.opentelemetry.io/collector/component.ID", ids.Values.GoStruct.Type)
 }
 
 func TestResolver_ResolveSchema_ExtendedType_InAdditionalProperties(t *testing.T) {
@@ -871,7 +916,7 @@ func TestResolver_ResolveSchema_ExtendedType_InAdditionalProperties(t *testing.T
 	require.NotNil(t, secrets)
 	require.NotNil(t, secrets.Values)
 	assert.Equal(t, SchemaType("string"), secrets.Values.Type)
-	assert.Equal(t, "go.opentelemetry.io/collector/config/configopaque.String", secrets.Values.GoType)
+	assert.Equal(t, "go.opentelemetry.io/collector/config/configopaque.String", secrets.Values.GoStruct.Type)
 }
 
 func TestResolver_ResolveSchema_ExtendedType_InDefs_ViaRef(t *testing.T) {
@@ -896,7 +941,7 @@ func TestResolver_ResolveSchema_ExtendedType_InDefs_ViaRef(t *testing.T) {
 	count := result.Config.Properties["count"]
 	require.NotNil(t, count)
 	assert.Equal(t, SchemaType("int64"), count.Type)
-	assert.Empty(t, count.GoType)
+	assert.Empty(t, count.GoStruct.Type)
 }
 
 func TestResolver_ResolveSchema_ExtendedType_OpaqueMap(t *testing.T) {
@@ -916,7 +961,7 @@ func TestResolver_ResolveSchema_ExtendedType_OpaqueMap(t *testing.T) {
 	headers := result.Config.Properties["headers"]
 	require.NotNil(t, headers)
 	assert.Equal(t, SchemaType("map"), headers.Type)
-	assert.Equal(t, "go.opentelemetry.io/collector/config/configopaque.MapList", headers.GoType)
+	assert.Equal(t, "go.opentelemetry.io/collector/config/configopaque.MapList", headers.GoStruct.Type)
 	require.NotNil(t, headers.Values)
 	assert.Equal(t, SchemaType("string"), headers.Values.Type)
 }

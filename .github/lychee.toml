@@ -6,3 +6,8 @@ exclude  = [
     "^http(s)?://localhost",
     "^http(s)?://example.com"
 ]
+
+# GitHub renders comment anchors client-side, so only check the issue/PR itself.
+remap = [
+    '^(https://github\.com/[^/]+/[^/]+/(issues|pull)/\d+)#(issuecomment|pullrequestreview|discussion_r)-?\d+$ $1',
+]

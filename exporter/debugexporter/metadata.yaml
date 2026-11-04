@@ -12,3 +12,11 @@ status:
     alpha: [traces, metrics, logs, profiles]
   distributions: [core, contrib, k8s]
   warnings: [Unstable Output Format]
+
+sending_queue:
+  support: has_overrides
+  rationale: Debug output is synchronous and unbatched by default.
+  overrides:
+    enabled: false
+    batch:
+      enabled: false

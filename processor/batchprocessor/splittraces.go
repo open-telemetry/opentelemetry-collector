@@ -8,8 +8,9 @@ import (
 )
 
 // splitTraces removes spans from the input trace and returns a new trace of the specified size.
-func splitTraces(size int, src ptrace.Traces) ptrace.Traces {
-	if src.SpanCount() <= size {
+// spans must equal src.SpanCount(); callers pass it to avoid recounting.
+func splitTraces(size int, src ptrace.Traces, spans int) ptrace.Traces {
+	if spans <= size {
 		return src
 	}
 	totalCopiedSpans := 0

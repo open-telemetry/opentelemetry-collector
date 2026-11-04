@@ -1,0 +1,10 @@
+type: test
+
+status:
+  class: receiver
+  stability:
+    stable:
+      - traces
+  unsupported_platforms:
+    - freebsd
+    - illumos

@@ -17,6 +17,8 @@ import (
 
 	"go.yaml.in/yaml/v3"
 	"golang.org/x/tools/go/packages"
+
+	"go.opentelemetry.io/collector/confmap"
 )
 
 const (
@@ -81,6 +83,16 @@ func (sl *schemaLoader) load(ref Ref) (*ConfigsMetadata, error) {
 }
 
 func (sl *schemaLoader) loadFromFile(filePath string) (*ConfigsMetadata, error) {
+	info, err := os.Stat(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("failed to read schema from %s: %w", filePath, err)
+	}
+	if info.IsDir() {
+		return nil, fmt.Errorf("failed to read schema from %s: is a directory", filePath)
+	}
 	body, err := os.ReadFile(filePath) // #nosec G304
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -89,9 +101,27 @@ func (sl *schemaLoader) loadFromFile(filePath string) (*ConfigsMetadata, error) 
 		return nil, fmt.Errorf("failed to read schema from %s: %w", filePath, err)
 	}
 
-	var metadata ConfigsMetadata
-	if err := yaml.Unmarshal(body, &metadata); err != nil {
+	metadata, err := unmarshalSchema(body)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse schema from %s: %w", filePath, err)
+	}
+
+	return metadata, nil
+}
+
+func unmarshalSchema(body []byte) (*ConfigsMetadata, error) {
+	var raw map[string]any
+	if err := yaml.Unmarshal(body, &raw); err != nil {
+		return nil, err
+	}
+
+	var metadata ConfigsMetadata
+	if err := confmap.NewFromStringMap(raw).Unmarshal(&metadata, confmap.WithIgnoreUnused()); err != nil {
+		return nil, err
+	}
+
+	if err := ApplyConfigsOrder(body, &metadata); err != nil {
+		return nil, err
 	}
 
 	return &metadata, nil
@@ -145,12 +175,12 @@ func (sl *schemaLoader) tryLoad(ref Ref, version string) (*ConfigsMetadata, erro
 		return nil, fmt.Errorf("failed to read response body from %s: %w", url, err)
 	}
 
-	var metadata ConfigsMetadata
-	if err := yaml.Unmarshal(body, &metadata); err != nil {
+	metadata, err := unmarshalSchema(body)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse schema from %s: %w", url, err)
 	}
 
-	return &metadata, nil
+	return metadata, nil
 }
 
 func (sl *schemaLoader) persistToFile(filePath string, md *ConfigsMetadata) error {

@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -37,15 +38,39 @@ func TestBaseExporter(t *testing.T) {
 
 func TestBaseExporterWithOptions(t *testing.T) {
 	want := errors.New("my error")
+	tracer := noop.NewTracerProvider().Tracer("test")
+
 	be, err := NewBaseExporter(
 		exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }),
 		WithTimeout(NewDefaultTimeoutConfig()),
+		WithTracer(tracer),
 	)
 	require.NoError(t, err)
+	require.Equal(t, tracer, be.tracer)
 	require.Equal(t, want, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.Equal(t, want, be.Shutdown(context.Background()))
+}
+
+func TestBaseExporterWithTracer(t *testing.T) {
+	telemetry := componenttest.NewTelemetry()
+	t.Cleanup(func() {
+		require.NoError(t, telemetry.Shutdown(context.Background()))
+	})
+
+	telemetrySettings := telemetry.NewTelemetrySettings()
+	tracer := telemetrySettings.TracerProvider.Tracer("test-tracer")
+
+	be, err := NewBaseExporter(
+		exportertest.NewNopSettings(exportertest.NopType),
+		pipeline.SignalMetrics,
+		noopExport,
+		WithTracer(tracer),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, be)
+	require.Same(t, tracer, be.tracer)
 }
 
 func TestQueueOptionsWithRequestExporter(t *testing.T) {
