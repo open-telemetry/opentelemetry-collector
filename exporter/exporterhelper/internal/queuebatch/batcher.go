@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
-	"go.opentelemetry.io/collector/pipeline"
+	queuebatchtelemetry "go.opentelemetry.io/collector/internal/telemetry/queuebatch"
 )
 
 // Batcher is in charge of reading items from the queue and send them out asynchronously.
@@ -28,9 +28,7 @@ type batcherSettings[T any] struct {
 	mergeCtx    func(context.Context, context.Context) context.Context
 	next        sender.SendFunc[T]
 	maxWorkers  int
-	id          component.ID
-	signal      pipeline.Signal
-	telemetry   component.TelemetrySettings
+	obsMetrics  queuebatchtelemetry.ObsMetrics
 	logger      *zap.Logger
 }
 

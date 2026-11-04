@@ -44,6 +44,9 @@ type Config struct {
 
 	// BatchConfig it configures how the requests are consumed from the queue and batch together during consumption.
 	Batch configoptional.Optional[BatchConfig] `mapstructure:"batch"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
@@ -106,6 +109,9 @@ type BatchConfig struct {
 
 	// Partition defines the partitioning of the batches configuration.
 	Partition PartitionConfig `mapstructure:"partition"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultBatchConfig returns the default BatchConfig.
@@ -139,6 +145,9 @@ type PartitionConfig struct {
 	// Keep it above the data arrival interval to avoid churning partitions. Default is 90s.
 	// Must be positive.
 	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultPartitionConfig returns the default PartitionConfig.
