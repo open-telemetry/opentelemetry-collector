@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/zstd"
 	internalmetadata "go.opentelemetry.io/collector/config/configgrpc/internal/metadata"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -542,6 +543,21 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 	opts, err := gss.getGrpcServerOptions(context.Background(), nil, componenttest.NewNopTelemetrySettings(), []ToServerOption{})
 	require.NoError(t, err)
 	assert.Len(t, opts, 10)
+}
+
+func TestGrpcServerMaxRecvMsgSizeReachesZstdDecoder(t *testing.T) {
+	// The zstd decompressor allocates a window as large as the frame declares
+	// before it produces any output, so it has to know what the server accepts.
+	gss := &ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:1234",
+			Transport: confignet.TransportTypeTCP,
+		},
+		MaxRecvMsgSizeMiB: 64,
+	}
+	_, err := gss.getGrpcServerOptions(context.Background(), nil, componenttest.NewNopTelemetrySettings(), nil)
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, zstd.DecoderMaxWindow(), uint64(64*1024*1024))
 }
 
 func TestGrpcServerAuthSettings(t *testing.T) {

@@ -14,6 +14,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"runtime"
 	"strings"
 	"testing"
 	"testing/iotest"
@@ -1067,6 +1068,109 @@ func TestPooledZstdReadCloserReadAfterClose(t *testing.T) {
 
 	assert.Equal(t, http.StatusBadRequest, resp.Code, "Must match the expected code")
 	assert.Empty(t, resp.Body.String(), "Must match the returned string")
+}
+
+func TestZstdRejectsOversizedWindow(t *testing.T) {
+	// A 10-byte frame whose header declares a 512MiB window: the decoder
+	// allocates the window as soon as it parses the header, before it produces
+	// any output.
+	payload := []byte{
+		0x28, 0xb5, 0x2f, 0xfd, // frame magic
+		0x00,             // frame header descriptor: no content size, no checksum
+		19 << 3,          // window descriptor: 2^29 = 512MiB
+		0x09, 0x00, 0x00, // last block, raw, 1 byte
+		0x41, // block payload
+	}
+	var header zstd.Header
+	require.NoError(t, header.Decode(payload))
+	require.Equal(t, uint64(512*1024*1024), header.WindowSize)
+
+	var readErr error
+	h := httpContentDecompressor(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, readErr = io.ReadAll(r.Body)
+			w.WriteHeader(http.StatusBadRequest)
+		}),
+		defaultMaxRequestBodySize,
+		defaultErrorHandler,
+		defaultCompressionAlgorithms(),
+		nil,
+	)
+
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(payload))
+	req.Header.Set(headerContentEncoding, "zstd")
+
+	resp := httptest.NewRecorder()
+	allocated := allocatedBytes(func() { h.ServeHTTP(resp, req) })
+
+	require.ErrorIs(t, readErr, zstd.ErrWindowSizeExceeded)
+	assert.Less(t, allocated, uint64(4*1024*1024), "decoder must not allocate the window the frame declares")
+}
+
+func TestZstdDecodesFrameFromDefaultEncoder(t *testing.T) {
+	// A default-configured encoder that does not buffer the whole payload
+	// declares its 8MiB window instead of the content size, so the window bound
+	// must stay above the configured max request body size for this frame to
+	// keep decoding.
+	body := bytes.Repeat([]byte("collector payload "), 64*1024)
+	var buf bytes.Buffer
+	zw, err := zstd.NewWriter(&buf)
+	require.NoError(t, err)
+	_, err = zw.Write(body)
+	require.NoError(t, err)
+	require.NoError(t, zw.Close())
+
+	var header zstd.Header
+	require.NoError(t, header.Decode(buf.Bytes()))
+	require.Greater(t, header.WindowSize, uint64(2*1024*1024), "frame must declare a window above the request body limit")
+
+	h := httpContentDecompressor(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			got, readErr := io.ReadAll(r.Body)
+			assert.NoError(t, readErr)
+			assert.Equal(t, body, got)
+			w.WriteHeader(http.StatusOK)
+		}),
+		2*1024*1024,
+		defaultErrorHandler,
+		defaultCompressionAlgorithms(),
+		nil,
+	)
+
+	req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(buf.Bytes()))
+	req.Header.Set(headerContentEncoding, "zstd")
+
+	resp := httptest.NewRecorder()
+	h.ServeHTTP(resp, req)
+
+	assert.Equal(t, http.StatusOK, resp.Code)
+}
+
+func TestZstdWindowBound(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		maxBody int64
+		want    uint64
+	}{
+		{name: "unset", maxBody: 0, want: zstdDefaultEncoderWindow},
+		{name: "below default encoder window", maxBody: 1 << 20, want: zstdDefaultEncoderWindow},
+		{name: "above default encoder window", maxBody: 20 << 20, want: 20 << 20},
+		{name: "clamped to the library ceiling", maxBody: 1 << 30, want: zstd.MaxWindowSize},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, zstdWindowBound(tc.maxBody))
+		})
+	}
+}
+
+// allocatedBytes reports the bytes allocated while fn runs.
+func allocatedBytes(fn func()) uint64 {
+	var before, after runtime.MemStats
+	runtime.GC()
+	runtime.ReadMemStats(&before)
+	fn()
+	runtime.ReadMemStats(&after)
+	return after.TotalAlloc - before.TotalAlloc
 }
 
 type closeTrackingReadCloser struct {
