@@ -7,6 +7,8 @@ import (
 	"strconv"
 
 	jsoniter "github.com/json-iterator/go"
+
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func BorrowIterator(data []byte) *Iterator {
@@ -18,12 +20,6 @@ func BorrowIterator(data []byte) *Iterator {
 func ReturnIterator(s *Iterator) {
 	jsoniter.ConfigFastest.ReturnIterator(s.delegate)
 }
-
-// maxRecursionDepth bounds the nesting of messages decoded by generated UnmarshalJSON
-// methods, guarding against stack exhaustion from deeply nested untrusted JSON (an
-// AnyValue whose value is an arrayValue/kvlistValue of AnyValues, repeated). It mirrors
-// the proto unmarshal recursion limit; keep the two values in sync.
-const maxRecursionDepth = 100
 
 type Iterator struct {
 	delegate              *jsoniter.Iterator
@@ -37,7 +33,7 @@ type Iterator struct {
 // on exit. When it returns false the caller must return without recursing further.
 func (iter *Iterator) EnterRecursive() bool {
 	iter.depth++
-	if iter.depth > maxRecursionDepth {
+	if iter.depth > proto.RecursionLimit {
 		iter.depth--
 		iter.ReportError("UnmarshalJSON", "max recursion depth exceeded")
 		return false
