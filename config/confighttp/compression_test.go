@@ -421,6 +421,13 @@ func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 			expectedError:         "unsupported Content-Encoding",
 		},
 		{
+			name:                  "OnlyZstd_Identity_Rejected",
+			compressionAlgorithms: []string{"zstd"},
+			contentEncoding:       "identity",
+			expectedStatus:        http.StatusBadRequest,
+			expectedError:         "unsupported Content-Encoding",
+		},
+		{
 			name:                  "OnlyZstd_Zstd_Accepted",
 			compressionAlgorithms: []string{"zstd"},
 			contentEncoding:       "zstd",
@@ -640,9 +647,7 @@ func TestCompressionAlgorithmsEdgeCases(t *testing.T) {
 			wantBodyEcho:          true,
 		},
 		{
-			// "identity" means no encoding per RFC 9110 §8.4.1, so it is
-			// treated the same as "" when "" is enabled.
-			name:                  "Mixed_Identity_ShouldAccept",
+			name:                  "Mixed_Identity_Accepted",
 			compressionAlgorithms: []string{"", "gzip", "zstd"},
 			contentEncoding:       "identity",
 			body:                  testBody,
