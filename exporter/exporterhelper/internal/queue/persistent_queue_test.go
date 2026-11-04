@@ -17,11 +17,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -1168,6 +1174,140 @@ func TestPersistentQueue_RestoredUsedSizeIsCorrectedOnDrain(t *testing.T) {
 	assert.Equal(t, int64(0), pq.Size())
 
 	require.NoError(t, pq.Shutdown(context.Background()))
+}
+
+// failDispatchStorageClient wraps a storage client and fails only the next dispatch Batch,
+// which is the Batch that updates the queue metadata and reads the item in getNextItem.
+type failDispatchStorageClient struct {
+	storage.Client
+	mu      sync.Mutex
+	nextErr error
+}
+
+func (c *failDispatchStorageClient) failNextDispatch(err error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.nextErr = err
+}
+
+func (c *failDispatchStorageClient) Batch(ctx context.Context, ops ...*storage.Operation) error {
+	c.mu.Lock()
+	if c.nextErr != nil && isDispatchBatch(ops) {
+		err := c.nextErr
+		c.nextErr = nil
+		c.mu.Unlock()
+		return err
+	}
+	c.mu.Unlock()
+	return c.Client.Batch(ctx, ops...)
+}
+
+func isDispatchBatch(ops []*storage.Operation) bool {
+	return len(ops) == 2 &&
+		ops[0].Type == storage.Set && ops[0].Key == metadataKey &&
+		ops[1].Type == storage.Get
+}
+
+func TestPersistentQueue_DispatchFailureRecordsDroppedRequest(t *testing.T) {
+	errDispatch := errors.New("storage batch failed")
+	badBytes := []byte("not-a-number")
+	_, _, errUnmarshal := int64Encoding{}.Unmarshal(badBytes)
+	require.Error(t, errUnmarshal)
+
+	tests := []struct {
+		name        string
+		inject      func(t *testing.T, client *failDispatchStorageClient)
+		expectedErr error
+	}{
+		{
+			name: "storage batch failure",
+			inject: func(_ *testing.T, client *failDispatchStorageClient) {
+				client.failNextDispatch(errDispatch)
+			},
+			expectedErr: errDispatch,
+		},
+		{
+			name: "unmarshal failure",
+			inject: func(t *testing.T, client *failDispatchStorageClient) {
+				require.NoError(t, client.Set(context.Background(), getItemKey(0), badBytes))
+			},
+			expectedErr: errUnmarshal,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tt := componenttest.NewTelemetry()
+			t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+			core, observed := observer.New(zap.WarnLevel)
+			set := newSettingsWithStorage(request.SizerTypeRequests, 1000)
+			set.Telemetry = tt.NewTelemetrySettings()
+			set.Telemetry.Logger = zap.New(core)
+			obsMetrics, err := NewExporterObsMetrics(set.Telemetry, set.ID, set.Signal, nil)
+			require.NoError(t, err)
+			t.Cleanup(obsMetrics.Shutdown)
+			set.ObsMetrics = obsMetrics
+
+			inner, err := storagetest.NewMockStorageExtension(nil).GetClient(context.Background(), component.KindExporter, set.ID, set.Signal.String())
+			require.NoError(t, err)
+			client := &failDispatchStorageClient{Client: inner}
+
+			ps := newPersistentQueue[intRequest](set).(*persistentQueue[intRequest])
+			ps.initClient(context.Background(), client)
+
+			require.NoError(t, ps.Offer(context.Background(), intRequest(10)))
+			require.NoError(t, ps.Offer(context.Background(), intRequest(20)))
+			tc.inject(t, client)
+
+			// The request at index 0 is dropped, and the next valid request is dispatched.
+			require.True(t, consume(ps, func(_ context.Context, val intRequest) error {
+				assert.Equal(t, intRequest(20), val)
+				return nil
+			}))
+			assert.Equal(t, int64(0), ps.Size())
+			requireCurrentlyDispatchedItemsEqual(t, ps, nil)
+
+			// Existing cleanup behavior: the dropped item is removed from storage.
+			stored, err := inner.Get(context.Background(), getItemKey(0))
+			require.NoError(t, err)
+			assert.Nil(t, stored)
+
+			// The queue keeps working normally after the drop.
+			require.NoError(t, ps.Offer(context.Background(), intRequest(30)))
+			require.True(t, consume(ps, func(_ context.Context, val intRequest) error {
+				assert.Equal(t, intRequest(30), val)
+				return nil
+			}))
+
+			metadatatest.AssertEqualExporterQueueDroppedRequests(t, tt,
+				[]metricdata.DataPoint[int64]{{
+					Attributes: attribute.NewSet(
+						attribute.String(exporterKey, set.ID.String()),
+						attribute.String(dataTypeKey, set.Signal.String()),
+					),
+					Value: 1,
+				}},
+				metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+			for _, name := range []string{
+				"otelcol_exporter_send_failed_spans",
+				"otelcol_exporter_enqueue_failed_spans",
+			} {
+				_, err = tt.GetMetric(name)
+				require.Error(t, err, "unexpected metric %s", name)
+			}
+
+			warnings := observed.FilterMessage("Failed to dispatch item from persistent queue, dropping it").All()
+			require.Len(t, warnings, 1)
+			assert.Equal(t, zap.WarnLevel, warnings[0].Level)
+			fields := warnings[0].ContextMap()
+			assert.Equal(t, uint64(0), fields[zapIndex])
+			assert.Equal(t, tc.expectedErr.Error(), fields["error"])
+
+			require.NoError(t, ps.Shutdown(context.Background()))
+		})
+	}
 }
 
 func requireCurrentlyDispatchedItemsEqual(t *testing.T, pq *persistentQueue[intRequest], compare []uint64) {
