@@ -127,6 +127,7 @@ will not be enabled.
 - `transport`: The transport protocol to use. Defaults to `tcp`. See the [confignet README](../confignet/README.md) for more information.
 - `max_request_body_size`: configures the maximum allowed body size in bytes for a single request. Default: `20971520` (20MiB)
   - The limit is checked on the bytes received over the wire and, if the request is compressed (see `compression_algorithms`), again on the **decompressed** body. A compressed request is therefore rejected if its decompressed size exceeds the limit, even when its compressed size is well below it. This protects the collector from memory exhaustion caused by a small compressed payload that expands to a very large one.
+  - This also bounds the window a `zstd` decoder allocates: a frame declares its window in the header and the decoder allocates it before producing any output, so a frame declaring a larger window is rejected. The bound never drops below 8MiB, so frames from encoders with default settings keep decoding, and never rises above 512MiB, the library's ceiling.
   - Set it to the maximum expected **decompressed** payload size, not the compressed size.
   - Requests over the limit are rejected. To stay under the limit, have clients send smaller batches (recommended) or raise this value.
 - `include_metadata`: propagates the client metadata from the incoming requests to the downstream consumers. Default: `false`

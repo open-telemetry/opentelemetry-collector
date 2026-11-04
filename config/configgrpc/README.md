@@ -89,7 +89,7 @@ The following table summarizes the results, including some additional columns co
 
 Compression ratios will vary in practice as they are highly dependent on the data's information entropy. Compression rates are dependent on the speed of the CPU, and the size of payloads being compressed: smaller payloads compress at slower rates relative to larger payloads, which are able to amortize fixed computation costs over more bytes.
 
-`gzip` is the only required compression algorithm required for [OTLP servers](https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#protocol-details), and is a natural first choice. It is not as fast as `snappy`, but achieves better compression ratios and has reasonable performance. If your collector is CPU bound and your OTLP server supports it, you may benefit from using `snappy` compression. If your collector is CPU bound and has a very fast network link, you may benefit from disabling compression, which is the default.
+`gzip` is the only required compression algorithm required for [OTLP servers](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md#configuration-options), and is a natural first choice. It is not as fast as `snappy`, but achieves better compression ratios and has reasonable performance. If your collector is CPU bound and your OTLP server supports it, you may benefit from using `snappy` compression. If your collector is CPU bound and has a very fast network link, you may benefit from disabling compression, which is the default.
 
 ## Server Configuration
 
@@ -112,6 +112,8 @@ README](../confignet/README.md).
     - `timeout`
 - [`max_concurrent_streams`](https://godoc.org/google.golang.org/grpc#MaxConcurrentStreams)
 - [`max_recv_msg_size_mib`](https://godoc.org/google.golang.org/grpc#MaxRecvMsgSize)
+  - This also bounds the zstd decoder window. A compressed message declares a window in its frame header that the decoder allocates before producing any output, so a `zstd` frame declaring a larger window is rejected. The bound never drops below 8MiB, so frames from encoders with default settings keep decoding, and never rises above 512MiB, the library's ceiling.
+  - Setting `grpc.MaxRecvMsgSize` through [`WithGrpcServerOption`](https://pkg.go.dev/go.opentelemetry.io/collector/config/configgrpc#WithGrpcServerOption) instead of this field does not raise the decoder's window bound, so a client compressing with a window larger than the default bound will be rejected.
 - [`read_buffer_size`](https://godoc.org/google.golang.org/grpc#ReadBufferSize)
 - [`tls`](../configtls/README.md)
 - [`write_buffer_size`](https://godoc.org/google.golang.org/grpc#WriteBufferSize)
