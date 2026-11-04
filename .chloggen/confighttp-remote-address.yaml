@@ -1,0 +1,8 @@
+change_type: bug_fix
+component: pkg/confighttp
+note: Preserve the HTTP client's connection address, including IPv6 zones and Unix socket addresses.
+issues: [14545]
+subtext: |
+  HTTP servers now use the connection's remote address in client.Info instead of
+  parsing the request's RemoteAddr string. TCP addresses retain their port and zone.
+change_logs: [user, api]
