@@ -51,7 +51,7 @@ Out of scope: `cmd/schemagen`, `cmd/githubgen` and `internal/cmd` (developer too
 - Certificates and keys under `testdata/` directories are throwaway fixtures for the tests.
 
 ## How you rate severity
-No special rules for rating severity are provided; use the project's published security model (https://github.com/open-telemetry/.github/blob/main/SECURITY.md).
+Assess severity using the project guidelines (https://github.com/open-telemetry/sig-security/blob/main/security-response.md#severity) and use the project's published security model (https://github.com/open-telemetry/.github/blob/main/SECURITY.md).
 
 ## What threats are out of scope
 - Anything that needs a valid client credential. Telemetry from an authenticated client is trusted, so a payload that crashes, stalls or exhausts memory in a decoder, a processor or an exporter, or one that makes the collector mishandle its own data, is a bug and should be reported as one. The exception is a flaw that breaks isolation between clients, which is rated medium above.
