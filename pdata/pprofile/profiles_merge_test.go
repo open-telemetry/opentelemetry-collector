@@ -594,21 +594,17 @@ func TestProfilesMergeTo(t *testing.T) {
 // into a single table is the only invalid reference during a merge.
 func newConformantProfiles() Profiles {
 	p := NewProfiles()
-	d := p.Dictionary()
-	d.StringTable().Append("")
-	d.AttributeTable().AppendEmpty()
-	d.StackTable().AppendEmpty()
-	d.LocationTable().AppendEmpty()
-	d.FunctionTable().AppendEmpty()
-	d.MappingTable().AppendEmpty()
-	d.LinkTable().AppendEmpty()
+	addMissingZeroEntries(p.Dictionary())
 	return p
 }
 
 // TestProfilesMergeTo_SwitchDictionaryErrors exercises each error-propagation
 // path in the switchDictionary chain by injecting a single out-of-range index
-// into an otherwise spec-conformant source. Every case asserts the wrapped
-// error surfaces and that the destination is left untouched.
+// into an otherwise spec-conformant source. Every case runs against a
+// destination that already has the zero value entries and an empty one, and
+// asserts the wrapped error surfaces and no resource profiles are moved. The
+// destination dictionary can still gain entries before the error, as it could
+// before: the zero value entries, and entries translated before the failing one.
 func TestProfilesMergeTo_SwitchDictionaryErrors(t *testing.T) {
 	const badIdx = 99
 
@@ -685,16 +681,25 @@ func TestProfilesMergeTo_SwitchDictionaryErrors(t *testing.T) {
 			wantErr: "error switching dictionary for sample type",
 		},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
-			src := newConformantProfiles()
-			tt.mutate(src)
-			dest := newConformantProfiles()
+		for _, d := range []struct {
+			name string
+			dest Profiles
+		}{
+			{"seeded", newConformantProfiles()},
+			{"empty", NewProfiles()},
+		} {
+			t.Run(tt.name+"/"+d.name, func(t *testing.T) {
+				src := newConformantProfiles()
+				tt.mutate(src)
 
-			err := src.MergeTo(dest)
-			require.ErrorContains(t, err, tt.wantErr)
-			assert.Equal(t, 0, dest.ResourceProfiles().Len(),
-				"destination must be left untouched on error")
-		})
+				err := src.MergeTo(d.dest)
+				require.ErrorContains(t, err, tt.wantErr)
+				assert.Equal(t, 0, d.dest.ResourceProfiles().Len(),
+					"no resource profiles must be moved on error")
+				assert.Empty(t, d.dest.Dictionary().StringTable().At(0),
+					"the destination dictionary must start with its zero value entry")
+			})
+		}
 	}
 }
 
