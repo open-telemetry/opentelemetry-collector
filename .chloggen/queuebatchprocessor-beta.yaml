@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: processor/queue_batch
+
+note: Promote the queue_batch processor to beta for traces, metrics, and logs, and to alpha for profiles.
+
+issues: [12022]
+
+change_logs: [user]
