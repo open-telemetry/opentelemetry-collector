@@ -37,6 +37,7 @@
       "GOARM",
       "GOBIN",
       "GOCMD",
+      "GOMAXPROCS",
       "GOMEMLIMIT",
       "GOPATH",
       "GOPROXY",
@@ -500,6 +501,7 @@
       "subcomponent",
       "subcomponents",
       "subpackages",
+      "supportbundle",
       "swiatekm",
       "syft",
       "systemcputime",
@@ -577,9 +579,7 @@
       "zipkinv",
       "zpages",
       "zpagesextension",
-      "zstd",
-      "GOMAXPROCS",
-      "supportbundle"
+      "zstd"
     ],
     "enableGlobDot": true,
     "useGitignore": true,
