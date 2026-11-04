@@ -4,12 +4,16 @@
 package zpagesextension
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
+	"io"
 	"net"
 	"net/http"
 	"runtime"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
@@ -62,7 +66,7 @@ func TestZPagesExtensionUsage(t *testing.T) {
 		},
 	}
 
-	zpagesExt := newServer(cfg, newZpagesTelemetrySettings())
+	zpagesExt := newServer(cfg, newZpagesTelemetrySettings(), component.NewDefaultBuildInfo())
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Start(context.Background(), newZPagesHost()))
@@ -93,7 +97,7 @@ func TestZPagesExtensionBadAuthExtension(t *testing.T) {
 			}),
 		},
 	}
-	zpagesExt := newServer(cfg, newZpagesTelemetrySettings())
+	zpagesExt := newServer(cfg, newZpagesTelemetrySettings(), component.NewDefaultBuildInfo())
 	require.EqualError(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()), `failed to resolve authenticator "foo/bar": authenticator not found`)
 }
 
@@ -111,7 +115,7 @@ func TestZPagesExtensionPortAlreadyInUse(t *testing.T) {
 			},
 		},
 	}
-	zpagesExt := newServer(cfg, newZpagesTelemetrySettings())
+	zpagesExt := newServer(cfg, newZpagesTelemetrySettings(), component.NewDefaultBuildInfo())
 	require.NotNil(t, zpagesExt)
 
 	require.Error(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -127,7 +131,7 @@ func TestZPagesMultipleStarts(t *testing.T) {
 		},
 	}
 
-	zpagesExt := newServer(cfg, newZpagesTelemetrySettings())
+	zpagesExt := newServer(cfg, newZpagesTelemetrySettings(), component.NewDefaultBuildInfo())
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -147,7 +151,7 @@ func TestZPagesMultipleShutdowns(t *testing.T) {
 		},
 	}
 
-	zpagesExt := newServer(cfg, newZpagesTelemetrySettings())
+	zpagesExt := newServer(cfg, newZpagesTelemetrySettings(), component.NewDefaultBuildInfo())
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -165,7 +169,7 @@ func TestZPagesShutdownWithoutStart(t *testing.T) {
 		},
 	}
 
-	zpagesExt := newServer(cfg, newZpagesTelemetrySettings())
+	zpagesExt := newServer(cfg, newZpagesTelemetrySettings(), component.NewDefaultBuildInfo())
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Shutdown(context.Background()))
@@ -185,7 +189,7 @@ func TestZPagesEnableExpvar(t *testing.T) {
 		},
 	}
 
-	zpagesExt := newServer(cfg, newZpagesTelemetrySettings())
+	zpagesExt := newServer(cfg, newZpagesTelemetrySettings(), component.NewDefaultBuildInfo())
 	require.NotNil(t, zpagesExt)
 
 	require.NoError(t, zpagesExt.Start(context.Background(), newZPagesHost()))
@@ -200,4 +204,70 @@ func TestZPagesEnableExpvar(t *testing.T) {
 	defer resp.Body.Close()
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
+func TestZPagesSupportBundle(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	cfg := &Config{
+		ServerConfig: confighttp.ServerConfig{
+			NetAddr: confignet.AddrConfig{
+				Endpoint:  addr,
+				Transport: confignet.TransportTypeTCP,
+			},
+		},
+		SupportBundle: configoptional.Some(SupportBundleConfig{
+			ArchiveName: "my-bundle",
+			Gatherers:   GatherersConfig{PProf: configoptional.Some(PProfConfig{})},
+		}),
+	}
+	set := newZpagesTelemetrySettings()
+	set.Resource.Attributes().PutStr("service.instance.id", "instance-1")
+	buildInfo := component.BuildInfo{Command: "otelcol", Description: "test collector", Version: "1.2.3"}
+
+	zpagesExt := newServer(cfg, set, buildInfo)
+	require.NoError(t, zpagesExt.Start(context.Background(), newZPagesHost()))
+	t.Cleanup(func() { require.NoError(t, zpagesExt.Shutdown(context.Background())) })
+
+	resp, err := http.Get("http://" + addr + "/debug/v1/supportbundle")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Contains(t, resp.Header.Get("Content-Disposition"), `filename="my-bundle-`)
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	zr, err := zip.NewReader(bytes.NewReader(body), int64(len(body)))
+	require.NoError(t, err)
+	var names []string
+	for _, f := range zr.File {
+		names = append(names, f.Name)
+	}
+	assert.ElementsMatch(t, []string{
+		"my-bundle/manifest.yaml",
+		"my-bundle/pprof/heap.pprof",
+		"my-bundle/pprof/goroutine.pprof",
+	}, names)
+
+	rc, err := zr.Open("my-bundle/manifest.yaml")
+	require.NoError(t, err)
+	defer rc.Close()
+	manifest, err := io.ReadAll(rc)
+	require.NoError(t, err)
+	assert.Contains(t, string(manifest), "version: 1.2.3")
+	assert.Contains(t, string(manifest), "service.instance.id: instance-1")
+}
+
+func TestZPagesSupportBundleDisabled(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	cfg := createDefaultConfig().(*Config)
+	cfg.ServerConfig.NetAddr.Endpoint = addr
+
+	zpagesExt := newServer(cfg, newZpagesTelemetrySettings(), component.NewDefaultBuildInfo())
+	require.NoError(t, zpagesExt.Start(context.Background(), newZPagesHost()))
+	t.Cleanup(func() { require.NoError(t, zpagesExt.Shutdown(context.Background())) })
+
+	resp, err := http.Get("http://" + addr + "/debug/v1/supportbundle")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }

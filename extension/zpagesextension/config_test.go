@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
@@ -33,23 +34,103 @@ func TestUnmarshalConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&cfg))
 
-	expectedServerConfig := confighttp.NewDefaultServerConfig()
-	expectedServerConfig.NetAddr.Endpoint = "localhost:56888"
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.ServerConfig = confighttp.NewDefaultServerConfig()
+	expected.ServerConfig.NetAddr.Endpoint = "localhost:56888"
 
-	assert.Equal(t, &Config{ServerConfig: expectedServerConfig}, cfg)
+	assert.Equal(t, expected, cfg)
 }
 
-// Fields declared next to the squashed ServerConfig must still be decoded.
-func TestUnmarshalConfigWithExpvar(t *testing.T) {
-	cm := confmap.NewFromStringMap(map[string]any{
-		"endpoint": "localhost:56888",
-		"expvar":   map[string]any{"enabled": true},
-	})
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	require.NoError(t, cm.Unmarshal(&cfg))
+func TestUnmarshalConfigWithSupportBundle(t *testing.T) {
+	defaults := SupportBundleConfig{
+		ArchiveName: "otelcol-support-bundle",
+		Gatherers:   GatherersConfig{PProf: configoptional.Some(PProfConfig{})},
+	}
+	tests := []struct {
+		name string
+		raw  map[string]any
+		// want is nil when the support bundle must be off.
+		want *SupportBundleConfig
+	}{
+		{name: "absent", raw: map[string]any{}},
+		{name: "empty section", raw: map[string]any{"support_bundle": nil}, want: &defaults},
+		{name: "disabled", raw: map[string]any{"support_bundle": map[string]any{"enabled": false}}},
+		{
+			name: "settings",
+			raw: map[string]any{"support_bundle": map[string]any{
+				"archive_name": "my-bundle",
+				"gatherers":    map[string]any{"pprof": map[string]any{"enabled": false}},
+			}},
+			want: &SupportBundleConfig{ArchiveName: "my-bundle"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := NewFactory().CreateDefaultConfig()
+			require.NoError(t, confmap.NewFromStringMap(tt.raw).Unmarshal(&cfg))
 
-	zCfg := cfg.(*Config)
-	assert.Equal(t, "localhost:56888", zCfg.ServerConfig.NetAddr.Endpoint)
-	assert.True(t, zCfg.Expvar.Enabled)
+			sb := cfg.(*Config).SupportBundle
+			if tt.want == nil {
+				assert.False(t, sb.HasValue())
+				return
+			}
+			require.True(t, sb.HasValue())
+			assert.Equal(t, tt.want, sb.Get())
+		})
+	}
+}
+
+func TestUnmarshalGathererConfig(t *testing.T) {
+	tests := []struct {
+		name    string
+		pprof   map[string]any
+		enabled bool
+	}{
+		{name: "absent", pprof: map[string]any{}, enabled: true},
+		{name: "empty", pprof: map[string]any{"pprof": nil}, enabled: true},
+		{name: "enabled", pprof: map[string]any{"pprof": map[string]any{"enabled": true}}, enabled: true},
+		{name: "disabled", pprof: map[string]any{"pprof": map[string]any{"enabled": false}}, enabled: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := NewFactory().CreateDefaultConfig()
+			raw := map[string]any{"support_bundle": map[string]any{"gatherers": tt.pprof}}
+			require.NoError(t, confmap.NewFromStringMap(raw).Unmarshal(&cfg))
+
+			sb := cfg.(*Config).SupportBundle
+			require.True(t, sb.HasValue())
+			assert.Equal(t, tt.enabled, sb.Get().Gatherers.PProf.HasValue())
+		})
+	}
+}
+
+func TestValidateSupportBundleArchiveName(t *testing.T) {
+	tests := []struct {
+		archiveName string
+		valid       bool
+	}{
+		{archiveName: "otelcol-support-bundle", valid: true},
+		{archiveName: "", valid: false},
+		{archiveName: ".", valid: false},
+		{archiveName: "..", valid: false},
+		{archiveName: "a/b", valid: false},
+		{archiveName: `a\b`, valid: false},
+		{archiveName: "/abs", valid: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.archiveName, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.SupportBundle = configoptional.Some(SupportBundleConfig{ArchiveName: tt.archiveName})
+			if tt.valid {
+				assert.NoError(t, confmap.Validate(cfg))
+			} else {
+				assert.ErrorContains(t, confmap.Validate(cfg), `"archive_name" must be a valid file name with no path separators`)
+			}
+		})
+	}
+
+	// The extension does not check archive_name when the support bundle is off.
+	cfg := createDefaultConfig().(*Config)
+	cfg.SupportBundle = configoptional.None[SupportBundleConfig]()
+	assert.NoError(t, confmap.Validate(cfg))
 }

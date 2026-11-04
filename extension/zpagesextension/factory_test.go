@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension/internal/metadata"
 	"go.opentelemetry.io/collector/internal/testutil"
@@ -23,7 +24,13 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	expectedServerConfig.NetAddr.Endpoint = "localhost:55679"
 
 	cfg := createDefaultConfig()
-	assert.Equal(t, &Config{ServerConfig: expectedServerConfig}, cfg)
+	assert.Equal(t, &Config{
+		ServerConfig: expectedServerConfig,
+		SupportBundle: configoptional.Default(SupportBundleConfig{
+			ArchiveName: "otelcol-support-bundle",
+			Gatherers:   GatherersConfig{PProf: configoptional.Some(PProfConfig{})},
+		}),
+	}, cfg)
 
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ext, err := create(context.Background(), extensiontest.NewNopSettings(metadata.Type), cfg)

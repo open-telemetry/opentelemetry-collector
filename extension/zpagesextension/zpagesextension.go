@@ -17,16 +17,20 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/extension/zpagesextension/internal/supportbundle"
 )
 
 const (
 	tracezPath  = "tracez"
 	expvarzPath = "expvarz"
+	// The version lets a later breaking change use a new path.
+	supportBundlePath = "v1/supportbundle"
 )
 
 type zpagesExtension struct {
 	config              *Config
 	telemetry           component.TelemetrySettings
+	buildInfo           component.BuildInfo
 	zpagesSpanProcessor *zpages.SpanProcessor
 	server              *http.Server
 	stopCh              chan struct{}
@@ -72,6 +76,11 @@ func (zpe *zpagesExtension) Start(ctx context.Context, host component.Host) erro
 	if zpe.config.Expvar.Enabled {
 		zPagesMux.Handle(path.Join("/debug", expvarzPath), expvar.Handler())
 		zpe.telemetry.Logger.Info("Registered zPages expvar handler")
+	}
+
+	if zpe.config.SupportBundle.HasValue() {
+		zPagesMux.Handle(path.Join("/debug", supportBundlePath), zpe.newBundleGenerator(zpe.config.SupportBundle.Get()))
+		zpe.telemetry.Logger.Info("Registered zPages support bundle handler")
 	}
 
 	hostZPages, ok := host.(interface {
@@ -128,10 +137,29 @@ func (zpe *zpagesExtension) Shutdown(context.Context) error {
 	return err
 }
 
-func newServer(config *Config, telemetry component.TelemetrySettings) *zpagesExtension {
+func (zpe *zpagesExtension) newBundleGenerator(cfg *SupportBundleConfig) *supportbundle.Bundler {
+	resource := map[string]string{}
+	for k, v := range zpe.telemetry.Resource.Attributes().All() {
+		resource[k] = v.AsString()
+	}
+	return supportbundle.NewBundler(
+		supportbundle.Settings{
+			ArchiveName: cfg.ArchiveName,
+			BuildInfo:   zpe.buildInfo,
+			Resource:    resource,
+			Logger:      zpe.telemetry.Logger,
+		},
+		[]supportbundle.Entry{
+			{Gatherer: supportbundle.PProfGatherer{}, Enabled: cfg.Gatherers.PProf.HasValue()},
+		},
+	)
+}
+
+func newServer(config *Config, telemetry component.TelemetrySettings, buildInfo component.BuildInfo) *zpagesExtension {
 	return &zpagesExtension{
 		config:              config,
 		telemetry:           telemetry,
+		buildInfo:           buildInfo,
 		zpagesSpanProcessor: zpages.NewSpanProcessor(),
 	}
 }
