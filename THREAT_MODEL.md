@@ -54,7 +54,7 @@ Out of scope: `cmd/schemagen`, `cmd/githubgen` and `internal/cmd` (developer too
 Assess severity using the project guidelines (https://github.com/open-telemetry/sig-security/blob/main/security-response.md#severity) and use the project's published security model (https://github.com/open-telemetry/.github/blob/main/SECURITY.md).
 
 ## What threats are out of scope
-- Anything that needs a valid client credential. Telemetry from an authenticated client is trusted, so a payload that crashes, stalls or exhausts memory in a decoder, a processor or an exporter, or one that makes the collector mishandle its own data, is a bug and should be reported as one. The exception is a flaw that breaks isolation between clients, which is rated medium above.
+- Anything that needs a valid client credential. Telemetry from an authenticated client is trusted, so a payload that crashes, stalls or exhausts memory in a decoder, a processor or an exporter, or one that makes the collector mishandle its own data, is a bug and should be reported as one. The exception is a flaw that breaks isolation between clients.
 - Anything that needs control over the configuration, environment variables or the compiled-in components. A builder manifest or `metadata.yaml` that only makes the tool do what the file says is not a finding either; see the build-time input above for what is.
 - Behaviour the operator opted into explicitly, such as `insecure: true`, `insecure_skip_verify`, or running an endpoint with no authentication configured.
 - `debugexporter` printing telemetry, and zPages exposing internal state on its default `localhost` endpoint. Both are by design.
