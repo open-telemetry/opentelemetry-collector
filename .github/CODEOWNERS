@@ -82,6 +82,7 @@ extension/extensionmiddleware/extensionmiddlewaretest/ @open-telemetry/collector
 extension/extensiontest/                               @open-telemetry/collector-approvers
 extension/memorylimiterextension/                      @open-telemetry/collector-approvers
 extension/xextension/                                  @open-telemetry/collector-approvers
+extension/xextension/queue/                            @open-telemetry/collector-approvers @atoulme
 extension/xextension/storage/                          @open-telemetry/collector-approvers @swiatekm
 extension/zpagesextension/                             @open-telemetry/collector-approvers
 featuregate/                                           @open-telemetry/collector-approvers

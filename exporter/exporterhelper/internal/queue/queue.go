@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/extension/diskqueueextension"
 	queuebatchtelemetry "go.opentelemetry.io/collector/internal/telemetry/queuebatch"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -96,6 +97,11 @@ func newBaseQueue[T request.Request](set Settings[T]) readableQueue[T] {
 	// Configure memory queue or persistent based on the config.
 	if set.StorageID == nil {
 		return newMemoryQueue[T](set)
+	}
+	// disk_access uses the callback-based queue client rather than the storage
+	// client used by the persistent queue.
+	if set.StorageID.Type() == component.MustNewType(diskqueueextension.TypeStr) {
+		return newDiskQueue[T](set)
 	}
 
 	return newPersistentQueue[T](set)
