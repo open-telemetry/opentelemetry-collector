@@ -566,6 +566,14 @@ func TestCompressionAlgorithmsEdgeCases(t *testing.T) {
 			wantBodyEcho:          true,
 		},
 		{
+			name:                  "OnlyEmpty_Identity_Accepted",
+			compressionAlgorithms: []string{""},
+			contentEncoding:       "identity",
+			body:                  testBody,
+			wantStatus:            http.StatusOK,
+			wantBodyEcho:          true,
+		},
+		{
 			name:                  "OnlyEmpty_Gzip_Rejected",
 			compressionAlgorithms: []string{""},
 			contentEncoding:       "gzip",
@@ -632,14 +640,13 @@ func TestCompressionAlgorithmsEdgeCases(t *testing.T) {
 			wantBodyEcho:          true,
 		},
 		{
-			// BUG: "identity" means no encoding per RFC 7231 §3.1.2.2, but
-			// the decompressor rejects it because "identity" is not registered
-			// in availableDecoders. This should be treated the same as "".
+			// "identity" means no encoding per RFC 9110 §8.4.1, so it is
+			// treated the same as "" when "" is enabled.
 			name:                  "Mixed_Identity_ShouldAccept",
 			compressionAlgorithms: []string{"", "gzip", "zstd"},
 			contentEncoding:       "identity",
 			body:                  testBody,
-			wantStatus:            http.StatusOK, // BUG: should be http.StatusOK
+			wantStatus:            http.StatusOK,
 		},
 		{
 			name:                  "Mixed_Snappy_Rejected",

@@ -119,7 +119,7 @@ var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, erro
 		return nil, nil
 	},
 	"identity": func(io.ReadCloser) (io.ReadCloser, error) {
-		// Per RFC 7231 §3.1.2.2, "identity" means no encoding.
+		// Per RFC 9110 §8.4.1, "identity" means no encoding.
 		return nil, nil
 	},
 	"gzip": func(body io.ReadCloser) (io.ReadCloser, error) {
