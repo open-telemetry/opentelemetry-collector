@@ -23,7 +23,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.70.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
-	go.yaml.in/yaml/v3 v3.0.5 // indirect
+	go.yaml.in/yaml/v3 v3.0.6 // indirect
 )
 
 replace go.opentelemetry.io/collector/confmap => ../../

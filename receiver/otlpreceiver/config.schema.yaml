@@ -3,21 +3,22 @@ $defs:
     type: object
     properties:
       logs_url_path:
-        description: The URL path to receive logs on. If omitted "/v1/logs" will be used.
+        description: LogsURLPath is the URL path to receive logs on. If omitted "/v1/logs" will be used.
         $ref: sanitized_url_path
       metrics_url_path:
-        description: The URL path to receive metrics on. If omitted "/v1/metrics" will be used.
+        description: MetricsURLPath is the URL path to receive metrics on. If omitted "/v1/metrics" will be used.
         $ref: sanitized_url_path
       traces_url_path:
-        description: The URL path to receive traces on. If omitted "/v1/traces" will be used.
+        description: TracesURLPath is the URL path to receive traces on. If omitted "/v1/traces" will be used.
         $ref: sanitized_url_path
     allOf:
       - $ref: /config/confighttp.server_config
   protocols:
-    description: Protocols is the configuration for the supported protocols.
+    description: Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
     type: object
     properties:
       grpc:
+        description: GRPC defines common settings for a gRPC server configuration.
         x-optional: true
         $ref: /config/configgrpc.server_config
       http:
@@ -25,7 +26,7 @@ $defs:
         $ref: http_config
   sanitized_url_path:
     type: string
-description: Config defines configuration for OTLP receiver.
+description: Config defines the configuration for OTLP Receiver component.
 type: object
 properties:
   protocols:
