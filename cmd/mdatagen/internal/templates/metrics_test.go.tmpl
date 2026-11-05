@@ -90,11 +90,14 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 
 			{{- if $hasVersionedMetrics }}
-			// Pin migration gates so expectations don't depend on the gates' registered stage.
+			// Pin migration gates so the warning and metric counts are deterministic. When a gate's
+			// stage forbids the requested state (e.g. once promoted to stable), only the gate-dependent
+			// assertions below are skipped; the rest of the test still runs.
+			migrationGatesPinned := true
 			{{- range $name, $metric := .Metrics }}
 			{{- if $metric.Migration }}
-			setFeatureGateForTest(t, {{ printf "%s" $metric.Migration.ThroughGates.DisableOld | publicVar }}FeatureGate, false)
-			setFeatureGateForTest(t, {{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar }}FeatureGate, tt.name == "all_set")
+			migrationGatesPinned = setFeatureGateForTest(t, {{ printf "%s" $metric.Migration.ThroughGates.DisableOld | publicVar }}FeatureGate, false) && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, {{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar }}FeatureGate, tt.name == "all_set") && migrationGatesPinned
 			{{- end }}
 			{{- end }}
 			{{- end }}
@@ -168,12 +171,18 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 			{{- end }}
 
+			{{- if $hasVersionedMetrics }}
+			if migrationGatesPinned {
+			{{- end }}
 			{{- if $hasReagMetrics }}
 			if tt.metricsSet != testDataSetReag {
 				assert.Equal(t, expectedWarnings, observedLogs.Len())
 			}
 			{{- else }}
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
+			{{- end }}
+			{{- if $hasVersionedMetrics }}
+			}
 			{{- end }}
 
 			defaultMetricsCount := 0
@@ -320,10 +329,10 @@ func TestMetricsBuilder(t *testing.T) {
 					allMetricsList = append(allMetricsList, ms.At(mi))
 				}
 			}
-			if tt.metricsSet == testDataSetDefault {
+			if tt.metricsSet == testDataSetDefault {{- if $hasVersionedMetrics }} && migrationGatesPinned{{- end }} {
 				assert.Equal(t, defaultMetricsCount, totalMetricsCount)
 			}
-			if tt.metricsSet == testDataSetAll {
+			if tt.metricsSet == testDataSetAll {{- if $hasVersionedMetrics }} && migrationGatesPinned{{- end }} {
 				assert.Equal(t, allMetricsCount, totalMetricsCount)
 			}
 			validatedMetrics := make(map[string]bool)
@@ -565,8 +574,13 @@ func TestVersionedMetrics(t *testing.T) {
 
         for _, tt := range tests {
             t.Run(tt.name, func(t *testing.T) {
-                setFeatureGateForTest(t, {{ printf "%s" $metric.Migration.ThroughGates.DisableOld | publicVar }}FeatureGate, tt.disableOld)
-                setFeatureGateForTest(t, {{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar }}FeatureGate, tt.enableNew)
+                // This subtest only makes sense for the specific gate combination it describes, so skip
+                // it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+                disableOldSet := setFeatureGateForTest(t, {{ printf "%s" $metric.Migration.ThroughGates.DisableOld | publicVar }}FeatureGate, tt.disableOld)
+                enableNewSet := setFeatureGateForTest(t, {{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar }}FeatureGate, tt.enableNew)
+                if !disableOldSet || !enableNewSet {
+                    t.Skip("feature gate stage does not allow this gate combination")
+                }
 
                 start := pcommon.Timestamp(1_000_000_000)
                 ts := pcommon.Timestamp(1_000_001_000)
@@ -716,19 +730,22 @@ func TestVersionedMetrics(t *testing.T) {
 }
 
 // setFeatureGateForTest sets the gate for the duration of the test and restores its previous state afterwards.
-// It skips the test if the gate's stage does not allow the requested state.
-func setFeatureGateForTest(t *testing.T, gate *featuregate.Gate, enabled bool) {
+// It reports whether the gate reached the requested state. A gate whose stage forbids the requested state
+// (e.g. a stable gate cannot be disabled) is left at its registered default and false is returned, so the
+// caller can decide whether its gate-dependent expectations still apply.
+func setFeatureGateForTest(t *testing.T, gate *featuregate.Gate, enabled bool) bool {
     t.Helper()
     if gate.IsEnabled() == enabled {
-        return
+        return true
     }
     if stage := gate.Stage(); stage == featuregate.StageStable || stage == featuregate.StageDeprecated {
-        t.Skipf("feature gate %q is %s and cannot be set to %t", gate.ID(), stage, enabled)
+        return false
     }
     prev := gate.IsEnabled()
     require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
     t.Cleanup(func() {
         require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
     })
+    return true
 }
 {{- end }}
