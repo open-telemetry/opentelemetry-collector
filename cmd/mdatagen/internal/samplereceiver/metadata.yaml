@@ -31,7 +31,8 @@ status:
   distributions: []
   unsupported_platforms: [freebsd, illumos]
   codeowners:
-    active: [dmitryax]
+    active: [braydonk]
+    emeritus: [dmitryax]
   warnings:
     - Any additional information that should be brought to the consumer's attention
 
