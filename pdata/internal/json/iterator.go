@@ -7,9 +7,9 @@ import (
 	"strconv"
 
 	jsoniter "github.com/json-iterator/go"
-
-	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+const maxRecursionDepth = 100
 
 func BorrowIterator(data []byte) *Iterator {
 	return &Iterator{
@@ -33,7 +33,7 @@ type Iterator struct {
 // on exit. When it returns false the caller must return without recursing further.
 func (iter *Iterator) EnterRecursive() bool {
 	iter.depth++
-	if iter.depth > proto.RecursionLimit {
+	if iter.depth > maxRecursionDepth {
 		iter.depth--
 		iter.ReportError("UnmarshalJSON", "max recursion depth exceeded")
 		return false
