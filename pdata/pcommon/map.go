@@ -63,13 +63,16 @@ func (m Map) EnsureCapacity(capacity int) {
 // If the key does not exist, returns a zero-initialized KeyValue and false.
 // Calling any functions on the returned invalid instance may cause a panic.
 func (m Map) Get(key string) (Value, bool) {
-	for i := range *m.getOrig() {
-		akv := &(*m.getOrig())[i]
+	orig := *m.getOrig()
+	var value *internal.AnyValue
+	for i := range orig {
+		akv := &orig[i]
 		if akv.Key == key {
-			return newValue(&akv.Value, m.getState()), true
+			value = &akv.Value
+			break
 		}
 	}
-	return newValue(nil, m.getState()), false
+	return newValue(value, m.getState()), value != nil
 }
 
 // Remove removes the entry associated with the key and returns true if the key
