@@ -1,4 +1,4 @@
-type: config/confighttp/xconfighttp
+type: xconfighttp
 parent: config/confighttp
 github_project: open-telemetry/opentelemetry-collector
 

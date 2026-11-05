@@ -20,15 +20,15 @@
 
 client/                                                @open-telemetry/collector-approvers
 cmd/builder/                                           @open-telemetry/collector-approvers @dmathieu @braydonk @jmacd
-cmd/mdatagen/                                          @open-telemetry/collector-approvers @braydonk
-cmd/mdatagen/internal/sampleconnector/                 @open-telemetry/collector-approvers @braydonk
-cmd/mdatagen/internal/sampleentityreceiver/            @open-telemetry/collector-approvers @braydonk
-cmd/mdatagen/internal/samplefactoryreceiver/           @open-telemetry/collector-approvers @braydonk
-cmd/mdatagen/internal/samplemigrationscraper/          @open-telemetry/collector-approvers @braydonk
-cmd/mdatagen/internal/samplepkg/                       @open-telemetry/collector-approvers @braydonk
-cmd/mdatagen/internal/sampleprocessor/                 @open-telemetry/collector-approvers @braydonk
-cmd/mdatagen/internal/samplereceiver/                  @open-telemetry/collector-approvers @braydonk
-cmd/mdatagen/internal/samplescraper/                   @open-telemetry/collector-approvers @braydonk
+cmd/mdatagen/                                          @open-telemetry/collector-approvers @braydonk @dmathieu
+cmd/mdatagen/internal/sampleconnector/                 @open-telemetry/collector-approvers @braydonk @dmathieu
+cmd/mdatagen/internal/sampleentityreceiver/            @open-telemetry/collector-approvers @braydonk @dmathieu
+cmd/mdatagen/internal/samplefactoryreceiver/           @open-telemetry/collector-approvers @braydonk @dmathieu
+cmd/mdatagen/internal/samplemigrationscraper/          @open-telemetry/collector-approvers @braydonk @dmathieu
+cmd/mdatagen/internal/samplepkg/                       @open-telemetry/collector-approvers @braydonk @dmathieu
+cmd/mdatagen/internal/sampleprocessor/                 @open-telemetry/collector-approvers @braydonk @dmathieu
+cmd/mdatagen/internal/samplereceiver/                  @open-telemetry/collector-approvers @braydonk @dmathieu
+cmd/mdatagen/internal/samplescraper/                   @open-telemetry/collector-approvers @braydonk @dmathieu
 cmd/schemagen/                                         @open-telemetry/collector-approvers
 component/                                             @open-telemetry/collector-approvers
 component/componentstatus/                             @open-telemetry/collector-approvers

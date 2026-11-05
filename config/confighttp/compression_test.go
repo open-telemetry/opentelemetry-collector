@@ -421,6 +421,13 @@ func TestEmptyCompressionAlgorithmsAllowsUncompressed(t *testing.T) {
 			expectedError:         "unsupported Content-Encoding",
 		},
 		{
+			name:                  "OnlyZstd_Identity_Rejected",
+			compressionAlgorithms: []string{"zstd"},
+			contentEncoding:       "identity",
+			expectedStatus:        http.StatusBadRequest,
+			expectedError:         "unsupported Content-Encoding",
+		},
+		{
 			name:                  "OnlyZstd_Zstd_Accepted",
 			compressionAlgorithms: []string{"zstd"},
 			contentEncoding:       "zstd",
@@ -566,6 +573,14 @@ func TestCompressionAlgorithmsEdgeCases(t *testing.T) {
 			wantBodyEcho:          true,
 		},
 		{
+			name:                  "OnlyEmpty_Identity_Accepted",
+			compressionAlgorithms: []string{""},
+			contentEncoding:       "identity",
+			body:                  testBody,
+			wantStatus:            http.StatusOK,
+			wantBodyEcho:          true,
+		},
+		{
 			name:                  "OnlyEmpty_Gzip_Rejected",
 			compressionAlgorithms: []string{""},
 			contentEncoding:       "gzip",
@@ -632,14 +647,11 @@ func TestCompressionAlgorithmsEdgeCases(t *testing.T) {
 			wantBodyEcho:          true,
 		},
 		{
-			// BUG: "identity" means no encoding per RFC 7231 §3.1.2.2, but
-			// the decompressor rejects it because "identity" is not registered
-			// in availableDecoders. This should be treated the same as "".
-			name:                  "Mixed_Identity_ShouldAccept",
+			name:                  "Mixed_Identity_Accepted",
 			compressionAlgorithms: []string{"", "gzip", "zstd"},
 			contentEncoding:       "identity",
 			body:                  testBody,
-			wantStatus:            http.StatusBadRequest, // BUG: should be http.StatusOK
+			wantStatus:            http.StatusOK,
 		},
 		{
 			name:                  "Mixed_Snappy_Rejected",
