@@ -7,7 +7,7 @@ change_type: bug_fix
 component: pkg/pdata
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add pprofile.Merger so assembling an exporter batch out of many small profiles stops reindexing the destination dictionary on every merge, replacing the quadratic cost with one index build per batch.
+note: Add pprofile.Merger so assembling an exporter batch out of many small profiles stops rebuilding the destination dictionary index on every merge, replacing the quadratic cost with one index build per batch.
 
 # One or more tracking issues or pull requests related to the change
 issues: [16302]
