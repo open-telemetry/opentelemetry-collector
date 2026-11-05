@@ -243,9 +243,11 @@ func (m Map) Len() int {
 //	    ...
 //	})
 func (m Map) Range(f func(k string, v Value) bool) {
-	for i := range *m.getOrig() {
-		kv := &(*m.getOrig())[i]
-		if !f(kv.Key, Value(internal.NewValueWrapper(&kv.Value, m.getState()))) {
+	orig := *m.getOrig()
+	state := m.getState()
+	for i := range orig {
+		kv := &orig[i]
+		if !f(kv.Key, Value(internal.NewValueWrapper(&kv.Value, state))) {
 			break
 		}
 	}
@@ -258,9 +260,11 @@ func (m Map) Range(f func(k string, v Value) bool) {
 //	}
 func (m Map) All() iter.Seq2[string, Value] {
 	return func(yield func(string, Value) bool) {
-		for i := range *m.getOrig() {
-			kv := &(*m.getOrig())[i]
-			if !yield(kv.Key, Value(internal.NewValueWrapper(&kv.Value, m.getState()))) {
+		orig := *m.getOrig()
+		state := m.getState()
+		for i := range orig {
+			kv := &orig[i]
+			if !yield(kv.Key, Value(internal.NewValueWrapper(&kv.Value, state))) {
 				return
 			}
 		}
