@@ -17,7 +17,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"slices"
 	"strings"
 
@@ -36,7 +35,6 @@ import (
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
-	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/hostcapabilities"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
@@ -312,32 +310,7 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 		case *connectorNode:
 			err = n.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ConnectorBuilder, g.nextConsumers(n.ID()))
 		case *capabilitiesNode:
-			capability := consumer.Capabilities{
-				// The fanOutNode represents the aggregate capabilities of the exporters in the pipeline.
-				MutatesData: g.pipelines[n.pipelineID].fanOutNode.getConsumer().Capabilities().MutatesData,
-			}
-			for _, proc := range g.pipelines[n.pipelineID].processors {
-				capability.MutatesData = capability.MutatesData || proc.(*processorNode).getConsumer().Capabilities().MutatesData
-			}
-			next := g.nextConsumers(n.ID())[0]
-			switch n.pipelineID.Signal() {
-			case pipeline.SignalTraces:
-				cc := capabilityconsumer.NewTraces(next.(consumer.Traces), capability)
-				n.baseConsumer = cc
-				n.ConsumeTracesFunc = cc.ConsumeTraces
-			case pipeline.SignalMetrics:
-				cc := capabilityconsumer.NewMetrics(next.(consumer.Metrics), capability)
-				n.baseConsumer = cc
-				n.ConsumeMetricsFunc = cc.ConsumeMetrics
-			case pipeline.SignalLogs:
-				cc := capabilityconsumer.NewLogs(next.(consumer.Logs), capability)
-				n.baseConsumer = cc
-				n.ConsumeLogsFunc = cc.ConsumeLogs
-			case xpipeline.SignalProfiles:
-				cc := capabilityconsumer.NewProfiles(next.(xconsumer.Profiles), capability)
-				n.baseConsumer = cc
-				n.ConsumeProfilesFunc = cc.ConsumeProfiles
-			}
+			g.buildCapabilitiesNode(n)
 		case *fanOutNode:
 			nexts := g.nextConsumers(n.ID())
 			switch n.pipelineID.Signal() {
@@ -372,6 +345,37 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 		}
 	}
 	return nil
+}
+
+// buildCapabilitiesNode builds a pipeline's capabilities consumer from its
+// built processors and fan-out node.
+func (g *Graph) buildCapabilitiesNode(n *capabilitiesNode) {
+	capability := consumer.Capabilities{
+		// The fanOutNode represents the aggregate capabilities of the exporters in the pipeline.
+		MutatesData: g.pipelines[n.pipelineID].fanOutNode.getConsumer().Capabilities().MutatesData,
+	}
+	for _, proc := range g.pipelines[n.pipelineID].processors {
+		capability.MutatesData = capability.MutatesData || proc.(*processorNode).getConsumer().Capabilities().MutatesData
+	}
+	next := g.nextConsumers(n.ID())[0]
+	switch n.pipelineID.Signal() {
+	case pipeline.SignalTraces:
+		cc := capabilityconsumer.NewTraces(next.(consumer.Traces), capability)
+		n.baseConsumer = cc
+		n.ConsumeTracesFunc = cc.ConsumeTraces
+	case pipeline.SignalMetrics:
+		cc := capabilityconsumer.NewMetrics(next.(consumer.Metrics), capability)
+		n.baseConsumer = cc
+		n.ConsumeMetricsFunc = cc.ConsumeMetrics
+	case pipeline.SignalLogs:
+		cc := capabilityconsumer.NewLogs(next.(consumer.Logs), capability)
+		n.baseConsumer = cc
+		n.ConsumeLogsFunc = cc.ConsumeLogs
+	case xpipeline.SignalProfiles:
+		cc := capabilityconsumer.NewProfiles(next.(xconsumer.Profiles), capability)
+		n.baseConsumer = cc
+		n.ConsumeProfilesFunc = cc.ConsumeProfiles
+	}
 }
 
 // Find all nodes
@@ -479,8 +483,9 @@ func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error
 		node := nodes[i]
 		comp, ok := node.(component.Component)
 
-		if !ok {
-			// Skip capabilities/fanout nodes
+		if !ok || !isBuilt(node) {
+			// Skip capabilities/fanout nodes and nodes a failed partial reload
+			// left without a component.
 			continue
 		}
 
@@ -507,207 +512,19 @@ func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error
 	return errs
 }
 
-// UpdateReceivers performs a partial reload of receiver nodes in the graph.
-// Only receivers that have been added, removed, or changed (config or pipeline
-// membership) are affected. Unchanged receivers keep running without
-// interruption. Connectors, processors, exporters, and all other graph nodes
-// are left untouched.
-func (g *Graph) UpdateReceivers(ctx context.Context, set Settings,
-	changedReceivers map[component.ID]bool,
-	newReceiverCfgs map[component.ID]component.Config,
-	receiverFactories map[component.Type]receiver.Factory,
-	host *Host,
-) error {
-	if host == nil {
-		return errors.New("host cannot be nil")
+// isBuilt reports whether a node has a component.
+func isBuilt(node graph.Node) bool {
+	switch n := node.(type) {
+	case *receiverNode:
+		return n.Component != nil
+	case *processorNode:
+		return n.Component != nil
+	case *exporterNode:
+		return n.Component != nil
+	case *connectorNode:
+		return n.Component != nil
 	}
-
-	// Phase 1: Collect current receiver nodes and the pipelines each belongs to.
-	currentReceivers := make(map[int64]*receiverNode)
-	currentPipelines := make(map[int64]map[pipeline.ID]bool)
-	for pipelineID, pipe := range g.pipelines {
-		for nodeID, node := range pipe.receivers {
-			if rn, ok := node.(*receiverNode); ok {
-				currentReceivers[nodeID] = rn
-				if currentPipelines[nodeID] == nil {
-					currentPipelines[nodeID] = make(map[pipeline.ID]bool)
-				}
-				currentPipelines[nodeID][pipelineID] = true
-			}
-		}
-	}
-
-	// Phase 2: Determine desired receiver nodes from the new pipeline configs.
-	desiredPipelines := make(map[int64]map[pipeline.ID]bool)
-	for pipelineID, pipelineCfg := range set.PipelineConfigs {
-		for _, recvID := range pipelineCfg.Receivers {
-			if set.ConnectorBuilder.IsConfigured(recvID) {
-				continue
-			}
-			nodeID := newReceiverNode(pipelineID.Signal(), recvID).ID()
-			if desiredPipelines[nodeID] == nil {
-				desiredPipelines[nodeID] = make(map[pipeline.ID]bool)
-			}
-			desiredPipelines[nodeID][pipelineID] = true
-		}
-	}
-
-	// Phase 3: Categorize each receiver node.
-	toRemove := make(map[int64]*receiverNode)  // present now, absent in desired
-	toRebuild := make(map[int64]*receiverNode) // present in both, but changed
-	toAdd := make(map[int64]bool)              // absent now, present in desired
-
-	for nodeID, rn := range currentReceivers {
-		if _, desired := desiredPipelines[nodeID]; !desired {
-			toRemove[nodeID] = rn
-		} else if !maps.Equal(currentPipelines[nodeID], desiredPipelines[nodeID]) ||
-			changedReceivers[rn.componentID] {
-			toRebuild[nodeID] = rn
-		}
-		// else: unchanged — leave running
-	}
-	for nodeID := range desiredPipelines {
-		if _, exists := currentReceivers[nodeID]; !exists {
-			toAdd[nodeID] = true
-		}
-	}
-
-	if len(toRemove) == 0 && len(toRebuild) == 0 && len(toAdd) == 0 {
-		g.telemetry.Logger.Info("Partial receiver reload: no receiver changes detected")
-		return nil
-	}
-
-	// Create a new ReceiverBuilder with the updated configs and install it on
-	// both the Settings (so buildComponent uses new configs) and the Host (so
-	// component.Host.GetFactory returns factories for any new receiver types).
-	//
-	// The ReceiverBuilder is immutable — it is constructed with a fixed set of
-	// configs and factories — so we must create a new one whenever configs
-	// change. This is deferred until after the no-op check above to avoid
-	// unnecessary allocations when nothing has changed.
-	//
-	// Running receiver components do not hold a reference to the builder; they
-	// only interact with it during buildComponent to create the component
-	// instance. Unchanged receivers skip the build phase entirely.
-	receiverBuilder := builders.NewReceiver(newReceiverCfgs, receiverFactories)
-	set.ReceiverBuilder = receiverBuilder
-	host.Receivers = receiverBuilder
-
-	// Phase 4: Shutdown receivers that are being removed or rebuilt.
-	for nodeID, rn := range toRemove {
-		if err := g.shutdownReceiverNode(ctx, nodeID, rn, host); err != nil {
-			return err
-		}
-	}
-	for nodeID, rn := range toRebuild {
-		if err := g.shutdownReceiverNode(ctx, nodeID, rn, host); err != nil {
-			return err
-		}
-	}
-
-	// Phase 5: Remove shutdown nodes from the graph and pipeline maps.
-	for nodeID := range toRemove {
-		g.componentGraph.RemoveNode(nodeID)
-		delete(g.instanceIDs, nodeID)
-	}
-	for nodeID := range toRebuild {
-		g.componentGraph.RemoveNode(nodeID)
-		delete(g.instanceIDs, nodeID)
-	}
-	for _, pipe := range g.pipelines {
-		for nodeID, node := range pipe.receivers {
-			if _, ok := node.(*receiverNode); !ok {
-				continue
-			}
-			if _, rm := toRemove[nodeID]; rm {
-				delete(pipe.receivers, nodeID)
-			}
-			if _, rb := toRebuild[nodeID]; rb {
-				delete(pipe.receivers, nodeID)
-			}
-		}
-	}
-
-	// Phase 6: Create nodes for added and rebuilt receivers.
-	for pipelineID, pipelineCfg := range set.PipelineConfigs {
-		pipe := g.pipelines[pipelineID]
-		for _, recvID := range pipelineCfg.Receivers {
-			if set.ConnectorBuilder.IsConfigured(recvID) {
-				continue
-			}
-			nodeID := newReceiverNode(pipelineID.Signal(), recvID).ID()
-			if !toAdd[nodeID] && toRebuild[nodeID] == nil {
-				continue // unchanged receiver, skip
-			}
-			rcvrNode := g.createReceiver(pipelineID, recvID)
-			pipe.receivers[rcvrNode.ID()] = rcvrNode
-		}
-	}
-
-	// Phase 7: Wire edges from new/rebuilt receiver nodes to capabilities nodes.
-	for _, pipe := range g.pipelines {
-		for _, node := range pipe.receivers {
-			rn, ok := node.(*receiverNode)
-			if !ok {
-				continue
-			}
-			nodeID := rn.ID()
-			if !toAdd[nodeID] && toRebuild[nodeID] == nil {
-				continue
-			}
-			g.componentGraph.SetEdge(g.componentGraph.NewEdge(node, pipe.capabilitiesNode))
-		}
-	}
-
-	// Phase 8: Build new/rebuilt receiver components.
-	built := make(map[int64]bool)
-	for _, pipe := range g.pipelines {
-		for _, node := range pipe.receivers {
-			rn, ok := node.(*receiverNode)
-			if !ok {
-				continue
-			}
-			nodeID := rn.ID()
-			if !toAdd[nodeID] && toRebuild[nodeID] == nil {
-				continue
-			}
-			if built[nodeID] {
-				continue // shared receiver already built
-			}
-			built[nodeID] = true
-			if err := rn.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(nodeID)); err != nil {
-				return fmt.Errorf("failed to build receiver %q: %w", rn.componentID, err)
-			}
-		}
-	}
-
-	// Phase 9: Start new/rebuilt receivers.
-	for nodeID := range built {
-		rn := g.componentGraph.Node(nodeID).(*receiverNode)
-		instanceID := g.instanceIDs[nodeID]
-		host.Reporter.ReportStatus(
-			instanceID,
-			componentstatus.NewEvent(componentstatus.StatusStarting),
-		)
-
-		if compErr := rn.Start(ctx, &HostWrapper{Host: host, InstanceID: instanceID}); compErr != nil {
-			host.Reporter.ReportStatus(
-				instanceID,
-				componentstatus.NewPermanentErrorEvent(compErr),
-			)
-			g.telemetry.Logger.WithOptions(zap.AddStacktrace(zap.DPanicLevel)).
-				Error("Failed to start receiver during partial reload",
-					zap.Error(compErr),
-					zap.String("id", instanceID.ComponentID().String()),
-				)
-			return fmt.Errorf("failed to start receiver %q: %w", rn.componentID, compErr)
-		}
-
-		host.Reporter.ReportOKIfStarting(instanceID)
-	}
-
-	g.telemetry.Logger.Info("Partial receiver reload completed successfully")
-	return nil
+	return true
 }
 
 func (g *Graph) shutdownReceiverNode(ctx context.Context, nodeID int64, rn *receiverNode, host *Host) error {
