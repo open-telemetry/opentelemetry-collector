@@ -1,8 +1,10 @@
 change_type: bug_fix
 component: pkg/confighttp
-note: Preserve the HTTP client's connection address, including IPv6 zones and Unix socket addresses.
+note: Populate `client.Info.Addr` for HTTP requests from IPv6 zoned addresses and Unix sockets.
 issues: [14545]
 subtext: |
-  HTTP servers now use the connection's remote address in client.Info instead of
-  parsing the request's RemoteAddr string. TCP addresses remain IP-only and retain their zone.
+  `client.Info.Addr` was derived by parsing the request's `RemoteAddr` string, which failed for IPv6
+   addresses with a zone (e.g. `fe80::1%eth0`) and for Unix socket clients, leaving `Addr` unset.
+   HTTP servers now take the address from the connection instead. TCP addresses are still exposed as
+   `*net.IPAddr` (IP and zone, no port), and Unix socket clients are exposed as `*net.UnixAddr`.
 change_logs: [user, api]
