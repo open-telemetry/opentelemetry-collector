@@ -24,19 +24,18 @@ components:
     - pkg/component
     - pkg/component/componentstatus
     - pkg/component/componenttest
-    - pkg/config/configauth
-    - pkg/config/configcompression
-    - pkg/config/confighttp/xconfighttp
-    - pkg/config/configmiddleware
-    - pkg/config/confignet
-    - pkg/config/configopaque
-    - pkg/config/configretry
-    - pkg/config/configstorage
-    - pkg/config/configtelemetry
-    - pkg/config/configtls
+    - pkg/configauth
+    - pkg/configcompression
     - pkg/configgrpc
     - pkg/confighttp
+    - pkg/configmiddleware
+    - pkg/confignet
+    - pkg/configopaque
     - pkg/configoptional
+    - pkg/configretry
+    - pkg/configstorage
+    - pkg/configtelemetry
+    - pkg/configtls
     - pkg/confmap
     - pkg/connector
     - pkg/connector/connectortest
@@ -77,6 +76,7 @@ components:
     - pkg/service
     - pkg/service/hostcapabilities
     - pkg/service/telemetry/telemetrytest
+    - pkg/xconfighttp
     - pkg/xconfmap
     - pkg/xconnector
     - pkg/xconsumer
