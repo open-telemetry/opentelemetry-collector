@@ -49,6 +49,10 @@ func TestValidate(t *testing.T) {
 			wantErr: "deprecated component missing date in YYYY-MM-DD format: traces",
 		},
 		{
+			name:    "testdata/both_platform_fields.yaml",
+			wantErr: "supported_platforms and unsupported_platforms cannot both be specified",
+		},
+		{
 			name:    "testdata/no_deprecation_migration_info.yaml",
 			wantErr: "deprecated component missing migration guide: traces",
 		},

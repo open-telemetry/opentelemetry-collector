@@ -22,7 +22,8 @@ type refProfiles struct {
 	consumer xconsumer.Profiles
 }
 
-// ConsumeProfiles measures telemetry before calling ConsumeProfiles because the data may be mutated downstream
+// ConsumeProfiles takes pipeline ownership of the data and releases it once the downstream consumer
+// returns. It is a no-op if the data is already owned by the pipeline.
 func (c refProfiles) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error {
 	if pref.MarkPipelineOwnedProfiles(ld) {
 		defer pref.UnrefProfiles(ld)

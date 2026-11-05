@@ -103,7 +103,7 @@ func None[T any]() Optional[T] {
 	if err := assertNoEnabledField[T](); err != nil {
 		panic(err)
 	}
-	return Optional[T]{}
+	return Optional[T]{flavor: noneFlavor}
 }
 
 // HasValue checks if the Optional has a value.
