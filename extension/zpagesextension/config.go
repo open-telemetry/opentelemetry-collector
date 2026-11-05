@@ -40,8 +40,10 @@ type ExpvarConfig struct {
 // SupportBundleConfig has the configuration for the support bundle endpoint.
 type SupportBundleConfig struct {
 	// ArchiveName names the archive. The download file name starts with it, and
-	// it is the name of the top directory in the archive.
-	// (default = otelcol-support-bundle)
+	// it is the name of the top directory in the archive. If it is empty, the
+	// extension uses "<command>-support-bundle", where <command> is the
+	// collector command name, or "otel" if the command name is not set.
+	// (default = "")
 	ArchiveName string `mapstructure:"archive_name"`
 	// Gatherers enables or disables each gatherer. A request can select only
 	// enabled gatherers.
@@ -70,11 +72,16 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the support bundle configuration is valid.
 func (cfg *SupportBundleConfig) Validate() error {
-	// The archive must have exactly one top directory.
-	if !fs.ValidPath(cfg.ArchiveName) || cfg.ArchiveName == "." || strings.ContainsAny(cfg.ArchiveName, `/\`) {
+	if cfg.ArchiveName != "" && !validFileName(cfg.ArchiveName) {
 		return fmt.Errorf("\"archive_name\" must be a valid file name with no path separators, got %q", cfg.ArchiveName)
 	}
 	return nil
+}
+
+// validFileName reports whether name is safe as the one top directory of the
+// archive.
+func validFileName(name string) bool {
+	return fs.ValidPath(name) && name != "." && !strings.ContainsAny(name, `/\`)
 }
 
 // Validate checks if the extension configuration is valid

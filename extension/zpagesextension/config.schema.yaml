@@ -19,7 +19,7 @@ $defs:
     type: object
     properties:
       archive_name:
-        description: ArchiveName names the archive. The download file name starts with it, and it is the name of the top directory in the archive. (default = otelcol-support-bundle)
+        description: ArchiveName names the archive. The download file name starts with it, and it is the name of the top directory in the archive. If it is empty, the extension uses "<command>-support-bundle", where <command> is the collector command name, or "otel" if the command name is not set. (default = "")
         type: string
       gatherers:
         description: Gatherers enables or disables each gatherer. A request can select only enabled gatherers.

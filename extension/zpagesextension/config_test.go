@@ -43,8 +43,7 @@ func TestUnmarshalConfig(t *testing.T) {
 
 func TestUnmarshalConfigWithSupportBundle(t *testing.T) {
 	defaults := SupportBundleConfig{
-		ArchiveName: "otelcol-support-bundle",
-		Gatherers:   GatherersConfig{PProf: configoptional.Some(PProfConfig{})},
+		Gatherers: GatherersConfig{PProf: configoptional.Some(PProfConfig{})},
 	}
 	tests := []struct {
 		name string
@@ -110,7 +109,7 @@ func TestValidateSupportBundleArchiveName(t *testing.T) {
 		valid       bool
 	}{
 		{archiveName: "otelcol-support-bundle", valid: true},
-		{archiveName: "", valid: false},
+		{archiveName: "", valid: true},
 		{archiveName: ".", valid: false},
 		{archiveName: "..", valid: false},
 		{archiveName: "a/b", valid: false},

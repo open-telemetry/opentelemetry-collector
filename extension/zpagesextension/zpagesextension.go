@@ -144,7 +144,7 @@ func (zpe *zpagesExtension) newBundleGenerator(cfg *SupportBundleConfig) *suppor
 	}
 	return supportbundle.NewBundler(
 		supportbundle.Settings{
-			ArchiveName: cfg.ArchiveName,
+			ArchiveName: archiveName(cfg.ArchiveName, zpe.buildInfo.Command),
 			BuildInfo:   zpe.buildInfo,
 			Resource:    resource,
 			Logger:      zpe.telemetry.Logger,
@@ -153,6 +153,18 @@ func (zpe *zpagesExtension) newBundleGenerator(cfg *SupportBundleConfig) *suppor
 			{Gatherer: supportbundle.PProfGatherer{}, Enabled: cfg.Gatherers.PProf.HasValue()},
 		},
 	)
+}
+
+// archiveName uses the command name when the config sets no name, so that each
+// distribution gets its own default name.
+func archiveName(configured, command string) string {
+	if configured != "" {
+		return configured
+	}
+	if !validFileName(command) {
+		command = "otel"
+	}
+	return command + "-support-bundle"
 }
 
 func newServer(config *Config, telemetry component.TelemetrySettings, buildInfo component.BuildInfo) *zpagesExtension {

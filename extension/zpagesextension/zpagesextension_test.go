@@ -271,3 +271,22 @@ func TestZPagesSupportBundleDisabled(t *testing.T) {
 	defer resp.Body.Close()
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
+
+func TestArchiveName(t *testing.T) {
+	tests := []struct {
+		name       string
+		configured string
+		command    string
+		want       string
+	}{
+		{name: "configured", configured: "my-bundle", command: "otelcontribcol", want: "my-bundle"},
+		{name: "from command", command: "otelcontribcol", want: "otelcontribcol-support-bundle"},
+		{name: "no command", want: "otel-support-bundle"},
+		{name: "unsafe command", command: "../bad", want: "otel-support-bundle"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, archiveName(tt.configured, tt.command))
+		})
+	}
+}

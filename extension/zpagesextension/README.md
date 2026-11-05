@@ -33,9 +33,11 @@ The following settings can be optionally configured:
 - `support_bundle` (default = not set): Serve support bundles at
   `/debug/v1/supportbundle`. The endpoint is off when this section is not set
   or has `enabled: false`. For detail see [Support bundle](#support-bundle).
-  - `archive_name` (default = otelcol-support-bundle): The name of the archive.
+  - `archive_name` (default = `<command>-support-bundle`): The name of the archive.
     The download file name starts with it, and it is the name of the top
-    directory in the archive.
+    directory in the archive. `<command>` is the command name of the collector
+    build, for example `otelcol-contrib`. If the build sets no command name,
+    the default is `otel-support-bundle`.
   - `gatherers`: Enable or disable each gatherer.
     - `pprof`
       - `enabled` (default = true): Collect heap and goroutine profiles.
@@ -152,7 +154,7 @@ unknown gatherers gets status `400`.
 ### Bundle contents
 
 All files are in one top directory of the archive. Its name comes from
-`archive_name`. The default is `otelcol-support-bundle/`.
+`archive_name`. The default is `<command>-support-bundle/`.
 
 `manifest.yaml` is always present. It holds:
 
