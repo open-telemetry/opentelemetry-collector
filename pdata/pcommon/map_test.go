@@ -4,6 +4,8 @@
 package pcommon
 
 import (
+	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -747,5 +749,56 @@ func BenchmarkMapEqual(b *testing.B) {
 
 	for b.Loop() {
 		_ = m.Equal(cmp)
+	}
+}
+
+func BenchmarkMapLookup(b *testing.B) {
+	for _, size := range []int{0, 1, 8, 32, 128} {
+		for _, position := range []string{"first", "last", "missing"} {
+			b.Run(fmt.Sprintf("%d/%s", size, position), func(b *testing.B) {
+				m := NewMap()
+				for i := range size {
+					m.PutInt(fmt.Sprintf("attribute.%03d", i), int64(i))
+				}
+				key := "not-present"
+				if size > 0 && position != "missing" {
+					index := 0
+					if position == "last" {
+						index = size - 1
+					}
+					key = fmt.Sprintf("attribute.%03d", index)
+				}
+				b.ReportAllocs()
+				expected := size > 0 && position != "missing"
+				b.ResetTimer()
+				// Use a counted loop so Get can inline into its caller.
+				for i := 0; i < b.N; i++ {
+					_, found := m.Get(key)
+					if found != expected {
+						b.Fatal("incorrect lookup result")
+					}
+				}
+			})
+		}
+	}
+}
+
+func BenchmarkMapGetOrPutExisting(b *testing.B) {
+	for _, size := range []int{1, 8, 32, 128} {
+		b.Run(strconv.Itoa(size), func(b *testing.B) {
+			m := NewMap()
+			for i := range size {
+				m.PutInt(fmt.Sprintf("attribute.%03d", i), int64(i))
+			}
+			key := fmt.Sprintf("attribute.%03d", size-1)
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				value, found := m.GetOrPutEmpty(key)
+				if !found || value.Int() != int64(size-1) {
+					b.Fatal("existing value changed")
+				}
+			}
+		})
 	}
 }
