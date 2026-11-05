@@ -153,9 +153,15 @@ func CfgDocConstraints(cfg *ConfigMetadata) string {
 		parts = append(parts, fmt.Sprintf("max length: %d", *cfg.MaxLength))
 	}
 	if cfg.Pattern != "" {
-		parts = append(parts, fmt.Sprintf("pattern: %#q", cfg.Pattern))
+		parts = append(parts, "pattern: "+escapeTableCell(fmt.Sprintf("%#q", cfg.Pattern)))
 	}
 	return strings.Join(parts, ", ")
+}
+
+// escapeTableCell escapes characters that would otherwise be read as a column
+// separator when the value is placed in a Markdown table cell.
+func escapeTableCell(s string) string {
+	return strings.ReplaceAll(s, "|", `\|`)
 }
 
 // CfgDocDefault returns a human-readable default value for display in the docs table.
