@@ -4,5 +4,5 @@ note: Preserve the HTTP client's connection address, including IPv6 zones and Un
 issues: [14545]
 subtext: |
   HTTP servers now use the connection's remote address in client.Info instead of
-  parsing the request's RemoteAddr string. TCP addresses retain their port and zone.
+  parsing the request's RemoteAddr string. TCP addresses remain IP-only and retain their zone.
 change_logs: [user, api]

@@ -251,7 +251,15 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 	server := &http.Server{
 		ConnContext: func(ctx context.Context, conn net.Conn) context.Context {
 			cl := client.FromContext(ctx)
-			cl.Addr = conn.RemoteAddr()
+			switch a := conn.RemoteAddr().(type) {
+			case *net.TCPAddr:
+				// Keep the IP address type HTTP receivers expect.
+				cl.Addr = &net.IPAddr{IP: a.IP, Zone: a.Zone}
+			case nil:
+				// Leave unset for the RemoteAddr parsing fallback.
+			default:
+				cl.Addr = a
+			}
 			return client.NewContext(ctx, cl)
 		},
 		Handler:           handler,
