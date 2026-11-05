@@ -176,7 +176,7 @@ require.NotNil(t, cfg)
                 {{- if and $validator.Rules.Required $validator.RequiredCheckEmitted }}
                     func TestConfigValidate_Required{{ $validator.FieldName | publicVar }}(t *testing.T) {
                     {{- if $hasDefault }}
-                    cfg := NewDefault{{ $typeName }}()
+                    {{- template "newDefaultCfgCall" $typeName }}
                     {{- else }}
                     cfg := {{ $typeName }}{}
                     {{- end }}
@@ -196,7 +196,7 @@ require.NotNil(t, cfg)
                 {{- if $validator.Rules.Minimum }}
                     func Test{{ $typeName }}Validate_Minimum{{ $validator.FieldName | publicVar }}(t *testing.T) {
                     {{- if $hasDefault }}
-                    cfg := NewDefault{{ $typeName }}()
+                    {{- template "newDefaultCfgCall" $typeName }}
                     {{- else }}
                     cfg := {{ $typeName }}{}
                     {{- end }}
@@ -216,7 +216,7 @@ require.NotNil(t, cfg)
                 {{- if $validator.Rules.Maximum }}
                     func Test{{ $typeName }}Validate_Maximum{{ $validator.FieldName | publicVar }}(t *testing.T) {
                     {{- if $hasDefault }}
-                    cfg := NewDefault{{ $typeName }}()
+                    {{- template "newDefaultCfgCall" $typeName }}
                     {{- else }}
                     cfg := {{ $typeName }}{}
                     {{- end }}
@@ -236,7 +236,7 @@ require.NotNil(t, cfg)
                 {{- if $validator.Rules.ExclusiveMinimum }}
                     func Test{{ $typeName }}Validate_ExclusiveMinimum{{ $validator.FieldName | publicVar }}(t *testing.T) {
                     {{- if $hasDefault }}
-                    cfg := NewDefault{{ $typeName }}()
+                    {{- template "newDefaultCfgCall" $typeName }}
                     {{- else }}
                     cfg := {{ $typeName }}{}
                     {{- end }}
@@ -256,7 +256,7 @@ require.NotNil(t, cfg)
                 {{- if $validator.Rules.ExclusiveMaximum }}
                     func Test{{ $typeName }}Validate_ExclusiveMaximum{{ $validator.FieldName | publicVar }}(t *testing.T) {
                     {{- if $hasDefault }}
-                    cfg := NewDefault{{ $typeName }}()
+                    {{- template "newDefaultCfgCall" $typeName }}
                     {{- else }}
                     cfg := {{ $typeName }}{}
                     {{- end }}
@@ -276,7 +276,7 @@ require.NotNil(t, cfg)
                 {{- if $validator.Rules.Enum }}
                     func Test{{ $typeName }}Validate_InvalidEnum{{ $validator.FieldName | publicVar }}(t *testing.T) {
                     {{- if $hasDefault }}
-                    cfg := NewDefault{{ $typeName }}()
+                    {{- template "newDefaultCfgCall" $typeName }}
                     {{- else }}
                     cfg := {{ $typeName }}{}
                     {{- end }}
@@ -292,4 +292,12 @@ require.NotNil(t, cfg)
 
 {{- if not $imports_addded }}
 // No supported validation rules found in the schema, no tests generated.
+{{- end }}
+
+{{- define "newDefaultCfgCall" }}
+    {{- if isComponent }}
+        cfg := newDefault{{ . }}()
+    {{- else }}
+        cfg := NewDefault{{ . }}()
+    {{- end }}
 {{- end }}

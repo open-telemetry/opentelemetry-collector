@@ -7,7 +7,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.164.0
 	go.opentelemetry.io/collector/config/confighttp v0.164.0
 	go.opentelemetry.io/collector/config/confignet v1.70.0
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.70.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0
 	go.opentelemetry.io/otel/sdk v1.47.0
 	go.opentelemetry.io/otel/trace v1.47.0
 )
@@ -16,13 +16,13 @@ require (
 	github.com/Microsoft/go-winio v0.6.4 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
-	github.com/foxboron/go-tpm-keyfiles v0.0.0-20251226215517-609e4778396f // indirect
+	github.com/foxboron/go-tpm-keyfiles v0.0.0-20260902202739-8c9c2d1005f4 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
-	github.com/google/go-tpm v0.9.8 // indirect
+	github.com/google/go-tpm v0.9.9-0.20260124013517-8f8f42cba0de // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -56,7 +56,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.47.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.28.0 // indirect
-	go.yaml.in/yaml/v3 v3.0.5 // indirect
+	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect

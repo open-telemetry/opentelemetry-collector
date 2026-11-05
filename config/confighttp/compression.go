@@ -36,10 +36,9 @@ type compressRoundTripper struct {
 	compressor        *compressor
 }
 
-var zstdReaderPool sync.Pool
-
 type pooledZstdReadCloser struct {
 	inner *zstd.Decoder
+	pool  *sync.Pool
 }
 
 func (pzrc *pooledZstdReadCloser) Read(dst []byte) (int, error) {
@@ -55,10 +54,63 @@ func (pzrc *pooledZstdReadCloser) Close() error {
 		if err != nil {
 			return err
 		}
-		zstdReaderPool.Put(pzrc.inner)
+		pzrc.pool.Put(pzrc.inner)
 		pzrc.inner = nil
 	}
 	return nil
+}
+
+// zstdDefaultEncoderWindow is the largest window a zstd encoder with default
+// settings declares. An encoder that does not buffer the whole payload before
+// writing the frame header cannot shrink the window to the content size, so it
+// declares its configured window instead: klauspost/compress v1.20.3 declares
+// 8MiB for a 1MiB payload. Frames from such encoders must keep decoding, so the
+// decoder bound below never goes under this value.
+const zstdDefaultEncoderWindow = 8 * 1024 * 1024
+
+// newZstdHandler returns a factory for zstd decoders bounded by
+// maxRequestBodySize. A frame header declares its window before any output is
+// produced, and the library default allows windows up to 512MiB, so an
+// unbounded decoder lets a tiny crafted frame allocate hundreds of megabytes
+// before http.MaxBytesReader sees a single decoded byte.
+func newZstdHandler(maxRequestBodySize int64) func(io.ReadCloser) (io.ReadCloser, error) {
+	maxWindow := zstdWindowBound(maxRequestBodySize)
+	// Decoders are bound at creation, so each bound gets its own pool.
+	pool := &sync.Pool{}
+
+	return func(body io.ReadCloser) (io.ReadCloser, error) {
+		v := pool.Get()
+		var zr *zstd.Decoder
+		var err error
+		if v == nil {
+			// NOTE(tigrannajaryan):
+			// Concurrency 1 disables async decoding. We don't need async decoding, it is pointless
+			// for our use-case (a server accepting decoding http requests).
+			// Disabling async improves performance (I benchmarked it previously when working
+			// on https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/23257).
+			zr, err = zstd.NewReader(body, zstd.WithDecoderConcurrency(1), zstd.WithDecoderMaxWindow(maxWindow))
+		} else {
+			zr = v.(*zstd.Decoder)
+			err = zr.Reset(body)
+		}
+		if err != nil {
+			return nil, err
+		}
+		return &pooledZstdReadCloser{inner: zr, pool: pool}, nil
+	}
+}
+
+// zstdWindowBound returns the largest window a zstd decoder may allocate for a
+// server that accepts maxRequestBodySize bytes. It never goes below
+// zstdDefaultEncoderWindow, so frames from default encoders still decode, and
+// never above zstd.MaxWindowSize, so configuring a larger body size cannot make
+// the decoder allocate more than the library allows by default.
+func zstdWindowBound(maxRequestBodySize int64) uint64 {
+	bound := uint64(zstdDefaultEncoderWindow)
+	if maxRequestBodySize > int64(bound) {
+		bound = uint64(maxRequestBodySize)
+	}
+	return min(bound, uint64(zstd.MaxWindowSize))
 }
 
 var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, error){
@@ -74,24 +126,11 @@ var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, erro
 		return gr, nil
 	},
 	"zstd": func(body io.ReadCloser) (io.ReadCloser, error) {
-		v := zstdReaderPool.Get()
-		var zr *zstd.Decoder
-		var err error
-		if v == nil {
-			// NOTE(tigrannajaryan):
-			// Concurrency 1 disables async decoding. We don't need async decoding, it is pointless
-			// for our use-case (a server accepting decoding http requests).
-			// Disabling async improves performance (I benchmarked it previously when working
-			// on https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/23257).
-			zr, err = zstd.NewReader(body, zstd.WithDecoderConcurrency(1))
-		} else {
-			zr = v.(*zstd.Decoder)
-			err = zr.Reset(body)
-		}
-		if err != nil {
-			return nil, err
-		}
-		return &pooledZstdReadCloser{inner: zr}, nil
+		// The window bound depends on the server's MaxRequestBodySize, so
+		// httpContentDecompressor installs a bound-aware factory instead of
+		// this default. Keep the default bounded as well: a nil or zero limit
+		// falls back to zstdDefaultEncoderWindow.
+		return newZstdHandler(0)(body)
 	},
 	"zlib": func(body io.ReadCloser) (io.ReadCloser, error) {
 		zr, err := zlib.NewReader(body)
@@ -252,6 +291,9 @@ func httpContentDecompressor(h http.Handler, maxRequestBodySize int64, eh func(w
 		}
 		if dec == "snappy" {
 			enabled["snappy"] = newSnappyHandler(maxRequestBodySize)
+		}
+		if dec == "zstd" {
+			enabled["zstd"] = newZstdHandler(maxRequestBodySize)
 		}
 	}
 

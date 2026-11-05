@@ -20,12 +20,13 @@ var (
 )
 
 type Message struct {
-	Name            string
-	Description     string
-	OriginFullName  string
-	UpstreamMessage string
-	Fields          []FieldInterface
-	metadata        *Metadata
+	Name                  string
+	Description           string
+	OriginFullName        string
+	UpstreamMessage       string
+	Fields                []FieldInterface
+	RequiresDepthTracking bool
+	metadata              *Metadata
 }
 
 func (ms *Message) GenerateMessage(imports, testImports []string) []byte {
@@ -50,8 +51,9 @@ func (ms *Message) templateFields(imports, testImports []string) map[string]any 
 		"imports":         imports,
 		"testImports":     testImports,
 		// 0 size means no metadata is needed
-		"metadataSize":     ms.metadataSize(),
-		"GenerateMetadata": ms.GenerateMetadata,
+		"metadataSize":          ms.metadataSize(),
+		"GenerateMetadata":      ms.GenerateMetadata,
+		"requiresDepthTracking": ms.RequiresDepthTracking,
 	}
 }
 
