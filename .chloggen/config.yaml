@@ -31,11 +31,11 @@ components:
     - pkg/configmiddleware
     - pkg/confignet
     - pkg/configopaque
+    - pkg/configoptional
     - pkg/configretry
     - pkg/configstorage
     - pkg/configtelemetry
     - pkg/configtls
-    - pkg/configoptional
     - pkg/confmap
     - pkg/connector
     - pkg/connector/connectortest
@@ -76,10 +76,10 @@ components:
     - pkg/service
     - pkg/service/hostcapabilities
     - pkg/service/telemetry/telemetrytest
+    - pkg/xconfighttp
     - pkg/xconfmap
     - pkg/xconnector
     - pkg/xconsumer
-    - pkg/xconfighttp
     - pkg/xexporter
     - pkg/xexporterhelper
     - pkg/xextension
