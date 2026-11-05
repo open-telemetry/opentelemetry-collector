@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 )
 
 var (
@@ -25,6 +26,9 @@ var (
 		"'limit_percentage' and 'spike_limit_percentage' must be greater than zero and less than or equal to hundred",
 	)
 )
+
+// GarbageCollectorConfig defines configuration for garbage collection.
+type GarbageCollectorConfig struct{}
 
 // Config defines configuration for memory memoryLimiter processor.
 type Config struct {
@@ -59,6 +63,9 @@ type Config struct {
 	// Set to 0 to disable the exponential backoff on this path.
 	MaxGCIntervalWhenHardLimited time.Duration `mapstructure:"max_gc_interval_when_hard_limited"`
 
+	// GarbageCollector configuration section. Use enabled: false to disable the memory limiter's forced garbage collection.
+	GarbageCollector configoptional.Optional[GarbageCollectorConfig] `mapstructure:"garbage_collector"`
+
 	// MemoryLimitMiB is the maximum amount of memory, in MiB, targeted to be
 	// allocated by the process.
 	MemoryLimitMiB uint32 `mapstructure:"limit_mib"`
@@ -83,6 +90,7 @@ func NewDefaultConfig() *Config {
 		MinGCIntervalWhenSoftLimited: 10 * time.Second,
 		MaxGCIntervalWhenSoftLimited: 30 * time.Second,
 		MaxGCIntervalWhenHardLimited: 30 * time.Second,
+		GarbageCollector:             configoptional.Some(GarbageCollectorConfig{}),
 	}
 }
 
