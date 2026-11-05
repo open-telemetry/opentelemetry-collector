@@ -3588,6 +3588,49 @@ func TestUpdateReceiversStartError(t *testing.T) {
 	require.ErrorContains(t, err, "failed to start receiver")
 }
 
+// TestShutdownAllAfterUpdateReceiversBuildError verifies that the graph can
+// still be shut down after a partial reload failed while building a receiver.
+// The failed node stays in the graph without a component, and the collector
+// falls back to a full reload that shuts the whole service down, so
+// ShutdownAll must skip that node and still stop every other component.
+func TestShutdownAllAfterUpdateReceiversBuildError(t *testing.T) {
+	exampleID := component.MustNewID("examplereceiver")
+	errID := component.MustNewID("errreceiver")
+
+	rcvrCfgs := map[component.ID]component.Config{exampleID: testcomponents.ExampleReceiverFactory.CreateDefaultConfig()}
+	pg, host, set := errReceiverTestGraph(t, rcvrCfgs, errTracesPipeline(exampleID))
+
+	newRcvrCfgs := map[component.ID]component.Config{
+		exampleID: testcomponents.ExampleReceiverFactory.CreateDefaultConfig(),
+		errID:     &errReceiverConfig{failBuild: true},
+	}
+	updatedSet := makeErrUpdatedSettings(set, newRcvrCfgs, errTracesPipeline(exampleID, errID))
+
+	err := pg.UpdateReceivers(context.Background(), updatedSet, changedReceiverIDs(rcvrCfgs, newRcvrCfgs), newRcvrCfgs, testErrReceiverFactories, host)
+	require.ErrorContains(t, err, "failed to build receiver")
+
+	require.NotPanics(t, func() {
+		err = pg.ShutdownAll(context.Background(), host.Reporter)
+	})
+	require.NoError(t, err)
+
+	for _, pipe := range pg.pipelines {
+		for _, node := range pipe.receivers {
+			rn := node.(*receiverNode)
+			if rn.componentID == errID {
+				assert.Nil(t, rn.Component, "the receiver that failed to build has no component")
+				continue
+			}
+			assert.True(t, rn.Component.(*testcomponents.ExampleReceiver).Stopped(),
+				"receiver %q should be shut down", rn.componentID)
+		}
+		for _, node := range pipe.exporters {
+			assert.True(t, node.(*exporterNode).Component.(*testcomponents.ExampleExporter).Stopped(),
+				"exporter %q should be shut down", node.(*exporterNode).componentID)
+		}
+	}
+}
+
 // This receiver sends a dummy payload to all its consumers as soon as it starts
 type testEagerReceiver struct {
 	next []consumer.Traces
