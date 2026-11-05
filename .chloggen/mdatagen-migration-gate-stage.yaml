@@ -20,7 +20,7 @@ subtext: |
   their previous state on cleanup, instead of assuming the gates are disabled by default.
   When a gate's stage forbids the state a case needs, such as disabling a stable gate, the metrics-builder
   test skips only its gate-dependent count and warning assertions, and the per-combination versioned-metric
-  subtests for that combination are skipped.
+  sub-tests for that combination are skipped.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
