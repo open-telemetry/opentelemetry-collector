@@ -357,6 +357,10 @@ func (sc *ServerConfig) getGrpcServerOptions(
 
 	if sc.MaxRecvMsgSizeMiB > 0 && sc.MaxRecvMsgSizeMiB*1024*1024 > 0 {
 		opts = append(opts, grpc.MaxRecvMsgSize(sc.MaxRecvMsgSizeMiB*1024*1024))
+		// The zstd decoder allocates a window as large as the frame declares
+		// before it produces any output, so it has to know what this server
+		// accepts.
+		zstd.SetMaxRecvMsgSize(sc.MaxRecvMsgSizeMiB * 1024 * 1024)
 	}
 
 	if sc.MaxConcurrentStreams > 0 {
