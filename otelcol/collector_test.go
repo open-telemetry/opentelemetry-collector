@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -1063,9 +1064,11 @@ type statusWatcherExtension struct {
 	onStatusChanged func(source *componentstatus.InstanceID, event *componentstatus.Event)
 }
 
-func (e statusWatcherExtension) ComponentStatusChanged(source *componentstatus.InstanceID, event *componentstatus.Event) {
+func (e statusWatcherExtension) Changed(source *componentstatus.InstanceID, event *componentstatus.Event) {
 	e.onStatusChanged(source, event)
 }
+
+var _ extensioncapabilities.ComponentStatusWatcher = (*statusWatcherExtension)(nil)
 
 func TestComponentStatusWatcher(t *testing.T) {
 	factories, err := nopFactories()
