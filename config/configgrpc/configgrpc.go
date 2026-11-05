@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
+	"google.golang.org/grpc/balancer/pickfirst"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -122,8 +123,8 @@ func (cc *ClientConfig) grpcDialTarget() string {
 // For pick_first, the feature gate turns on shuffleAddressList (gRFC A62), so clients
 // that receive the same ordered address list do not all connect to the first address.
 func (cc *ClientConfig) defaultServiceConfig() string {
-	if cc.BalancerName == "pick_first" && internalmetadata.PkgConfiggrpcPickFirstShuffleAddressListFeatureGate.IsEnabled() {
-		return `{"loadBalancingConfig":[{"pick_first":{"shuffleAddressList":true}}]}`
+	if cc.BalancerName == pickfirst.Name && internalmetadata.PkgConfiggrpcPickFirstShuffleAddressListFeatureGate.IsEnabled() {
+		return fmt.Sprintf(`{"loadBalancingConfig":[{%q:{"shuffleAddressList":true}}]}`, pickfirst.Name)
 	}
 	return fmt.Sprintf(`{"loadBalancingPolicy":%q}`, cc.BalancerName)
 }

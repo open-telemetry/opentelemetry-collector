@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/balancer/pickfirst"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
@@ -300,13 +301,13 @@ func TestDefaultServiceConfig(t *testing.T) {
 		},
 		{
 			name:         "pick_first shuffles addresses",
-			balancerName: "pick_first",
+			balancerName: pickfirst.Name,
 			gateEnabled:  true,
 			expected:     `{"loadBalancingConfig":[{"pick_first":{"shuffleAddressList":true}}]}`,
 		},
 		{
 			name:         "pick_first keeps address order when the gate is disabled",
-			balancerName: "pick_first",
+			balancerName: pickfirst.Name,
 			gateEnabled:  false,
 			expected:     `{"loadBalancingPolicy":"pick_first"}`,
 		},
