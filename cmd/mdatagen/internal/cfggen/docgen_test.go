@@ -257,3 +257,22 @@ func TestCfgExportedSections_NilAndEmpty(t *testing.T) {
 	assert.Nil(t, CfgExportedSections(nil))
 	assert.Nil(t, CfgExportedSections(&ConfigsMetadata{}))
 }
+
+func TestCfgExportedRef(t *testing.T) {
+	t.Parallel()
+	obj := func(ref string, internal bool) *ConfigMetadata {
+		return &ConfigMetadata{
+			Type:         "object",
+			Ref:          ref,
+			InternalOnly: internal,
+			Properties:   map[string]*ConfigMetadata{"host": {Type: "string"}},
+		}
+	}
+	assert.Equal(t, "inner", CfgExportedRef(obj("inner", false)))
+	assert.Empty(t, CfgExportedRef(nil))
+	assert.Empty(t, CfgExportedRef(obj("", false)), "no $ref")
+	assert.Empty(t, CfgExportedRef(obj("inner", true)), "internal-only definitions have no section")
+	assert.Empty(t, CfgExportedRef(obj("../samplepkg.sample_config", false)), "local ref")
+	assert.Empty(t, CfgExportedRef(obj("go.opentelemetry.io/collector/config/confignet.addr_config", false)), "external ref")
+	assert.Empty(t, CfgExportedRef(&ConfigMetadata{Type: "string", Ref: "inner"}), "scalar")
+}

@@ -224,6 +224,7 @@ func NewCfgDocFns() map[string]any {
 		"cfgSubSection":       CfgSubSection,
 		"cfgExportedSections": CfgExportedSections,
 		"cfgDocConstraints":   CfgDocConstraints,
+		"cfgExportedRef":      CfgExportedRef,
 	}
 }
 
@@ -247,4 +248,20 @@ func CfgExportedSections(md *ConfigsMetadata) []DocSection {
 		sections = append(sections, sec)
 	}
 	return sections
+}
+
+// CfgExportedRef returns the name of the exported_configs definition that an
+// object property references through an internal $ref (e.g. "$ref: my_def"),
+// or "" if there is none. Such a property is documented by linking to that
+// definition's own section instead of expanding its table a second time.
+// InternalOnly definitions have no section of their own, so they are skipped.
+func CfgExportedRef(cfg *ConfigMetadata) string {
+	if !CfgIsObject(cfg) || cfg.Ref == "" || cfg.InternalOnly {
+		return ""
+	}
+	ref := NewRef(cfg.Ref)
+	if !ref.IsInternal() {
+		return ""
+	}
+	return ref.ConfigName()
 }
