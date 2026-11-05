@@ -26,7 +26,6 @@ components:
     - pkg/component/componenttest
     - pkg/config/configauth
     - pkg/config/configcompression
-    - pkg/config/configgrpc
     - pkg/config/confighttp/xconfighttp
     - pkg/config/configmiddleware
     - pkg/config/confignet
@@ -35,6 +34,7 @@ components:
     - pkg/config/configstorage
     - pkg/config/configtelemetry
     - pkg/config/configtls
+    - pkg/configgrpc
     - pkg/confighttp
     - pkg/configoptional
     - pkg/confmap

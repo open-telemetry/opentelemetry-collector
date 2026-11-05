@@ -1,4 +1,4 @@
-type: config/configgrpc
+type: configgrpc
 parent: config
 github_project: open-telemetry/opentelemetry-collector
 
