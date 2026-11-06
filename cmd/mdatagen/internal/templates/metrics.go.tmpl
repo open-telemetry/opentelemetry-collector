@@ -607,7 +607,7 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 {{ range $name, $metric := .Metrics -}}
-{{ if not $metric.Versioned }}
+{{ if or (not $metric.Versioned) (hasIndependentValue $name) }}
 // Record{{ $name.Render }}DataPoint adds a data point to {{ $name }} metric.
 {{- if $metric.Entity }}
 //
@@ -664,6 +664,7 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
         {{- end -}}
         )
 	}
+	{{- if not $metric.Migration.IndependentValue }}
 	{{- $targetMetric := index $.Metrics $metric.Migration.To }}
 	if {{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar }}FeatureGate.IsEnabled() {
 		mb.metric{{ $metric.Migration.To.Render }}.recordDataPoint(mb.startTime, ts, val
@@ -700,6 +701,7 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 		{{- end -}}
 		)
 	}
+	{{- end }}
 	{{- else }}
 	{{- $selfLegacyAttrs := getLegacyAttributes $name }}
 	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts, val

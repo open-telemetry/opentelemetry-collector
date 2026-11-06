@@ -85,7 +85,7 @@ func (ms *{{ $name.Render }}MetricConfig) Validate() error {
 // MetricsConfig provides config for {{ .Type }} metrics.
 type MetricsConfig struct {
 	{{- range $name, $metric := .Metrics }}
-	{{ $name.Render }} {{ $name.Render }}MetricConfig `mapstructure:"{{ $name }}"`
+	{{ $name.Render }} {{ $name.Render }}MetricConfig `mapstructure:"{{ metricConfigKey $name }}"`
 	{{- end }}
 }
 

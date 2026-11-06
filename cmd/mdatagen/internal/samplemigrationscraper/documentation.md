@@ -86,6 +86,32 @@ Emitted Name: `system.cpu.utilization`
 | cpu.logical_number | The logical CPU number [0, n-1]. | Any Int | Recommended | - |
 | cpu.mode | The CPU mode for this data point. | Str: ``system``, ``user``, ``iowait`` | Recommended | - |
 
+### system.memory.limit.utilization
+
+Memory utilization as a ratio of the limit, based on the memory working set.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+### system.memory.limit_utilization
+
+Legacy memory utilization as a ratio of the limit, based on memory usage.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Gauge | Double | Development |
+
+#### Migration
+
+- Target Metric: `system.memory.limit.utilization`
+- Disable Old Gate: `scraper.samplemigration.DontEmitV0SystemConventions`
+- Enable New Gate: `scraper.samplemigration.EmitV1SystemConventions`
+
+When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+
+The target metric is calculated independently from this metric and is recorded separately.
+
 ### system.memory.linux.available@v1
 
 An estimate of how much memory is available without swapping. (Linux only)
