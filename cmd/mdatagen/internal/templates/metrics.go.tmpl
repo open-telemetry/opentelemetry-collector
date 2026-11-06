@@ -394,7 +394,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings {{ .Status.Class }}.Se
 	}
 	{{- end }}
 	{{- if $attr.Warnings.IfConfigured }}
+	{{- if $attr.Type.Template }}
+	if mbc.ResourceAttributes.{{ $name.Render }}.enabledSetByUser || mbc.ResourceAttributes.{{ $name.Render }}.Keys != nil {
+	{{- else }}
 	if mbc.ResourceAttributes.{{ $name.Render }}.enabledSetByUser || mbc.ResourceAttributes.{{ $name.Render }}.MetricsInclude != nil || mbc.ResourceAttributes.{{ $name.Render }}.MetricsExclude != nil {
+	{{- end }}
 		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be configured: {{ $attr.Warnings.IfConfigured }}")
 	}
 	{{- end }}
@@ -413,12 +417,14 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings {{ .Status.Class }}.Se
 		{{- end }}
 	}
 	{{- range $name, $attr := .ResourceAttributes }}
+	{{- if not $attr.Type.Template }}
 	if mbc.ResourceAttributes.{{ $name.Render }}.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["{{ $name }}"] = filter.CreateFilter(mbc.ResourceAttributes.{{ $name.Render }}.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.{{ $name.Render }}.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["{{ $name }}"] = filter.CreateFilter(mbc.ResourceAttributes.{{ $name.Render }}.MetricsExclude)
 	}
+	{{- end }}
 	{{- end }}
 
   {{- range $name, $metric := .Metrics }}
