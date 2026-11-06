@@ -75,6 +75,28 @@ func (ms EntityRef) DescriptionKeys() pcommon.StringSlice {
 	return pcommon.StringSlice(internal.NewStringSliceWrapper(&ms.getOrig().DescriptionKeys, ms.getState()))
 }
 
+// IdScope returns the idscope associated with this EntityRef.
+func (ms EntityRef) IdScope() IdScope {
+	return IdScope(ms.getOrig().IdScope)
+}
+
+// SetIdScope replaces the idscope associated with this EntityRef.
+func (ms EntityRef) SetIdScope(v IdScope) {
+	ms.getState().AssertMutable()
+	ms.getOrig().IdScope = internal.IdScope(v)
+}
+
+// IdScopeEntityType returns the idscopeentitytype associated with this EntityRef.
+func (ms EntityRef) IdScopeEntityType() string {
+	return ms.getOrig().IdScopeEntityType
+}
+
+// SetIdScopeEntityType replaces the idscopeentitytype associated with this EntityRef.
+func (ms EntityRef) SetIdScopeEntityType(v string) {
+	ms.getState().AssertMutable()
+	ms.getOrig().IdScopeEntityType = v
+}
+
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms EntityRef) CopyTo(dest EntityRef) {
 	dest.getState().AssertMutable()
