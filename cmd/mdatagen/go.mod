@@ -56,6 +56,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	go.opentelemetry.io/collector/client v1.70.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.70.0 // indirect
+	go.opentelemetry.io/collector/config/configstorage v0.164.0 // indirect
 	go.opentelemetry.io/collector/exporter v1.70.0 // indirect
 	go.opentelemetry.io/collector/extension v1.70.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.164.0 // indirect
@@ -237,3 +238,5 @@ replace go.opentelemetry.io/collector/scraper/xscraper => ../../scraper/xscraper
 replace go.opentelemetry.io/collector/receiver/receiverhelper => ../../receiver/receiverhelper
 
 replace go.opentelemetry.io/collector/scraper/scraperhelper => ../../scraper/scraperhelper
+
+replace go.opentelemetry.io/collector/config/configstorage => ../../config/configstorage
