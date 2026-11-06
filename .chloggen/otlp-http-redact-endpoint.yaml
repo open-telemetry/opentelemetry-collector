@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: exporter/otlp_http
+note: Redact sensitive URL components from HTTP request diagnostics unconditionally.
+issues: [11564]
+subtext: Only the scheme, host, and port are retained in exporter-formatted URLs. URLs that cannot be parsed or have no host are replaced with [REDACTED].
+change_logs: [user]
