@@ -35,6 +35,7 @@ require (
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.164.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.164.0
 	go.opentelemetry.io/collector/extension v1.70.0
+	go.opentelemetry.io/collector/extension/extensioncapabilities v0.164.0
 	go.opentelemetry.io/collector/extension/xextension v0.164.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.164.0
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.164.0
@@ -130,7 +131,6 @@ require (
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.164.0 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.164.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.70.0 // indirect
-	go.opentelemetry.io/collector/extension/extensioncapabilities v0.164.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.164.0 // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.164.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.70.0 // indirect
@@ -144,6 +144,7 @@ require (
 	go.opentelemetry.io/collector/processor/processortest v0.164.0 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.164.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.164.0 // indirect
+	go.opentelemetry.io/collector/receiver/receiverhelper/xreceiverhelper v0.164.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.164.0 // indirect
 	go.opentelemetry.io/collector/service/hostcapabilities v0.164.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.21.0 // indirect
@@ -346,3 +347,5 @@ replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testut
 replace go.opentelemetry.io/collector/internal/componentalias => ../componentalias
 
 replace go.opentelemetry.io/collector/internal/statusutil => ../statusutil
+
+replace go.opentelemetry.io/collector/receiver/receiverhelper/xreceiverhelper => ../../receiver/receiverhelper/xreceiverhelper

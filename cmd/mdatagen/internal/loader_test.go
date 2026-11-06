@@ -66,7 +66,7 @@ func TestLoadMetadata(t *testing.T) {
 						},
 					},
 					Codeowners: &Codeowners{
-						Active:   []string{"braydonk"},
+						Active:   []string{"braydonk", "dmathieu"},
 						Emeritus: []string{"dmitryax"},
 					},
 					Warnings:             []string{"Any additional information that should be brought to the consumer's attention"},

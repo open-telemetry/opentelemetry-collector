@@ -43,6 +43,9 @@ type ClientConfig struct {
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
 	Keepalive configoptional.Optional[KeepaliveClientConfig] `mapstructure:"keepalive,omitempty"`
 
+	// DialerMiddleware dialer middleware is a handler customizing how the client will dial connections over TCP.
+	DialerMiddleware configoptional.Optional[configmiddleware.Config] `mapstructure:"dialer_middleware,omitempty"`
+
 	// Middlewares middlewares for the gRPC client.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 
@@ -86,10 +89,11 @@ func (c *ClientConfig) Validate() error {
 // Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
-		Auth:         configoptional.None[configauth.Config](),
-		BalancerName: "round_robin",
-		Keepalive:    configoptional.Some(NewDefaultKeepaliveClientConfig()),
-		TLS:          configtls.NewDefaultClientConfig(),
+		Auth:             configoptional.None[configauth.Config](),
+		BalancerName:     "round_robin",
+		Keepalive:        configoptional.Some(NewDefaultKeepaliveClientConfig()),
+		DialerMiddleware: configoptional.None[configmiddleware.Config](),
+		TLS:              configtls.NewDefaultClientConfig(),
 	}
 }
 
