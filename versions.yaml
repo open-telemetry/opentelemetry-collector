@@ -33,7 +33,7 @@ module-sets:
       - go.opentelemetry.io/collector/processor
       - go.opentelemetry.io/collector/receiver
   beta:
-    version: v0.164.0
+    version: v0.165.0
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/internal/componentalias
