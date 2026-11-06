@@ -5,16 +5,16 @@ go 1.26.0
 require (
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.71.0
-	go.opentelemetry.io/collector/connector v0.164.0
+	go.opentelemetry.io/collector/connector v0.165.0
 	go.opentelemetry.io/collector/consumer v1.71.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.164.0
-	go.opentelemetry.io/collector/consumer/xconsumer v0.164.0
-	go.opentelemetry.io/collector/internal/componentalias v0.164.0
-	go.opentelemetry.io/collector/internal/fanoutconsumer v0.164.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.164.0
-	go.opentelemetry.io/collector/pdata/testdata v0.164.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.165.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.165.0
+	go.opentelemetry.io/collector/internal/componentalias v0.165.0
+	go.opentelemetry.io/collector/internal/fanoutconsumer v0.165.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.165.0
+	go.opentelemetry.io/collector/pdata/testdata v0.165.0
 	go.opentelemetry.io/collector/pipeline v1.71.0
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.164.0
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.165.0
 )
 
 require (
