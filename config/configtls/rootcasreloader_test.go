@@ -5,12 +5,19 @@ package configtls
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"math/big"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -177,4 +184,59 @@ func TestClientCAFileReloadHTTPClient(t *testing.T) {
 
 	require.NoError(t, get("example2"))
 	require.Error(t, get("example1"))
+}
+
+func TestRootCAsReloaderNoPeerCertificates(t *testing.T) {
+	r := newRootCAsReloader(Config{ReloadInterval: time.Hour}, x509.NewCertPool())
+	assert.EqualError(t, r.verifyConnection(tls.ConnectionState{}), "tls: server did not present a certificate")
+}
+
+// TestRootCAsReloaderIntermediate checks that intermediates sent by the server
+// are used to build the chain to the reloaded root, as crypto/tls does.
+func TestRootCAsReloaderIntermediate(t *testing.T) {
+	newKey := func() *ecdsa.PrivateKey {
+		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		require.NoError(t, err)
+		return key
+	}
+	sign := func(tmpl, parent *x509.Certificate, pub *ecdsa.PublicKey, signer *ecdsa.PrivateKey) *x509.Certificate {
+		der, err := x509.CreateCertificate(rand.Reader, tmpl, parent, pub, signer)
+		require.NoError(t, err)
+		cert, err := x509.ParseCertificate(der)
+		require.NoError(t, err)
+		return cert
+	}
+	now := time.Now()
+	caTmpl := func(serial int64) *x509.Certificate {
+		return &x509.Certificate{
+			SerialNumber:          big.NewInt(serial),
+			Subject:               pkix.Name{CommonName: "ca " + strconv.FormatInt(serial, 10)},
+			NotBefore:             now.Add(-time.Hour),
+			NotAfter:              now.Add(time.Hour),
+			KeyUsage:              x509.KeyUsageCertSign,
+			BasicConstraintsValid: true,
+			IsCA:                  true,
+		}
+	}
+	rootKey, intKey, leafKey := newKey(), newKey(), newKey()
+	root := sign(caTmpl(1), caTmpl(1), &rootKey.PublicKey, rootKey)
+	intermediate := sign(caTmpl(2), root, &intKey.PublicKey, rootKey)
+	leaf := sign(&x509.Certificate{
+		SerialNumber: big.NewInt(3),
+		NotBefore:    now.Add(-time.Hour),
+		NotAfter:     now.Add(time.Hour),
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		DNSNames:     []string{"example.com"},
+	}, intermediate, &leafKey.PublicKey, intKey)
+
+	roots := x509.NewCertPool()
+	roots.AddCert(root)
+	r := newRootCAsReloader(Config{ReloadInterval: time.Hour}, roots)
+
+	cs := tls.ConnectionState{ServerName: "example.com", PeerCertificates: []*x509.Certificate{leaf, intermediate}}
+	require.NoError(t, r.verifyConnection(cs))
+
+	cs.PeerCertificates = []*x509.Certificate{leaf}
+	assert.ErrorContains(t, r.verifyConnection(cs), "certificate signed by unknown authority",
+		"chain must not verify without the intermediate")
 }
