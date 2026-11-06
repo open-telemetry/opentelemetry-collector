@@ -112,17 +112,32 @@ test_build_config() {
 
 }
 
+# kill_tree PID stops a process and its descendants, so that the collector
+# started by `make run` does not outlive make and keep its ports bound.
+kill_tree() {
+  local child
+  for child in $(pgrep -P "$1" 2>/dev/null); do
+    kill_tree "${child}"
+  done
+  kill "$1"
+}
+
+# test_init NAME [INIT_ARGS...] runs `ocb init` with the extra arguments in a
+# folder named NAME, and checks that the generated collector starts.
 test_init() {
-  out="${base}/init"
+  local name="$1"
+  shift
+  local start="$PWD"
+  out="${base}/${name}"
   if ! mkdir -p "${out}"; then
-      echo "❌ FAIL ${test}. Failed to create test directory for the test. Aborting tests."
+      echo "❌ FAIL ${name}. Failed to create test directory for the test. Aborting tests."
       exit 2
   fi
 
-  echo "Starting init test at $(date)" >> "${out}/test.log"
+  echo "Starting ${name} test at $(date)" >> "${out}/test.log"
 
-  if ! go run . init --path "${out}" > "${out}/builder.log" 2>&1; then
-      echo "❌ FAIL ${test}. Failed to compile the test. Build logs:"
+  if ! go run . init --path "${out}" "$@" > "${out}/builder.log" 2>&1; then
+      echo "❌ FAIL ${name}. Failed to compile the test. Build logs:"
       cat "${out}/builder.log"
       failed=true
       return
@@ -141,35 +156,35 @@ test_init() {
   while true
   do
       if ! kill -0 "${pid}" >/dev/null 2>&1; then
-          echo "❌ FAIL ${test}. The OpenTelemetry Collector isn't running. Startup log:"
+          echo "❌ FAIL ${name}. The OpenTelemetry Collector isn't running. Startup log:"
           cat "${out}/otelcol.log"
           failed=true
           break
       fi
 
       if cat "${out}/otelcol.log" | grep "Everything is ready."; then
-        echo "✅ PASS init"
+        echo "✅ PASS ${name}"
 
-        kill "${pid}"
+        kill_tree "${pid}"
         ret=$?
         if [ $ret -ne 0 ]; then
-            echo "Failed to stop the running instance for test ${test}. Return code: ${ret} . Skipping tests."
+            echo "Failed to stop the running instance for test ${name}. Return code: ${ret} . Skipping tests."
             exit 4
         fi
         break
       fi
 
-      echo "Server still unavailable for test '${test}'" >> "${out}/test.log"
+      echo "Server still unavailable for test '${name}'" >> "${out}/test.log"
 
       ((retries++))
       if [ "$retries" -gt "$max_retries" ]; then
-          echo "❌ FAIL ${test}. Server wasn't up after about 5m."
+          echo "❌ FAIL ${name}. Server wasn't up after about 5m."
           failed=true
 
-          kill "${pid}"
+          kill_tree "${pid}"
           ret=$?
           if [ $ret -ne 0 ]; then
-              echo "Failed to stop the running instance for test ${test}. Return code: ${ret} . Skipping tests."
+              echo "Failed to stop the running instance for test ${name}. Return code: ${ret} . Skipping tests."
               exit 8
           fi
           break
@@ -177,7 +192,8 @@ test_init() {
       sleep 0.1s
   done
 
-  echo "Stopping server for '${test}' (pid: ${pid})" >> "${out}/test.log"
+  echo "Stopping server for '${name}' (pid: ${pid})" >> "${out}/test.log"
+  cd "${start}" || exit 1
 }
 
 tests="core"
@@ -202,7 +218,8 @@ do
     test_build_config "$test" "./test/${test}.builder.yaml"
 done
 
-test_init
+test_init init
+test_init init-from-config --from-config "${PWD}/test/init-from-config.yaml"
 
 if [[ "$failed" == "true" ]]; then
     exit 1

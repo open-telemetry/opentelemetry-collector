@@ -107,6 +107,28 @@ ocb --config=builder-config.yaml
 
 Use `ocb --help` to learn about which flags are available.
 
+## Initializing from an existing configuration
+
+`ocb init` scaffolds a new distribution in the folder given with `--path`.
+With `--from-config`, the generated `manifest.yaml` contains the components used by an existing Collector configuration:
+
+```console
+ocb init --path ./mycol --from-config ./collector-config.yaml
+```
+
+The receivers, processors, exporters, extensions and connectors of the configuration are matched to Go modules of the
+`opentelemetry-collector` and `opentelemetry-collector-contrib` repositories.
+Every module is looked up on the Go module proxy before being written, and is pinned to the Collector release `ocb` belongs to.
+Network access is therefore required.
+
+Components that cannot be matched, such as third-party ones, produce a warning and a commented-out placeholder at the end of
+`manifest.yaml` to complete by hand.
+Check the `ocb: resolved ...` lines printed to stderr, as a third-party component named like an official one is matched to it.
+
+The configuration is read as is: environment variables, such as `${env:NAME}`, are not expanded, so component IDs must be written literally.
+The configuration file is copied to `config.yaml` in the distribution.
+Use absolute paths for the files it references, as relative paths are no longer resolved from the same folder.
+
 ## Debug
 
 ### Debug symbols
