@@ -143,6 +143,8 @@ github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee h1:W5t00kpgFd
 github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
+github.com/pandatix/go-abnf v0.5.3 h1:LA9AaxAqwzdxfDe7+HIGUB6tzx2N6wYVEAChmfsoPgo=
+github.com/pandatix/go-abnf v0.5.3/go.mod h1:AE0KD3/VNoCjGzc1gqetRKshbI4SYErXQ/8kPenR5mc=
 github.com/pierrec/lz4/v4 v4.1.33 h1:GjG1TJ1V4IzKP8L96muuuDNpTwd7D+l2ccXrjAbe014=
 github.com/pierrec/lz4/v4 v4.1.33/go.mod h1:7SE9MC2STkNtL4PIwGhjmyVwvILaGI9/COYQNBhKM/c=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
@@ -154,8 +156,8 @@ github.com/prometheus/client_golang v1.24.1 h1:JnJkREXzWxUdCuPFpIWZiPispT9xVV59u
 github.com/prometheus/client_golang v1.24.1/go.mod h1:F+oSRECHg4sse5ucfYpYDeIv/hu68Zo0uoHKetWnzcE=
 github.com/prometheus/client_model v0.6.3 h1:O0jaTVAYNxTHYInEPFJt5I3+sN8zqBtVMPTB1qyxiEo=
 github.com/prometheus/client_model v0.6.3/go.mod h1:gpN5P9S7Rr6Yr92PiQ+Ixvhf6JZEkF1dnxsYL2aPBEM=
-github.com/prometheus/common v0.72.1 h1:ZAiQed/nk8IIcsdzb2TlJu23NEUDyDLQ9TXTN2WRK6Y=
-github.com/prometheus/common v0.72.1/go.mod h1:1IoBY4IRaJnhs2ESjNzjilP1cJ/P8pimGoomq7zRXrA=
+github.com/prometheus/common v0.73.1 h1:SZWh/j4AvhCdhX8jvYSnxvPxhWlC9QZkjJ+tOrEr7kU=
+github.com/prometheus/common v0.73.1/go.mod h1:I9aA/Ukz9s1olOobh8KtCkU7B1mQPQsB9UvQPsUQ1Dk=
 github.com/prometheus/otlptranslator v1.0.0 h1:s0LJW/iN9dkIH+EnhiD3BlkkP5QVIUVEoIwkU+A6qos=
 github.com/prometheus/otlptranslator v1.0.0/go.mod h1:vRYWnXvI6aWGpsdY/mOT/cbeVRBlPWtBNDb7kGR3uKM=
 github.com/prometheus/procfs v0.22.0 h1:6q9+/JL9IKAPbCmBrv9n5O5Ty3NKnciV5X7YGw0oics=
