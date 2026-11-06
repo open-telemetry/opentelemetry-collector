@@ -663,3 +663,48 @@ func TestMergeSplitLogsStopsWhenNoProgressIsPossible(t *testing.T) {
 	require.ErrorContains(t, err, "request size is greater than max size and cannot be split further, dropping items: 2")
 	assert.Empty(t, res, "records that cannot fit any batch must not be returned")
 }
+
+func TestLogsMergeToMaintainsCachedSizes(t *testing.T) {
+	t.Run("merge_by_items_maintains_cached_bytes_and_items", func(t *testing.T) {
+		dst := newLogsRequest(testdata.GenerateLogs(5)).(*logsRequest)
+		req := newLogsRequest(testdata.GenerateLogs(7)).(*logsRequest)
+
+		dstBytes := dst.BytesSize()
+		reqBytes := req.BytesSize()
+		dstItems := dst.ItemsCount()
+		reqItems := req.ItemsCount()
+
+		req.mergeTo(dst, &sizer.LogsCountSizer{}, request.SizerTypeItems)
+
+		// dst should have both dimensions cached as the sum.
+		// Appending payload out of band verifies the cached values are served without recomputation.
+		testdata.GenerateLogs(3).ResourceLogs().MoveAndAppendTo(dst.ld.ResourceLogs())
+		assert.Equal(t, dstBytes+reqBytes, dst.BytesSize(), "dst.BytesSize must serve cached sum")
+		assert.Equal(t, dstItems+reqItems, dst.ItemsCount(), "dst.ItemsCount must serve cached sum")
+
+		// req should be reset to 0 for both dimensions and serve the cached 0.
+		testdata.GenerateLogs(3).ResourceLogs().MoveAndAppendTo(req.ld.ResourceLogs())
+		assert.Equal(t, 0, req.BytesSize(), "req.BytesSize must be cached 0")
+		assert.Equal(t, 0, req.ItemsCount(), "req.ItemsCount must be cached 0")
+	})
+
+	t.Run("merge_by_bytes_maintains_cached_bytes_and_items", func(t *testing.T) {
+		dst := newLogsRequest(testdata.GenerateLogs(5)).(*logsRequest)
+		req := newLogsRequest(testdata.GenerateLogs(7)).(*logsRequest)
+
+		dstBytes := dst.BytesSize()
+		reqBytes := req.BytesSize()
+		dstItems := dst.ItemsCount()
+		reqItems := req.ItemsCount()
+
+		req.mergeTo(dst, &sizer.LogsBytesSizer{}, request.SizerTypeBytes)
+
+		testdata.GenerateLogs(3).ResourceLogs().MoveAndAppendTo(dst.ld.ResourceLogs())
+		assert.Equal(t, dstBytes+reqBytes, dst.BytesSize(), "dst.BytesSize must serve cached sum")
+		assert.Equal(t, dstItems+reqItems, dst.ItemsCount(), "dst.ItemsCount must serve cached sum")
+
+		testdata.GenerateLogs(3).ResourceLogs().MoveAndAppendTo(req.ld.ResourceLogs())
+		assert.Equal(t, 0, req.BytesSize(), "req.BytesSize must be cached 0")
+		assert.Equal(t, 0, req.ItemsCount(), "req.ItemsCount must be cached 0")
+	})
+}

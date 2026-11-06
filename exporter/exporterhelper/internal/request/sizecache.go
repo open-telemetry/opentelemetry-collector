@@ -46,3 +46,23 @@ func (c *SizeCache) Update(szt SizerType, size int) {
 		c.bytesSize = size
 	}
 }
+
+func addIfKnown(a, b int) int {
+	if a == uncachedSize || b == uncachedSize {
+		return uncachedSize
+	}
+	return a + b
+}
+
+// Merge adds the sizes of other to c for every dimension known on both sides,
+// and marks the rest as uncached.
+func (c *SizeCache) Merge(other SizeCache) {
+	c.itemsSize = addIfKnown(c.itemsSize, other.itemsSize)
+	c.bytesSize = addIfKnown(c.bytesSize, other.bytesSize)
+}
+
+// Reset sets both items and bytes sizes to zero, reflecting an emptied request payload.
+func (c *SizeCache) Reset() {
+	c.itemsSize = 0
+	c.bytesSize = 0
+}

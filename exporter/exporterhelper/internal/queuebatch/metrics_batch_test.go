@@ -769,3 +769,48 @@ func (m *mockMetricsSizer) ScopeMetricsSize(_ pmetric.ScopeMetrics) int {
 func (m *mockMetricsSizer) DeltaSize(size int) int {
 	return size
 }
+
+func TestMetricsMergeToMaintainsCachedSizes(t *testing.T) {
+	t.Run("merge_by_items_maintains_cached_bytes_and_items", func(t *testing.T) {
+		dst := newMetricsRequest(testdata.GenerateMetrics(5)).(*metricsRequest)
+		req := newMetricsRequest(testdata.GenerateMetrics(7)).(*metricsRequest)
+
+		dstBytes := dst.BytesSize()
+		reqBytes := req.BytesSize()
+		dstItems := dst.ItemsCount()
+		reqItems := req.ItemsCount()
+
+		req.mergeTo(dst, &sizer.MetricsCountSizer{}, request.SizerTypeItems)
+
+		// dst should have both dimensions cached as the sum.
+		// Appending payload out of band verifies the cached values are served without recomputation.
+		testdata.GenerateMetrics(3).ResourceMetrics().MoveAndAppendTo(dst.md.ResourceMetrics())
+		assert.Equal(t, dstBytes+reqBytes, dst.BytesSize(), "dst.BytesSize must serve cached sum")
+		assert.Equal(t, dstItems+reqItems, dst.ItemsCount(), "dst.ItemsCount must serve cached sum")
+
+		// req should be reset to 0 for both dimensions and serve the cached 0.
+		testdata.GenerateMetrics(3).ResourceMetrics().MoveAndAppendTo(req.md.ResourceMetrics())
+		assert.Equal(t, 0, req.BytesSize(), "req.BytesSize must be cached 0")
+		assert.Equal(t, 0, req.ItemsCount(), "req.ItemsCount must be cached 0")
+	})
+
+	t.Run("merge_by_bytes_maintains_cached_bytes_and_items", func(t *testing.T) {
+		dst := newMetricsRequest(testdata.GenerateMetrics(5)).(*metricsRequest)
+		req := newMetricsRequest(testdata.GenerateMetrics(7)).(*metricsRequest)
+
+		dstBytes := dst.BytesSize()
+		reqBytes := req.BytesSize()
+		dstItems := dst.ItemsCount()
+		reqItems := req.ItemsCount()
+
+		req.mergeTo(dst, &sizer.MetricsBytesSizer{}, request.SizerTypeBytes)
+
+		testdata.GenerateMetrics(3).ResourceMetrics().MoveAndAppendTo(dst.md.ResourceMetrics())
+		assert.Equal(t, dstBytes+reqBytes, dst.BytesSize(), "dst.BytesSize must serve cached sum")
+		assert.Equal(t, dstItems+reqItems, dst.ItemsCount(), "dst.ItemsCount must serve cached sum")
+
+		testdata.GenerateMetrics(3).ResourceMetrics().MoveAndAppendTo(req.md.ResourceMetrics())
+		assert.Equal(t, 0, req.BytesSize(), "req.BytesSize must be cached 0")
+		assert.Equal(t, 0, req.ItemsCount(), "req.ItemsCount must be cached 0")
+	})
+}

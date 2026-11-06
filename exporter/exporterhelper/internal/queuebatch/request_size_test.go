@@ -217,3 +217,40 @@ func TestRequestCachedSizeMatchesRecompute(t *testing.T) {
 		}
 	}
 }
+
+// TestRequestSizeCacheMergePreservesCachedDimension asserts that when both
+// requests in a merge have a dimension cached (e.g. BytesSize() from enqueue),
+// that dimension remains cached on the merged request without re-calculating,
+// and the merged-away request's sizes are reset to 0.
+func TestRequestSizeCacheMergePreservesCachedDimension(t *testing.T) {
+	for _, sig := range sizeCacheSignals() {
+		for _, mergeSzt := range []request.SizerType{request.SizerTypeItems, request.SizerTypeBytes} {
+			sztName := "items"
+			if mergeSzt == request.SizerTypeBytes {
+				sztName = "bytes"
+			}
+			t.Run(sig.name+"/merge_by_"+sztName, func(t *testing.T) {
+				dst := sig.newReq(5)
+				req := sig.newReq(7)
+
+				// Populate both dimensions on both requests.
+				dstItems, dstBytes := dst.ItemsCount(), dst.BytesSize()
+				reqItems, reqBytes := req.ItemsCount(), req.BytesSize()
+
+				res, err := dst.MergeSplit(context.Background(), 0, mergeSzt, req)
+				require.NoError(t, err)
+				merged := res[len(res)-1]
+
+				// Appending out-of-band to dst/merged proves neither dimension was recomputed.
+				sig.appendPayload(merged, 3)
+				assert.Equal(t, dstItems+reqItems, merged.ItemsCount(), "merged ItemsCount must serve cached sum")
+				assert.Equal(t, dstBytes+reqBytes, merged.BytesSize(), "merged BytesSize must serve cached sum")
+
+				// The absorbed request should have both dimensions reset to 0 without recomputing.
+				sig.appendPayload(req, 3)
+				assert.Equal(t, 0, req.ItemsCount(), "absorbed req ItemsCount must be 0")
+				assert.Equal(t, 0, req.BytesSize(), "absorbed req BytesSize must be 0")
+			})
+		}
+	}
+}
