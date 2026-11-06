@@ -1,4 +1,4 @@
-type: config/configmiddleware
+type: configmiddleware
 parent: config
 github_project: open-telemetry/opentelemetry-collector
 

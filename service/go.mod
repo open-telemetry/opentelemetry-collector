@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.164.0
 	go.opentelemetry.io/collector/config/confighttp v0.164.0
 	go.opentelemetry.io/collector/config/confignet v1.70.0
+	go.opentelemetry.io/collector/config/configoptional v1.70.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.164.0
 	go.opentelemetry.io/collector/confmap v1.70.0
 	go.opentelemetry.io/collector/connector v0.164.0
@@ -23,6 +24,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.164.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.164.0
 	go.opentelemetry.io/collector/exporter v1.70.0
+	go.opentelemetry.io/collector/exporter/exporterhelper v0.164.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.164.0
 	go.opentelemetry.io/collector/exporter/xexporter v0.164.0
 	go.opentelemetry.io/collector/extension v1.70.0
@@ -84,6 +86,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/brunoscheufler/aws-ecs-metadata-go v0.0.0-20221221133751-67e37ae746cd // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
+	github.com/cenkalti/backoff/v7 v7.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/ebitengine/purego v0.11.2 // indirect
@@ -99,6 +102,7 @@ require (
 	github.com/google/go-tpm v0.9.9-0.20260124013517-8f8f42cba0de // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.31.0 // indirect
 	github.com/hashicorp/go-version v1.9.0 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.20.3 // indirect
@@ -129,11 +133,12 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.70.0 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.70.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.70.0 // indirect
-	go.opentelemetry.io/collector/config/configoptional v1.70.0 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.70.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.70.0 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.164.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.70.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.164.0 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.164.0 // indirect
 	go.opentelemetry.io/contrib/detectors/aws/ec2/v2 v2.6.0 // indirect
 	go.opentelemetry.io/contrib/detectors/aws/ecs v1.47.0 // indirect
 	go.opentelemetry.io/contrib/detectors/aws/eks v1.47.0 // indirect

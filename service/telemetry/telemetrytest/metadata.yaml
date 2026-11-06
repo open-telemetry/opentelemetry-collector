@@ -1,4 +1,4 @@
-type: service/telemetry/telemetrytest
+type: telemetrytest
 parent: service/telemetry
 github_project: open-telemetry/opentelemetry-collector
 

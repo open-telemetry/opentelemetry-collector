@@ -1,4 +1,4 @@
-type: xextension/storage
+type: storage
 parent: xextension
 github_project: open-telemetry/opentelemetry-collector
 

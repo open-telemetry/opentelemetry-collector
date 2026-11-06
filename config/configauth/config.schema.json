@@ -13,5 +13,5 @@
       "description": "Defines the auth settings for the receiver."
     }
   },
-  "title": "pkg/config/configauth"
+  "title": "pkg/configauth"
 }
