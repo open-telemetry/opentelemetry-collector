@@ -135,10 +135,14 @@ func hashStack(st Stack) uint64 {
 }
 
 func hashAttribute(a KeyValueAndUnit) uint64 {
+	return hashAttributeFields(a.KeyStrindex(), a.UnitStrindex(), a.Value())
+}
+
+func hashAttributeFields(key, unit int32, value pcommon.Value) uint64 {
 	h := fnvOffset64
-	h = mixU64(h, uint64(uint32(a.KeyStrindex())))
-	h = mixU64(h, uint64(uint32(a.UnitStrindex())))
-	h = hashValue(h, a.Value())
+	h = mixU64(h, uint64(uint32(key)))
+	h = mixU64(h, uint64(uint32(unit)))
+	h = hashValue(h, value)
 	return h
 }
 
@@ -170,6 +174,28 @@ type mergeIndex struct {
 	stacks     map[uint64][]int32
 	attributes map[uint64][]int32
 	links      map[uint64][]int32
+
+	// Source index to destination index for the merge in progress, so each
+	// referenced source entry is translated and copied at most once. Sized on
+	// first use; -1 marks an entry not translated yet.
+	// appendOnly skips deduplication: each translated entry is appended.
+	// Only valid when translating from a single source dictionary into a new
+	// one, where the index memos already copy each source entry once.
+	appendOnly bool
+
+	attributeIdx indexMemo
+	functionIdx  indexMemo
+	mappingIdx   indexMemo
+	locationIdx  indexMemo
+	stackIdx     indexMemo
+
+	// Scratch values an entry is copied into and translated in before being
+	// deduplicated into the destination. One per type is enough because a
+	// translation never recurses into another entry of the same type.
+	functionScratch *Function
+	mappingScratch  *Mapping
+	locationScratch *Location
+	stackScratch    *Stack
 }
 
 func newMergeIndex(dst ProfilesDictionary) *mergeIndex {
@@ -240,7 +266,10 @@ func (mi *mergeIndex) setString(table pcommon.StringSlice, val string) (int32, e
 }
 
 func (mi *mergeIndex) setFunction(table FunctionSlice, fn Function) (int32, error) {
-	h := hashFunction(fn)
+	var h uint64
+	if !mi.appendOnly {
+		h = hashFunction(fn)
+	}
 	for _, idx := range mi.functions[h] {
 		if table.At(int(idx)).Equal(fn) {
 			return idx, nil
@@ -251,12 +280,17 @@ func (mi *mergeIndex) setFunction(table FunctionSlice, fn Function) (int32, erro
 	}
 	fn.CopyTo(table.AppendEmpty())
 	idx := int32(table.Len() - 1)
-	mi.functions[h] = append(mi.functions[h], idx)
+	if !mi.appendOnly {
+		mi.functions[h] = append(mi.functions[h], idx)
+	}
 	return idx, nil
 }
 
 func (mi *mergeIndex) setMapping(table MappingSlice, ma Mapping) (int32, error) {
-	h := hashMapping(ma)
+	var h uint64
+	if !mi.appendOnly {
+		h = hashMapping(ma)
+	}
 	for _, idx := range mi.mappings[h] {
 		if table.At(int(idx)).Equal(ma) {
 			return idx, nil
@@ -267,12 +301,17 @@ func (mi *mergeIndex) setMapping(table MappingSlice, ma Mapping) (int32, error) 
 	}
 	ma.CopyTo(table.AppendEmpty())
 	idx := int32(table.Len() - 1)
-	mi.mappings[h] = append(mi.mappings[h], idx)
+	if !mi.appendOnly {
+		mi.mappings[h] = append(mi.mappings[h], idx)
+	}
 	return idx, nil
 }
 
 func (mi *mergeIndex) setLocation(table LocationSlice, loc Location) (int32, error) {
-	h := hashLocation(loc)
+	var h uint64
+	if !mi.appendOnly {
+		h = hashLocation(loc)
+	}
 	for _, idx := range mi.locations[h] {
 		if table.At(int(idx)).Equal(loc) {
 			return idx, nil
@@ -283,12 +322,17 @@ func (mi *mergeIndex) setLocation(table LocationSlice, loc Location) (int32, err
 	}
 	loc.CopyTo(table.AppendEmpty())
 	idx := int32(table.Len() - 1)
-	mi.locations[h] = append(mi.locations[h], idx)
+	if !mi.appendOnly {
+		mi.locations[h] = append(mi.locations[h], idx)
+	}
 	return idx, nil
 }
 
 func (mi *mergeIndex) setStack(table StackSlice, st Stack) (int32, error) {
-	h := hashStack(st)
+	var h uint64
+	if !mi.appendOnly {
+		h = hashStack(st)
+	}
 	for _, idx := range mi.stacks[h] {
 		if table.At(int(idx)).Equal(st) {
 			return idx, nil
@@ -299,23 +343,40 @@ func (mi *mergeIndex) setStack(table StackSlice, st Stack) (int32, error) {
 	}
 	st.CopyTo(table.AppendEmpty())
 	idx := int32(table.Len() - 1)
-	mi.stacks[h] = append(mi.stacks[h], idx)
+	if !mi.appendOnly {
+		mi.stacks[h] = append(mi.stacks[h], idx)
+	}
 	return idx, nil
 }
 
 func (mi *mergeIndex) setAttribute(table KeyValueAndUnitSlice, attr KeyValueAndUnit) (int32, error) {
-	h := hashAttribute(attr)
+	return mi.setAttributeFields(table, attr.KeyStrindex(), attr.UnitStrindex(), attr.Value())
+}
+
+// setAttributeFields is setAttribute for an attribute given by its fields, so
+// callers can translate the key and unit without copying the value first.
+func (mi *mergeIndex) setAttributeFields(table KeyValueAndUnitSlice, key, unit int32, value pcommon.Value) (int32, error) {
+	var h uint64
+	if !mi.appendOnly {
+		h = hashAttributeFields(key, unit, value)
+	}
 	for _, idx := range mi.attributes[h] {
-		if table.At(int(idx)).Equal(attr) {
+		e := table.At(int(idx))
+		if e.KeyStrindex() == key && e.UnitStrindex() == unit && e.Value().Equal(value) {
 			return idx, nil
 		}
 	}
 	if table.Len() >= mi.maxTableLen {
 		return 0, errTooManyAttributeTableEntries
 	}
-	attr.CopyTo(table.AppendEmpty())
+	e := table.AppendEmpty()
+	e.SetKeyStrindex(key)
+	e.SetUnitStrindex(unit)
+	value.CopyTo(e.Value())
 	idx := int32(table.Len() - 1)
-	mi.attributes[h] = append(mi.attributes[h], idx)
+	if !mi.appendOnly {
+		mi.attributes[h] = append(mi.attributes[h], idx)
+	}
 	return idx, nil
 }
 
@@ -332,5 +393,182 @@ func (mi *mergeIndex) setLink(table LinkSlice, li Link) (int32, error) {
 	li.CopyTo(table.AppendEmpty())
 	idx := int32(table.Len() - 1)
 	mi.links[h] = append(mi.links[h], idx)
+	return idx, nil
+}
+
+// newSplitIndex returns a mergeIndex for translating part of a single source
+// dictionary into a new dst holding only the index 0 empty entries: index
+// memos are sparse, and entries are appended without deduplication.
+func newSplitIndex(dst ProfilesDictionary) *mergeIndex {
+	mi := newMergeIndex(dst)
+	mi.appendOnly = true
+	for _, memo := range []*indexMemo{&mi.attributeIdx, &mi.functionIdx, &mi.mappingIdx, &mi.locationIdx, &mi.stackIdx} {
+		memo.sparse = true
+	}
+	return mi
+}
+
+// indexMemo maps the source indices of one dictionary table to destination
+// indices. A dense memo is a slice sized to the source table, suited to merging
+// most of a dictionary; a sparse memo is a map, suited to translating a few
+// entries of a large dictionary, such as when splitting it.
+type indexMemo struct {
+	sparse bool
+	dense  []int32
+	m      map[int32]int32
+}
+
+// get returns the destination index of source index i of a table of length n.
+func (memo *indexMemo) get(n int, i int32) (int32, bool) {
+	if memo.sparse {
+		v, ok := memo.m[i]
+		return v, ok
+	}
+	if len(memo.dense) != n {
+		memo.dense = make([]int32, n)
+		for j := range memo.dense {
+			memo.dense[j] = -1
+		}
+	}
+	v := memo.dense[i]
+	return v, v >= 0
+}
+
+// set records the destination index of source index i. get must have been
+// called for i first.
+func (memo *indexMemo) set(i, v int32) {
+	if memo.sparse {
+		if memo.m == nil {
+			memo.m = make(map[int32]int32)
+		}
+		memo.m[i] = v
+		return
+	}
+	memo.dense[i] = v
+}
+
+// attribute returns the destination index of source attribute i. On first use
+// it copies the attribute, with its own references translated, into dst.
+func (mi *mergeIndex) attribute(src, dst ProfilesDictionary, i int32) (int32, error) {
+	if mi.appendOnly && i == 0 {
+		return 0, nil
+	}
+	if idx, ok := mi.attributeIdx.get(src.AttributeTable().Len(), i); ok {
+		return idx, nil
+	}
+	attr := src.AttributeTable().At(int(i))
+	key, unit, err := attr.translateStrings(src, dst, mi)
+	if err != nil {
+		return 0, err
+	}
+	idx, err := mi.setAttributeFields(dst.AttributeTable(), key, unit, attr.Value())
+	if err != nil {
+		return 0, err
+	}
+	mi.attributeIdx.set(i, idx)
+	return idx, nil
+}
+
+// function returns the destination index of source function i. On first use
+// it copies the function, with its own references translated, into dst.
+func (mi *mergeIndex) function(src, dst ProfilesDictionary, i int32) (int32, error) {
+	if mi.appendOnly && i == 0 {
+		return 0, nil
+	}
+	if idx, ok := mi.functionIdx.get(src.FunctionTable().Len(), i); ok {
+		return idx, nil
+	}
+	if mi.functionScratch == nil {
+		v := NewFunction()
+		mi.functionScratch = &v
+	}
+	fn := *mi.functionScratch
+	src.FunctionTable().At(int(i)).CopyTo(fn)
+	if err := fn.switchDictionary(src, dst, mi); err != nil {
+		return 0, err
+	}
+	idx, err := mi.setFunction(dst.FunctionTable(), fn)
+	if err != nil {
+		return 0, err
+	}
+	mi.functionIdx.set(i, idx)
+	return idx, nil
+}
+
+// mapping returns the destination index of source mapping i. On first use it
+// copies the mapping, with its own references translated, into dst.
+func (mi *mergeIndex) mapping(src, dst ProfilesDictionary, i int32) (int32, error) {
+	if mi.appendOnly && i == 0 {
+		return 0, nil
+	}
+	if idx, ok := mi.mappingIdx.get(src.MappingTable().Len(), i); ok {
+		return idx, nil
+	}
+	if mi.mappingScratch == nil {
+		v := NewMapping()
+		mi.mappingScratch = &v
+	}
+	ma := *mi.mappingScratch
+	src.MappingTable().At(int(i)).CopyTo(ma)
+	if err := ma.switchDictionary(src, dst, mi); err != nil {
+		return 0, err
+	}
+	idx, err := mi.setMapping(dst.MappingTable(), ma)
+	if err != nil {
+		return 0, err
+	}
+	mi.mappingIdx.set(i, idx)
+	return idx, nil
+}
+
+// location returns the destination index of source location i. On first use
+// it copies the location, with its own references translated, into dst.
+func (mi *mergeIndex) location(src, dst ProfilesDictionary, i int32) (int32, error) {
+	if mi.appendOnly && i == 0 {
+		return 0, nil
+	}
+	if idx, ok := mi.locationIdx.get(src.LocationTable().Len(), i); ok {
+		return idx, nil
+	}
+	if mi.locationScratch == nil {
+		v := NewLocation()
+		mi.locationScratch = &v
+	}
+	loc := *mi.locationScratch
+	src.LocationTable().At(int(i)).CopyTo(loc)
+	if err := loc.switchDictionary(src, dst, mi); err != nil {
+		return 0, err
+	}
+	idx, err := mi.setLocation(dst.LocationTable(), loc)
+	if err != nil {
+		return 0, err
+	}
+	mi.locationIdx.set(i, idx)
+	return idx, nil
+}
+
+// stack returns the destination index of source stack i. On first use it
+// copies the stack, with its own references translated, into dst.
+func (mi *mergeIndex) stack(src, dst ProfilesDictionary, i int32) (int32, error) {
+	if mi.appendOnly && i == 0 {
+		return 0, nil
+	}
+	if idx, ok := mi.stackIdx.get(src.StackTable().Len(), i); ok {
+		return idx, nil
+	}
+	if mi.stackScratch == nil {
+		v := NewStack()
+		mi.stackScratch = &v
+	}
+	st := *mi.stackScratch
+	src.StackTable().At(int(i)).CopyTo(st)
+	if err := st.switchDictionary(src, dst, mi); err != nil {
+		return 0, err
+	}
+	idx, err := mi.setStack(dst.StackTable(), st)
+	if err != nil {
+		return 0, err
+	}
+	mi.stackIdx.set(i, idx)
 	return idx, nil
 }
