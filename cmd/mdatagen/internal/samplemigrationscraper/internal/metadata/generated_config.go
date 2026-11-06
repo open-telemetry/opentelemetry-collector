@@ -146,6 +146,46 @@ func (ms *SystemCPUUtilizationV1MetricConfig) Validate() error {
 	return nil
 }
 
+// SystemMemoryLimitUtilizationV1MetricConfig provides config for the system.memory.limit.utilization@v1 metric.
+type SystemMemoryLimitUtilizationV1MetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemMemoryLimitUtilizationV1MetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// SystemMemoryLimitUtilizationMetricConfig provides config for the system.memory.limit_utilization metric.
+type SystemMemoryLimitUtilizationMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *SystemMemoryLimitUtilizationMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // SystemMemoryLinuxAvailableV1MetricConfig provides config for the system.memory.linux.available@v1 metric.
 type SystemMemoryLinuxAvailableV1MetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
@@ -168,11 +208,13 @@ func (ms *SystemMemoryLinuxAvailableV1MetricConfig) Unmarshal(parser *confmap.Co
 
 // MetricsConfig provides config for samplemigration metrics.
 type MetricsConfig struct {
-	LinuxMemoryAvailable         LinuxMemoryAvailableMetricConfig         `mapstructure:"linux.memory.available"`
-	SystemCPUFoo                 SystemCPUFooMetricConfig                 `mapstructure:"system.cpu.foo"`
-	SystemCPUUtilization         SystemCPUUtilizationMetricConfig         `mapstructure:"system.cpu.utilization"`
-	SystemCPUUtilizationV1       SystemCPUUtilizationV1MetricConfig       `mapstructure:"system.cpu.utilization@v1"`
-	SystemMemoryLinuxAvailableV1 SystemMemoryLinuxAvailableV1MetricConfig `mapstructure:"system.memory.linux.available@v1"`
+	LinuxMemoryAvailable           LinuxMemoryAvailableMetricConfig           `mapstructure:"linux.memory.available"`
+	SystemCPUFoo                   SystemCPUFooMetricConfig                   `mapstructure:"system.cpu.foo"`
+	SystemCPUUtilization           SystemCPUUtilizationMetricConfig           `mapstructure:"system.cpu.utilization"`
+	SystemCPUUtilizationV1         SystemCPUUtilizationV1MetricConfig         `mapstructure:"system.cpu.utilization@v1"`
+	SystemMemoryLimitUtilizationV1 SystemMemoryLimitUtilizationV1MetricConfig `mapstructure:"system.memory.limit.utilization"`
+	SystemMemoryLimitUtilization   SystemMemoryLimitUtilizationMetricConfig   `mapstructure:"system.memory.limit_utilization"`
+	SystemMemoryLinuxAvailableV1   SystemMemoryLinuxAvailableV1MetricConfig   `mapstructure:"system.memory.linux.available@v1"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -192,6 +234,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             false,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []SystemCPUUtilizationV1MetricAttributeKey{SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyCPUMode},
+		},
+		SystemMemoryLimitUtilizationV1: SystemMemoryLimitUtilizationV1MetricConfig{
+			Enabled: false,
+		},
+		SystemMemoryLimitUtilization: SystemMemoryLimitUtilizationMetricConfig{
+			Enabled: false,
 		},
 		SystemMemoryLinuxAvailableV1: SystemMemoryLinuxAvailableV1MetricConfig{
 			Enabled: false,

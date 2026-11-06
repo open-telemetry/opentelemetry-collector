@@ -106,6 +106,26 @@
               },
               "description": "SystemCPUUtilizationV1MetricConfig provides config for the system.cpu.utilization@v1 metric."
             },
+            "system.memory.limit.utilization": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              "description": "SystemMemoryLimitUtilizationV1MetricConfig provides config for the system.memory.limit.utilization metric."
+            },
+            "system.memory.limit_utilization": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": false
+                }
+              },
+              "description": "SystemMemoryLimitUtilizationMetricConfig provides config for the system.memory.limit_utilization metric."
+            },
             "system.memory.linux.available@v1": {
               "type": "object",
               "properties": {

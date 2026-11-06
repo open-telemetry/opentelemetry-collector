@@ -405,6 +405,8 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 
 			return used
 		},
+		"metricConfigKey":     md.metricConfigKey,
+		"hasIndependentValue": md.hasIndependentValue,
 		"getLegacyAttributes": func(targetMetricName MetricName) []AttributeName {
 			if legacyMetrics, ok := md.Metrics[MetricName(targetMetricName.EmittedName())]; ok {
 				if legacyMetrics.Migration == nil || legacyMetrics.Migration.To != targetMetricName {

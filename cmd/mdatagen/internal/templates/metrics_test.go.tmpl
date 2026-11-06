@@ -222,6 +222,15 @@ func TestMetricsBuilder(t *testing.T) {
 				{{- end -}}
 				{{- end -}}
 				)
+{{- if $metric.Migration.IndependentValue }}
+				mb.Record{{ $metric.Migration.To.Render }}DataPoint(ts, 1
+{{- range (index $.Metrics $metric.Migration.To).Attributes -}}
+{{- if not (attributeInfo .).IsConditional -}}
+, {{- template "getAttributeValue" . -}}
+{{- end -}}
+{{- end -}}
+)
+{{- end }}
 			}
 			{{- else }}
 			{{ if $metric.Enabled }}defaultMetricsCount++{{ end }}
@@ -609,6 +618,15 @@ func TestVersionedMetrics(t *testing.T) {
                 {{- end -}}
                 {{- end -}}
                 )
+{{- if $metric.Migration.IndependentValue }}
+                mb.Record{{ $metric.Migration.To.Render }}DataPoint(ts, 1
+{{- range (index $.Metrics $metric.Migration.To).Attributes -}}
+{{- if not (attributeInfo .).IsConditional -}}
+, {{- template "getAttributeValue" . -}}
+{{- end -}}
+{{- end -}}
+)
+{{- end }}
 
                 metrics := mb.Emit(WithResource(pcommon.NewResource()))
 
