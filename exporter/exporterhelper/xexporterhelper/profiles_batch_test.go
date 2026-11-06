@@ -324,6 +324,41 @@ func TestMergeSplitManySmallProfiles(t *testing.T) {
 	assert.Len(t, merged, 2)
 }
 
+func TestMergeSplitManySmallProfilesDedupsAcrossSplits(t *testing.T) {
+	// Identical requests merged into one batch must dedup their dictionaries
+	// down to a single copy while every sample accumulates, and a split must
+	// not corrupt the merge index the batch keeps reusing afterwards.
+	batch := newProfilesRequest(testdata.GenerateProfiles(10)).(*profilesRequest)
+	for range 99 {
+		res, err := batch.MergeSplit(context.Background(), 0, exporterhelper.RequestSizerTypeItems, newProfilesRequest(testdata.GenerateProfiles(10)))
+		require.NoError(t, err)
+		require.Len(t, res, 1)
+		batch = res[0].(*profilesRequest)
+	}
+	assert.Equal(t, 1000, batch.pd.SampleCount())
+	assert.Equal(t, 2, batch.pd.Dictionary().StringTable().Len(),
+		"identical dictionaries must dedup to one copy")
+	assert.Equal(t, 3, batch.pd.Dictionary().AttributeTable().Len())
+
+	// Split off three full requests; the remainder keeps serving as the batch.
+	res, err := batch.MergeSplit(context.Background(), 250, exporterhelper.RequestSizerTypeItems, nil)
+	require.NoError(t, err)
+	require.Len(t, res, 4)
+	for i, r := range res {
+		assert.Equal(t, 250, r.ItemsCount(), i)
+	}
+	batch = res[len(res)-1].(*profilesRequest)
+
+	// Merging after the split must still dedup against the shrunk batch.
+	res, err = batch.MergeSplit(context.Background(), 250, exporterhelper.RequestSizerTypeItems, newProfilesRequest(testdata.GenerateProfiles(10)))
+	require.NoError(t, err)
+	require.Len(t, res, 2)
+	assert.Equal(t, 250, res[0].ItemsCount())
+	batch = res[1].(*profilesRequest)
+	assert.Equal(t, 10, batch.pd.SampleCount())
+	assert.Equal(t, 2, batch.pd.Dictionary().StringTable().Len())
+}
+
 func BenchmarkSplittingBasedOnByteSizeManySmallProfiles(b *testing.B) {
 	// All requests merge into a single batch.
 	b.ReportAllocs()

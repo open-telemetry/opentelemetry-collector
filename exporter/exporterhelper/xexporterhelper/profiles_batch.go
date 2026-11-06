@@ -51,7 +51,13 @@ func (req *profilesRequest) mergeTo(dst *profilesRequest, sz sizer.ProfilesSizer
 		dst.setCachedSize(dst.size(sz) + req.size(sz))
 		req.setCachedSize(0)
 	}
-	return req.pd.MergeTo(dst.pd)
+	// The batch request merges every incoming request into the same
+	// destination, so keep one Merger for its lifetime instead of reindexing
+	// the destination dictionary on each merge.
+	if dst.merger == nil {
+		dst.merger = pprofile.NewMerger(dst.pd)
+	}
+	return dst.merger.Merge(req.pd)
 }
 
 func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer) ([]Request, error) {
@@ -73,6 +79,10 @@ func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer) ([]Reques
 			res = append(res, newProfilesRequest(pd))
 		}
 	}
+	// Extraction moved profiles out of this request, so the merge index no
+	// longer describes its contents. Drop it; the next merge rebuilds it
+	// against the shrunk batch.
+	req.merger = nil
 	// Splitting can leave nothing to export once oversized profiles and sample-less resources are gone.
 	if req.pd.SampleCount() > 0 {
 		res = append(res, req)
