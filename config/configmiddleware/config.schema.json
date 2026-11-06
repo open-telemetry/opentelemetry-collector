@@ -13,5 +13,5 @@
       "description": "Defines the extension ID for a middleware component."
     }
   },
-  "title": "pkg/config/configmiddleware"
+  "title": "pkg/configmiddleware"
 }
