@@ -92,8 +92,40 @@ func Build(ctx context.Context, set Settings) (*Graph, error) {
 		return nil, err
 	}
 	pipelines.createEdges()
-	err := pipelines.buildComponents(ctx, set)
-	return pipelines, err
+	if err := pipelines.buildComponents(ctx, set); err != nil {
+		return pipelines, err
+	}
+	// TODO: Revisit this warning when custom builds no longer need batchprocessor.
+	// See https://github.com/open-telemetry/opentelemetry-collector/issues/15965.
+	pipelines.warnIfDoubleBatching(set.PipelineConfigs)
+	return pipelines, nil
+}
+
+func (g *Graph) warnIfDoubleBatching(pipelineConfigs pipelines.Config) {
+	batchProcessorType := component.MustNewType("batch")
+	for pipelineID, pipelineCfg := range pipelineConfigs {
+		hasBatchProcessor := slices.ContainsFunc(pipelineCfg.Processors, func(processorID component.ID) bool {
+			return processorID.Type() == batchProcessorType
+		})
+		if !hasBatchProcessor {
+			continue
+		}
+
+		for _, node := range g.pipelines[pipelineID].exporters {
+			exporterNode, ok := node.(*exporterNode)
+			if !ok {
+				continue
+			}
+			if !exporterNode.exporterHelperBatchingEnabled {
+				continue
+			}
+			g.telemetry.Logger.Warn(
+				"Pipeline has both a batch processor and an exporter with batching enabled; this will cause double batching",
+				zap.Stringer("pipeline", pipelineID),
+				zap.Stringer("exporter", exporterNode.componentID),
+			)
+		}
+	}
 }
 
 // Creates a node for each instance of a component and adds it to the graph.
@@ -477,10 +509,11 @@ func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error
 	var errs error
 	for i := range nodes {
 		node := nodes[i]
-		comp, ok := node.(component.Component)
+		comp := builtComponent(node)
 
-		if !ok {
-			// Skip capabilities/fanout nodes
+		if comp == nil {
+			// Skip capabilities/fanout nodes and nodes whose component was
+			// never built.
 			continue
 		}
 
@@ -505,6 +538,27 @@ func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error
 		)
 	}
 	return errs
+}
+
+// builtComponent returns the component held by a node, or nil when the node
+// holds none: the virtual capabilities and fanout nodes never do, and a
+// receiver, processor, exporter or connector node does not when its build
+// failed. A partial reload that fails while building a component leaves its
+// node in the graph; the fallback full reload then shuts the whole graph down
+// and must not call Shutdown through a nil embedded component.
+func builtComponent(node graph.Node) component.Component {
+	switch n := node.(type) {
+	case *receiverNode:
+		return n.Component
+	case *processorNode:
+		return n.Component
+	case *exporterNode:
+		return n.Component
+	case *connectorNode:
+		return n.Component
+	}
+	comp, _ := node.(component.Component)
+	return comp
 }
 
 // UpdateReceivers performs a partial reload of receiver nodes in the graph.
@@ -576,8 +630,8 @@ func (g *Graph) UpdateReceivers(ctx context.Context, set Settings,
 	}
 
 	// Some components share the same instance across several signals
-	// The graph cannot tell whether the nodes of a receiver share an instance, 
-	// so it rebuilds conservatively, which means an extra restart on non-shared 
+	// The graph cannot tell whether the nodes of a receiver share an instance,
+	// so it rebuilds conservatively, which means an extra restart on non-shared
 	// components.
 	addSharedReceiverNodes(currentReceivers, toRemove, toRebuild, toAdd)
 
