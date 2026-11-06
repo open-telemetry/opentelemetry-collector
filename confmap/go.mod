@@ -9,7 +9,7 @@ require (
 	github.com/knadh/koanf/providers/confmap v1.0.1
 	github.com/knadh/koanf/v2 v2.4.1
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/featuregate v1.70.0
+	go.opentelemetry.io/collector/featuregate v1.71.0
 	go.opentelemetry.io/collector/internal/testutil v0.164.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0

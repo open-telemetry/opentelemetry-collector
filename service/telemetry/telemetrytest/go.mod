@@ -4,8 +4,8 @@ go 1.26.0
 
 require (
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component v1.70.0
-	go.opentelemetry.io/collector/pdata v1.70.0
+	go.opentelemetry.io/collector/component v1.71.0
+	go.opentelemetry.io/collector/pdata v1.71.0
 	go.opentelemetry.io/collector/service v0.164.0
 	go.opentelemetry.io/otel/metric v1.47.0
 	go.opentelemetry.io/otel/trace v1.47.0
@@ -32,7 +32,7 @@ require (
 	github.com/prometheus/procfs v0.22.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.164.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.70.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.71.0 // indirect
 	go.opentelemetry.io/contrib/otelconf v0.27.0 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.23.0 // indirect
