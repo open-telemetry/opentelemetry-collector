@@ -1,0 +1,8 @@
+change_type: bug_fix
+component: pkg/configtls
+note: Fix `reload_interval` not reloading the client `ca_file`, so exporters kept trusting the old CA after rotation.
+issues: [11265]
+subtext: |
+  Previously `reload_interval` only reloaded the certificate and key, so exporters kept trusting
+  the old CA after rotation until the collector restarted.
+change_logs: [user]
