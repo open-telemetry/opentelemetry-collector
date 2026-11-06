@@ -1,8 +1,8 @@
 SHELL = /bin/bash
 # ALL_PKGS is the list of all packages where ALL_SRC files reside.
-ALL_PKGS := $(sort $(shell go list ./...))
+ALL_PKGS = $(sort $(shell go list ./...))
 # COVER_PKGS is the list of packages to include in the coverage
-COVER_PKGS := $(shell go list ./... | tr "\n" ",")
+COVER_PKGS = $(shell go list ./... | tr "\n" ",")
 
 CURR_MOD := $(shell go list -m | tr '/' '-' )
 
@@ -138,7 +138,7 @@ schemagen:
 	@echo "Running schemagen with filepath='$(SRC)' and flags='$(FLAGS)'"
 	cd $(SRC_ROOT)/cmd/schemagen && go run . $(FLAGS) $(SRC)
 
-EXTERNAL_PKGS := $(shell go list ./... | grep -v -E '/internal($|/)')
+EXTERNAL_PKGS = $(shell go list ./... | grep -v -E '/internal($|/)')
 APIDIFF_DATA_DIR ?= internal/data/apidiff
 
 .PHONY: apidiff-build-mod

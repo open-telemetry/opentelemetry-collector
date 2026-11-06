@@ -10,7 +10,7 @@ status:
     beta: [metrics, logs]
   distributions: []
   codeowners:
-    active: [braydonk]
+    active: [braydonk, dmathieu]
 
 config:
   type: object
