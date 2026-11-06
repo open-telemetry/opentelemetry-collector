@@ -5,7 +5,7 @@ This program generates a custom OpenTelemetry Collector binary based on a given 
 ## TL;DR
 
 ```console
-$ go install go.opentelemetry.io/collector/cmd/builder@v0.129.0
+$ # Download the ocb binary for your platform from the "Releases" page linked below.
 $ cat > otelcol-builder.yaml <<EOF
 dist:
   name: otelcol-custom
@@ -28,7 +28,7 @@ providers:
   - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.35.0
   - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.35.0
 EOF
-$ builder --config=otelcol-builder.yaml
+$ ocb --config=otelcol-builder.yaml
 $ cat > /tmp/otelcol.yaml <<EOF
 receivers:
   otlp:
@@ -52,10 +52,13 @@ $ /tmp/dist/otelcol-custom --config=/tmp/otelcol.yaml
 
 ## Installation
 
-There are three supported ways to install the builder:
+There are two supported ways to install the builder:
 1. Via official release Docker images (recommended)
 2. Via official release binaries (recommended)
-3. Through `go install` (not recommended)
+
+Installing through `go install go.opentelemetry.io/collector/cmd/builder@<version>` is not supported:
+the builder module uses local `replace` directives, so it can only be built from a local checkout
+of this repository (for example with `cd cmd/builder && go build .`).
 
 ### Official release Docker image
 
@@ -83,15 +86,13 @@ Additional arguments may be passed to ocb on the command line as specified below
 
 This is the recommended installation method for the binary. Download the binary for your respective platform from the ["Releases"](https://github.com/open-telemetry/opentelemetry-collector-releases/releases?q=cmd/builder) page.
 
-### `go install`
+### Building from source
 
-You need to have a `go` compiler in your PATH. Run the following command to install the latest version:
+You need to have a `go` compiler in your PATH. From a local checkout of this repository, run:
 
 ```console
-go install go.opentelemetry.io/collector/cmd/builder@latest
+cd cmd/builder && go build -o ocb .
 ```
-
-If installing through this method the binary will be called `builder`.
 
 In order to successfully generate and build a collector using ocb, you must use [compatible Go version](../../README.md#compatibility).
 
