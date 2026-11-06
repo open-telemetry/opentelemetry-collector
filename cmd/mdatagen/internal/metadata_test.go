@@ -207,6 +207,14 @@ func TestValidate(t *testing.T) {
 			wantErr: "metric \"system.cpu.time\": migration.to refers to undefined metric \"system.cpu.time@v1\"\nfeature gate \"versioned.metrics.DontEmitV0SystemConventions\": ID must be prefixed with \"receiver.test_versioned.\"\nfeature gate \"versioned.metrics.EmitV1SystemConventions\": ID must be prefixed with \"receiver.test_versioned.\"",
 		},
 		{
+			name:    "testdata/validate_migrations_independent_value_same_name.yaml",
+			wantErr: `metric "system.memory.utilization": migration.independent_value requires the target metric "system.memory.utilization@v1" to have a different emitted name`,
+		},
+		{
+			name:    "testdata/validate_migrations_emitted_name_config_key_not_unique.yaml",
+			wantErr: `metric "system.memory.limit_utilization": migration.emitted_name_config_key requires the emitted name of "system.memory.limit.utilization@v1" to be unique, but it is shared with "system.memory.limit.utilization"`,
+		},
+		{
 			name:    "testdata/feature_gates.yaml",
 			wantErr: "",
 		},

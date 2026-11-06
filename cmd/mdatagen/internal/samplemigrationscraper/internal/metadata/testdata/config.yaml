@@ -11,6 +11,10 @@ all_set:
     system.cpu.utilization@v1:
       enabled: true
       attributes: ["cpu.logical_number","cpu.mode"]
+    system.memory.limit.utilization:
+      enabled: true
+    system.memory.limit_utilization:
+      enabled: true
     system.memory.linux.available@v1:
       enabled: true
 reaggregate_set:
@@ -25,6 +29,10 @@ reaggregate_set:
     system.cpu.utilization@v1:
       enabled: true
       attributes: []
+    system.memory.limit.utilization:
+      enabled: true
+    system.memory.limit_utilization:
+      enabled: true
     system.memory.linux.available@v1:
       enabled: true
 none_set:
@@ -39,5 +47,9 @@ none_set:
     system.cpu.utilization@v1:
       enabled: false
       attributes: ["cpu.logical_number","cpu.mode"]
+    system.memory.limit.utilization:
+      enabled: false
+    system.memory.limit_utilization:
+      enabled: false
     system.memory.linux.available@v1:
       enabled: false

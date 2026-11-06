@@ -256,8 +256,46 @@ func (md *Metadata) validateMigrations() error {
 		if _, ok := gates[m.Migration.ThroughGates.EnableNew]; !ok || m.Migration.ThroughGates.EnableNew == "" {
 			errs = errors.Join(errs, fmt.Errorf(`metric "%v": migration.through_gates.enable_new must reference an existing feature gate`, mn))
 		}
+		if m.Migration.IndependentValue && mn.EmittedName() == m.Migration.To.EmittedName() {
+			errs = errors.Join(errs, fmt.Errorf(`metric "%v": migration.independent_value requires the target metric "%v" to have a different emitted name`, mn, m.Migration.To))
+		}
+		if m.Migration.EmittedNameConfigKey {
+			for other := range md.Metrics {
+				if other != m.Migration.To && other.EmittedName() == m.Migration.To.EmittedName() {
+					errs = errors.Join(errs, fmt.Errorf(`metric "%v": migration.emitted_name_config_key requires the emitted name of "%v" to be unique, but it is shared with "%v"`, mn, m.Migration.To, other))
+				}
+			}
+		}
 	}
 	return errs
+}
+
+// migrationSource returns the metric that migrates to targetName, if any.
+func (md *Metadata) migrationSource(targetName MetricName) (Metric, bool) {
+	for _, m := range md.Metrics {
+		if m.Migration != nil && m.Migration.To == targetName {
+			return m, true
+		}
+	}
+	return Metric{}, false
+}
+
+// metricConfigKey returns the key used for the metric in the user configuration
+// and the documentation. It is the metric key from the metadata file, unless the
+// metric is a migration target with migration.emitted_name_config_key enabled, in
+// which case it is the emitted name.
+func (md *Metadata) metricConfigKey(name MetricName) string {
+	if src, ok := md.migrationSource(name); ok && src.Migration.EmittedNameConfigKey {
+		return name.EmittedName()
+	}
+	return string(name)
+}
+
+// hasIndependentValue reports whether targetName is the target of a migration
+// with migration.independent_value enabled, i.e. whether it gets its own Record function.
+func (md *Metadata) hasIndependentValue(targetName MetricName) bool {
+	src, ok := md.migrationSource(targetName)
+	return ok && src.Migration.IndependentValue
 }
 
 func (md *Metadata) validateEntities() error {
