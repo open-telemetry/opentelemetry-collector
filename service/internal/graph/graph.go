@@ -575,18 +575,10 @@ func (g *Graph) UpdateReceivers(ctx context.Context, set Settings,
 		}
 	}
 
-	// A receiver factory may hand one component instance to several signals
-	// (internal/sharedcomponent does this for the OTLP receiver, whose single
-	// server serves traces, metrics and logs). Shutting down the node of one
-	// signal stops the instance for all of them, and a node added for another
-	// signal must be built before the instance is started. The graph cannot
-	// tell whether the nodes of a receiver share an instance, so every node
-	// with the component ID of a node being added, removed or rebuilt is
-	// rebuilt as well. For a receiver with a separate instance per signal this
-	// means an extra restart of its other signals. Without it, a shared
-	// instance could be stopped under a node the graph leaves running, or keep
-	// running without the added signal, and the data of those signals would be
-	// silently dropped.
+	// Some components share the same instance across several signals
+	// The graph cannot tell whether the nodes of a receiver share an instance, 
+	// so it rebuilds conservatively, which means an extra restart on non-shared 
+	// components.
 	addSharedReceiverNodes(currentReceivers, toRemove, toRebuild, toAdd)
 
 	if len(toRemove) == 0 && len(toRebuild) == 0 && len(toAdd) == 0 {
