@@ -23,7 +23,7 @@ var (
 	errNotGRPCServer      = errors.New("requested extension is not a gRPC server middleware")
 	errNotHTTPClient      = errors.New("requested extension is not an HTTP client middleware")
 	errNotGRPCClient      = errors.New("requested extension is not a gRPC client middleware")
-	errNotDialer          = errors.New("requested extension is not a dialer")
+	errNotDialer          = errors.New("requested extension is not a dialer middleware")
 )
 
 // GetHTTPClientRoundTripper attempts to select the appropriate
