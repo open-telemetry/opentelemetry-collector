@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/otelcol/internal/grpclog"
 	"go.opentelemetry.io/collector/service"
 )
@@ -261,6 +262,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if col.updateConfigProviderLogger != nil {
 		col.updateConfigProviderLogger(col.service.Logger().Core())
 	}
+	featuregate.GlobalRegistry().SetLogger(col.service.Logger())
 	if col.bc != nil {
 		x := col.bc.TakeLogs()
 		for _, log := range x {
