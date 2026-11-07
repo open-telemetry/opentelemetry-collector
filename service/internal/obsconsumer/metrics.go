@@ -46,6 +46,7 @@ func NewMetrics(cons consumer.Metrics, set Settings, opts ...Option) consumer.Me
 type obsMetrics struct {
 	consumer consumer.Metrics
 	set      Settings
+	options
 	compiledOptions
 }
 
@@ -68,12 +69,17 @@ func (c obsMetrics) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 
 	err := c.consumer.ConsumeMetrics(ctx, md)
 	if err != nil {
+		errorType := classifyError(err)
+
 		if consumererror.IsDownstream(err) {
-			attrs = &c.withRefusedAttrs
+			errorAttrs := c.attrsForError("refused", errorType)
+			attrs = &errorAttrs
 		} else {
-			attrs = &c.withFailureAttrs
+			errorAttrs := c.attrsForError("failure", errorType)
+			attrs = &errorAttrs
 			err = consumererror.NewDownstream(err)
 		}
+
 		if c.set.Logger.Core().Enabled(zap.DebugLevel) {
 			c.set.Logger.Debug("Metrics pipeline component had an error", zap.Error(err), zap.Int("item count", itemCount))
 		}

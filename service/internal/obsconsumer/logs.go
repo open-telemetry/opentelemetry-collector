@@ -46,6 +46,7 @@ func NewLogs(cons consumer.Logs, set Settings, opts ...Option) consumer.Logs {
 type obsLogs struct {
 	consumer consumer.Logs
 	set      Settings
+	options
 	compiledOptions
 }
 
@@ -68,14 +69,19 @@ func (c obsLogs) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 
 	err := c.consumer.ConsumeLogs(ctx, ld)
 	if err != nil {
+		errorType := classifyError(err)
+
 		if consumererror.IsDownstream(err) {
-			attrs = &c.withRefusedAttrs
+			errorAttrs := c.attrsForError("refused", errorType)
+			attrs = &errorAttrs
 		} else {
-			attrs = &c.withFailureAttrs
+			errorAttrs := c.attrsForError("failure", errorType)
+			attrs = &errorAttrs
 			err = consumererror.NewDownstream(err)
 		}
+
 		if c.set.Logger.Core().Enabled(zap.DebugLevel) {
-			c.set.Logger.Debug("Logs pipeline component had an error", zap.Error(err), zap.Int("item count", itemCount))
+			c.set.Logger.Debug("Logs pipeline component had an error", zap.Error(err), zap.Int("itemcount", itemCount))
 		}
 	}
 	return err
