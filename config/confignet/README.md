@@ -14,6 +14,9 @@ leverage network configuration to set connection and transport information.
   (IPv6-only), "udp", "udp4" (IPv4-only), "udp6" (IPv6-only), "ip", "ip4"
   (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram", "unixpacket" and
   "npipe" (Windows named pipes, Windows-only).
+- `reuse_port`: Sets SO_REUSEPORT on the listener so multiple processes can
+  bind the same address. Lets a new collector start before the old one stops.
+  Only supported on Linux, Darwin and the BSDs. Default is `false`.
 - `dialer`: Dialer configuration
   - `timeout`: Dialer timeout is the maximum amount of time a dial will wait for a connect to complete. The default is no timeout.
 
