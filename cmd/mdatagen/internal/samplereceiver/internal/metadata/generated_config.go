@@ -436,6 +436,26 @@ func (ms *SystemMemoryUsageMetricConfig) Validate() error {
 	return nil
 }
 
+// TestHistogramMetricConfig provides config for the test.histogram metric.
+type TestHistogramMetricConfig struct {
+	Enabled          bool `mapstructure:"enabled"`
+	enabledSetByUser bool
+}
+
+func (ms *TestHistogramMetricConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+
+	err := parser.Unmarshal(ms)
+	if err != nil {
+		return err
+	}
+
+	ms.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // MetricsConfig provides config for sample metrics.
 type MetricsConfig struct {
 	DefaultMetric                 DefaultMetricMetricConfig                 `mapstructure:"default.metric"`
@@ -447,6 +467,7 @@ type MetricsConfig struct {
 	ReaggregateMetricWithRequired ReaggregateMetricWithRequiredMetricConfig `mapstructure:"reaggregate.metric.with_required"`
 	SystemCPUTime                 SystemCPUTimeMetricConfig                 `mapstructure:"system.cpu.time"`
 	SystemMemoryUsage             SystemMemoryUsageMetricConfig             `mapstructure:"system.memory.usage"`
+	TestHistogram                 TestHistogramMetricConfig                 `mapstructure:"test.histogram"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -493,6 +514,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled:             true,
 			AggregationStrategy: AggregationStrategySum,
 			EnabledAttributes:   []SystemMemoryUsageMetricAttributeKey{SystemMemoryUsageMetricAttributeKeyState},
+		},
+		TestHistogram: TestHistogramMetricConfig{
+			Enabled: true,
 		},
 	}
 }
