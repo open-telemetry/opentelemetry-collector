@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 )
@@ -66,6 +67,9 @@ func (cc *ClientConfig) Validate() error {
 			return err
 		}
 	}
+	if cc.DialerMiddleware.HasValue() && !configmiddleware.IsCustomTCPRoutingEnabled() {
+		return errors.New("use of the dialer_middleware feature requires to enable the feature gate 'pkg.configmiddleware.CustomTCPRouting'")
+	}
 	return nil
 }
 
@@ -91,6 +95,13 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 		return nil, err
 	}
 	transport := http.DefaultTransport.(*http.Transport).Clone()
+	if cc.DialerMiddleware.HasValue() {
+		fn, rerr := cc.DialerMiddleware.Get().GetDialer(ctx, extensions)
+		if rerr != nil {
+			return nil, rerr
+		}
+		transport.DialContext = fn
+	}
 	if tlsCfg != nil {
 		transport.TLSClientConfig = tlsCfg
 	}

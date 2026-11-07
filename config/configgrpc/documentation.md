@@ -10,6 +10,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `pkg.configgrpc.PickFirstShuffleAddressList` | beta | When enabled, gRPC clients that use the pick_first balancer shuffle the resolved address list before connecting. | v0.165.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/16235) |
+| `pkg.configgrpc.PickFirstShuffleAddressList` | beta | When enabled, gRPC clients that use the pick_first balancer shuffle the resolved address list before connecting. | v0.166.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/16235) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

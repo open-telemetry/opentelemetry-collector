@@ -11,5 +11,5 @@ var PkgConfiggrpcPickFirstShuffleAddressListFeatureGate = featuregate.GlobalRegi
 	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, gRPC clients that use the pick_first balancer shuffle the resolved address list before connecting."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/16235"),
-	featuregate.WithRegisterFromVersion("v0.165.0"),
+	featuregate.WithRegisterFromVersion("v0.166.0"),
 )

@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/snappy"
 	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/zstd"
 	internalmetadata "go.opentelemetry.io/collector/config/configgrpc/internal/metadata"
+	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
@@ -71,6 +72,10 @@ func validateClientConfig(cc *ClientConfig) error {
 		if balancer.Get(cc.BalancerName) == nil {
 			return fmt.Errorf("invalid balancer_name: %s", cc.BalancerName)
 		}
+	}
+
+	if cc.DialerMiddleware.HasValue() && !configmiddleware.IsCustomTCPRoutingEnabled() {
+		return errors.New("use of the dialer_middleware feature requires to enable the feature gate 'pkg.configmiddleware.CustomTCPRouting'")
 	}
 
 	return nil
@@ -169,6 +174,15 @@ func (cc *ClientConfig) ToClientConn(
 	grpcOpts, err := cc.getGrpcDialOptions(ctx, extensions, settings, extraOpts)
 	if err != nil {
 		return nil, err
+	}
+	if cc.DialerMiddleware.HasValue() {
+		fn, rerr := cc.DialerMiddleware.Get().GetDialer(ctx, extensions)
+		if rerr != nil {
+			return nil, rerr
+		}
+		grpcOpts = append(grpcOpts, grpc.WithContextDialer(func(ctx context.Context, address string) (net.Conn, error) {
+			return fn(ctx, "tcp", address)
+		}))
 	}
 	conn, err := grpc.NewClient(cc.grpcDialTarget(), grpcOpts...)
 	if err != nil {
