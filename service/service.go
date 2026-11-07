@@ -216,7 +216,7 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 	}
 
 	// Register process metrics on supported OSes.
-	if err := registerProcessMetrics(srv, runtime.GOOS, proctelemetry.RegisterProcessMetrics); err != nil {
+	if err := registerProcessMetrics(srv, runtime.GOOS, proctelemetry.RegisterProcessMetrics, proctelemetry.WithHostProc("/proc")); err != nil {
 		return nil, err
 	}
 
@@ -393,12 +393,13 @@ func registerProcessMetrics(
 	srv *Service,
 	goos string,
 	register func(component.TelemetrySettings, ...proctelemetry.RegisterOption) error,
+	opts ...proctelemetry.RegisterOption,
 ) error {
 	switch goos {
 	// Only support the OSes that we explicitly test and build for,
 	// plus others that are known to have some support in gopsutil.
 	case "linux", "darwin", "windows", "freebsd", "openbsd", "solaris", "plan9":
-		if err := register(srv.telemetrySettings); err != nil {
+		if err := register(srv.telemetrySettings, opts...); err != nil {
 			return fmt.Errorf("failed to register process metrics: %w", err)
 		}
 	default:
