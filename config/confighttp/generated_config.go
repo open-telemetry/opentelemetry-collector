@@ -3,8 +3,6 @@
 package confighttp
 
 import (
-	"time"
-
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configmiddleware"
@@ -12,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"time"
 )
 
 type AuthConfig struct {
@@ -33,6 +32,12 @@ type ClientConfig struct {
 
 	// Endpoint is the target URL to send data to (e.g.: http://some.url:9411/v1/traces).
 	Endpoint string `mapstructure:"endpoint,omitempty"`
+
+	// UnixSocketPath is the path of a unix-domain socket to send data over instead of
+	// opening a TCP connection. The endpoint URL is still used for the
+	// request path and Host header; the socket listener must serve
+	// plaintext HTTP.
+	UnixSocketPath string `mapstructure:"unix_socket_path,omitempty"`
 
 	// ProxyURL is the proxy setting for the collector.
 	ProxyURL string `mapstructure:"proxy_url,omitempty"`

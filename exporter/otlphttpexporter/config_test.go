@@ -63,6 +63,7 @@ func TestUnmarshalConfig(t *testing.T) {
 					{Name: "header1", Value: "234"},
 				},
 				Endpoint: "https://1.2.3.4:1234",
+				UnixSocketPath: "/run/otel/otlp.sock",
 				Keepalive: configoptional.Some(confighttp.KeepaliveClientConfig{
 					MaxIdleConns:    100,
 					IdleConnTimeout: 90 * time.Second,

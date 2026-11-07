@@ -732,3 +732,33 @@ func TestClientMiddlewaresFieldCompatibility(t *testing.T) {
 	assert.Len(t, clientConfig.Middlewares, 1)
 	assert.Equal(t, component.MustNewID("test_middleware"), clientConfig.Middlewares[0].ID)
 }
+
+func TestHTTPClientUnixSocket(t *testing.T) {
+	sockPath := filepath.Join(t.TempDir(), "otlp-test.sock")
+
+	received := make(chan string, 1)
+	srv := &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		received <- r.URL.Path
+		w.WriteHeader(http.StatusOK)
+	})}
+	lis, err := net.Listen("unix", sockPath)
+	require.NoError(t, err)
+	defer lis.Close()
+	go func() { _ = srv.Serve(lis) }()
+	defer srv.Close()
+
+	cfg := ClientConfig{
+		Endpoint:       "http://localhost:4318/v1/traces",
+		UnixSocketPath: sockPath,
+	}
+	tel := componenttest.NewNopTelemetrySettings()
+	tel.TracerProvider = nil
+	client, err := cfg.ToClient(context.Background(), nil, tel)
+	require.NoError(t, err)
+
+	resp, err := client.Post("http://localhost:4318/v1/traces", "application/x-protobuf", nil)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, "/v1/traces", <-received)
+}
