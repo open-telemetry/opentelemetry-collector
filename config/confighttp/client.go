@@ -7,10 +7,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"slices"
+	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
@@ -95,12 +97,25 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 		return nil, err
 	}
 	transport := http.DefaultTransport.(*http.Transport).Clone()
+	dialerMiddlewareSet := false
 	if cc.DialerMiddleware.HasValue() {
 		fn, rerr := cc.DialerMiddleware.Get().GetDialer(ctx, extensions)
 		if rerr != nil {
 			return nil, rerr
 		}
 		transport.DialContext = fn
+		dialerMiddlewareSet = true
+	}
+	// Send over a unix-domain socket instead of TCP when configured. Only
+	// the dialer changes: the endpoint URL is still used for the request
+	// path and Host header, so the socket listener must serve plaintext
+	// HTTP. An explicit dialer middleware takes precedence when both are set.
+	if cc.UnixSocketPath != "" && !dialerMiddlewareSet {
+		socketPath := cc.UnixSocketPath
+		dialer := &net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second}
+		transport.DialContext = func(ctx context.Context, _, _ string) (net.Conn, error) {
+			return dialer.DialContext(ctx, "unix", socketPath)
+		}
 	}
 	if tlsCfg != nil {
 		transport.TLSClientConfig = tlsCfg
