@@ -23,7 +23,13 @@ type ProfilesBytesSizer struct {
 
 var _ ProfilesSizer = (*ProfilesBytesSizer)(nil)
 
-// ProfilesCountSizer returns the number of profiles in the profiles.
+// ProfilesCountSizer returns the number of samples in the profiles.
+//
+// Every method counts samples, so the size of a batch is comparable at each
+// level. Sample count does not bound the serialized size of a profiles signal:
+// a sample holds indices into the ProfilesDictionary, so many samples can
+// reference the same dictionary entries. Use ProfilesBytesSizer when the limit
+// must bound the payload size.
 type ProfilesCountSizer struct{}
 
 var _ ProfilesSizer = (*ProfilesCountSizer)(nil)
@@ -35,17 +41,21 @@ func (s *ProfilesCountSizer) ProfilesSize(pd pprofile.Profiles) int {
 func (s *ProfilesCountSizer) ResourceProfilesSize(rp pprofile.ResourceProfiles) int {
 	count := 0
 	for k := 0; k < rp.ScopeProfiles().Len(); k++ {
-		count += rp.ScopeProfiles().At(k).Profiles().Len()
+		count += s.ScopeProfilesSize(rp.ScopeProfiles().At(k))
 	}
 	return count
 }
 
 func (s *ProfilesCountSizer) ScopeProfilesSize(sp pprofile.ScopeProfiles) int {
-	return sp.Profiles().Len()
+	count := 0
+	for k := 0; k < sp.Profiles().Len(); k++ {
+		count += s.ProfileSize(sp.Profiles().At(k))
+	}
+	return count
 }
 
-func (s *ProfilesCountSizer) ProfileSize(_ pprofile.Profile) int {
-	return 1
+func (s *ProfilesCountSizer) ProfileSize(p pprofile.Profile) int {
+	return p.Samples().Len()
 }
 
 func (s *ProfilesCountSizer) DeltaSize(newItemSize int) int {
