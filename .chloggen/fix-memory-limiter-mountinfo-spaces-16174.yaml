@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: processor/memory_limiter
+
+note: Fix percentage-based memory limiter failing to start when any mountinfo line carries spaces in its super options, e.g. the 9p drvfs mount Docker Desktop adds under WSL2.
+
+issues: [16174]
+
+subtext: The mountinfo parser copied from uber-go/automaxprocs predated their fix for spaces in super options; such a line made cgroup detection fail, so the collector crashed at startup with "invalid format for MountPoint" unless fixed `limit_mib` settings were used.
+
+change_logs: [user]
