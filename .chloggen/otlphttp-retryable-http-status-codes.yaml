@@ -1,0 +1,29 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
+component: exporter/otlp_http
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add `retryable_http_status_codes` to retry responses that the OTLP specification does not classify as retryable.
+
+# One or more tracking issues or pull requests related to the change
+issues: [16256]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  The OTLP specification lists 429, 502, 503 and 504 as the only retryable HTTP status codes and requires
+  all other 4xx and 5xx responses to be treated as non-retryable, which means the batch is dropped. Some
+  setups receive transient responses with other codes, such as 408 Request Timeout from an intermediary
+  proxy, and had no way to retry them. Those codes can now be opted in explicitly.
+
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user, api]
