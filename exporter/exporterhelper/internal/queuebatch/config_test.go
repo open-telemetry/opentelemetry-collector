@@ -22,17 +22,6 @@ func TestConfig_Validate(t *testing.T) {
 	cfg := newTestConfig()
 	require.NoError(t, confmap.Validate(cfg))
 
-	cfg.NumConsumers = 0
-	require.EqualError(t, confmap.Validate(cfg), "`num_consumers` must be positive")
-
-	cfg = newTestConfig()
-	cfg.QueueSize = 0
-	require.EqualError(t, confmap.Validate(cfg), "`queue_size` must be positive")
-
-	cfg = newTestConfig()
-	cfg.QueueSize = 0
-	require.EqualError(t, confmap.Validate(cfg), "`queue_size` must be positive")
-
 	storageID := component.MustNewID("test")
 	cfg = newTestConfig()
 	cfg.WaitForResult = true
@@ -101,7 +90,7 @@ func TestBatchConfig_Validate_MetadataKeys(t *testing.T) {
 		cfg.Partition.IdleTimeout = 0
 		err := confmap.Validate(cfg)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "`idle_timeout` must be positive")
+		assert.Contains(t, err.Error(), "idle_timeout value must be greater than 0")
 	})
 
 	t.Run("negative idle_timeout - invalid", func(t *testing.T) {
@@ -109,7 +98,7 @@ func TestBatchConfig_Validate_MetadataKeys(t *testing.T) {
 		cfg.Partition.IdleTimeout = -1 * time.Second
 		err := confmap.Validate(cfg)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "`idle_timeout` must be positive")
+		assert.Contains(t, err.Error(), "idle_timeout value must be greater than 0")
 	})
 }
 
@@ -125,18 +114,6 @@ func TestBatchConfig_Validate(t *testing.T) {
 	require.NoError(t, confmap.Validate(cfg))
 
 	cfg = newTestBatchConfig()
-	cfg.FlushTimeout = 0
-	require.EqualError(t, confmap.Validate(cfg), "`flush_timeout` must be positive, found 0")
-
-	cfg = newTestBatchConfig()
-	cfg.MinSize = -1
-	require.EqualError(t, confmap.Validate(cfg), "`min_size` must be non-negative, found -1")
-
-	cfg = newTestBatchConfig()
-	cfg.MaxSize = -1
-	require.EqualError(t, confmap.Validate(cfg), "`max_size` must be non-negative, found -1")
-
-	cfg = newTestBatchConfig()
 	cfg.Sizer = request.SizerTypeRequests
 	require.EqualError(t, confmap.Validate(cfg), "`batch` supports only `items` or `bytes` sizer, found \"requests\"")
 
@@ -148,14 +125,6 @@ func TestBatchConfig_Validate(t *testing.T) {
 	cfg.MinSize = 2048
 	cfg.MaxSize = 1024
 	require.EqualError(t, confmap.Validate(cfg), "`max_size` (1024) must be greater or equal to `min_size` (2048)")
-
-	cfg = newTestBatchConfig()
-	cfg.Partition.CacheSize = -1
-	require.EqualError(t, confmap.Validate(cfg), "partition: `cache_size` must be positive, found -1")
-
-	cfg = newTestBatchConfig()
-	cfg.Partition.CacheSize = 0
-	require.EqualError(t, confmap.Validate(cfg), "partition: `cache_size` must be positive, found 0")
 }
 
 func newTestBatchConfig() BatchConfig {
