@@ -8,8 +8,8 @@ import "fmt"
 // switchDictionary updates the ValueType, switching its indices from one
 // dictionary to another.
 func (ms ValueType) switchDictionary(src, dst ProfilesDictionary, mi *mergeIndex) error {
-	if ms.TypeStrindex() > 0 {
-		if src.StringTable().Len() <= int(ms.TypeStrindex()) {
+	if ms.TypeStrindex() != 0 {
+		if ms.TypeStrindex() < 0 || src.StringTable().Len() <= int(ms.TypeStrindex()) {
 			return fmt.Errorf("invalid type index %d", ms.TypeStrindex())
 		}
 
@@ -20,8 +20,8 @@ func (ms ValueType) switchDictionary(src, dst ProfilesDictionary, mi *mergeIndex
 		ms.SetTypeStrindex(idx)
 	}
 
-	if ms.UnitStrindex() > 0 {
-		if src.StringTable().Len() <= int(ms.UnitStrindex()) {
+	if ms.UnitStrindex() != 0 {
+		if ms.UnitStrindex() < 0 || src.StringTable().Len() <= int(ms.UnitStrindex()) {
 			return fmt.Errorf("invalid unit index %d", ms.UnitStrindex())
 		}
 
