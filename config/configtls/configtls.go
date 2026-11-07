@@ -339,6 +339,15 @@ func (c ClientConfig) LoadTLSConfig(_ context.Context) (*tls.Config, error) {
 	}
 	tlsCfg.ServerName = c.ServerName
 	tlsCfg.InsecureSkipVerify = c.InsecureSkipVerify
+	if c.ReloadInterval > 0 && c.hasCAFile() && !c.InsecureSkipVerify {
+		// crypto/tls cannot swap RootCAs on a live config, so take over server
+		// certificate verification to verify against the reloaded CA pool.
+		// The built-in verification is disabled only because verifyConnection
+		// performs the equivalent chain and hostname checks.
+		reloader := newRootCAsReloader(c.Config, tlsCfg.RootCAs)
+		tlsCfg.InsecureSkipVerify = true
+		tlsCfg.VerifyConnection = reloader.verifyConnection
+	}
 	return tlsCfg, nil
 }
 
