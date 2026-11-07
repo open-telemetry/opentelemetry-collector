@@ -220,6 +220,15 @@ telemetry:
         value_type: int
         async: true
 
+    exporter_queue_dropped_requests:
+      enabled: true
+      stability: development
+      description: Number of requests dropped by the persistent queue because they could not be read from storage or decoded during dispatch.
+      unit: "{request}"
+      sum:
+        value_type: int
+        monotonic: true
+
     exporter_queue_size:
       enabled: true
       stability: alpha

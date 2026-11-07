@@ -75,6 +75,8 @@ func NewExporterObsMetrics(
 				return tb.ExporterQueueBatchSendSizeBytes.Enabled(ctx)
 			case queuebatchtelemetry.MetricInFlight:
 				return tb.ExporterInFlightRequests.Enabled(ctx)
+			case queuebatchtelemetry.MetricQueueDropped:
+				return tb.ExporterQueueDroppedRequests.Enabled(ctx)
 			case queuebatchtelemetry.MetricSent:
 				return itemsSentInst.Enabled(ctx)
 			case queuebatchtelemetry.MetricSendFailure:
@@ -96,6 +98,8 @@ func NewExporterObsMetrics(
 				tb.ExporterQueueBatchSendSizeBytes.Record(ctx, value, senderAttr)
 			case queuebatchtelemetry.MetricInFlight:
 				tb.ExporterInFlightRequests.Add(ctx, value, queueAttr)
+			case queuebatchtelemetry.MetricQueueDropped:
+				tb.ExporterQueueDroppedRequests.Add(ctx, value, queueAttr)
 			case queuebatchtelemetry.MetricSent:
 				itemsSentInst.Add(ctx, value, senderAttr)
 			case queuebatchtelemetry.MetricSendFailure:

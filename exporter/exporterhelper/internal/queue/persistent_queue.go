@@ -18,11 +18,13 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
+	queuebatchtelemetry "go.opentelemetry.io/collector/internal/telemetry/queuebatch"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
 const (
 	zapKey           = "key"
+	zapIndex         = "index"
 	zapErrorCount    = "errorCount"
 	zapNumberOfItems = "numberOfItems"
 
@@ -71,6 +73,7 @@ var indexDonePool = sync.Pool{
 //	                        xxxx deleted
 type persistentQueue[T request.Request] struct {
 	logger      *zap.Logger
+	obsMetrics  queuebatchtelemetry.ObsMetrics
 	client      storage.Client
 	encoding    Encoding[T]
 	capacity    int64
@@ -97,6 +100,7 @@ type persistentQueue[T request.Request] struct {
 func newPersistentQueue[T request.Request](set Settings[T]) readableQueue[T] {
 	pq := &persistentQueue[T]{
 		logger:          set.Telemetry.Logger,
+		obsMetrics:      set.ObsMetrics,
 		encoding:        set.Encoding,
 		capacity:        set.Capacity,
 		sizerType:       set.SizerType,
@@ -374,7 +378,10 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, conte
 	}
 
 	if err != nil {
-		pq.logger.Debug("Failed to dispatch item", zap.Error(err))
+		// The request is skipped and will not reach the exporter, so record it as dropped.
+		pq.logger.Warn("Failed to dispatch item from persistent queue, dropping it",
+			zap.Uint64(zapIndex, index), zap.Error(err))
+		pq.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricQueueDropped, 1)
 		// We need to make sure that currently dispatched items list is cleaned
 		if err = pq.itemDispatchingFinish(ctx, index); err != nil {
 			pq.logger.Error("Error deleting item from queue", zap.Error(err))
