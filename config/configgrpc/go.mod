@@ -23,6 +23,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.165.0
 	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.165.0
 	go.opentelemetry.io/collector/featuregate v1.71.0
+	go.opentelemetry.io/collector/internal/testutil v0.165.0
 	go.opentelemetry.io/collector/pdata v1.71.0
 	go.opentelemetry.io/collector/pdata/testdata v0.165.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.72.0

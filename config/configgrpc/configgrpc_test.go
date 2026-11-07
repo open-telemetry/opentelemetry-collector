@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/balancer/pickfirst"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
@@ -27,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/zstd"
+	internalmetadata "go.opentelemetry.io/collector/config/configgrpc/internal/metadata"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -34,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
@@ -281,6 +284,48 @@ func TestSanitizeEndpoint(t *testing.T) {
 	// Unparseable URI with :// falls back to returning the endpoint as-is.
 	cfg.Endpoint = "bad\x7f://host:4317"
 	assert.Equal(t, "bad\x7f://host:4317", cfg.sanitizedEndpoint())
+}
+
+func TestDefaultServiceConfig(t *testing.T) {
+	tests := []struct {
+		name         string
+		balancerName string
+		gateEnabled  bool
+		expected     string
+	}{
+		{
+			name:         "round_robin",
+			balancerName: "round_robin",
+			gateEnabled:  true,
+			expected:     `{"loadBalancingPolicy":"round_robin"}`,
+		},
+		{
+			name:         "pick_first shuffles addresses",
+			balancerName: pickfirst.Name,
+			gateEnabled:  true,
+			expected:     `{"loadBalancingConfig":[{"pick_first":{"shuffleAddressList":true}}]}`,
+		},
+		{
+			name:         "pick_first keeps address order when the gate is disabled",
+			balancerName: pickfirst.Name,
+			gateEnabled:  false,
+			expected:     `{"loadBalancingPolicy":"pick_first"}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testutil.SetFeatureGate(t, internalmetadata.PkgConfiggrpcPickFirstShuffleAddressListFeatureGate.ID(), tt.gateEnabled)
+			cfg := NewDefaultClientConfig()
+			cfg.Endpoint = "localhost:4317"
+			cfg.BalancerName = tt.balancerName
+			assert.Equal(t, tt.expected, cfg.defaultServiceConfig())
+
+			// grpc.NewClient rejects a service config that the balancer cannot parse.
+			conn, err := cfg.ToClientConn(context.Background(), nil, componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+			require.NoError(t, conn.Close())
+		})
+	}
 }
 
 func TestGrpcDialTarget(t *testing.T) {
