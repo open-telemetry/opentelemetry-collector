@@ -29,6 +29,12 @@ exported_configs:
           "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only), "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), 
           "ip6" (IPv6-only), "unix", "unixgram", "unixpacket" and "npipe" (Windows named pipes, Windows-only).
         $ref: transport_type
+      reuse_port:
+        description: |
+          Enables the SO_REUSEPORT socket option on the listener, so multiple processes can bind the same address.
+          This lets a new collector start before the old one stops, without refusing connections in between.
+          Only supported on Linux, Darwin and the BSDs.
+        type: bool
   dialer_config:
     description: Contains options for connecting to an address.
     default: {}
