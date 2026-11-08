@@ -116,7 +116,9 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 	// precedence when both are set.
 	if cc.UnixSocketPath != "" && !dialerMiddlewareSet {
 		socketPath := cc.UnixSocketPath
-		dialer := &net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second}
+		// Match the connect timeout of http.DefaultTransport; keepalive does
+		// not apply to a unix-domain socket.
+		dialer := &net.Dialer{Timeout: 30 * time.Second}
 		transport.DialContext = func(ctx context.Context, _, _ string) (net.Conn, error) {
 			return dialer.DialContext(ctx, "unix", socketPath)
 		}

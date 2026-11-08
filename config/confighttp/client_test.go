@@ -752,9 +752,7 @@ func TestHTTPClientUnixSocket(t *testing.T) {
 		Endpoint:       "http://localhost:4318/v1/traces",
 		UnixSocketPath: sockPath,
 	}
-	tel := componenttest.NewNopTelemetrySettings()
-	tel.TracerProvider = nil
-	client, err := cfg.ToClient(context.Background(), nil, tel)
+	client, err := cfg.ToClient(context.Background(), nil, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	resp, err := client.Post("http://localhost:4318/v1/traces", "application/x-protobuf", nil)
