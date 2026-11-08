@@ -5,6 +5,7 @@ package extensionmiddleware // import "go.opentelemetry.io/collector/extension/e
 
 import (
 	"context"
+	"net"
 	"net/http"
 
 	"google.golang.org/grpc"
@@ -51,3 +52,22 @@ func (f GetGRPCServerOptionsFunc) GetGRPCServerOptions(ctx context.Context) ([]g
 // WrapHTTPHandlerFunc is called to initialize a new instance of
 // HTTP server middleware at runtime.
 type WrapHTTPHandlerFunc = func(context.Context, http.Handler) (http.Handler, error)
+
+// Listener is an interface for network listener extensions.
+type Listener interface {
+	// GetListenContext returns the function to create network listeners.
+	GetListenContext(context.Context) (ListenContextFunc, error)
+}
+
+// ListenContextFunc creates a listener for the configured network and address.
+type ListenContextFunc = func(ctx context.Context, network, address string) (net.Listener, error)
+
+// GetListenerFunc is called to initialize a network listener extension.
+type GetListenerFunc func(context.Context) (ListenContextFunc, error)
+
+func (f GetListenerFunc) GetListenContext(ctx context.Context) (ListenContextFunc, error) {
+	if f == nil {
+		return nil, nil
+	}
+	return f(ctx)
+}

@@ -24,10 +24,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp/internal"
 	"go.opentelemetry.io/collector/config/confighttp/internal/metadata"
+	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 )
 
 const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
@@ -63,11 +65,29 @@ func NewDefaultServerConfig() ServerConfig {
 	}
 }
 
-// ToListener creates a net.Listener.
-func (sc *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
-	listener, err := sc.NetAddr.Listen(ctx)
+// ToListener creates a net.Listener. Pass the host extensions when Listener is configured.
+func (sc *ServerConfig) ToListener(ctx context.Context, extensions ...map[component.ID]component.Component) (net.Listener, error) {
+	var listener net.Listener
+	var err error
+	if sc.ListenerMiddleware.HasValue() {
+		var available map[component.ID]component.Component
+		if len(extensions) > 0 {
+			available = extensions[0]
+		}
+		var listen extensionmiddleware.ListenContextFunc
+		listen, err = sc.ListenerMiddleware.Get().GetListener(ctx, available)
+		if err != nil {
+			return nil, err
+		}
+		listener, err = listen(ctx, string(sc.NetAddr.Transport), sc.NetAddr.Endpoint)
+	} else {
+		listener, err = sc.NetAddr.Listen(ctx)
+	}
 	if err != nil {
 		return nil, err
+	}
+	if listener == nil {
+		return nil, errors.New("listener extension returned a nil listener")
 	}
 
 	if sc.TLS.HasValue() {
@@ -81,6 +101,13 @@ func (sc *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 	}
 
 	return listener, nil
+}
+
+func (sc *ServerConfig) Validate() error {
+	if sc.ListenerMiddleware.HasValue() && !configmiddleware.IsCustomTCPRoutingEnabled() {
+		return errors.New("use of the listener_middleware feature requires to enable the feature gate 'pkg.configmiddleware.CustomTCPRouting'")
+	}
+	return nil
 }
 
 // toServerOptions has options that change the behavior of the HTTP server
