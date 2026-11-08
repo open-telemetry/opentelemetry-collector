@@ -72,6 +72,9 @@ func (cc *ClientConfig) Validate() error {
 	if cc.DialerMiddleware.HasValue() && !configmiddleware.IsCustomTCPRoutingEnabled() {
 		return errors.New("use of the dialer_middleware feature requires to enable the feature gate 'pkg.configmiddleware.CustomTCPRouting'")
 	}
+	if cc.UnixSocketPath != "" && cc.ProxyURL != "" {
+		return errors.New("proxy_url cannot be combined with unix_socket_path: the dialed socket bypasses the proxy")
+	}
 	return nil
 }
 
@@ -108,8 +111,9 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 	}
 	// Send over a unix-domain socket instead of TCP when configured. Only
 	// the dialer changes: the endpoint URL is still used for the request
-	// path and Host header, so the socket listener must serve plaintext
-	// HTTP. An explicit dialer middleware takes precedence when both are set.
+	// path and Host header, and the configured TLS settings are still
+	// negotiated over the socket. An explicit dialer middleware takes
+	// precedence when both are set.
 	if cc.UnixSocketPath != "" && !dialerMiddlewareSet {
 		socketPath := cc.UnixSocketPath
 		dialer := &net.Dialer{Timeout: 30 * time.Second, KeepAlive: 30 * time.Second}

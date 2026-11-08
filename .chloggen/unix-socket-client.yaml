@@ -13,7 +13,7 @@ issues: [8752, 16327]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: The endpoint URL is still used for the request path and Host header; the socket listener must serve plaintext HTTP.
+subtext: The endpoint URL is still used for the request path and Host header; TLS, when configured, is negotiated over the socket. Cannot be combined with proxy_url.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

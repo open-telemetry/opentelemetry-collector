@@ -762,3 +762,48 @@ func TestHTTPClientUnixSocket(t *testing.T) {
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	require.Equal(t, "/v1/traces", <-received)
 }
+
+func TestClientConfigValidateProxyWithUnixSocket(t *testing.T) {
+	cfg := ClientConfig{
+		Endpoint:       "http://localhost:4318/v1/traces",
+		UnixSocketPath: "/run/tempo/tempo.sock",
+	}
+	require.NoError(t, cfg.Validate())
+
+	cfg.ProxyURL = "http://localhost:3128"
+	require.ErrorContains(t, cfg.Validate(), "proxy_url cannot be combined with unix_socket_path")
+
+	cfg.UnixSocketPath = ""
+	require.NoError(t, cfg.Validate())
+}
+
+func TestHTTPClientTLSOverUnixSocket(t *testing.T) {
+	sockPath := filepath.Join(t.TempDir(), "otlp-test-tls.sock")
+
+	received := make(chan string, 1)
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		received <- r.URL.Path
+		w.WriteHeader(http.StatusOK)
+	}))
+	require.NoError(t, srv.Listener.Close())
+	lis, err := net.Listen("unix", sockPath)
+	require.NoError(t, err)
+	srv.Listener = lis
+	srv.StartTLS()
+	defer srv.Close()
+
+	cfg := ClientConfig{
+		Endpoint:       "https://localhost:4318/v1/traces",
+		UnixSocketPath: sockPath,
+		TLS:            configtls.ClientConfig{InsecureSkipVerify: true},
+	}
+	client, err := cfg.ToClient(context.Background(), nil, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	resp, err := client.Post("https://localhost:4318/v1/traces", "application/x-protobuf", nil)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.NotNil(t, resp.TLS, "TLS should be negotiated over the unix socket")
+	require.Equal(t, "/v1/traces", <-received)
+}

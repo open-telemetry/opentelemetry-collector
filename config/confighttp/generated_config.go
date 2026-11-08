@@ -35,8 +35,8 @@ type ClientConfig struct {
 
 	// UnixSocketPath is the path of a unix-domain socket to send data over instead of
 	// opening a TCP connection. The endpoint URL is still used for the
-	// request path and Host header; the socket listener must serve
-	// plaintext HTTP.
+	// request path and Host header; TLS, when configured, is negotiated
+	// over the socket. Cannot be combined with proxy_url.
 	UnixSocketPath string `mapstructure:"unix_socket_path,omitempty"`
 
 	// ProxyURL is the proxy setting for the collector.
