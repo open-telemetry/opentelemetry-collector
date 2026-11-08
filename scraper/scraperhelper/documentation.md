@@ -22,6 +22,14 @@ Number of metric points that were unable to be scraped.
 | ---- | ----------- | ---------- | --------- | --------- |
 | {datapoint} | Sum | Int | true | Alpha |
 
+### otelcol_scraper_scrape_duration
+
+Time taken by a scraper to complete one scrape, including scrapes that end in an error.
+
+| Unit | Metric Type | Value Type | Stability |
+| ---- | ----------- | ---------- | --------- |
+| s | Histogram | Double | Development |
+
 ### otelcol_scraper_scraped_log_records
 
 Number of log records successfully scraped.

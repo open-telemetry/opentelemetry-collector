@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -153,4 +154,22 @@ func checkScraperLogs(t *testing.T, tel *componenttest.Telemetry, receiver, scra
 				Value: erroredLogRecords,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
+func TestScrapeLogsRecordsDuration(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+
+	const delay = 20 * time.Millisecond
+	sl, err := scraper.NewLogs(func(context.Context) (plog.Logs, error) {
+		time.Sleep(delay)
+		return testdata.GenerateLogs(1), nil
+	})
+	require.NoError(t, err)
+	sf, err := wrapObsLogs(sl, receiverID, scraperID, tel.NewTelemetrySettings())
+	require.NoError(t, err)
+	_, err = sf.ScrapeLogs(context.Background())
+	require.NoError(t, err)
+
+	checkScrapeDuration(t, tel, receiverID, scraperID, 1, delay)
 }
