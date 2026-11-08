@@ -4,18 +4,19 @@
 package ocbplugintest
 
 import (
-	"golang.org/x/mod/semver"
-
 	"go.opentelemetry.io/collector/cmd/builder/ocbplugin"
+	"go.opentelemetry.io/collector/cmd/builder/ocbplugin/internal/helper"
 )
 
 // IsValidOCBPlugin allows plugin authors to ensure the written plugin
 // isn't invalid and can be effectively used in ocbplugin.RunPlugin.
-func IsValidOCBPlugin(plugin ocbplugin.OCBPlugin) bool {
+func IsValidOCBPlugin(plugin ocbplugin.OCBPlugin) error {
 	// The plugin must specify a valid MinOCBVersion semver string.
-	if !semver.IsValid(plugin.MinOCBVersion()) {
-		return false
+	min := plugin.MinOCBVersion()
+
+	if _, err := helper.NormalizeAndValidateSemver(min); err != nil {
+		return err
 	}
 
-	return true
+	return nil
 }

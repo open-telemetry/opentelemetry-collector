@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/cmd/builder/ocbplugin/internal/helper"
 )
 
 type mockPlugin struct {
@@ -108,70 +109,76 @@ func TestRunPlugin_LifecycleActions(t *testing.T) {
 	}
 }
 
-func TestRunPlugin_UnsupportedVersion(t *testing.T) {
-	m := &mockPlugin{minVersion: "v0.151.0"}
-	input := "action: pre-build\nocb_version: v0.150.0\nconfig:\n  key: foo\n"
-	inputFile := filepath.Join(t.TempDir(), "input.yaml")
-	require.NoError(t, os.WriteFile(inputFile, []byte(input), 0o600))
-	err := runPlugin(m, inputFile)
-	require.Error(t, err)
-	assert.ErrorIs(t, err, ErrUnsupportedOCBVersion)
-}
+func TestRunPlugin_Invalid(t *testing.T) {
+	errCustom := errors.New("custom pre-build error")
 
-func TestRunPlugin_InvalidOCBVersion(t *testing.T) {
-	m := &mockPlugin{minVersion: "v0.151.0"}
-	input := "action: pre-build\nocb_version: latest\nconfig:\n  key: foo\n"
-	inputFile := filepath.Join(t.TempDir(), "input.yaml")
-	require.NoError(t, os.WriteFile(inputFile, []byte(input), 0o600))
-	err := runPlugin(m, inputFile)
-	require.Error(t, err)
-	assert.ErrorIs(t, err, ErrInvalidSemverString)
-}
+	tests := []struct {
+		name        string
+		plugin      *mockPlugin
+		input       string
+		noInputFile bool
+		wantErrIs   error
+		wantErrMsg  string
+	}{
+		{
+			name:      "unsupported version",
+			plugin:    &mockPlugin{minVersion: "v0.151.0"},
+			input:     "action: pre-build\nocb_version: v0.150.0\nconfig:\n  key: foo\n",
+			wantErrIs: ErrUnsupportedOCBVersion,
+		},
+		{
+			name:      "invalid ocb version",
+			plugin:    &mockPlugin{minVersion: "v0.151.0"},
+			input:     "action: pre-build\nocb_version: latest\nconfig:\n  key: foo\n",
+			wantErrIs: helper.ErrInvalidSemverString,
+		},
+		{
+			name:      "invalid plugin min version",
+			plugin:    &mockPlugin{minVersion: "latest"},
+			input:     "action: pre-build\nocb_version: v0.150.0\nconfig:\n  key: foo\n",
+			wantErrIs: helper.ErrInvalidSemverString,
+		},
+		{
+			name:      "action error",
+			plugin:    &mockPlugin{minVersion: "v0.150.0", preBuildErr: errCustom},
+			input:     "action: pre-build\nocb_version: v0.151.0\nconfig:\n  key: foo\n",
+			wantErrIs: errCustom,
+		},
+		{
+			name:       "unknown action",
+			plugin:     &mockPlugin{minVersion: "v0.150.0"},
+			input:      "action: invalid-action\nocb_version: v0.151.0\n",
+			wantErrIs:  ErrUnknownAction,
+			wantErrMsg: "invalid-action",
+		},
+		{
+			name:       "invalid yaml",
+			plugin:     &mockPlugin{},
+			input:      ": invalid: yaml: [",
+			wantErrMsg: "error decoding plugin input",
+		},
+		{
+			name:        "missing file",
+			plugin:      &mockPlugin{},
+			noInputFile: true,
+			wantErrIs:   os.ErrNotExist,
+		},
+	}
 
-func TestRunPlugin_InvalidPluginMinVersion(t *testing.T) {
-	m := &mockPlugin{minVersion: "latest"}
-	input := "action: pre-build\nocb_version: v0.150.0\nconfig:\n  key: foo\n"
-	inputFile := filepath.Join(t.TempDir(), "input.yaml")
-	require.NoError(t, os.WriteFile(inputFile, []byte(input), 0o600))
-	err := runPlugin(m, inputFile)
-	require.Error(t, err)
-	assert.ErrorIs(t, err, ErrInvalidSemverString)
-}
-
-func TestRunPlugin_ActionError(t *testing.T) {
-	expectedErr := errors.New("custom pre-build error")
-	m := &mockPlugin{minVersion: "v0.150.0", preBuildErr: expectedErr}
-	input := "action: pre-build\nocb_version: v0.151.0\nconfig:\n  key: foo\n"
-	inputFile := filepath.Join(t.TempDir(), "input.yaml")
-	require.NoError(t, os.WriteFile(inputFile, []byte(input), 0o600))
-	err := runPlugin(m, inputFile)
-	require.Error(t, err)
-	assert.ErrorIs(t, err, expectedErr)
-}
-
-func TestRunPlugin_UnknownAction(t *testing.T) {
-	m := &mockPlugin{minVersion: "v0.150.0"}
-	input := "action: invalid-action\nocb_version: v0.151.0\n"
-	inputFile := filepath.Join(t.TempDir(), "input.yaml")
-	require.NoError(t, os.WriteFile(inputFile, []byte(input), 0o600))
-	err := runPlugin(m, inputFile)
-	require.ErrorIs(t, err, ErrUnknownAction)
-	assert.Contains(t, err.Error(), "invalid-action")
-}
-
-func TestRunPlugin_InvalidYAML(t *testing.T) {
-	m := &mockPlugin{}
-	input := ": invalid: yaml: ["
-	inputFile := filepath.Join(t.TempDir(), "input.yaml")
-	require.NoError(t, os.WriteFile(inputFile, []byte(input), 0o600))
-	err := runPlugin(m, inputFile)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "error decoding plugin input")
-}
-
-func TestRunPlugin_MissingFile(t *testing.T) {
-	m := &mockPlugin{}
-	err := runPlugin(m, filepath.Join(t.TempDir(), "nonexistent.yaml"))
-	require.Error(t, err)
-	assert.ErrorIs(t, err, os.ErrNotExist)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inputFile := filepath.Join(t.TempDir(), "input.yaml")
+			if !tt.noInputFile {
+				require.NoError(t, os.WriteFile(inputFile, []byte(tt.input), 0o600))
+			}
+			err := runPlugin(tt.plugin, inputFile)
+			require.Error(t, err)
+			if tt.wantErrIs != nil {
+				assert.ErrorIs(t, err, tt.wantErrIs)
+			}
+			if tt.wantErrMsg != "" {
+				assert.ErrorContains(t, err, tt.wantErrMsg)
+			}
+		})
+	}
 }

@@ -10,8 +10,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
+	"go.opentelemetry.io/collector/cmd/builder/ocbplugin/internal/helper"
 	"go.yaml.in/yaml/v3"
 	"golang.org/x/mod/semver"
 )
@@ -37,7 +37,7 @@ func (exitCode PluginExitCode) exit() {
 	os.Exit(int(exitCode))
 }
 
-// ErrExitCodeMismatch is returned when an cmd/exec error does not
+// ErrExitCodeMismatch is returned when a cmd/exec error does not
 // match the expected PluginExitCode.
 var ErrExitCodeMismatch = errors.New("exit code did not match expectation")
 
@@ -153,13 +153,13 @@ func checkSupportedVersion(impl OCBPlugin, ocbVersion string) error {
 
 	// Normalize both semver strings by ensuring they are valid
 	// and prepending the expected `v` prefix if it's not there already.
-	ocbVersionNorm, err := normalizeSemverString(ocbVersion)
+	ocbVersionNorm, err := helper.NormalizeAndValidateSemver(ocbVersion)
 	if err != nil {
 		return fmt.Errorf("couldn't normalize ocb version: %w", err)
 	}
-	pluginMinVersionNorm, err := normalizeSemverString(pluginMinVersion)
+	pluginMinVersionNorm, err := helper.NormalizeAndValidateSemver(pluginMinVersion)
 	if err != nil {
-		return fmt.Errorf("couldn't normalize plugin-specified min ocb version: %w\n%w", err, ErrInvalidPlugin)
+		return fmt.Errorf("couldn't normalize plugin-specified min ocb version: %w: %w", err, ErrInvalidPlugin)
 	}
 
 	compare := semver.Compare(ocbVersionNorm, pluginMinVersionNorm)
@@ -174,23 +174,9 @@ func checkSupportedVersion(impl OCBPlugin, ocbVersion string) error {
 	return nil
 }
 
-func normalizeSemverString(ver string) (string, error) {
-	normalized := ver
-	if !strings.HasPrefix(ver, "v") {
-		normalized = "v" + ver
-	}
-	if !semver.IsValid(normalized) {
-		return ver, fmt.Errorf("%w: %s (attempted to normalize to %s)", ErrInvalidSemverString, ver, normalized)
-	}
-	return normalized, nil
-}
-
 var (
 	// ErrUnsupportedOCBVersion is returned when the running ocb version is too old for the plugin.
 	ErrUnsupportedOCBVersion = errors.New("plugin does not support current ocb version")
-
-	// ErrInvalidSemverString is returned when the plugin caller (usually OCB) passed in a bad semver string.
-	ErrInvalidSemverString = errors.New("invalid semver string")
 
 	// ErrInvalidPlugin is returned in a scenario where a plugin is fundamentally invalid and can't be executed.
 	// The message is written to prompt users to reach out to plugin authors if they have written something invalid.
