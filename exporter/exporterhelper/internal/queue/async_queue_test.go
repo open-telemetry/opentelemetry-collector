@@ -132,9 +132,9 @@ func TestAsyncMemoryQueueReleasesReferenceOnDone(t *testing.T) {
 	require.NoError(t, ac.Shutdown(context.Background()))
 }
 
-// WaitForResult does not change who owns the reference: a canceled Offer returns while the element
-// is still queued, so the queue has to keep the element alive until it is reported as done.
-func TestAsyncMemoryWaitForResultQueueReleasesReferenceOnDone(t *testing.T) {
+// With WaitForResult the caller stays blocked until the element is done, so the queue takes no
+// reference of its own, not even once the caller has given up and a consumer holds the element.
+func TestAsyncMemoryWaitForResultQueueTakesNoReference(t *testing.T) {
 	set := newSettings(request.SizerTypeItems, 100)
 	set.WaitForResult = true
 	rc := set.ReferenceCounter.(*fakeReferenceCounter)
@@ -152,12 +152,55 @@ func TestAsyncMemoryWaitForResultQueueReleasesReferenceOnDone(t *testing.T) {
 
 	done := <-dones
 	cancel()
-	require.ErrorIs(t, <-offerErr, context.Canceled)
-	assert.EqualValues(t, 1, rc.count(), "reference released while the element was still in flight")
+	assert.EqualValues(t, 0, rc.count(), "the blocked caller already keeps the element alive")
 
 	done.OnDone(nil)
+	require.NoError(t, <-offerErr)
 	assert.EqualValues(t, 0, rc.count())
 	require.NoError(t, ac.Shutdown(context.Background()))
+}
+
+// With WaitForResult a canceled Offer must behave like no queue at all: the element is not exported.
+func TestAsyncMemoryWaitForResultQueueCancelledNotConsumed(t *testing.T) {
+	set := newSettings(request.SizerTypeItems, 1000)
+	set.WaitForResult = true
+	rc := set.ReferenceCounter.(*fakeReferenceCounter)
+
+	consumed := make(chan intRequest, 10)
+	release := make(chan struct{})
+	// A single consumer, occupied by the first element, so the second one stays queued.
+	ac := newAsyncQueue(newMemoryQueue[intRequest](set),
+		1, func(_ context.Context, el intRequest, done Done) {
+			consumed <- el
+			<-release
+			done.OnDone(nil)
+		})
+	require.NoError(t, ac.Start(context.Background(), componenttest.NewNopHost()))
+
+	go func() { assert.NoError(t, ac.Offer(context.Background(), 1)) }()
+	require.Equal(t, intRequest(1), <-consumed)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	offerErr := make(chan error, 1)
+	go func() { offerErr <- ac.Offer(ctx, 2) }()
+	// Size counts the in-flight element 1 plus the queued element 2. Wait until 2 is queued, then
+	// give up on it.
+	assert.Eventually(t, func() bool { return ac.Size() == 3 }, time.Second, 10*time.Millisecond)
+	cancel()
+	require.ErrorIs(t, <-offerErr, context.Canceled)
+
+	// The element is gone from the queue, so freeing the consumer must not export it.
+	assert.EqualValues(t, 1, ac.Size())
+	close(release)
+	select {
+	case el := <-consumed:
+		t.Fatalf("element %d was exported after its Offer was canceled", el)
+	case <-time.After(200 * time.Millisecond):
+	}
+	require.NoError(t, ac.Shutdown(context.Background()))
+
+	// Neither the abandoned element nor the consumed one made the queue take a reference.
+	assert.Zero(t, rc.count())
 }
 
 func BenchmarkAsyncMemoryQueue(b *testing.B) {

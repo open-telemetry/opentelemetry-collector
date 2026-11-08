@@ -43,6 +43,16 @@
           "type": "integer",
           "description": "Sets the Differentiated Services Code Point (DSCP) value on outgoing gRPC connections. \nThis value is used to set the DS field in the IP header, enabling QoS classification \nby network devices. Valid values are 0 to 63. Common values: 0 (Default/Best Effort, CS0), \n46 (Expedited Forwarding, EF, for low-latency traffic), 34 (Assured Forwarding AF41). \nDefault is 0 (disabled, no marking applied).\n"
         },
+        "dialer_middleware": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Specifies the name of the extension to use."
+            }
+          },
+          "description": "Dialer middleware is a handler customizing how the client will dial connections over TCP."
+        },
         "endpoint": {
           "type": "string",
           "description": "The target to which the exporter is going to send traces or metrics, using the gRPC protocol. \nThe valid syntax is described at https://github.com/grpc/grpc/blob/master/doc/naming.md.\n"
@@ -556,5 +566,5 @@
       ]
     }
   },
-  "title": "pkg/config/configgrpc"
+  "title": "pkg/configgrpc"
 }

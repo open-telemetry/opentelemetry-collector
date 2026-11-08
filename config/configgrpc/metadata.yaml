@@ -1,4 +1,4 @@
-type: config/configgrpc
+type: configgrpc
 parent: config
 github_project: open-telemetry/opentelemetry-collector
 
@@ -55,6 +55,10 @@ exported_configs:
           (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
         optional: true
         $ref: keepalive_client_config
+      dialer_middleware:
+        description: Dialer middleware is a handler customizing how the client will dial connections over TCP.
+        optional: true
+        $ref: /config/configmiddleware.config
       middlewares:
         description: Middlewares for the gRPC client.
         type: slice
