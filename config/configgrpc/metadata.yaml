@@ -146,6 +146,10 @@ exported_configs:
         description: Anchor for all the settings related to keepalive.
         optional: true
         $ref: keepalive_server_config
+      listener_middleware:
+        description: Listener middleware is a handler customizing how the server will listen for connections over TCP.
+        optional: true
+        $ref: /config/configmiddleware.config
       max_concurrent_streams:
         description: |
           Sets the limit on the number of concurrent streams to each ServerTransport. 

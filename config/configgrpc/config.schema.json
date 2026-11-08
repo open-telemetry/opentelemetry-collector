@@ -390,6 +390,16 @@
           "description": "Anchor for all the settings related to keepalive.",
           "default": {}
         },
+        "listener_middleware": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Specifies the name of the extension to use."
+            }
+          },
+          "description": "Listener middleware is a handler customizing how the server will listen for connections over TCP."
+        },
         "max_concurrent_streams": {
           "type": "integer",
           "description": "Sets the limit on the number of concurrent streams to each ServerTransport. \nIt has effect only for streaming RPCs.\n"

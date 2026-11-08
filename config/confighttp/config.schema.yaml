@@ -160,6 +160,10 @@ $defs:
         description: Keepalive settings for the HTTP server.
         x-optional: true
         $ref: keepalive_server_config
+      listener_middleware:
+        description: Listener middleware is a handler customizing how the server will listen for connections over TCP.
+        optional: true
+        $ref: /config/configmiddleware.config
       max_request_body_size:
         description: 'MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB. The limit is enforced on the bytes received and, when the request has a supported Content-Encoding (for example gzip), again on the decompressed body. Set it to the maximum expected decompressed payload size.'
         type: integer
