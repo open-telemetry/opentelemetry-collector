@@ -85,7 +85,7 @@ func (cc *ClientConfig) Validate() error {
 	}
 	if cc.DSCP < 0 || cc.DSCP > 63 {
 		return fmt.Errorf("invalid DSCP value %d: must be between 0 and 63", cc.DSCP)
-  }
+    }
 	if cc.DialerMiddleware.HasValue() && !configmiddleware.IsCustomTCPRoutingEnabled() {
 		return errors.New("use of the dialer_middleware feature requires to enable the feature gate 'pkg.configmiddleware.CustomTCPRouting'")
 	}
