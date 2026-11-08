@@ -737,14 +737,15 @@ func TestHTTPClientUnixSocket(t *testing.T) {
 	sockPath := filepath.Join(t.TempDir(), "otlp-test.sock")
 
 	received := make(chan string, 1)
-	srv := &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		received <- r.URL.Path
 		w.WriteHeader(http.StatusOK)
-	})}
+	}))
+	require.NoError(t, srv.Listener.Close())
 	lis, err := net.Listen("unix", sockPath)
 	require.NoError(t, err)
-	defer lis.Close()
-	go func() { _ = srv.Serve(lis) }()
+	srv.Listener = lis
+	srv.Start()
 	defer srv.Close()
 
 	cfg := ClientConfig{
