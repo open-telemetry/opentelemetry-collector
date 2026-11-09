@@ -58,7 +58,7 @@ The partial reload path (`Collector.tryPartialReload`) delegates to `Graph.Updat
 
 1. **Collect** all current receiver nodes from pipelines (skipping connectors-as-receivers)
 2. **Determine** the desired receiver set from the new pipeline configs
-3. **Categorize** receivers into add, remove, and rebuild sets
+3. **Categorize** receivers into add, remove, and rebuild sets; a node with the same component ID as an added, removed or rebuilt node is rebuilt as well, since a receiver such as `otlp` shares one instance across signals
 4. **Shutdown** receivers that are being removed or rebuilt
 5. **Remove** old receiver nodes and edges from the graph
 6. **Create** new receiver nodes for added and rebuilt receivers
@@ -91,7 +91,7 @@ When the `service.partialReload` and `service.partialReloadProcessors` (Beta, on
 
 All the receiver and processor changes are applied in one pass by `Graph.Update`, which works out what needs to restart so that each component is shut down, rebuilt, and started at most once. The restart set is:
 
-- Receivers that were added or removed, whose config changed, or whose pipeline membership changed (as in the receiver phase).
+- Receivers that were added or removed, whose config changed, or whose pipeline membership changed (as in the receiver phase), and the nodes of other signals that share their component ID.
 - For each pipeline whose processor list differs, or that uses a processor whose config changed: the changed processors, every processor upstream of them, and all of the pipeline's receivers. Every component stores the next consumer it was built with, so everything upstream of a replaced component must be recreated. The longest run of unchanged processors at the end of the pipeline keeps running, since those only reference the pipeline's fan-out node.
 
 Exporters, connectors, and pipelines that are not affected are not restarted. The pass runs in this order:
@@ -102,7 +102,7 @@ Exporters, connectors, and pipelines that are not affected are not restarted. Th
 4. **Build** the new processors from last to first, then the pipelines' capabilities consumers, then the receivers
 5. **Start** the new processors from last to first, then the receivers
 
-Receivers are keyed by signal and component ID, so a receiver shared with a pipeline that is not affected is restarted too; that pipeline's processors and exporters keep running. If a pipeline with processor changes is fed by a connector, the connector holds a reference to the pipeline's capabilities node, so `Graph.Update` makes no change and reports that a full reload is required. As with receivers, if a partial reload fails part way, the service falls back to a full reload.
+A receiver with the same component ID in a pipeline of another signal, or in a pipeline that is not affected, is restarted too, since a receiver such as `otlp` may share one instance across signals; that pipeline's processors and exporters keep running. If a pipeline with processor changes is fed by a connector, the connector holds a reference to the pipeline's capabilities node, so `Graph.Update` makes no change and reports that a full reload is required. As with receivers, if a partial reload fails part way, the service falls back to a full reload.
 
 ### Where to start to read the code
 Here is a brief list of useful and/or important files and interfaces that you may find valuable to glance through.

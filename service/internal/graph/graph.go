@@ -90,8 +90,40 @@ func Build(ctx context.Context, set Settings) (*Graph, error) {
 		return nil, err
 	}
 	pipelines.createEdges()
-	err := pipelines.buildComponents(ctx, set)
-	return pipelines, err
+	if err := pipelines.buildComponents(ctx, set); err != nil {
+		return pipelines, err
+	}
+	// TODO: Revisit this warning when custom builds no longer need batchprocessor.
+	// See https://github.com/open-telemetry/opentelemetry-collector/issues/15965.
+	pipelines.warnIfDoubleBatching(set.PipelineConfigs)
+	return pipelines, nil
+}
+
+func (g *Graph) warnIfDoubleBatching(pipelineConfigs pipelines.Config) {
+	batchProcessorType := component.MustNewType("batch")
+	for pipelineID, pipelineCfg := range pipelineConfigs {
+		hasBatchProcessor := slices.ContainsFunc(pipelineCfg.Processors, func(processorID component.ID) bool {
+			return processorID.Type() == batchProcessorType
+		})
+		if !hasBatchProcessor {
+			continue
+		}
+
+		for _, node := range g.pipelines[pipelineID].exporters {
+			exporterNode, ok := node.(*exporterNode)
+			if !ok {
+				continue
+			}
+			if !exporterNode.exporterHelperBatchingEnabled {
+				continue
+			}
+			g.telemetry.Logger.Warn(
+				"Pipeline has both a batch processor and an exporter with batching enabled; this will cause double batching",
+				zap.Stringer("pipeline", pipelineID),
+				zap.Stringer("exporter", exporterNode.componentID),
+			)
+		}
+	}
 }
 
 // Creates a node for each instance of a component and adds it to the graph.
@@ -481,11 +513,11 @@ func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error
 	var errs error
 	for i := range nodes {
 		node := nodes[i]
-		comp, ok := node.(component.Component)
+		comp := builtComponent(node)
 
-		if !ok || !isBuilt(node) {
-			// Skip capabilities/fanout nodes and nodes a failed partial reload
-			// left without a component.
+		if comp == nil {
+			// Skip capabilities/fanout nodes and nodes whose component was
+			// never built.
 			continue
 		}
 
@@ -512,19 +544,148 @@ func (g *Graph) ShutdownAll(ctx context.Context, reporter status.Reporter) error
 	return errs
 }
 
-// isBuilt reports whether a node has a component.
-func isBuilt(node graph.Node) bool {
+// builtComponent returns the component held by a node, or nil when the node
+// holds none: the virtual capabilities and fanout nodes never do, and a
+// receiver, processor, exporter or connector node does not when its build
+// failed. A partial reload that fails while building a component leaves its
+// node in the graph; the fallback full reload then shuts the whole graph down
+// and must not call Shutdown through a nil embedded component.
+func builtComponent(node graph.Node) component.Component {
 	switch n := node.(type) {
 	case *receiverNode:
-		return n.Component != nil
+		return n.Component
 	case *processorNode:
-		return n.Component != nil
+		return n.Component
 	case *exporterNode:
-		return n.Component != nil
+		return n.Component
 	case *connectorNode:
-		return n.Component != nil
+		return n.Component
 	}
-	return true
+	comp, _ := node.(component.Component)
+	return comp
+}
+
+// addSharedReceiverNodes adds to toRebuild every node in current that is not
+// in toRemove and has the component ID of a node in toRemove, toRebuild or
+// toAdd.
+func addSharedReceiverNodes(current, toRemove, toRebuild map[int64]*receiverNode, toAdd map[int64]component.ID) {
+	affected := make(map[component.ID]bool)
+	for _, rn := range toRemove {
+		affected[rn.componentID] = true
+	}
+	for _, rn := range toRebuild {
+		affected[rn.componentID] = true
+	}
+	for _, recvID := range toAdd {
+		affected[recvID] = true
+	}
+	for nodeID, rn := range current {
+		if _, removed := toRemove[nodeID]; !removed && affected[rn.componentID] {
+			toRebuild[nodeID] = rn
+		}
+	}
+}
+
+// shutdownReceiverNodes stops the given receiver nodes, reporting the status
+// of each. The nodes stay in the graph, see removeReceiverNodes.
+func (g *Graph) shutdownReceiverNodes(ctx context.Context, nodes map[int64]*receiverNode, host *Host) error {
+	for nodeID, rn := range nodes {
+		if err := g.shutdownReceiverNode(ctx, nodeID, rn, host); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// removeReceiverNodes removes the given receiver nodes, their edges and their
+// instance IDs from the graph and from every pipeline that lists them.
+func (g *Graph) removeReceiverNodes(nodes map[int64]*receiverNode) {
+	for nodeID := range nodes {
+		g.componentGraph.RemoveNode(nodeID)
+		delete(g.instanceIDs, nodeID)
+		for _, pipe := range g.pipelines {
+			delete(pipe.receivers, nodeID)
+		}
+	}
+}
+
+// addReceiverNodes creates a node for every receiver of set.PipelineConfigs
+// whose node ID is in wanted, wires it to the capabilities node of each
+// pipeline that lists it, and builds its component. Every node is built
+// before any of them is started by startReceiverNodes: a factory that shares
+// one instance between signals registers each signal's consumer when the node
+// of that signal is built, so an instance started after its first build would
+// come up without the signals built after it. Returns the IDs of the nodes
+// that were built.
+func (g *Graph) addReceiverNodes(ctx context.Context, set Settings, wanted map[int64]bool) (map[int64]bool, error) {
+	for pipelineID, pipelineCfg := range set.PipelineConfigs {
+		pipe := g.pipelines[pipelineID]
+		for _, recvID := range pipelineCfg.Receivers {
+			if set.ConnectorBuilder.IsConfigured(recvID) {
+				continue
+			}
+			if !wanted[newReceiverNode(pipelineID.Signal(), recvID).ID()] {
+				continue // unchanged receiver, skip
+			}
+			rcvrNode := g.createReceiver(pipelineID, recvID)
+			pipe.receivers[rcvrNode.ID()] = rcvrNode
+		}
+	}
+
+	for _, pipe := range g.pipelines {
+		for nodeID, node := range pipe.receivers {
+			if wanted[nodeID] {
+				g.componentGraph.SetEdge(g.componentGraph.NewEdge(node, pipe.capabilitiesNode))
+			}
+		}
+	}
+
+	built := make(map[int64]bool, len(wanted))
+	for _, pipe := range g.pipelines {
+		for nodeID, node := range pipe.receivers {
+			if !wanted[nodeID] || built[nodeID] {
+				continue // unchanged receiver, or shared receiver already built
+			}
+			built[nodeID] = true
+			rn, ok := node.(*receiverNode)
+			if !ok {
+				continue
+			}
+			if err := rn.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(nodeID)); err != nil {
+				return nil, fmt.Errorf("failed to build receiver %q: %w", rn.componentID, err)
+			}
+		}
+	}
+	return built, nil
+}
+
+// startReceiverNodes starts the given receiver nodes, reporting the status of
+// each.
+func (g *Graph) startReceiverNodes(ctx context.Context, nodeIDs map[int64]bool, host *Host) error {
+	for nodeID := range nodeIDs {
+		rn := g.componentGraph.Node(nodeID).(*receiverNode)
+		instanceID := g.instanceIDs[nodeID]
+		host.Reporter.ReportStatus(
+			instanceID,
+			componentstatus.NewEvent(componentstatus.StatusStarting),
+		)
+
+		if compErr := rn.Start(ctx, &HostWrapper{Host: host, InstanceID: instanceID}); compErr != nil {
+			host.Reporter.ReportStatus(
+				instanceID,
+				componentstatus.NewPermanentErrorEvent(compErr),
+			)
+			g.telemetry.Logger.WithOptions(zap.AddStacktrace(zap.DPanicLevel)).
+				Error("Failed to start receiver during partial reload",
+					zap.Error(compErr),
+					zap.String("id", instanceID.ComponentID().String()),
+				)
+			return fmt.Errorf("failed to start receiver %q: %w", rn.componentID, compErr)
+		}
+
+		host.Reporter.ReportOKIfStarting(instanceID)
+	}
+	return nil
 }
 
 func (g *Graph) shutdownReceiverNode(ctx context.Context, nodeID int64, rn *receiverNode, host *Host) error {

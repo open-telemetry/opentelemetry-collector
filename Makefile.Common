@@ -1,8 +1,8 @@
 SHELL = /bin/bash
 # ALL_PKGS is the list of all packages where ALL_SRC files reside.
-ALL_PKGS := $(sort $(shell go list ./...))
+ALL_PKGS = $(sort $(shell go list ./...))
 # COVER_PKGS is the list of packages to include in the coverage
-COVER_PKGS := $(shell go list ./... | tr "\n" ",")
+COVER_PKGS = $(shell go list ./... | tr "\n" ",")
 
 CURR_MOD := $(shell go list -m | tr '/' '-' )
 
@@ -33,9 +33,7 @@ IGNORED_VULNS = GO-2026-6443
 test:
     # GODEBUG=fips140=only is used to surface any FIPS-140-3 non-compliant cryptographic
     # calls into the Go standard library. See: https://go.dev/doc/security/fips140#fips-140-3-mode
-	# disabling fips only to unblock CI. See https://github.com/open-telemetry/opentelemetry-collector/issues/13925
-	# GODEBUG=fips140=only $(GO_TOOL) gotestsum --packages="./..." -- $(GOTEST_OPT)
-	$(GO_TOOL) gotestsum --packages="./..." -- $(GOTEST_OPT)
+	GODEBUG=fips140=only $(GO_TOOL) gotestsum --packages="./..." -- $(GOTEST_OPT)
 
 .PHONY: test-with-cover
 test-with-cover:
@@ -140,7 +138,7 @@ schemagen:
 	@echo "Running schemagen with filepath='$(SRC)' and flags='$(FLAGS)'"
 	cd $(SRC_ROOT)/cmd/schemagen && go run . $(FLAGS) $(SRC)
 
-EXTERNAL_PKGS := $(shell go list ./... | grep -v -E '/internal($|/)')
+EXTERNAL_PKGS = $(shell go list ./... | grep -v -E '/internal($|/)')
 APIDIFF_DATA_DIR ?= internal/data/apidiff
 
 .PHONY: apidiff-build-mod

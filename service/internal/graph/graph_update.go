@@ -51,7 +51,8 @@ type processorReload struct {
 // affected component once.
 //
 // Restarted: receivers that were added, removed, or whose config or pipeline
-// membership changed; and, in each pipeline whose processors changed, the
+// membership changed, along with the nodes of other signals that share their
+// component ID; and, in each pipeline whose processors changed, the
 // changed processors, those upstream of them, and the pipeline's receivers.
 // Unchanged trailing processors, exporters, connectors, and other pipelines
 // keep running.
@@ -106,12 +107,14 @@ func (g *Graph) Update(ctx context.Context, set Settings, req UpdateRequest, hos
 	}
 
 	desiredPipelines := make(map[int64]map[pipeline.ID]bool)
+	desiredIDs := make(map[int64]component.ID)
 	for pipelineID, pipelineCfg := range set.PipelineConfigs {
 		for _, recvID := range pipelineCfg.Receivers {
 			if set.ConnectorBuilder.IsConfigured(recvID) {
 				continue
 			}
 			nodeID := newReceiverNode(pipelineID.Signal(), recvID).ID()
+			desiredIDs[nodeID] = recvID
 			if desiredPipelines[nodeID] == nil {
 				desiredPipelines[nodeID] = make(map[pipeline.ID]bool)
 			}
@@ -120,8 +123,8 @@ func (g *Graph) Update(ctx context.Context, set Settings, req UpdateRequest, hos
 	}
 
 	toRemove := make(map[int64]*receiverNode)  // present now, absent in desired
-	toRebuild := make(map[int64]*receiverNode) // present in both, but changed or upstream of a processor change
-	toAdd := make(map[int64]bool)              // absent now, present in desired
+	toRebuild := make(map[int64]*receiverNode) // present in both, but changed or feeding a replaced processor
+	toAdd := make(map[int64]component.ID)      // absent now, present in desired
 	for nodeID, rn := range currentReceivers {
 		switch {
 		case desiredPipelines[nodeID] == nil:
@@ -132,11 +135,15 @@ func (g *Graph) Update(ctx context.Context, set Settings, req UpdateRequest, hos
 			toRebuild[nodeID] = rn
 		}
 	}
-	for nodeID := range desiredPipelines {
+	for nodeID, recvID := range desiredIDs {
 		if _, exists := currentReceivers[nodeID]; !exists {
-			toAdd[nodeID] = true
+			toAdd[nodeID] = recvID
 		}
 	}
+
+	// Nodes of other signals that may share an instance with a restarted
+	// receiver are restarted too, whatever the reason for the restart.
+	addSharedReceiverNodes(currentReceivers, toRemove, toRebuild, toAdd)
 
 	if len(toRemove) == 0 && len(toRebuild) == 0 && len(toAdd) == 0 && len(reloads) == 0 {
 		g.telemetry.Logger.Info("Partial reload: no receiver or processor changes detected")
@@ -152,13 +159,11 @@ func (g *Graph) Update(ctx context.Context, set Settings, req UpdateRequest, hos
 	}
 
 	// Stop receivers first so nothing is sending, then the replaced processors.
-	shutdownReceivers := make(map[int64]*receiverNode, len(toRemove)+len(toRebuild))
-	maps.Copy(shutdownReceivers, toRemove)
-	maps.Copy(shutdownReceivers, toRebuild)
-	for _, nodeID := range sortedKeys(shutdownReceivers) {
-		if err := g.shutdownReceiverNode(ctx, nodeID, shutdownReceivers[nodeID], host); err != nil {
-			return true, err
-		}
+	if err := g.shutdownReceiverNodes(ctx, toRemove, host); err != nil {
+		return true, err
+	}
+	if err := g.shutdownReceiverNodes(ctx, toRebuild, host); err != nil {
+		return true, err
 	}
 	for _, reload := range reloads {
 		for _, pn := range reload.oldProcessors {
@@ -168,35 +173,10 @@ func (g *Graph) Update(ctx context.Context, set Settings, req UpdateRequest, hos
 		}
 	}
 
-	for nodeID := range shutdownReceivers {
-		g.componentGraph.RemoveNode(nodeID)
-		delete(g.instanceIDs, nodeID)
-	}
-	for _, pipe := range g.pipelines {
-		for nodeID := range shutdownReceivers {
-			delete(pipe.receivers, nodeID)
-		}
-	}
+	g.removeReceiverNodes(toRemove)
+	g.removeReceiverNodes(toRebuild)
 	for _, reload := range reloads {
 		g.replaceProcessorNodes(reload)
-	}
-
-	started := make(map[int64]*receiverNode)
-	for pipelineID, pipelineCfg := range set.PipelineConfigs {
-		pipe := g.pipelines[pipelineID]
-		for _, recvID := range pipelineCfg.Receivers {
-			if set.ConnectorBuilder.IsConfigured(recvID) {
-				continue
-			}
-			nodeID := newReceiverNode(pipelineID.Signal(), recvID).ID()
-			if !toAdd[nodeID] && toRebuild[nodeID] == nil {
-				continue // unchanged receiver, skip
-			}
-			rn := g.createReceiver(pipelineID, recvID)
-			pipe.receivers[rn.ID()] = rn
-			g.componentGraph.SetEdge(g.componentGraph.NewEdge(rn, pipe.capabilitiesNode))
-			started[rn.ID()] = rn
-		}
 	}
 
 	// Build downstream first so each component gets its next consumer.
@@ -209,11 +189,16 @@ func (g *Graph) Update(ctx context.Context, set Settings, req UpdateRequest, hos
 		}
 		g.buildCapabilitiesNode(reload.pipe.capabilitiesNode)
 	}
-	for _, nodeID := range sortedKeys(started) {
-		rn := started[nodeID]
-		if err := rn.buildComponent(ctx, set.Telemetry, set.BuildInfo, set.ReceiverBuilder, g.nextConsumers(nodeID)); err != nil {
-			return true, fmt.Errorf("failed to build receiver %q: %w", rn.componentID, err)
-		}
+	wanted := make(map[int64]bool, len(toAdd)+len(toRebuild))
+	for nodeID := range toAdd {
+		wanted[nodeID] = true
+	}
+	for nodeID := range toRebuild {
+		wanted[nodeID] = true
+	}
+	built, err := g.addReceiverNodes(ctx, set, wanted)
+	if err != nil {
+		return true, err
 	}
 
 	// Start receivers last so data flows only once everything is up.
@@ -224,10 +209,8 @@ func (g *Graph) Update(ctx context.Context, set Settings, req UpdateRequest, hos
 			}
 		}
 	}
-	for _, nodeID := range sortedKeys(started) {
-		if err := g.startReloadedNode(ctx, nodeID, started[nodeID], host); err != nil {
-			return true, err
-		}
+	if err := g.startReceiverNodes(ctx, built, host); err != nil {
+		return true, err
 	}
 
 	g.telemetry.Logger.Info("Partial reload completed successfully")
@@ -331,14 +314,4 @@ func (g *Graph) startReloadedNode(ctx context.Context, nodeID int64, comp compon
 	}
 	host.Reporter.ReportOKIfStarting(instanceID)
 	return nil
-}
-
-// sortedKeys returns the keys of m in ascending order.
-func sortedKeys[V any](m map[int64]V) []int64 {
-	keys := make([]int64, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	slices.Sort(keys)
-	return keys
 }

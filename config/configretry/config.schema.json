@@ -48,5 +48,5 @@
       "description": "Defines configuration for retrying batches in case of export failure. \nThe current supported strategy is exponential backoff.\n"
     }
   },
-  "title": "pkg/config/configretry"
+  "title": "pkg/configretry"
 }

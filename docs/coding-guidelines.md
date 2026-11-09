@@ -70,6 +70,19 @@ When naming configuration structs, use the following guidelines:
 - Use the `Settings` suffix for configuration structs that are set by developers in the code. For example, `component.TelemetrySettings` ends in `Settings` since it is set by developers in the code.
 - Avoid redundant prefixes that are already implied by the package name. For example, use `configgrpc.ClientConfig` instead of `configgrpc.GRPCClientConfig`.
 
+#### Experimental fields on stable configuration structs
+
+You can add new experimental Go fields to a stable configuration struct. Its functionality MUST be
+under an alpha feature gate. When the feature gate is disabled, a Collector loading a config with such a
+field MUST fail with a descriptive error that refers to the feature gate. The same feature gate MAY
+be re-used for multiple logically-related fields.
+
+Even if experimental, the name of a field MUST NOT be changed, and its type MUST NOT change in backward-incompatible ways, since that would break the Go API.
+Think carefully about the field name and ensure there is consensus before adding it.
+
+If a field on a stable configuration struct needs to be removed or renamed, instead, create a new
+field and deprecate the old one. Setting the old field should be a no-op and MUST log a warning.
+
 #### Avoid Embedded Structs
 
 When defining configuration structs, avoid using embedded (anonymous) struct fields. Instead, use explicitly named fields.

@@ -3,7 +3,7 @@
 
 module-sets:
   stable:
-    version: v1.69.0
+    version: v1.71.0
     modules:
       - go.opentelemetry.io/collector/client
       - go.opentelemetry.io/collector/featuregate
@@ -20,6 +20,7 @@ module-sets:
       - go.opentelemetry.io/collector/config/configopaque
       - go.opentelemetry.io/collector/config/configoptional
       - go.opentelemetry.io/collector/config/configcompression
+      - go.opentelemetry.io/collector/config/confighttp
       - go.opentelemetry.io/collector/config/configretry
       - go.opentelemetry.io/collector/config/configtls
       - go.opentelemetry.io/collector/config/confignet
@@ -32,7 +33,7 @@ module-sets:
       - go.opentelemetry.io/collector/processor
       - go.opentelemetry.io/collector/receiver
   beta:
-    version: v0.163.0
+    version: v0.165.0
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/internal/componentalias
@@ -49,7 +50,6 @@ module-sets:
       - go.opentelemetry.io/collector/component/componentstatus
       - go.opentelemetry.io/collector/component/componenttest
       - go.opentelemetry.io/collector/confmap/xconfmap
-      - go.opentelemetry.io/collector/config/confighttp
       - go.opentelemetry.io/collector/config/confighttp/xconfighttp
       - go.opentelemetry.io/collector/config/configstorage
       - go.opentelemetry.io/collector/config/configtelemetry
@@ -91,6 +91,7 @@ module-sets:
       - go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper
       - go.opentelemetry.io/collector/processor/xprocessor
       - go.opentelemetry.io/collector/receiver/receiverhelper
+      - go.opentelemetry.io/collector/receiver/receiverhelper/xreceiverhelper
       - go.opentelemetry.io/collector/receiver/nopreceiver
       - go.opentelemetry.io/collector/receiver/otlpreceiver
       - go.opentelemetry.io/collector/receiver/receivertest

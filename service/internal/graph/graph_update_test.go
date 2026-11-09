@@ -227,10 +227,12 @@ func TestUpdate_ProcessorsConfigChange(t *testing.T) {
 	assert.Equal(t, 1, tracesRcvr.stops)
 	assert.Equal(t, 1, receiverComponent(pg, tracesID).starts)
 
-	// Receivers are keyed by signal, so the logs pipeline is untouched.
+	// The logs receiver has the same ID, so it may share an instance and is
+	// restarted too. The logs processors and the exporter keep running.
+	assert.NotSame(t, logsRcvr, receiverComponent(pg, logsID))
+	assert.Equal(t, 1, logsRcvr.stops)
 	assert.Same(t, logsProcs[0], processorComponents(pg, logsID)[0])
-	assert.Same(t, logsRcvr, receiverComponent(pg, logsID))
-	assert.Zero(t, logsRcvr.stops)
+	assert.False(t, logsProcs[0].Stopped())
 	assert.Equal(t, expStoppedBefore, exp.Stopped())
 
 	// Data flows through the rebuilt pipeline.
@@ -438,6 +440,19 @@ func TestUpdate_ReceiversAndProcessorsTogether(t *testing.T) {
 		assert.False(t, logsProc.Stopped(), "logs processor must not be restarted")
 	})
 
+	t.Run("receiver_with_other_id_untouched", func(t *testing.T) {
+		cfg := mk([]component.ID{testReceiverID}, []component.ID{procA})
+		pg, host, set := buildProcessorTestGraph(t, cfg, nil)
+		logsRcvr := receiverNodeFor(t, pg, logsID, testReceiverID2)
+
+		applied, err := update(pg, host, set, cfg, nil, []component.ID{procA})
+		require.NoError(t, err)
+		assert.True(t, applied)
+
+		assert.Zero(t, logsRcvr.stops)
+		assert.Same(t, logsRcvr, receiverNodeFor(t, pg, logsID, testReceiverID2))
+	})
+
 	t.Run("same_receiver_changes_with_its_pipeline_processor", func(t *testing.T) {
 		cfg := mk([]component.ID{testReceiverID}, []component.ID{procA})
 		pg, host, set := buildProcessorTestGraph(t, cfg, nil)
@@ -568,4 +583,44 @@ func TestUpdate_PipelineMissingFromGraph(t *testing.T) {
 	applied, err := pg.Update(context.Background(), set, UpdateRequest{}, host)
 	require.NoError(t, err)
 	assert.False(t, applied)
+}
+
+// A processor change restarts the receivers of its pipeline. A receiver that
+// shares one instance across signals must then be rebuilt for every signal.
+func TestUpdate_ProcessorChangeRebuildsSharedReceiverForAllSignals(t *testing.T) {
+	var instances []*sharedReceiver
+	factories := map[component.Type]receiver.Factory{sharedReceiverType: newSharedReceiverFactory(&instances)}
+	sharedID := component.MustNewID("sharedreceiver")
+	rcvrCfgs := map[component.ID]component.Config{sharedID: &sharedReceiverConfig{id: "v1"}}
+
+	pg, host, set := receiverTestGraph(t, rcvrCfgs, factories, sharedReceiverPipelines(sharedID, nil))
+	require.Len(t, instances, 1)
+
+	// Only the traces pipeline loses its processor.
+	updated := sharedReceiverPipelines(sharedID, nil)
+	updated[pipeline.NewID(pipeline.SignalTraces)].Processors = nil
+	set.PipelineConfigs = updated
+	applied, err := pg.Update(context.Background(), set, UpdateRequest{
+		NewReceiverCfgs:   rcvrCfgs,
+		ReceiverFactories: factories,
+		NewProcessorCfgs: map[component.ID]component.Config{
+			component.MustNewID("exampleprocessor"): testcomponents.ExampleProcessorFactory.CreateDefaultConfig(),
+		},
+		ProcessorFactories: testProcessorFactories,
+	}, host)
+	require.NoError(t, err)
+	require.True(t, applied)
+
+	// Both signals run on one new instance, built for both signals before it started.
+	require.Len(t, instances, 2)
+	assert.EqualValues(t, 1, instances[0].stopped.Load())
+	rebuilt := instances[1]
+	assert.EqualValues(t, 1, rebuilt.started.Load())
+	assert.Equal(t, 2, rebuilt.signalsAtStart)
+	assert.Same(t, rebuilt, sharedReceiverNodeComponent(t, pg, pipeline.SignalTraces, sharedID))
+	assert.Same(t, rebuilt, sharedReceiverNodeComponent(t, pg, pipeline.SignalMetrics, sharedID))
+
+	require.NoError(t, rebuilt.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
+	require.NoError(t, rebuilt.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
+	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }
