@@ -16,17 +16,12 @@ import (
 	"go.opentelemetry.io/collector/otelcol"
 )
 
-var (
-	runCollector = run
-	exitProcess  = os.Exit
-)
-
 func main() {
-	runMain(runCollector, exitProcess)
+	runMain(run, os.Exit)
 }
 
 func runMain(runFn func(otelcol.CollectorSettings) error, exitFn func(int)) {
-	set := newCollectorSettings()
+	set := newDefaultCollectorSettings()
 	if err := runFn(set); err != nil {
 		// The error message is logged by cobra, so we intentionally
 		// avoid logging it again here to prevent duplicate output.
@@ -34,7 +29,7 @@ func runMain(runFn func(otelcol.CollectorSettings) error, exitFn func(int)) {
 	}
 }
 
-func newCollectorSettings() otelcol.CollectorSettings {
+func newDefaultCollectorSettings() otelcol.CollectorSettings {
 	info := component.BuildInfo{
 		Command:     "otelcorecol",
 		Description: "Local OpenTelemetry Collector binary, testing only.",

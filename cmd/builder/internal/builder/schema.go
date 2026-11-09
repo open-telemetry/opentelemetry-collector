@@ -136,7 +136,7 @@ func buildEmbeddedSchemaWithDeps(cfg *Config, deps builderDeps, resolveModuleDir
 func selectedComponentSchemaRefs(cfg *Config) []componentSchemaRef {
 	refs := make([]componentSchemaRef, 0, len(cfg.Receivers)+len(cfg.Processors)+len(cfg.Exporters)+len(cfg.Connectors)+len(cfg.Extensions))
 
-	appendRefs := func(section schemagen.CollectorSection, modules []Module) {
+	insertRefs := func(section schemagen.CollectorSection, modules []Module) {
 		for _, mod := range modules {
 			refs = append(refs, componentSchemaRef{
 				section: section,
@@ -145,11 +145,11 @@ func selectedComponentSchemaRefs(cfg *Config) []componentSchemaRef {
 		}
 	}
 
-	appendRefs(schemagen.CollectorSectionReceivers, cfg.Receivers)
-	appendRefs(schemagen.CollectorSectionProcessors, cfg.Processors)
-	appendRefs(schemagen.CollectorSectionExporters, cfg.Exporters)
-	appendRefs(schemagen.CollectorSectionConnectors, cfg.Connectors)
-	appendRefs(schemagen.CollectorSectionExtensions, cfg.Extensions)
+	insertRefs(schemagen.CollectorSectionReceivers, cfg.Receivers)
+	insertRefs(schemagen.CollectorSectionProcessors, cfg.Processors)
+	insertRefs(schemagen.CollectorSectionExporters, cfg.Exporters)
+	insertRefs(schemagen.CollectorSectionConnectors, cfg.Connectors)
+	insertRefs(schemagen.CollectorSectionExtensions, cfg.Extensions)
 
 	return refs
 }

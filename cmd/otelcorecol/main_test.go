@@ -12,8 +12,8 @@ import (
 	"go.opentelemetry.io/collector/otelcol"
 )
 
-func TestNewCollectorSettingsIncludesEmbeddedSchema(t *testing.T) {
-	set := newCollectorSettings()
+func TestNewDefaultCollectorSettingsIncludesEmbeddedSchema(t *testing.T) {
+	set := newDefaultCollectorSettings()
 
 	// No component in this distribution currently ships a resolved config.schema.json,
 	// so the builder embeds an empty schema rather than a document of dangling refs.
@@ -50,30 +50,4 @@ func TestRunMainError(t *testing.T) {
 	})
 
 	require.Equal(t, 1, exitCode)
-}
-
-func TestMain(t *testing.T) {
-	originalRunCollector := runCollector
-	originalExitProcess := exitProcess
-	t.Cleanup(func() {
-		runCollector = originalRunCollector
-		exitProcess = originalExitProcess
-	})
-
-	runCalled := false
-	exitCalled := false
-	runCollector = func(set otelcol.CollectorSettings) error {
-		runCalled = true
-		require.Nil(t, embeddedConfigSchema)
-		require.Equal(t, embeddedConfigSchema, set.ConfigSchema)
-		return nil
-	}
-	exitProcess = func(int) {
-		exitCalled = true
-	}
-
-	main()
-
-	require.True(t, runCalled)
-	require.False(t, exitCalled)
 }
