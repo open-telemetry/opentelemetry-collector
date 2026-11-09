@@ -4,6 +4,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -15,9 +16,10 @@ import (
 func TestNewDefaultCollectorSettingsIncludesEmbeddedSchema(t *testing.T) {
 	set := newDefaultCollectorSettings()
 
-	// No component in this distribution currently ships a resolved config.schema.json,
-	// so the builder embeds an empty schema rather than a document of dangling refs.
-	require.Nil(t, embeddedConfigSchema)
+	// The builder embeds the combined schema of the components that ship a
+	// resolved config.schema.json (for example the OTLP receiver).
+	require.NotEmpty(t, embeddedConfigSchema)
+	require.True(t, json.Valid(embeddedConfigSchema))
 	require.Equal(t, embeddedConfigSchema, set.ConfigSchema)
 	require.Equal(t, "otelcorecol", set.BuildInfo.Command)
 	require.Equal(t, "Local OpenTelemetry Collector binary, testing only.", set.BuildInfo.Description)
@@ -36,7 +38,6 @@ func TestRunMainSuccess(t *testing.T) {
 	})
 
 	require.False(t, exitCalled)
-	require.Nil(t, embeddedConfigSchema)
 	require.Equal(t, embeddedConfigSchema, got.ConfigSchema)
 }
 
