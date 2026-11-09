@@ -5,6 +5,7 @@ package configtls
 
 import (
 	"context"
+	"crypto/fips140"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -12,7 +13,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -892,6 +892,11 @@ func TestCurvePreferences(t *testing.T) {
 
 	tests := []testCase{
 		{
+			name:             "empty-uses-crypto-tls-defaults",
+			preferences:      nil,
+			expectedCurveIDs: nil,
+		},
+		{
 			name:             "P521",
 			preferences:      []string{"P521"},
 			expectedCurveIDs: []tls.CurveID{tls.CurveP521},
@@ -907,28 +912,36 @@ func TestCurvePreferences(t *testing.T) {
 			expectedCurveIDs: []tls.CurveID{tls.CurveP256, tls.CurveP521},
 		},
 		{
-			name:             "invalid-curve",
-			preferences:      []string{"P25223236"},
-			expectedCurveIDs: []tls.CurveID{},
-			expectedErr:      "invalid curve type: P25223236",
+			name:             "X25519MLKEM768",
+			preferences:      []string{"X25519MLKEM768"},
+			expectedCurveIDs: []tls.CurveID{tls.X25519MLKEM768},
+		},
+		{
+			name:             "SecP-MLKEM-hybrids",
+			preferences:      []string{"SecP256r1MLKEM768", "SecP384r1MLKEM1024"},
+			expectedCurveIDs: []tls.CurveID{tls.SecP256r1MLKEM768, tls.SecP384r1MLKEM1024},
+		},
+		{
+			name:        "invalid-curve",
+			preferences: []string{"P25223236"},
+			expectedErr: "invalid curve type: P25223236",
 		},
 	}
 
-	// X25519 curves are not supported when GODEBUG=fips140=only is set, so we
-	// detect if it is and conditionally add test cases for those curves.
-	if !strings.Contains(os.Getenv("GODEBUG"), "fips140=only") {
-		tests = append(tests,
-			testCase{
-				name:             "X25519MLKEM768",
-				preferences:      []string{"X25519MLKEM768"},
-				expectedCurveIDs: []tls.CurveID{tls.X25519MLKEM768},
-			},
-			testCase{
-				name:             "X25519",
-				preferences:      []string{"X25519"},
-				expectedCurveIDs: []tls.CurveID{tls.X25519},
-			},
-		)
+	// X25519 is not available in FIPS 140-3 mode, so the expected outcome depends on
+	// whether the tests run with GODEBUG=fips140=on or only.
+	if fips140.Enabled() {
+		tests = append(tests, testCase{
+			name:        "X25519-rejected-in-fips-mode",
+			preferences: []string{"P256", "X25519"},
+			expectedErr: "curve type X25519 is not available in FIPS 140-3 mode",
+		})
+	} else {
+		tests = append(tests, testCase{
+			name:             "X25519",
+			preferences:      []string{"X25519"},
+			expectedCurveIDs: []tls.CurveID{tls.X25519},
+		})
 	}
 
 	for _, test := range tests {
@@ -938,11 +951,14 @@ func TestCurvePreferences(t *testing.T) {
 					CurvePreferences: test.preferences,
 				},
 			}
+			validateErr := tlsSetting.Validate()
 			config, err := tlsSetting.LoadTLSConfig(context.Background())
 			if test.expectedErr == "" {
+				require.NoError(t, validateErr)
 				require.NoError(t, err)
-				require.ElementsMatchf(t, test.expectedCurveIDs, config.CurvePreferences, "expected %v, got %v", test.expectedCurveIDs, config.CurvePreferences)
+				require.Equal(t, test.expectedCurveIDs, config.CurvePreferences)
 			} else {
+				require.ErrorContains(t, validateErr, test.expectedErr)
 				require.ErrorContains(t, err, test.expectedErr)
 			}
 		})

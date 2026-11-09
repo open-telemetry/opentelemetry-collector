@@ -19,11 +19,20 @@ optional and requires additional configuration (see examples below).
   [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure)
   for gRPC.
 - `curve_preferences` (default = []): specify your curve preferences that will
-  be used in an ECDHE handshake, in preference order. Accepted values are:
+  be used in an ECDHE handshake, in preference order. When empty, the
+  `crypto/tls` defaults are used. Accepted values are:
+  - X25519MLKEM768
+  - SecP256r1MLKEM768
+  - SecP384r1MLKEM1024
   - X25519
-  - P521
   - P256
   - P384
+  - P521
+
+  When the Collector runs in FIPS 140-3 mode (`GODEBUG=fips140=on` or `only`),
+  `X25519` is not an approved curve and is rejected when the configuration is
+  validated. The other curves are filtered by `crypto/tls` at runtime according
+  to the FIPS 140-3 rules of the Go release in use.
 
 The following certificate parameters can be configured:
 
