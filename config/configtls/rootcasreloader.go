@@ -4,6 +4,7 @@
 package configtls // import "go.opentelemetry.io/collector/config/configtls"
 
 import (
+	"crypto/fips140"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -11,6 +12,9 @@ import (
 	"sync"
 	"time"
 )
+
+// fipsEnabled reports whether FIPS 140 mode is active. Overridden by tests.
+var fipsEnabled = fips140.Enabled
 
 // rootCAsReloader keeps the CA pool loaded from Config.CAFile and reloads it
 // from disk once ReloadInterval has elapsed since the last load.

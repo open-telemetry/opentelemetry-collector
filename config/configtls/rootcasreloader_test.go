@@ -25,6 +25,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// fipsTestCurves are key exchange curves allowed in FIPS 140-only mode.
+var fipsTestCurves = []tls.CurveID{tls.CurveP256}
+
+func withFIPSTestCurves(cfg *tls.Config) *tls.Config {
+	cfg = cfg.Clone()
+	cfg.CurvePreferences = fipsTestCurves
+	return cfg
+}
+
 // handshake runs a TLS handshake between a client using clientCfg and a server
 // presenting the given testdata certificate, returning the client-side error.
 func handshake(t *testing.T, clientCfg *tls.Config, serverCert string) error {
@@ -42,9 +51,12 @@ func handshake(t *testing.T, clientCfg *tls.Config, serverCert string) error {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		_ = tls.Server(serverConn, &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12}).Handshake()
+		_ = tls.Server(serverConn, &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12, CurvePreferences: fipsTestCurves}).Handshake()
 		_ = serverConn.Close()
 	}()
+	// Restrict key exchange to P-256 so the handshake is also allowed with
+	// GODEBUG=fips140=only, as used by `make test`.
+	clientCfg.CurvePreferences = fipsTestCurves
 	err = tls.Client(clientConn, clientCfg).Handshake()
 	_ = clientConn.Close()
 	<-done
@@ -58,7 +70,18 @@ func writeCA(t *testing.T, dst, src string) {
 	require.NoError(t, os.WriteFile(dst, data, 0o600)) //nolint:gosec // temp dir path from t.TempDir
 }
 
+// setFIPSMode overrides FIPS 140 mode detection for the duration of the test,
+// so tests behave the same whether or not they run with GODEBUG=fips140=on/only
+// (as `make test` does).
+func setFIPSMode(t *testing.T, enabled bool) {
+	t.Helper()
+	orig := fipsEnabled
+	fipsEnabled = func() bool { return enabled }
+	t.Cleanup(func() { fipsEnabled = orig })
+}
+
 func TestClientCAFileReload(t *testing.T) {
+	setFIPSMode(t, false)
 	tests := []struct {
 		name           string
 		reloadInterval time.Duration
@@ -99,6 +122,7 @@ func TestClientCAFileReload(t *testing.T) {
 }
 
 func TestClientCAFileReloadVerifiesHostname(t *testing.T) {
+	setFIPSMode(t, false)
 	caFile := filepath.Join(t.TempDir(), "ca.crt")
 	writeCA(t, caFile, "ca-1.crt")
 	cfg := ClientConfig{Config: Config{CAFile: caFile, ReloadInterval: time.Millisecond}}
@@ -110,6 +134,7 @@ func TestClientCAFileReloadVerifiesHostname(t *testing.T) {
 }
 
 func TestClientCAFileReloadKeepsPoolOnBadFile(t *testing.T) {
+	setFIPSMode(t, false)
 	caFile := filepath.Join(t.TempDir(), "ca.crt")
 	writeCA(t, caFile, "ca-1.crt")
 	cfg := ClientConfig{Config: Config{CAFile: caFile, ReloadInterval: time.Millisecond}}
@@ -139,6 +164,7 @@ func TestClientCAFileReloadRespectsInsecureSkipVerify(t *testing.T) {
 // it: through net/http, with ServerName left empty in the config so that the
 // transport derives it from the request URL.
 func TestClientCAFileReloadHTTPClient(t *testing.T) {
+	setFIPSMode(t, false)
 	caFile := filepath.Join(t.TempDir(), "ca.crt")
 	writeCA(t, caFile, "ca-1.crt")
 	cfg := ClientConfig{Config: Config{CAFile: caFile, ReloadInterval: time.Millisecond}}
@@ -149,7 +175,7 @@ func TestClientCAFileReloadHTTPClient(t *testing.T) {
 		cert, err := tls.LoadX509KeyPair(filepath.Join("testdata", name+".crt"), filepath.Join("testdata", name+".key"))
 		require.NoError(t, err)
 		srv := httptest.NewUnstartedServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
-		srv.TLS = &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12}
+		srv.TLS = &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12, CurvePreferences: fipsTestCurves}
 		srv.StartTLS()
 		t.Cleanup(srv.Close)
 		return srv
@@ -162,7 +188,7 @@ func TestClientCAFileReloadHTTPClient(t *testing.T) {
 		"example2:443": srv2.Listener.Addr().String(),
 	}
 	client := &http.Client{Transport: &http.Transport{
-		TLSClientConfig: tlsCfg,
+		TLSClientConfig: withFIPSTestCurves(tlsCfg),
 		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 			return (&net.Dialer{}).DialContext(ctx, network, addrs[addr])
 		},
@@ -239,4 +265,19 @@ func TestRootCAsReloaderIntermediate(t *testing.T) {
 	cs.PeerCertificates = []*x509.Certificate{leaf}
 	assert.ErrorContains(t, r.verifyConnection(cs), "certificate signed by unknown authority",
 		"chain must not verify without the intermediate")
+}
+
+// TestClientCAFileReloadDisabledInFIPSMode checks that in FIPS 140 mode the
+// built-in verification, which enforces FIPS-approved chains, is kept.
+func TestClientCAFileReloadDisabledInFIPSMode(t *testing.T) {
+	setFIPSMode(t, true)
+
+	caFile := filepath.Join(t.TempDir(), "ca.crt")
+	writeCA(t, caFile, "ca-1.crt")
+	cfg := ClientConfig{Config: Config{CAFile: caFile, ReloadInterval: time.Millisecond}}
+	tlsCfg, err := cfg.LoadTLSConfig(context.Background())
+	require.NoError(t, err)
+	assert.False(t, tlsCfg.InsecureSkipVerify)
+	assert.Nil(t, tlsCfg.VerifyConnection)
+	assert.NotNil(t, tlsCfg.RootCAs)
 }

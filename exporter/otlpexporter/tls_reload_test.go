@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/fips140"
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
@@ -125,6 +126,9 @@ func startTLSLogsServer(t *testing.T, addr string, cert tls.Certificate) *grpc.S
 // reload_interval set, the exporter must pick up the new CA without being
 // restarted.
 func TestExportAfterCARotation(t *testing.T) {
+	if fips140.Enabled() {
+		t.Skip("CA reloading is disabled in FIPS 140 mode")
+	}
 	oldPKI, newPKI := newTestPKI(t, "old"), newTestPKI(t, "new")
 
 	// Reserve a port so the server can be restarted on the same address.

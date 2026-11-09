@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/fips140"
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
@@ -100,6 +101,9 @@ func newTestPKI(t *testing.T, name string) testPKI {
 // referenced by tls::ca_file is updated on disk. With reload_interval set, the
 // exporter must pick up the new CA without being restarted.
 func TestExportAfterCARotation(t *testing.T) {
+	if fips140.Enabled() {
+		t.Skip("CA reloading is disabled in FIPS 140 mode")
+	}
 	oldPKI, newPKI := newTestPKI(t, "old"), newTestPKI(t, "new")
 
 	var serverCert atomic.Pointer[tls.Certificate]

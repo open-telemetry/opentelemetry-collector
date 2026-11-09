@@ -5,4 +5,5 @@ issues: [11265]
 subtext: |
   Previously `reload_interval` only reloaded the certificate and key, so exporters kept trusting
   the old CA after rotation until the collector restarted.
+  CA reloading is not available when Go runs in FIPS 140 mode.
 change_logs: [user]
