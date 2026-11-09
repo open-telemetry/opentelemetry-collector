@@ -14,10 +14,6 @@ import (
 
 // rootCAsReloader keeps the CA pool loaded from Config.CAFile and reloads it
 // from disk once ReloadInterval has elapsed since the last load.
-//
-// crypto/tls offers no hook to swap tls.Config.RootCAs for a live client
-// (https://github.com/golang/go/issues/35887), so the reloaded pool is applied
-// by verifying the server certificate chain ourselves in verifyConnection.
 type rootCAsReloader struct {
 	cfg Config
 
