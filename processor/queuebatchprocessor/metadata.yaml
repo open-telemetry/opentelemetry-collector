@@ -6,7 +6,8 @@ status:
   disable_codecov_badge: true
   class: processor
   stability:
-    development: [traces, metrics, logs, profiles]
+    beta: [traces, metrics, logs]
+    alpha: [profiles]
   distributions: []
   codeowners:
     active: [jmacd, iblancasa]
