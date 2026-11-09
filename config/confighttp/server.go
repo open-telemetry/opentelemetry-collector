@@ -65,6 +65,10 @@ func NewDefaultServerConfig() ServerConfig {
 
 // ToListener creates a net.Listener.
 func (sc *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
+	if err := sc.validateH2C(); err != nil {
+		return nil, err
+	}
+
 	listener, err := sc.NetAddr.Listen(ctx)
 	if err != nil {
 		return nil, err
@@ -81,6 +85,24 @@ func (sc *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 	}
 
 	return listener, nil
+}
+
+// Validate checks whether the server configuration is valid.
+func (sc *ServerConfig) Validate() error {
+	return sc.validateH2C()
+}
+
+func (sc *ServerConfig) validateH2C() error {
+	if !sc.AllowH2C {
+		return nil
+	}
+	if sc.TLS.HasValue() {
+		return errors.New("the allow_h2c field cannot be used when TLS is configured")
+	}
+	if !metadata.PkgConfighttpAllowH2CFeatureGate.IsEnabled() {
+		return errors.New("use of the allow_h2c field requires enabling the feature gate 'pkg.confighttp.AllowH2C'")
+	}
+	return nil
 }
 
 // toServerOptions has options that change the behavior of the HTTP server
@@ -116,6 +138,13 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 // the `extensions` argument should be the output of `host.GetExtensions()`.
 // It may also be `nil` in tests where no such extension is expected to be used.
 func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.ID]component.Component, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+	if sc.AllowH2C {
+		if err := sc.validateH2C(); err != nil {
+			return nil, err
+		}
+		settings.Logger.Warn("H2C is enabled. Connections will be unencrypted; do not use this option on untrusted networks.")
+	}
+
 	for _, warning := range sc.deprecationWarnings {
 		settings.Logger.Warn(warning)
 	}
@@ -254,6 +283,13 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		WriteTimeout:      sc.WriteTimeout,
 		IdleTimeout:       idleTimeout,
 		ErrorLog:          errorLog,
+	}
+
+	if sc.AllowH2C {
+		protocols := new(http.Protocols)
+		protocols.SetHTTP1(true)
+		protocols.SetUnencryptedHTTP2(true)
+		server.Protocols = protocols
 	}
 
 	server.SetKeepAlivesEnabled(keepAlivesEnabled)

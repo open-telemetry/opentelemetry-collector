@@ -333,6 +333,10 @@
     "server_config": {
       "type": "object",
       "properties": {
+        "allow_h2c": {
+          "type": "boolean",
+          "description": "Allows prior-knowledge HTTP/2 connections without TLS (h2c).\nHTTP/1.1 Upgrade to h2c is not supported.\nRequires enabling the `pkg.confighttp.AllowH2C` feature gate.\nCannot be used when TLS is configured.\n"
+        },
         "auth": {
           "type": "object",
           "properties": {

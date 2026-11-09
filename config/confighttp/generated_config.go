@@ -243,6 +243,12 @@ type ServerConfig struct {
 	// with the first middleware becoming the outermost handler.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 
+	// AllowH2C allows prior-knowledge HTTP/2 connections without TLS (h2c).
+	// HTTP/1.1 Upgrade to h2c is not supported.
+	// Requires enabling the `pkg.confighttp.AllowH2C` feature gate.
+	// Cannot be used when TLS is configured.
+	AllowH2C bool `mapstructure:"allow_h2c,omitempty"`
+
 	// Keepalive controls HTTP keep-alives.
 	// By default, keep-alives are always enabled. Only very resource-constrained environments should disable them.
 	// Unmarshal folds this section into the deprecated fields below, which

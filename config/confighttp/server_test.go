@@ -6,6 +6,7 @@ package confighttp
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -21,10 +22,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
+	"golang.org/x/net/http2"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/confighttp/internal/metadata"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -33,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 var (
@@ -307,6 +313,101 @@ func TestHTTPServerTransport(t *testing.T) {
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
 		})
 	}
+}
+
+func TestHTTPServerH2CRequiresFeatureGate(t *testing.T) {
+	setH2CFeatureGate(t, false)
+
+	sc := &ServerConfig{AllowH2C: true}
+	_, err := sc.ToServer(t.Context(), nil, componenttest.NewNopTelemetrySettings(), http.NotFoundHandler())
+	require.ErrorContains(t, err, "pkg.confighttp.AllowH2C")
+}
+
+func TestHTTPServerH2CValidationRequiresFeatureGate(t *testing.T) {
+	setH2CFeatureGate(t, false)
+
+	sc := &ServerConfig{AllowH2C: true}
+	err := confmap.Validate(sc)
+	require.ErrorContains(t, err, "pkg.confighttp.AllowH2C")
+}
+
+func TestHTTPServerH2CListenerRequiresFeatureGate(t *testing.T) {
+	setH2CFeatureGate(t, false)
+
+	sc := NewDefaultServerConfig()
+	sc.NetAddr.Endpoint = "localhost:0"
+	sc.AllowH2C = true
+
+	listener, err := sc.ToListener(t.Context())
+	require.ErrorContains(t, err, "pkg.confighttp.AllowH2C")
+	require.Nil(t, listener)
+}
+
+func TestHTTPServerH2CDoesNotSupportTLS(t *testing.T) {
+	setH2CFeatureGate(t, true)
+
+	sc := &ServerConfig{
+		AllowH2C: true,
+		TLS:      configoptional.Some(configtls.ServerConfig{}),
+	}
+	_, err := sc.ToServer(t.Context(), nil, componenttest.NewNopTelemetrySettings(), http.NotFoundHandler())
+	require.ErrorContains(t, err, "cannot be used when TLS is configured")
+	require.ErrorContains(t, confmap.Validate(sc), "cannot be used when TLS is configured")
+}
+
+func TestHTTPServerH2C(t *testing.T) {
+	setH2CFeatureGate(t, true)
+
+	sc := NewDefaultServerConfig()
+	require.False(t, sc.AllowH2C)
+	sc.NetAddr.Endpoint = "localhost:0"
+	sc.AllowH2C = true
+
+	ln, err := sc.ToListener(t.Context())
+	require.NoError(t, err)
+
+	settings := componenttest.NewNopTelemetrySettings()
+	core, observedLogs := observer.New(zap.WarnLevel)
+	settings.Logger = zap.New(core)
+
+	srv, err := sc.ToServer(t.Context(), nil, settings, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, err := fmt.Fprint(w, "ok")
+		assert.NoError(t, err)
+	}))
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, srv.Close())
+	})
+	go func() { _ = srv.Serve(ln) }()
+
+	transport := &http2.Transport{
+		AllowHTTP: true,
+		DialTLS: func(network, addr string, _ *tls.Config) (net.Conn, error) {
+			return net.Dial(network, addr)
+		},
+	}
+	t.Cleanup(transport.CloseIdleConnections)
+
+	client := &http.Client{
+		Transport: transport,
+		Timeout:   5 * time.Second,
+	}
+	resp, err := client.Get("http://" + ln.Addr().String())
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Equal(t, "ok", string(body))
+	assert.Equal(t, "HTTP/2.0", resp.Proto)
+	require.Len(t, observedLogs.All(), 1)
+	assert.Contains(t, observedLogs.All()[0].Message, "Connections will be unencrypted")
+
+	http1Client := &http.Client{Timeout: 5 * time.Second}
+	http1Resp, err := http1Client.Get("http://" + ln.Addr().String())
+	require.NoError(t, err)
+	defer http1Resp.Body.Close()
+	assert.Equal(t, "HTTP/1.1", http1Resp.Proto)
 }
 
 func TestHTTPCors(t *testing.T) {
@@ -1203,4 +1304,15 @@ func startServer(tb testing.TB, sc *ServerConfig, ln net.Listener, h http.Handle
 		require.NoError(tb, s.Close())
 	})
 	go func() { _ = s.Serve(ln) }()
+}
+
+func setH2CFeatureGate(t *testing.T, enabled bool) {
+	t.Helper()
+
+	gate := metadata.PkgConfighttpAllowH2CFeatureGate
+	previous := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), previous))
+	})
 }

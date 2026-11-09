@@ -213,6 +213,15 @@ exported_configs:
           Are used to add custom functionality to the HTTP server.
           Middleware handlers are called in the order they appear in this list,
           with the first middleware becoming the outermost handler.
+      allow_h2c:
+        type: bool
+        description: |
+          Allows prior-knowledge HTTP/2 connections without TLS (h2c).
+          HTTP/1.1 Upgrade to h2c is not supported.
+          Requires enabling the `pkg.confighttp.AllowH2C` feature gate.
+          Cannot be used when TLS is configured.
+        go_struct:
+          field_name: AllowH2C
       keepalive:
         $ref: keepalive_server_config
         optional: true
@@ -291,6 +300,11 @@ exported_configs:
           Set it to the number of seconds that browsers should cache a CORS
           preflight response for.
 feature_gates:
+  - id: pkg.confighttp.AllowH2C
+    description: Allows prior-knowledge HTTP/2 cleartext (h2c) connections to HTTP servers.
+    stage: alpha
+    from_version: v0.165.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector/issues/10952
   - id: pkg.confighttp.PrioritizeNewKeepalive
     description: When enabled, the Keepalive configuration is prioritized over the deprecated configuration fields.
     stage: stable

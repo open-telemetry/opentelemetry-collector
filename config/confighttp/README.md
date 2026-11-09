@@ -131,6 +131,11 @@ will not be enabled.
 - **Deprecated** — `idle_timeout`: use `keepalive::idle_timeout` instead.
 - **Deprecated** — `keep_alives_enabled: false`: use `keepalive:\n  enabled: false` instead.
 - [`tls`](../configtls/README.md)
+- `allow_h2c`: accepts prior-knowledge HTTP/2 cleartext connections. HTTP/1.1
+  Upgrade to h2c is not supported. This option is disabled by default, requires
+  the alpha feature gate `pkg.confighttp.AllowH2C`, and logs a warning because
+  requests are not encrypted. It cannot be used when server TLS is configured.
+  Do not enable it on untrusted networks.
 - [`auth`](../configauth/README.md)
   - `request_params`: a list of query parameter names to add to the auth context, along with the HTTP headers
 - [`middlewares`](../configmiddleware/README.md)
