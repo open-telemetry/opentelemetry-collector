@@ -1,4 +1,4 @@
-type: processor/processortest
+type: processortest
 parent: processor
 github_project: open-telemetry/opentelemetry-collector
 
