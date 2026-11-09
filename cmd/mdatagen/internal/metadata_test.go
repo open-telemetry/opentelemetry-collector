@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/internal/schemagen"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -1211,4 +1212,46 @@ func TestValidateIncludesSendingQueueErrors(t *testing.T) {
 	}
 
 	require.ErrorContains(t, md.Validate(), "sending_queue is only valid for exporters")
+}
+
+func TestAttributeTestValueEnum(t *testing.T) {
+	tests := []struct {
+		name         string
+		enum         []string
+		wantTestVal  string
+		wantTestVal2 string
+	}{
+		{
+			name:         "nil enum",
+			enum:         nil,
+			wantTestVal:  `"mode-val"`,
+			wantTestVal2: `"mode-val-2"`,
+		},
+		{
+			name:         "empty enum",
+			enum:         []string{},
+			wantTestVal:  `"mode-val"`,
+			wantTestVal2: `"mode-val-2"`,
+		},
+		{
+			name:         "single element enum",
+			enum:         []string{"default"},
+			wantTestVal:  `"default"`,
+			wantTestVal2: `"default"`,
+		},
+		{
+			name:         "multi element enum",
+			enum:         []string{"first", "second", "third"},
+			wantTestVal:  `"first"`,
+			wantTestVal2: `"second"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			attr := Attribute{FullName: "mode", Enum: tt.enum, Type: ValueType{ValueType: pcommon.ValueTypeStr}}
+			assert.Equal(t, tt.wantTestVal, attr.TestValue())
+			assert.Equal(t, tt.wantTestVal2, attr.TestValueTwo())
+		})
+	}
 }
