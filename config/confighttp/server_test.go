@@ -6,7 +6,6 @@ package confighttp
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -24,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
-	"golang.org/x/net/http2"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -371,8 +369,8 @@ func TestHTTPServerH2C(t *testing.T) {
 	settings.Logger = zap.New(core)
 
 	srv, err := sc.ToServer(t.Context(), nil, settings, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, err := fmt.Fprint(w, "ok")
-		assert.NoError(t, err)
+		_, writeErr := fmt.Fprint(w, "ok")
+		assert.NoError(t, writeErr)
 	}))
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -380,11 +378,10 @@ func TestHTTPServerH2C(t *testing.T) {
 	})
 	go func() { _ = srv.Serve(ln) }()
 
-	transport := &http2.Transport{
-		AllowHTTP: true,
-		DialTLS: func(network, addr string, _ *tls.Config) (net.Conn, error) {
-			return net.Dial(network, addr)
-		},
+	protocols := new(http.Protocols)
+	protocols.SetUnencryptedHTTP2(true)
+	transport := &http.Transport{
+		Protocols: protocols,
 	}
 	t.Cleanup(transport.CloseIdleConnections)
 
