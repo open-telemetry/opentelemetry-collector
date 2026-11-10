@@ -1,4 +1,4 @@
-type: scraper/scrapertest
+type: scrapertest
 parent: scraper
 github_project: open-telemetry/opentelemetry-collector
 

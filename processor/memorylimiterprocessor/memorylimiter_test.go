@@ -17,6 +17,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
 	"go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
@@ -143,6 +144,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 1,
+				GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 			},
 			memAlloc:    800,
 			expectError: false,
@@ -153,6 +155,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 1,
+				GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 			},
 			memAlloc:    1800,
 			expectError: true,
@@ -163,6 +166,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 10,
+				GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 			},
 			memAlloc:    800,
 			expectError: false,
@@ -173,6 +177,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 11,
+				GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 			},
 			memAlloc:    800,
 			expectError: true,
@@ -223,6 +228,7 @@ func TestMetricsTelemetry(t *testing.T) {
 		CheckInterval:         time.Second,
 		MemoryLimitPercentage: 50,
 		MemorySpikePercentage: 10,
+		GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 	}
 	metrics, err := NewFactory().CreateMetrics(context.Background(), metadatatest.NewSettings(tel), cfg, consumertest.NewNop())
 	require.NoError(t, err)
@@ -263,6 +269,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 1,
+				GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 			},
 			memAlloc:    800,
 			expectError: false,
@@ -273,6 +280,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 1,
+				GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 			},
 			memAlloc:    1800,
 			expectError: true,
@@ -283,6 +291,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 10,
+				GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 			},
 			memAlloc:    800,
 			expectError: false,
@@ -293,6 +302,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 11,
+				GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 			},
 			memAlloc:    800,
 			expectError: true,
@@ -354,6 +364,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 1,
+				GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 			},
 			memAlloc:    800,
 			expectError: false,
@@ -364,6 +375,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 1,
+				GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 			},
 			memAlloc:    1800,
 			expectError: true,
@@ -374,6 +386,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 10,
+				GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 			},
 			memAlloc:    800,
 			expectError: false,
@@ -384,6 +397,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 11,
+				GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 			},
 			memAlloc:    800,
 			expectError: true,
@@ -445,6 +459,7 @@ func TestProfileMemoryPressureResponse(t *testing.T) {
 				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 1,
+				GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 			},
 			memAlloc:    800,
 			expectError: false,
@@ -455,6 +470,7 @@ func TestProfileMemoryPressureResponse(t *testing.T) {
 				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 1,
+				GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 			},
 			memAlloc:    1800,
 			expectError: true,
@@ -465,6 +481,7 @@ func TestProfileMemoryPressureResponse(t *testing.T) {
 				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 10,
+				GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 			},
 			memAlloc:    800,
 			expectError: false,
@@ -475,6 +492,7 @@ func TestProfileMemoryPressureResponse(t *testing.T) {
 				CheckInterval:         time.Second,
 				MemoryLimitPercentage: 50,
 				MemorySpikePercentage: 11,
+				GarbageCollector:      configoptional.Some(memorylimiter.GarbageCollectorConfig{}),
 			},
 			memAlloc:    800,
 			expectError: true,

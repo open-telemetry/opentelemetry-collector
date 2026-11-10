@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
@@ -282,8 +283,8 @@ func (t *testExtension) Shutdown(_ context.Context) error {
 	return nil
 }
 
-// ComponentStatusChanged implements the extension.StatusWatcher interface.
-func (t *testExtension) ComponentStatusChanged(
+// ComponentStatusChanged implements the extensioncapabilities.ComponentStatusWatcher interface.
+func (t *testExtension) Changed(
 	source *componentstatus.InstanceID,
 	event *componentstatus.Event,
 ) {
@@ -301,3 +302,5 @@ func (t *testExtension) Ready() error {
 func (t *testExtension) NotReady() error {
 	return nil
 }
+
+var _ extensioncapabilities.ComponentStatusWatcher = (*testExtension)(nil)
