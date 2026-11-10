@@ -31,6 +31,8 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+      attributes:
+        - sample_type
     receiver_accepted_spans:
       enabled: true
       stability: alpha
@@ -63,6 +65,8 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+      attributes:
+        - sample_type
     receiver_failed_spans:
       enabled: true
       stability: alpha
@@ -95,6 +99,8 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+      attributes:
+        - sample_type
     receiver_refused_spans:
       enabled: true
       stability: alpha
@@ -121,6 +127,9 @@ attributes:
       - success
       - refused
       - failure
+  sample_type:
+    description: The sample type of the profile samples, formatted as "type:unit". Only set by receivers that report profile samples per sample type.
+    type: string
 
 feature_gates:
   - id: receiverhelper.newReceiverMetrics

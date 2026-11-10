@@ -44,21 +44,18 @@ func (i intRequest) BytesSize() int {
 	return int(i) * 10
 }
 
-type int64Encoding struct {
-	rc ReferenceCounter[intRequest]
-}
+type int64Encoding struct{}
 
 func (int64Encoding) Marshal(_ context.Context, val intRequest) ([]byte, error) {
 	str := strconv.FormatInt(int64(val), 10)
 	return []byte(str), nil
 }
 
-func (ie int64Encoding) Unmarshal(bytes []byte) (context.Context, intRequest, error) {
+func (int64Encoding) Unmarshal(bytes []byte) (context.Context, intRequest, error) {
 	val, err := strconv.ParseInt(string(bytes), 10, 64)
 	if err != nil {
 		return context.Background(), 0, err
 	}
-	ie.rc.Ref(intRequest(val))
 	return context.Background(), intRequest(val), nil
 }
 
@@ -240,14 +237,19 @@ func (f *fakeReferenceCounter) Unref(intRequest) {
 	}
 }
 
+func (f *fakeReferenceCounter) count() int64 {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.ref
+}
+
 func newSettings(sizerType request.SizerType, capacity int64) Settings[intRequest] {
-	rc := &fakeReferenceCounter{}
 	return Settings[intRequest]{
-		ReferenceCounter: rc,
+		ReferenceCounter: &fakeReferenceCounter{},
 		SizerType:        sizerType,
 		Capacity:         capacity,
 		Signal:           pipeline.SignalTraces,
-		Encoding:         int64Encoding{rc},
+		Encoding:         int64Encoding{},
 		ID:               component.NewID(exportertest.NopType),
 		Telemetry:        componenttest.NewNopTelemetrySettings(),
 	}
@@ -380,7 +382,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			aq := newAsyncQueue[intRequest](pq, c.numConsumers, func(_ context.Context, _ intRequest, done Done) {
 				consumed.Add(int64(1))
 				done.OnDone(nil)
-			}, nil)
+			})
 			require.NoError(t, aq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{
 				{}: storagetest.NewMockStorageExtension(nil),
 			},
@@ -424,7 +426,7 @@ func TestPersistentBlockingQueue(t *testing.T) {
 			ac := newAsyncQueue(pq, 10, func(_ context.Context, _ intRequest, done Done) {
 				consumed.Add(1)
 				done.OnDone(nil)
-			}, set.ReferenceCounter)
+			})
 			require.NoError(t, ac.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{
 				{}: storagetest.NewMockStorageExtension(nil),
 			})))
