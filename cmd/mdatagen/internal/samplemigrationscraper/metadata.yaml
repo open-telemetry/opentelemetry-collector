@@ -119,6 +119,8 @@ metrics:
   system.memory.limit.utilization@v1:
     enabled: false
     description: Memory utilization as a ratio of the limit, based on the memory working set.
+    warnings:
+      if_configured: This metric is in development.
     stability: development
     unit: "1"
     gauge:

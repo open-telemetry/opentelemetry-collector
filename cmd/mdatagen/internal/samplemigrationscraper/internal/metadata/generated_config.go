@@ -146,7 +146,7 @@ func (ms *SystemCPUUtilizationV1MetricConfig) Validate() error {
 	return nil
 }
 
-// SystemMemoryLimitUtilizationV1MetricConfig provides config for the system.memory.limit.utilization@v1 metric.
+// SystemMemoryLimitUtilizationV1MetricConfig provides config for the system.memory.limit.utilization metric.
 type SystemMemoryLimitUtilizationV1MetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool

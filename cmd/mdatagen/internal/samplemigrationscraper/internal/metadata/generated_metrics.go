@@ -646,6 +646,9 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 	})
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, options ...MetricBuilderOption) *MetricsBuilder {
+	if mbc.Metrics.SystemMemoryLimitUtilizationV1.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] `system.memory.limit.utilization` should not be configured: This metric is in development.")
+	}
 	mb := &MetricsBuilder{
 		config:                               mbc,
 		startTime:                            pcommon.NewTimestampFromTime(time.Now()),

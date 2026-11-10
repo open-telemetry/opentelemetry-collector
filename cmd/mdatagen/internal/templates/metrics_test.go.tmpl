@@ -116,19 +116,19 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- range $name, $metric := .Metrics }}
 			{{- if $metric.Warnings.IfEnabled }}
 			if {{- if $metric.Enabled }} tt.metricsSet == testDataSetDefault || {{- end }} tt.metricsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `{{ $name }}` should not be enabled: {{ $metric.Warnings.IfEnabled }}", observedLogs.All()[expectedWarnings].Message)
+				assert.Equal(t, "[WARNING] `{{ metricConfigKey $name }}` should not be enabled: {{ $metric.Warnings.IfEnabled }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			{{- end }}
 			{{- if $metric.Warnings.IfEnabledNotSet }}
 			if tt.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `{{ $name }}`: {{ $metric.Warnings.IfEnabledNotSet }}", observedLogs.All()[expectedWarnings].Message)
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `{{ metricConfigKey $name }}`: {{ $metric.Warnings.IfEnabledNotSet }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			{{- end }}
 			{{- if $metric.Warnings.IfConfigured }}
 			if tt.metricsSet == testDataSetAll || tt.metricsSet == testDataSetNone {
-				assert.Equal(t, "[WARNING] `{{ $name }}` should not be configured: {{ $metric.Warnings.IfConfigured }}", observedLogs.All()[expectedWarnings].Message)
+				assert.Equal(t, "[WARNING] `{{ metricConfigKey $name }}` should not be configured: {{ $metric.Warnings.IfConfigured }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			{{- end }}

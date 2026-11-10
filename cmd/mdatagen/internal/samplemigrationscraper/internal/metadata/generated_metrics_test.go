@@ -76,6 +76,10 @@ func TestMetricsBuilder(t *testing.T) {
 			aggMap["system.cpu.utilization@v1"] = mb.metricSystemCPUUtilizationV1.config.AggregationStrategy
 
 			expectedWarnings := 0
+			if tt.metricsSet == testDataSetAll || tt.metricsSet == testDataSetNone {
+				assert.Equal(t, "[WARNING] `system.memory.limit.utilization` should not be configured: This metric is in development.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 			if tt.name == "all_set" {
 				expectedWarnings++ // type differs
 				expectedWarnings++ // attributes differ

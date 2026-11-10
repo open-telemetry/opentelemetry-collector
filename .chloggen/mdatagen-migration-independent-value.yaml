@@ -20,6 +20,8 @@ subtext: |
   whose new definition is calculated differently from the legacy one.
   `emitted_name_config_key` configures and documents the migration target by its emitted name instead
   of its `@vN` key, for renames where the legacy and target names map to the same Go identifier.
+  With `emitted_name_config_key`, generated config validation errors and log warnings also refer
+  to the target by its emitted name, so the `@vN` suffix is never shown to users.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

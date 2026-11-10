@@ -6,6 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
@@ -42,4 +44,21 @@ func TestIndependentValueTargetFollowsLegacy(t *testing.T) {
 
 	mb := NewMetricsBuilder(mbc, scrapertest.NewNopSettings(scrapertest.NopType))
 	assert.True(t, mb.metricSystemMemoryLimitUtilizationV1.config.Enabled)
+}
+
+// TestEmittedNameConfigKeyInWarnings checks that user-facing warnings name the
+// migration target by its config key (emitted name), without the @vN suffix.
+func TestEmittedNameConfigKeyInWarnings(t *testing.T) {
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	settings := scrapertest.NewNopSettings(scrapertest.NopType)
+	settings.Logger = zap.New(observedZapCore)
+
+	mbc := NewDefaultMetricsBuilderConfig()
+	mbc.Metrics.SystemMemoryLimitUtilizationV1.enabledSetByUser = true
+	NewMetricsBuilder(mbc, settings)
+
+	logs := observedLogs.FilterMessageSnippet("should not be configured").All()
+	require.Len(t, logs, 1)
+	assert.Contains(t, logs[0].Message, "`system.memory.limit.utilization`")
+	assert.NotContains(t, logs[0].Message, "@v1")
 }
