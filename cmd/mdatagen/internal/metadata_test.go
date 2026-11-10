@@ -200,6 +200,10 @@ func TestValidate(t *testing.T) {
 			wantErr: "",
 		},
 		{
+			name:    "testdata/internal_class_no_stability.yaml",
+			wantErr: "",
+		},
+		{
 			name:    "testdata/versioned_metric.yaml",
 			wantErr: "",
 		},

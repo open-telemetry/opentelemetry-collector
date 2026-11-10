@@ -40,6 +40,7 @@ const (
 var nonComponents = []string{
 	"cmd",
 	"converter",
+	"internal",
 	"pkg",
 	"provider",
 }
