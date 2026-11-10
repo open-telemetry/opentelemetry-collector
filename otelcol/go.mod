@@ -38,7 +38,7 @@ require (
 	go.uber.org/zap v1.28.0
 	go.yaml.in/yaml/v3 v3.0.6
 	golang.org/x/exp v0.0.0-20260908205506-85c1c2202aba
-	golang.org/x/sys v0.49.0
+	golang.org/x/sys v0.50.0
 	google.golang.org/grpc v1.85.0
 )
 
