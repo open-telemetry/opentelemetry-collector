@@ -74,7 +74,7 @@ import (
     {{- end }}
 
 {{ $defValidators := extractValidators $defName $def }}
-{{- if and $defValidators (not (isExternalRef $def.Ref)) }}
+{{- if and (anyValidatorEmits $defValidators) (not (isExternalRef $def.Ref)) }}
     // Validate validates the {{$typeName}} fields according to schema annotations.
     // Called by confmap on config resolution. Don't call it explicitly to avoid duplicate errors.
     {{- if (isPrimitiveSchema $def) }}
@@ -92,9 +92,13 @@ import (
 {{- end }}
 
     {{- if and (hasDefaultValue $def) (not (isPrimitiveSchema $def)) }}
+    {{ if isComponent }}
+    func newDefault{{ $typeName }}() {{ $typeName }} {
+    {{- else }}
     // NewDefault{{ $typeName }} returns a new {{ $typeName }} with its default values applied.
     // Prefer this over an empty struct literal so default changes stay in sync automatically.
     func NewDefault{{ $typeName }}() {{ $typeName }} {
+    {{- end }}
         {{- if isExternalRef $def.Ref }}
         return {{ externalDefaultCall $def.Ref }}
         {{- else }}
@@ -261,7 +265,7 @@ import (
     {{- end -}}
 {{ end }}
 
-{{- if $validators }}
+{{- if anyValidatorEmits $validators }}
     // Validate validates the Config fields.
     func (c *Config) Validate() error {
         var err error

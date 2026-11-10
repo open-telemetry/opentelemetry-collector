@@ -32,6 +32,8 @@ The package provides four key methods to retrieve appropriate middleware handler
 
 4. **GetGRPCServerOptions**: Obtains a `[]grpc.ServerOption` that configure a middleware extension for gRPC servers.
 
+5. **GetDialer**: Obtains a function that overrides the default network connection `DialContext`.
+
 These functions are typically called during Start() by a component,
 passing the `component.Host` extensions.
 An error is returned if the named extension cannot be found.
