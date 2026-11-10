@@ -246,6 +246,10 @@ type ServerConfig struct {
 	// AllowH2C allows prior-knowledge HTTP/2 connections without TLS (h2c).
 	// HTTP/1.1 Upgrade to h2c is not supported.
 	// Requires enabling the `pkg.confighttp.AllowH2C` feature gate.
+	// h2c is unencrypted and has no transport-layer authentication. It is
+	// intended for trusted hops behind a TLS-terminating proxy, load
+	// balancer, or service-mesh sidecar. Use with caution and never expose
+	// it on untrusted networks.
 	// Cannot be used when TLS is configured.
 	AllowH2C bool `mapstructure:"allow_h2c,omitempty"`
 

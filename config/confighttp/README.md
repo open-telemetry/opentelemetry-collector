@@ -133,9 +133,20 @@ will not be enabled.
 - [`tls`](../configtls/README.md)
 - `allow_h2c`: accepts prior-knowledge HTTP/2 cleartext connections. HTTP/1.1
   Upgrade to h2c is not supported. This option is disabled by default, requires
-  the alpha feature gate `pkg.confighttp.AllowH2C`, and logs a warning because
-  requests are not encrypted. It cannot be used when server TLS is configured.
-  Do not enable it on untrusted networks.
+  the alpha feature gate `pkg.confighttp.AllowH2C`, and cannot be used when
+  server TLS is configured.
+
+  h2c is unencrypted and provides no transport-layer authentication. Its usual
+  production use is behind a TLS-terminating proxy, load balancer, or service
+  mesh sidecar that forwards cleartext HTTP/2 over a trusted hop, such as
+  localhost or an access-controlled pod network trusted for plaintext traffic.
+  Use it with caution and never expose it directly on an untrusted network.
+
+  This is comparable to the OTLP gRPC receiver without TLS, which also serves
+  plaintext HTTP/2. There is no `insecure` field for this HTTP server:
+  connections are plaintext when no `tls` block is configured. Setting
+  `allow_h2c: false` only disables h2c; without `tls`, the server still serves
+  plaintext HTTP/1.1.
 - [`auth`](../configauth/README.md)
   - `request_params`: a list of query parameter names to add to the auth context, along with the HTTP headers
 - [`middlewares`](../configmiddleware/README.md)
