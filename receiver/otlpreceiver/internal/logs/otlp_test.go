@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
@@ -55,7 +55,7 @@ func TestExport_EmptyRequest(t *testing.T) {
 }
 
 func TestExport_InvalidUTF8(t *testing.T) {
-	setRejectInvalidUTF8Gate(t, true)
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.ID(), true)
 
 	ld := testdata.GenerateLogs(2)
 	ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("bad", string([]byte{0xff}))
@@ -81,7 +81,7 @@ func TestExport_InvalidUTF8(t *testing.T) {
 }
 
 func TestExport_InvalidUTF8FeatureGateDisabled(t *testing.T) {
-	setRejectInvalidUTF8Gate(t, false)
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.ID(), false)
 
 	ld := testdata.GenerateLogs(2)
 	ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("bad", string([]byte{0xff}))
@@ -166,14 +166,6 @@ func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs, tt *componenttest.
 	}()
 
 	return ln.Addr()
-}
-
-func setRejectInvalidUTF8Gate(t *testing.T, enabled bool) {
-	original := metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.ID(), enabled))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.ID(), original))
-	})
 }
 
 // assertReceiverSum checks the value of a receiver counter metric.
