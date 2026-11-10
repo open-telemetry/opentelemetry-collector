@@ -28,8 +28,8 @@ echo "Using ${GOBIN} to compile the distributions."
 subst_vars() {
     local content
     content=$(cat)
-    content=${content//'${GOBIN}'/${GOBIN}}
-    content=${content//'${WORKSPACE_DIR}'/${WORKSPACE_DIR}}
+    content=${content//"\${GOBIN}"/${GOBIN}}
+    content=${content//"\${WORKSPACE_DIR}"/${WORKSPACE_DIR}}
     printf '%s\n' "${content}"
 }
 
