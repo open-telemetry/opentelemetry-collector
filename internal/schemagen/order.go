@@ -6,7 +6,7 @@ package schemagen // import "go.opentelemetry.io/collector/internal/schemagen"
 import (
 	"slices"
 
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // OrderedPropNames returns md's property names in the order they were declared in
