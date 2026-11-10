@@ -485,9 +485,9 @@ func (pq *persistentQueue[T]) enqueueNotDispatchedReqs(ctx context.Context, disp
 			pq.logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))
 			continue
 		}
-		reqBuf, err := pq.encoding.Marshal(reqCtx, req)
+		reqBuf, err := pq.encoding.Marshal(reqCtx, req) //nolint:contextcheck
 		if err != nil {
-			pq.logger.Warn("Failed marshalling item", zap.String(zapKey, op.Key), zap.Error(err))
+			pq.logger.Warn("Failed marshaling item", zap.String(zapKey, op.Key), zap.Error(err))
 			errCount++
 			continue
 		}
