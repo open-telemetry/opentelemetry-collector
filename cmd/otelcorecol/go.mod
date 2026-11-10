@@ -31,7 +31,7 @@ require (
 	go.opentelemetry.io/collector/receiver/nopreceiver v0.165.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.165.0
 	go.opentelemetry.io/collector/service v0.165.0
-	golang.org/x/sys v0.49.0
+	golang.org/x/sys v0.50.0
 )
 
 require (
@@ -74,7 +74,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.20.3 // indirect
+	github.com/klauspost/compress v1.20.4 // indirect
 	github.com/knadh/koanf/maps v0.1.3 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.1 // indirect
 	github.com/knadh/koanf/v2 v2.4.1 // indirect
@@ -115,6 +115,7 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.71.0 // indirect
 	go.opentelemetry.io/collector/config/configoptional v1.71.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.71.0 // indirect
+	go.opentelemetry.io/collector/config/configstorage v0.165.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.165.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.71.0 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.165.0 // indirect
@@ -244,6 +245,8 @@ replace go.opentelemetry.io/collector/config/configopaque => ../../config/config
 replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional
 
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
+
+replace go.opentelemetry.io/collector/config/configstorage => ../../config/configstorage
 
 replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
 

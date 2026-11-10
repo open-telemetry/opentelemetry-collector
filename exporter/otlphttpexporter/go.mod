@@ -49,7 +49,7 @@ require (
 	github.com/hashicorp/go-version v1.9.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.20.3 // indirect
+	github.com/klauspost/compress v1.20.4 // indirect
 	github.com/knadh/koanf/maps v0.1.3 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.1 // indirect
 	github.com/knadh/koanf/v2 v2.4.1 // indirect
@@ -66,6 +66,7 @@ require (
 	go.opentelemetry.io/collector/config/configauth v1.71.0 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.71.0 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.71.0 // indirect
+	go.opentelemetry.io/collector/config/configstorage v0.165.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.165.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.165.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.165.0 // indirect
@@ -188,3 +189,5 @@ replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
 
 replace go.opentelemetry.io/collector/internal/statusutil => ../../internal/statusutil
+
+replace go.opentelemetry.io/collector/config/configstorage => ../../config/configstorage
