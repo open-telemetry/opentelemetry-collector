@@ -130,8 +130,6 @@ func TestRetrieveContext(t *testing.T) {
 
 	for _, scheme := range []SchemeType{HTTPScheme, HTTPSScheme} {
 		t.Run(string(scheme), func(t *testing.T) {
-			t.Parallel()
-
 			for _, tt := range []struct {
 				name       string
 				newContext func(context.Context) (context.Context, context.CancelFunc)
@@ -151,8 +149,6 @@ func TestRetrieveContext(t *testing.T) {
 				},
 			} {
 				t.Run(tt.name, func(t *testing.T) {
-					t.Parallel()
-
 					started := make(chan struct{})
 					release := make(chan struct{})
 					ts := httptest.NewUnstartedServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
@@ -400,6 +396,10 @@ func TestInvalidURI(t *testing.T) {
 		{
 			uri: "http://{}",
 			err: "invalid character \"{\" in host name",
+		},
+		{
+			uri: "http://localhost/?q=#%zz",
+			err: "unable to create HTTP GET request",
 		},
 	}
 
