@@ -13,6 +13,10 @@ $defs:
       balancer_name:
         description: Sets the balancer in grpclb_policy to discover the servers. Default is pick_first. https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
         type: string
+      pick_first:
+        description: Configures the pick_first balancer. Only valid when balancer_name is pick_first.
+        x-optional: true
+        $ref: pick_first_config
       compression:
         description: The compression key for supported compression types within collector.
         $ref: /config/configcompression.type
@@ -111,6 +115,13 @@ $defs:
         type: string
         x-customType: time.Duration
         format: duration
+  pick_first_config:
+    description: PickFirstConfig mirrors the pick_first load balancing config of gRPC. https://github.com/grpc/proposal/blob/master/A62-pick-first.md
+    type: object
+    properties:
+      shuffle_address_list:
+        description: ShuffleAddressList shuffles the resolved addresses before connecting, so clients that receive the same address list spread across backends.
+        type: boolean
   server_config:
     description: ServerConfig defines common settings for a gRPC server configuration.
     type: object

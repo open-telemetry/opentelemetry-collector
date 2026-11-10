@@ -33,7 +33,6 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/snappy"
 	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/zstd"
-	internalmetadata "go.opentelemetry.io/collector/config/configgrpc/internal/metadata"
 	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
@@ -72,6 +71,10 @@ func validateClientConfig(cc *ClientConfig) error {
 		if balancer.Get(cc.BalancerName) == nil {
 			return fmt.Errorf("invalid balancer_name: %s", cc.BalancerName)
 		}
+	}
+
+	if cc.PickFirst.HasValue() && cc.BalancerName != pickfirst.Name {
+		return fmt.Errorf("pick_first can only be set when balancer_name is %s, got %q", pickfirst.Name, cc.BalancerName)
 	}
 
 	if cc.DialerMiddleware.HasValue() && !configmiddleware.IsCustomTCPRoutingEnabled() {
@@ -125,11 +128,11 @@ func (cc *ClientConfig) grpcDialTarget() string {
 }
 
 // defaultServiceConfig returns the gRPC service config for the configured balancer.
-// For pick_first, the feature gate turns on shuffleAddressList (gRFC A62), so clients
-// that receive the same ordered address list do not all connect to the first address.
+// loadBalancingPolicy cannot carry policy options, so the pick_first block is passed
+// through loadBalancingConfig instead.
 func (cc *ClientConfig) defaultServiceConfig() string {
-	if cc.BalancerName == pickfirst.Name && internalmetadata.PkgConfiggrpcPickFirstShuffleAddressListFeatureGate.IsEnabled() {
-		return fmt.Sprintf(`{"loadBalancingConfig":[{%q:{"shuffleAddressList":true}}]}`, pickfirst.Name)
+	if cc.PickFirst.HasValue() && cc.BalancerName == pickfirst.Name {
+		return fmt.Sprintf(`{"loadBalancingConfig":[{%q:{"shuffleAddressList":%t}}]}`, pickfirst.Name, cc.PickFirst.Get().ShuffleAddressList)
 	}
 	return fmt.Sprintf(`{"loadBalancingPolicy":%q}`, cc.BalancerName)
 }

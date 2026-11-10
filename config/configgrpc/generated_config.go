@@ -29,6 +29,9 @@ type ClientConfig struct {
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
 	BalancerName string `mapstructure:"balancer_name"`
 
+	// PickFirst configures the pick_first balancer. Only valid when balancer_name is pick_first.
+	PickFirst configoptional.Optional[PickFirstConfig] `mapstructure:"pick_first,omitempty"`
+
 	// Compression the compression key for supported compression types within collector.
 	Compression configcompression.Type `mapstructure:"compression,omitempty"`
 
@@ -91,6 +94,7 @@ func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
 		Auth:             configoptional.None[configauth.Config](),
 		BalancerName:     "round_robin",
+		PickFirst:        configoptional.None[PickFirstConfig](),
 		Keepalive:        configoptional.Some(NewDefaultKeepaliveClientConfig()),
 		DialerMiddleware: configoptional.None[configmiddleware.Config](),
 		TLS:              configtls.NewDefaultClientConfig(),
@@ -185,6 +189,17 @@ type KeepaliveServerParameters struct {
 // Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultKeepaliveServerParameters() KeepaliveServerParameters {
 	return KeepaliveServerParameters{}
+}
+
+// PickFirstConfig mirrors the pick_first load balancing config of gRPC.
+// https://github.com/grpc/proposal/blob/master/A62-pick-first.md
+type PickFirstConfig struct {
+	// ShuffleAddressList shuffles the resolved addresses before connecting, so clients that receive
+	// the same address list spread across backends.
+	ShuffleAddressList bool `mapstructure:"shuffle_address_list,omitempty"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ServerConfig defines common settings for a gRPC server configuration.

@@ -27,6 +27,11 @@ exported_configs:
           https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
         type: string
         default: round_robin
+      pick_first:
+        description: |
+          Configures the pick_first balancer. Only valid when balancer_name is pick_first.
+        optional: true
+        $ref: pick_first_config
       compression:
         description: The compression key for supported compression types within collector.
         $ref: /config/configcompression.type
@@ -80,6 +85,16 @@ exported_configs:
     go_struct:
       custom_validator:
         name: validateClientConfig
+  pick_first_config:
+    description: |
+      Mirrors the pick_first load balancing config of gRPC.
+      https://github.com/grpc/proposal/blob/master/A62-pick-first.md
+    properties:
+      shuffle_address_list:
+        description: |
+          Shuffles the resolved addresses before connecting, so clients that receive
+          the same address list spread across backends.
+        type: bool
   keepalive_client_config:
     description: |
       Exposes the keepalive.ClientParameters to be used by the exporter. 
@@ -186,9 +201,3 @@ exported_configs:
         default:
           # We typically want to create a TCP server and listen over a network.
           transport: tcp
-feature_gates:
-  - id: pkg.configgrpc.PickFirstShuffleAddressList
-    description: When enabled, gRPC clients that use the pick_first balancer shuffle the resolved address list before connecting.
-    stage: beta
-    from_version: v0.166.0
-    reference_url: https://github.com/open-telemetry/opentelemetry-collector/issues/16235

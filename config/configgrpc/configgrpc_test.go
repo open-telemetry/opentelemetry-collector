@@ -28,15 +28,14 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/zstd"
-	internalmetadata "go.opentelemetry.io/collector/config/configgrpc/internal/metadata"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
-	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
@@ -290,34 +289,39 @@ func TestDefaultServiceConfig(t *testing.T) {
 	tests := []struct {
 		name         string
 		balancerName string
-		gateEnabled  bool
+		pickFirst    configoptional.Optional[PickFirstConfig]
 		expected     string
 	}{
 		{
 			name:         "round_robin",
 			balancerName: "round_robin",
-			gateEnabled:  true,
 			expected:     `{"loadBalancingPolicy":"round_robin"}`,
+		},
+		{
+			name:         "pick_first without the pick_first block keeps address order",
+			balancerName: pickfirst.Name,
+			expected:     `{"loadBalancingPolicy":"pick_first"}`,
 		},
 		{
 			name:         "pick_first shuffles addresses",
 			balancerName: pickfirst.Name,
-			gateEnabled:  true,
+			pickFirst:    configoptional.Some(PickFirstConfig{ShuffleAddressList: true}),
 			expected:     `{"loadBalancingConfig":[{"pick_first":{"shuffleAddressList":true}}]}`,
 		},
 		{
-			name:         "pick_first keeps address order when the gate is disabled",
+			name:         "pick_first with shuffle_address_list false",
 			balancerName: pickfirst.Name,
-			gateEnabled:  false,
-			expected:     `{"loadBalancingPolicy":"pick_first"}`,
+			pickFirst:    configoptional.Some(PickFirstConfig{}),
+			expected:     `{"loadBalancingConfig":[{"pick_first":{"shuffleAddressList":false}}]}`,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testutil.SetFeatureGate(t, internalmetadata.PkgConfiggrpcPickFirstShuffleAddressListFeatureGate.ID(), tt.gateEnabled)
 			cfg := NewDefaultClientConfig()
 			cfg.Endpoint = "localhost:4317"
 			cfg.BalancerName = tt.balancerName
+			cfg.PickFirst = tt.pickFirst
+			require.NoError(t, cfg.Validate())
 			assert.Equal(t, tt.expected, cfg.defaultServiceConfig())
 
 			// grpc.NewClient rejects a service config that the balancer cannot parse.
@@ -326,6 +330,28 @@ func TestDefaultServiceConfig(t *testing.T) {
 			require.NoError(t, conn.Close())
 		})
 	}
+}
+
+func TestUnmarshalPickFirst(t *testing.T) {
+	cm := confmap.NewFromStringMap(map[string]any{
+		"endpoint":      "localhost:4317",
+		"balancer_name": "pick_first",
+		"pick_first": map[string]any{
+			"shuffle_address_list": true,
+		},
+	})
+	cfg := NewDefaultClientConfig()
+	require.NoError(t, cm.Unmarshal(&cfg))
+	require.NoError(t, cfg.Validate())
+	require.True(t, cfg.PickFirst.HasValue())
+	assert.True(t, cfg.PickFirst.Get().ShuffleAddressList)
+}
+
+func TestValidatePickFirstRequiresPickFirstBalancer(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	cfg.Endpoint = "localhost:4317"
+	cfg.PickFirst = configoptional.Some(PickFirstConfig{ShuffleAddressList: true})
+	assert.ErrorContains(t, cfg.Validate(), `pick_first can only be set when balancer_name is pick_first, got "round_robin"`)
 }
 
 func TestGrpcDialTarget(t *testing.T) {

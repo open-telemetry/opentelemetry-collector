@@ -15,7 +15,9 @@ configuration parameters are also defined under `tls` like server
 configuration. For more information, see [configtls
 README](../configtls/README.md).
 
-- [`balancer_name`](https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md): Default before v0.103.0 is `pick_first`, default for v0.103.0 is `round_robin`. See [issue](https://github.com/open-telemetry/opentelemetry-collector/issues/10298). To restore the previous behavior, set `balancer_name` to `pick_first`. `pick_first` tries the resolved addresses in random order ([gRFC A62](https://github.com/grpc/proposal/blob/master/A62-pick-first.md)) unless the `pkg.configgrpc.PickFirstShuffleAddressList` feature gate is disabled.
+- [`balancer_name`](https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md): Default before v0.103.0 is `pick_first`, default for v0.103.0 is `round_robin`. See [issue](https://github.com/open-telemetry/opentelemetry-collector/issues/10298). To restore the previous behavior, set `balancer_name` to `pick_first`.
+- `pick_first`: Options for the `pick_first` balancer. Only valid when `balancer_name` is `pick_first`.
+  - `shuffle_address_list` (default = false): Tries the resolved addresses in random order ([gRFC A62](https://github.com/grpc/proposal/blob/master/A62-pick-first.md)), so clients that receive the same address list spread across backends.
 - `compression`: Compression type to use among `gzip`, `snappy`, `zstd`, and `none`.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 - [`tls`](../configtls/README.md)
