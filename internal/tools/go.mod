@@ -11,7 +11,6 @@ tool (
 	github.com/google/addlicense
 	github.com/itchyny/gojq/cmd/gojq
 	github.com/jcchavezs/porto/cmd/porto
-	github.com/pavius/impi/cmd/impi
 	go.opentelemetry.io/build-tools/checkapi
 	go.opentelemetry.io/build-tools/checkfile
 	go.opentelemetry.io/build-tools/chloggen
@@ -170,7 +169,6 @@ require (
 	github.com/karamaru-alpha/copyloopvar v1.2.2 // indirect
 	github.com/kevinburke/ssh_config v1.6.0 // indirect
 	github.com/kisielk/errcheck v1.30.0 // indirect
-	github.com/kisielk/gotool v1.0.0 // indirect
 	github.com/kkHAIKE/contextcheck v1.1.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/kulti/thelper v0.7.1 // indirect
@@ -202,7 +200,6 @@ require (
 	github.com/nishanths/exhaustive v0.15.0 // indirect
 	github.com/nishanths/predeclared v0.3.0 // indirect
 	github.com/nunnatsa/ginkgolinter v0.24.0 // indirect
-	github.com/pavius/impi v0.0.3 // indirect
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 // indirect
 	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
 	github.com/pjbgf/sha1cd v0.6.0 // indirect
