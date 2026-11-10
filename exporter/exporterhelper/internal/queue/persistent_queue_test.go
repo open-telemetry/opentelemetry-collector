@@ -351,7 +351,7 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 func TestPersistentQueue_MarshalErrorDoesNotConsumeCapacity(t *testing.T) {
 	marshalErr := errors.New("marshal failed")
 	encoding := &toggleErrorEncoding{
-		int64Encoding: int64Encoding{rc: &fakeReferenceCounter{}},
+		int64Encoding: int64Encoding{},
 		marshalErr:    marshalErr,
 	}
 	set := newSettingsWithStorage(request.SizerTypeRequests, 1)
