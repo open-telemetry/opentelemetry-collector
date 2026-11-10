@@ -117,7 +117,7 @@ func (c Config) Validate() error {
 		return errors.New("invalid TLS configuration: min_version cannot be greater than max_version")
 	}
 
-	if _, err = convertCurvePreferences(c.CurvePreferences); err != nil {
+	if _, err = convertCurvePreferences(c.CurvePreferences, fips140.Enabled()); err != nil {
 		return err
 	}
 
@@ -167,7 +167,7 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 		return nil, err
 	}
 
-	curvePreferences, err := convertCurvePreferences(c.CurvePreferences)
+	curvePreferences, err := convertCurvePreferences(c.CurvePreferences, fips140.Enabled())
 	if err != nil {
 		return nil, err
 	}
@@ -189,9 +189,8 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 // (GODEBUG=fips140=on or only). X25519 is the only accepted name that FIPS mode never
 // allows, so it is rejected here with a clear error instead of being dropped silently
 // during the handshake.
-func convertCurvePreferences(names []string) ([]tls.CurveID, error) {
+func convertCurvePreferences(names []string, fipsEnabled bool) ([]tls.CurveID, error) {
 	var curves []tls.CurveID
-	fipsEnabled := fips140.Enabled()
 	for _, name := range names {
 		curveID, ok := tlsCurveTypes[name]
 		if !ok {

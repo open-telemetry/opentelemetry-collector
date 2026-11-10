@@ -965,6 +965,21 @@ func TestCurvePreferences(t *testing.T) {
 	}
 }
 
+func TestConvertCurvePreferencesFIPS(t *testing.T) {
+	// Both branches are exercised here regardless of the GODEBUG=fips140 setting the
+	// test binary runs with.
+	curves, err := convertCurvePreferences([]string{"P256", "X25519"}, false)
+	require.NoError(t, err)
+	require.Equal(t, []tls.CurveID{tls.CurveP256, tls.X25519}, curves)
+
+	curves, err = convertCurvePreferences([]string{"P256", "X25519MLKEM768"}, true)
+	require.NoError(t, err)
+	require.Equal(t, []tls.CurveID{tls.CurveP256, tls.X25519MLKEM768}, curves)
+
+	_, err = convertCurvePreferences([]string{"P256", "X25519"}, true)
+	require.EqualError(t, err, "curve type X25519 is not available in FIPS 140-3 mode")
+}
+
 func TestServerConfigValidate(t *testing.T) {
 	tests := []struct {
 		name         string
