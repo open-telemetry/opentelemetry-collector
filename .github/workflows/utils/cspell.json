@@ -256,7 +256,6 @@
     "godoc",
     "gofmt",
     "gogenerate",
-    "goimpi",
     "golangci",
     "goldendataset",
     "goleak",
