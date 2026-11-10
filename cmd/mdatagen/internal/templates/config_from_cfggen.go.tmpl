@@ -92,9 +92,13 @@ import (
 {{- end }}
 
     {{- if and (hasDefaultValue $def) (not (isPrimitiveSchema $def)) }}
+    {{ if isComponent }}
+    func newDefault{{ $typeName }}() {{ $typeName }} {
+    {{- else }}
     // NewDefault{{ $typeName }} returns a new {{ $typeName }} with its default values applied.
     // Prefer this over an empty struct literal so default changes stay in sync automatically.
     func NewDefault{{ $typeName }}() {{ $typeName }} {
+    {{- end }}
         {{- if isExternalRef $def.Ref }}
         return {{ externalDefaultCall $def.Ref }}
         {{- else }}

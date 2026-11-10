@@ -753,7 +753,7 @@ func (a Attribute) Name() AttributeName {
 }
 
 func (a Attribute) TestValue() string {
-	if a.Enum != nil {
+	if len(a.Enum) > 0 {
 		return fmt.Sprintf(`%q`, a.Enum[0])
 	}
 	switch a.Type.ValueType {
@@ -778,8 +778,11 @@ func (a Attribute) TestValue() string {
 }
 
 func (a Attribute) TestValueTwo() string {
-	if a.Enum != nil {
+	if len(a.Enum) > 1 {
 		return fmt.Sprintf(`%q`, a.Enum[1])
+	}
+	if len(a.Enum) == 1 {
+		return fmt.Sprintf(`%q`, a.Enum[0])
 	}
 	switch a.Type.ValueType {
 	case pcommon.ValueTypeEmpty:
