@@ -276,3 +276,39 @@ func TestCfgExportedRef(t *testing.T) {
 	assert.Empty(t, CfgExportedRef(obj("go.opentelemetry.io/collector/config/confignet.addr_config", false)), "external ref")
 	assert.Empty(t, CfgExportedRef(&ConfigMetadata{Type: "string", Ref: "inner"}), "scalar")
 }
+
+func TestCfgDocCell(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name   string
+		in     string
+		expect string
+	}{
+		{"empty", "", ""},
+		{"single line unchanged", "request timeout", "request timeout"},
+		{"multi-line block scalar", "Sets the limit.\nIt has effect only for streaming RPCs.\n", "Sets the limit. It has effect only for streaming RPCs."},
+		{"trailing spaces before newline", "line one \nline two \n", "line one line two"},
+		{"tabs and repeated spaces", "a\t\tb   c", "a b c"},
+		{"pipe is escaped", "one | two", `one \| two`},
+		{"multi-line with pipe", "a|b\nc", `a\|b c`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expect, CfgDocCell(tc.in))
+		})
+	}
+}
+
+func TestCfgPropDocs_NormalizesDescription(t *testing.T) {
+	t.Parallel()
+	cfg := &ConfigMetadata{
+		Type: "object",
+		Properties: map[string]*ConfigMetadata{
+			"endpoint": {Type: "string", Description: "first line\nsecond | line\n"},
+		},
+	}
+
+	docs := CfgPropDocs(cfg)
+	require.Len(t, docs, 1)
+	assert.Equal(t, `first line second \| line`, docs[0].Description)
+}
