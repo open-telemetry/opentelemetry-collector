@@ -53,11 +53,7 @@ func getVersion() (string, error) {
 	return info.Main.Version, nil
 }
 
-// NewCommand constructs a new cobra.Command using the given Settings.
-// Any URIs specified in CollectorSettings.ConfigProviderSettings.ResolverSettings.URIs
-// are considered defaults and will be overwritten by config flags passed as
-// command-line arguments to the executable.
-// At least one Provider must be set.
+// NewCommand constructs a new cobra.Command.
 func NewCommand() (*cobra.Command, error) {
 	ver, err := getVersion()
 	if err != nil {
