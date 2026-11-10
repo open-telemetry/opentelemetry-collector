@@ -134,6 +134,7 @@ require (
 	go.opentelemetry.io/collector/config/configmiddleware v1.71.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.71.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.71.0 // indirect
+	go.opentelemetry.io/collector/config/configstorage v0.165.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.71.0 // indirect
 	go.opentelemetry.io/collector/confmap/xconfmap v0.165.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.71.0 // indirect
@@ -302,3 +303,5 @@ replace go.opentelemetry.io/collector/internal/testutil => ../internal/testutil
 replace go.opentelemetry.io/collector/internal/componentalias => ../internal/componentalias
 
 replace go.opentelemetry.io/collector/config/confignet => ../config/confignet
+
+replace go.opentelemetry.io/collector/config/configstorage => ../config/configstorage
