@@ -96,11 +96,11 @@ func (sc *ServerConfig) validateH2C() error {
 	if !sc.AllowH2C {
 		return nil
 	}
-	if sc.TLS.HasValue() {
-		return errors.New("the allow_h2c field cannot be used when TLS is configured")
-	}
 	if !metadata.PkgConfighttpAllowH2CFeatureGate.IsEnabled() {
 		return errors.New("use of the allow_h2c field requires enabling the feature gate 'pkg.confighttp.AllowH2C'")
+	}
+	if sc.TLS.HasValue() {
+		return errors.New("the allow_h2c field cannot be used when TLS is configured")
 	}
 	return nil
 }

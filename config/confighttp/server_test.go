@@ -353,6 +353,31 @@ func TestHTTPServerH2CDoesNotSupportTLS(t *testing.T) {
 	require.ErrorContains(t, confmap.Validate(sc), "cannot be used when TLS is configured")
 }
 
+func TestHTTPServerH2CFeatureGateCheckedBeforeTLS(t *testing.T) {
+	setH2CFeatureGate(t, false)
+
+	sc := &ServerConfig{
+		AllowH2C: true,
+		TLS:      configoptional.Some(configtls.ServerConfig{}),
+	}
+	err := confmap.Validate(sc)
+	require.ErrorContains(t, err, "pkg.confighttp.AllowH2C")
+	require.NotContains(t, err.Error(), "cannot be used when TLS is configured")
+}
+
+func TestHTTPServerH2CDisabledDoesNotRequireFeatureGateWithTLS(t *testing.T) {
+	setH2CFeatureGate(t, false)
+
+	sc := NewDefaultServerConfig()
+	sc.TLS = configoptional.Some(configtls.ServerConfig{
+		Config: configtls.Config{
+			CertFile: "cert.pem",
+			KeyFile:  "key.pem",
+		},
+	})
+	require.NoError(t, confmap.Validate(sc))
+}
+
 func TestHTTPServerH2C(t *testing.T) {
 	setH2CFeatureGate(t, true)
 
