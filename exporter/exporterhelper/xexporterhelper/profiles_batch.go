@@ -60,9 +60,13 @@ func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer) ([]Reques
 	}
 	var res []Request
 	droppedItems := 0
+	droppedOversizedContainer := false
 	for req.size(sz) > maxSize {
 		samplesBefore := req.pd.SampleCount()
-		pd, removedSize := extractProfiles(req.pd, maxSize, sz)
+		pd, removedSize, containerTooLarge := extractProfilesTracked(req.pd, maxSize, sz)
+		if containerTooLarge {
+			droppedOversizedContainer = true
+		}
 		if removedSize == 0 {
 			// Nothing left the source, so no progress is possible. Stop rather than loop.
 			return res, fmt.Errorf("request size is greater than max size and cannot be split further, dropping items: %d", droppedItems+req.pd.SampleCount())
@@ -78,41 +82,68 @@ func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer) ([]Reques
 		res = append(res, req)
 	}
 	if droppedItems > 0 {
+		if droppedOversizedContainer {
+			return res, fmt.Errorf("request size is greater than max size and cannot be split further, dropping items: %d", droppedItems)
+		}
 		return res, fmt.Errorf("single profile exceeds the max size limit, dropping items: %d", droppedItems)
 	}
 	return res, nil
 }
 
+// deltaGrowth returns the length-prefix overhead added when a message of size v is
+// wrapped in a parent repeated field, clamping non-positive sizes so sz.DeltaSize
+// is never invoked with negative values.
+func deltaGrowth(sz sizer.ProfilesSizer, v int) int {
+	if v <= 0 {
+		return sz.DeltaSize(0)
+	}
+	return sz.DeltaSize(v) - v
+}
+
 // extractProfiles extracts a new profiles with a maximum number of samples.
 func extractProfiles(srcProfiles pprofile.Profiles, capacity int, sz sizer.ProfilesSizer) (pprofile.Profiles, int) {
-	destProfiles := pprofile.NewProfiles()
-	capacityLeft := capacity - sz.ProfilesSize(destProfiles)
-	removedSize := 0
+	destProfiles, removedSize, _ := extractProfilesTracked(srcProfiles, capacity, sz)
+	return destProfiles, removedSize
+}
 
+func extractProfilesTracked(srcProfiles pprofile.Profiles, capacity int, sz sizer.ProfilesSizer) (pprofile.Profiles, int, bool) {
+	destProfiles := pprofile.NewProfiles()
 	srcProfiles.Dictionary().CopyTo(destProfiles.Dictionary())
+	maxResourceSize := capacity - sz.ProfilesSize(destProfiles)
+	if maxResourceSize <= 0 {
+		return destProfiles, 0, false
+	}
+	capacityLeft := maxResourceSize
+	removedSize := 0
+	droppedOversizedContainer := false
+
 	srcProfiles.ResourceProfiles().RemoveIf(func(srcRP pprofile.ResourceProfiles) bool {
-		// If the no more capacity left just return.
-		if capacityLeft == 0 {
+		// If there is no more capacity left, stop.
+		if capacityLeft <= 0 {
 			return false
 		}
 		rawRpSize := sz.ResourceProfilesSize(srcRP)
 		rpSize := sz.DeltaSize(rawRpSize)
 
 		if rpSize > capacityLeft {
-			extSrcRP, extRpSize := extractResourceProfiles(srcRP, capacityLeft, capacity, sz)
-			// This cannot make it to exactly 0 for the bytes,
-			// force it to be 0 since that is the stopping condition.
-			capacityLeft = 0
+			extSrcRP, extRpSize, rpContainerTooLarge := extractResourceProfiles(srcRP, capacityLeft, maxResourceSize, sz)
+			if rpContainerTooLarge {
+				droppedOversizedContainer = true
+			}
 			// It is possible that for the bytes scenario, the extracted field contains no profiles.
 			// Do not add it to the destination if that is the case.
 			if extSrcRP.ScopeProfiles().Len() > 0 {
 				extSrcRP.MoveTo(destProfiles.ResourceProfiles().AppendEmpty())
+				// This cannot make it to exactly 0 for the bytes,
+				// force it to be 0 since that is the stopping condition.
+				capacityLeft = 0
 			}
 			if srcRP.ScopeProfiles().Len() == 0 {
 				// Nothing is left in the source resource, so all of it is removed.
 				removedSize += rpSize
 				return true
 			}
+			capacityLeft = 0
 			// The source resource shrinks to the delta size of what is left in it.
 			removedSize += rpSize - sz.DeltaSize(rawRpSize-extRpSize)
 			return false
@@ -122,43 +153,68 @@ func extractProfiles(srcProfiles pprofile.Profiles, capacity int, sz sizer.Profi
 		srcRP.MoveTo(destProfiles.ResourceProfiles().AppendEmpty())
 		return true
 	})
-	return destProfiles, removedSize
+	return destProfiles, removedSize, droppedOversizedContainer
 }
 
 // extractResourceProfiles extracts profiles and returns a new resource profiles with the specified number of profiles.
-func extractResourceProfiles(srcRP pprofile.ResourceProfiles, capacity, maxSize int, sz sizer.ProfilesSizer) (pprofile.ResourceProfiles, int) {
+func extractResourceProfiles(srcRP pprofile.ResourceProfiles, capacity, maxSize int, sz sizer.ProfilesSizer) (pprofile.ResourceProfiles, int, bool) {
 	destRP := pprofile.NewResourceProfiles()
 	destRP.SetSchemaUrl(srcRP.SchemaUrl())
 	srcRP.Resource().CopyTo(destRP.Resource())
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
-	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.ResourceProfilesSize(destRP)
+	capacityLeft := capacity - deltaGrowth(sz, capacity) - sz.ResourceProfilesSize(destRP)
 	// Room for a scope in an otherwise empty batch, once this resource's header and attributes are paid for.
-	maxScopeSize := maxSize - (sz.DeltaSize(maxSize) - maxSize) - sz.ResourceProfilesSize(destRP)
+	maxScopeSize := maxSize - deltaGrowth(sz, maxSize) - sz.ResourceProfilesSize(destRP)
 	removedSize := 0
+	droppedOversizedContainer := false
+	if maxScopeSize <= 0 {
+		// The resource header (plus shared dictionary) alone fills or exceeds an empty batch, so
+		// none of its scopes or profiles can ever fit. Drop the resource so trailing valid
+		// resources are not blocked.
+		srcRP.ScopeProfiles().RemoveIf(func(srcSP pprofile.ScopeProfiles) bool {
+			removedSize += sz.DeltaSize(sz.ScopeProfilesSize(srcSP))
+			srcSP.Profiles().RemoveIf(func(srcProfile pprofile.Profile) bool {
+				if srcProfile.Samples().Len() > 0 {
+					droppedOversizedContainer = true
+				}
+				return true
+			})
+			return true
+		})
+		return destRP, removedSize, droppedOversizedContainer
+	}
 
 	srcRP.ScopeProfiles().RemoveIf(func(srcSP pprofile.ScopeProfiles) bool {
-		// If the no more capacity left just return.
-		if capacityLeft == 0 {
+		rawSpSize := sz.ScopeProfilesSize(srcSP)
+		spSize := sz.DeltaSize(rawSpSize)
+		if srcSP.Profiles().Len() == 0 {
+			removedSize += spSize
+			return true
+		}
+		// If there is no capacity left, stop.
+		if capacityLeft <= 0 {
 			return false
 		}
 
-		rawSpSize := sz.ScopeProfilesSize(srcSP)
-		spSize := sz.DeltaSize(rawSpSize)
 		if spSize > capacityLeft {
-			extSrcSP, extSpSize := extractScopeProfiles(srcSP, capacityLeft, maxScopeSize, sz)
-			// This cannot make it to exactly 0 for the bytes,
-			// force it to be 0 since that is the stopping condition.
-			capacityLeft = 0
+			extSrcSP, extSpSize, spContainerTooLarge := extractScopeProfiles(srcSP, capacityLeft, maxScopeSize, sz)
+			if spContainerTooLarge {
+				droppedOversizedContainer = true
+			}
 			// It is possible that for the bytes scenario, the extracted field contains no profiles.
 			// Do not add it to the destination if that is the case.
 			if extSrcSP.Profiles().Len() > 0 {
 				extSrcSP.MoveTo(destRP.ScopeProfiles().AppendEmpty())
+				// This cannot make it to exactly 0 for the bytes,
+				// force it to be 0 since that is the stopping condition.
+				capacityLeft = 0
 			}
 			if srcSP.Profiles().Len() == 0 {
 				// Nothing is left in the source scope, so all of it is removed.
 				removedSize += spSize
 				return true
 			}
+			capacityLeft = 0
 			// The source scope shrinks to the delta size of what is left in it.
 			removedSize += spSize - sz.DeltaSize(rawSpSize-extSpSize)
 			return false
@@ -169,22 +225,36 @@ func extractResourceProfiles(srcRP pprofile.ResourceProfiles, capacity, maxSize 
 		return true
 	})
 
-	return destRP, removedSize
+	return destRP, removedSize, droppedOversizedContainer
 }
 
 // extractScopeProfiles extracts profiles and returns a new scope profiles with the specified number of profiles.
-func extractScopeProfiles(srcSP pprofile.ScopeProfiles, capacity, maxScopeSize int, sz sizer.ProfilesSizer) (pprofile.ScopeProfiles, int) {
+func extractScopeProfiles(srcSP pprofile.ScopeProfiles, capacity, maxScopeSize int, sz sizer.ProfilesSizer) (pprofile.ScopeProfiles, int, bool) {
 	destSP := pprofile.NewScopeProfiles()
 	destSP.SetSchemaUrl(srcSP.SchemaUrl())
 	srcSP.Scope().CopyTo(destSP.Scope())
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
-	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.ScopeProfilesSize(destSP)
-	// Largest profile that fits an otherwise empty batch, once the resource and scope headers and attributes are paid for.
-	maxProfileSize := maxScopeSize - (sz.DeltaSize(maxScopeSize) - maxScopeSize) - sz.ScopeProfilesSize(destSP)
+	capacityLeft := capacity - deltaGrowth(sz, capacity) - sz.ScopeProfilesSize(destSP)
+	// Largest profile that fits an otherwise empty batch, once the dictionary, resource, and scope headers and attributes are paid for.
+	maxProfileSize := maxScopeSize - deltaGrowth(sz, maxScopeSize) - sz.ScopeProfilesSize(destSP)
 	removedSize := 0
+	if maxProfileSize <= 0 {
+		// The resource and scope headers (plus shared dictionary) alone fill or exceed an empty
+		// batch, so none of this scope's profiles can ever fit. Drop the whole scope so trailing
+		// valid scopes or resources are not blocked.
+		droppedOversizedContainer := false
+		srcSP.Profiles().RemoveIf(func(srcProfile pprofile.Profile) bool {
+			if srcProfile.Samples().Len() > 0 {
+				droppedOversizedContainer = true
+			}
+			removedSize += sz.DeltaSize(sz.ProfileSize(srcProfile))
+			return true
+		})
+		return destSP, removedSize, droppedOversizedContainer
+	}
 	srcSP.Profiles().RemoveIf(func(srcProfile pprofile.Profile) bool {
-		// If the no more capacity left just return.
-		if capacityLeft == 0 {
+		// If there is no capacity left, stop.
+		if capacityLeft <= 0 {
 			return false
 		}
 		profileSize := sz.DeltaSize(sz.ProfileSize(srcProfile))
@@ -204,5 +274,5 @@ func extractScopeProfiles(srcSP pprofile.ScopeProfiles, capacity, maxScopeSize i
 		srcProfile.MoveTo(destSP.Profiles().AppendEmpty())
 		return true
 	})
-	return destSP, removedSize
+	return destSP, removedSize, false
 }

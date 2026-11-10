@@ -270,9 +270,9 @@ func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 			pr1:     newProfilesRequest(testdata.GenerateProfiles(0)),
 			pr2:     newProfilesRequest(testdata.GenerateProfiles(10)),
 			expected: []Request{
+				newProfilesRequest(testdata.GenerateProfiles(3)),
 				newProfilesRequest(testdata.GenerateProfiles(4)),
-				newProfilesRequest(testdata.GenerateProfiles(5)),
-				newProfilesRequest(testdata.GenerateProfiles(1)),
+				newProfilesRequest(testdata.GenerateProfiles(3)),
 			},
 		},
 		{
@@ -284,11 +284,11 @@ func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 			expected: []Request{
 				newProfilesRequest(func() pprofile.Profiles {
 					profiles := testdata.GenerateProfiles(7)
-					testdata.GenerateProfiles(3).ResourceProfiles().MoveAndAppendTo(profiles.ResourceProfiles())
+					testdata.GenerateProfiles(2).ResourceProfiles().MoveAndAppendTo(profiles.ResourceProfiles())
 					return profiles
 				}()),
-				newProfilesRequest(testdata.GenerateProfiles(11)),
-				newProfilesRequest(testdata.GenerateProfiles(7)),
+				newProfilesRequest(testdata.GenerateProfiles(10)),
+				newProfilesRequest(testdata.GenerateProfiles(9)),
 			},
 		},
 	}
@@ -299,6 +299,9 @@ func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 			require.Len(t, res, len(tt.expected))
 			for i, r := range res {
 				assert.Equal(t, tt.expected[i].(*profilesRequest).pd.SampleCount(), r.(*profilesRequest).pd.SampleCount(), i)
+				if tt.szt == exporterhelper.RequestSizerTypeBytes && tt.maxSize > 0 {
+					assert.LessOrEqual(t, profilesMarshaler.ProfilesSize(r.(*profilesRequest).pd), tt.maxSize, i)
+				}
 			}
 		})
 	}
@@ -568,4 +571,170 @@ func TestMergeSplitProfilesStopsWhenNoProgressIsPossible(t *testing.T) {
 	res, err := newProfilesRequest(pd).MergeSplit(context.Background(), maxSize, exporterhelper.RequestSizerTypeBytes, nil)
 	require.ErrorContains(t, err, "request size is greater than max size and cannot be split further, dropping items: 2")
 	assert.Empty(t, res, "samples that cannot fit any batch must not be returned")
+}
+
+func TestMergeSplitProfilesWithDictionaryRespectsMaxSize(t *testing.T) {
+	pd := pprofile.NewProfiles()
+	pd.Dictionary().StringTable().Append("", "func_alpha", "func_beta", strings.Repeat("d", 140))
+	ps := pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles()
+	for i := range 6 {
+		addProfile(ps, fmt.Sprintf("profile-%02d", i))
+	}
+
+	dictOnly := pprofile.NewProfiles()
+	pd.Dictionary().CopyTo(dictOnly.Dictionary())
+	dictSize := profilesMarshaler.ProfilesSize(dictOnly)
+	maxSize := dictSize + 100
+	require.Greater(t, profilesMarshaler.ProfilesSize(pd), maxSize, "precondition: request must start oversized")
+
+	res, err := newProfilesRequest(pd).MergeSplit(context.Background(), maxSize, exporterhelper.RequestSizerTypeBytes, nil)
+	require.NoError(t, err)
+	require.Greater(t, len(res), 1, "request should split into multiple batches")
+
+	survived := 0
+	for _, r := range res {
+		pr := r.(*profilesRequest)
+		survived += pr.pd.SampleCount()
+		assert.LessOrEqual(t, profilesMarshaler.ProfilesSize(pr.pd), maxSize,
+			"batch including copied ProfilesDictionary must not exceed max size")
+		assert.Equal(t, profilesMarshaler.ProfilesSize(pr.pd), pr.size(&sizer.ProfilesBytesSizer{}),
+			"cached size must match recomputed size")
+		assert.Equal(t, dictOnly.Dictionary(), pr.pd.Dictionary(),
+			"each split batch must preserve the shared ProfilesDictionary")
+	}
+	assert.Equal(t, 6, survived, "every sample must survive")
+}
+
+func TestMergeSplitProfilesWithDictionaryDropsProfileExceedingRemainingBudget(t *testing.T) {
+	pd := pprofile.NewProfiles()
+	pd.Dictionary().StringTable().Append("", strings.Repeat("d", 120))
+	ps := pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles()
+	addProfile(ps, "first")
+	addProfile(ps, strings.Repeat("m", 100))
+	addProfile(ps, "last")
+
+	dictOnly := pprofile.NewProfiles()
+	pd.Dictionary().CopyTo(dictOnly.Dictionary())
+	dictSize := profilesMarshaler.ProfilesSize(dictOnly)
+	maxSize := dictSize + 70
+
+	res, err := newProfilesRequest(pd).MergeSplit(context.Background(), maxSize, exporterhelper.RequestSizerTypeBytes, nil)
+	require.ErrorContains(t, err, "single profile exceeds the max size limit, dropping items: 1")
+	assert.Equal(t, []string{"first", "last"}, profileLabels(res),
+		"only the profile that cannot fit alongside the dictionary should be dropped")
+	for _, r := range res {
+		pr := r.(*profilesRequest)
+		assert.LessOrEqual(t, profilesMarshaler.ProfilesSize(pr.pd), maxSize,
+			"batch including copied ProfilesDictionary must not exceed max size")
+		assert.Equal(t, profilesMarshaler.ProfilesSize(pr.pd), pr.size(&sizer.ProfilesBytesSizer{}),
+			"cached size must stay exact")
+	}
+}
+
+func TestMergeSplitProfilesWithOversizedDictionaryStopsCleanly(t *testing.T) {
+	pd := pprofile.NewProfiles()
+	pd.Dictionary().StringTable().Append("", strings.Repeat("d", 300))
+	ps := pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles()
+	addProfile(ps, "first")
+	addProfile(ps, "second")
+
+	const maxSize = 200
+	res, err := newProfilesRequest(pd).MergeSplit(context.Background(), maxSize, exporterhelper.RequestSizerTypeBytes, nil)
+	require.ErrorContains(t, err, "request size is greater than max size and cannot be split further, dropping items: 2")
+	assert.Empty(t, res, "no batch may be returned when ProfilesDictionary alone exceeds max size")
+}
+
+func TestMergeSplitProfilesOversizedContainerHeaderDropsOnlyUnexportableContainer(t *testing.T) {
+	sz := &sizer.ProfilesBytesSizer{}
+
+	t.Run("oversized_resource_header_followed_by_valid_resource", func(t *testing.T) {
+		const maxSize = 110
+		maxResourceSize := maxSize - sz.ProfilesSize(pprofile.NewProfiles())
+		exactRP := pprofile.NewResourceProfiles()
+		for pad := 0; ; pad++ {
+			exactRP.Resource().Attributes().PutStr("pad", strings.Repeat("r", pad))
+			if sz.ResourceProfilesSize(exactRP) == maxResourceSize-(sz.DeltaSize(maxResourceSize)-maxResourceSize) {
+				break
+			}
+		}
+		exactPad := exactRP.Resource().Attributes().AsRaw()["pad"].(string)
+
+		for _, tc := range []struct {
+			name string
+			pad  string
+		}{
+			{name: "exact_zero_budget", pad: exactPad},
+			{name: "exceeds_max_size", pad: strings.Repeat("r", 300)},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				pd := pprofile.NewProfiles()
+				bigRP := pd.ResourceProfiles().AppendEmpty()
+				bigRP.Resource().Attributes().PutStr("pad", tc.pad)
+				bigPS := bigRP.ScopeProfiles().AppendEmpty().Profiles()
+				addProfile(bigPS, "lost_1")
+				addProfile(bigPS, "lost_2")
+
+				validRP := pd.ResourceProfiles().AppendEmpty()
+				validPS := validRP.ScopeProfiles().AppendEmpty().Profiles()
+				addProfile(validPS, "kept_1")
+				addProfile(validPS, "kept_2")
+
+				res, err := newProfilesRequest(pd).MergeSplit(context.Background(), maxSize, exporterhelper.RequestSizerTypeBytes, nil)
+				require.ErrorContains(t, err, "request size is greater than max size and cannot be split further, dropping items: 2")
+				assert.Equal(t, []string{"kept_1", "kept_2"}, profileLabels(res))
+				for _, r := range res {
+					pr := r.(*profilesRequest)
+					assert.LessOrEqual(t, profilesMarshaler.ProfilesSize(pr.pd), maxSize)
+					assert.Equal(t, profilesMarshaler.ProfilesSize(pr.pd), pr.size(sz))
+				}
+			})
+		}
+	})
+
+	t.Run("oversized_scope_header_followed_by_valid_scope_and_resource", func(t *testing.T) {
+		const maxSize = 110
+		maxResourceSize := maxSize - sz.ProfilesSize(pprofile.NewProfiles())
+		maxScopeSize := maxResourceSize - (sz.DeltaSize(maxResourceSize) - maxResourceSize) - sz.ResourceProfilesSize(pprofile.NewResourceProfiles())
+		exactSP := pprofile.NewScopeProfiles()
+		for pad := 0; ; pad++ {
+			exactSP.Scope().Attributes().PutStr("pad", strings.Repeat("s", pad))
+			if sz.ScopeProfilesSize(exactSP) == maxScopeSize-(sz.DeltaSize(maxScopeSize)-maxScopeSize) {
+				break
+			}
+		}
+		exactPad := exactSP.Scope().Attributes().AsRaw()["pad"].(string)
+
+		for _, tc := range []struct {
+			name string
+			pad  string
+		}{
+			{name: "exact_zero_budget", pad: exactPad},
+			{name: "exceeds_max_size", pad: strings.Repeat("s", 300)},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				pd := pprofile.NewProfiles()
+				rp0 := pd.ResourceProfiles().AppendEmpty()
+				bigSP := rp0.ScopeProfiles().AppendEmpty()
+				bigSP.Scope().Attributes().PutStr("pad", tc.pad)
+				bigPS := bigSP.Profiles()
+				addProfile(bigPS, "lost_1")
+				addProfile(bigPS, "lost_2")
+
+				validSP := rp0.ScopeProfiles().AppendEmpty()
+				addProfile(validSP.Profiles(), "kept_scope")
+
+				validRP := pd.ResourceProfiles().AppendEmpty()
+				addProfile(validRP.ScopeProfiles().AppendEmpty().Profiles(), "kept_resource")
+
+				res, err := newProfilesRequest(pd).MergeSplit(context.Background(), maxSize, exporterhelper.RequestSizerTypeBytes, nil)
+				require.ErrorContains(t, err, "request size is greater than max size and cannot be split further, dropping items: 2")
+				assert.Equal(t, []string{"kept_scope", "kept_resource"}, profileLabels(res))
+				for _, r := range res {
+					pr := r.(*profilesRequest)
+					assert.LessOrEqual(t, profilesMarshaler.ProfilesSize(pr.pd), maxSize)
+					assert.Equal(t, profilesMarshaler.ProfilesSize(pr.pd), pr.size(sz))
+				}
+			})
+		}
+	})
 }
