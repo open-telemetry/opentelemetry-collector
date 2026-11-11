@@ -56,7 +56,7 @@ func TestExporterFailureAttributesDetailed(t *testing.T) {
 		}, 5*time.Second, 200*time.Millisecond, "expected permanent failure metric")
 	})
 
-	t.Run("transient error that recovers has no failure metric", func(t *testing.T) {
+	t.Run("transient error that recovers records no failures", func(t *testing.T) {
 		var attempts atomic.Int32
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path != "/v1/metrics" {
@@ -74,7 +74,7 @@ func TestExporterFailureAttributesDetailed(t *testing.T) {
 		otelPort, metricsPort := startFailureAttributeCollector(t, server.URL)
 
 		require.NoError(t, sendTestMetrics(otelPort))
-		assertNoFailureMetric(t, metricsPort, "otlp_http/test")
+		assertNoFailureRecorded(t, metricsPort, "otlp_http/test")
 	})
 
 	t.Run("retryable error exhausts retries", func(t *testing.T) {
@@ -202,14 +202,23 @@ func labelValue(metric *dto.Metric, labelName string) (string, bool) {
 	return "", false
 }
 
-func assertNoFailureMetric(t *testing.T, metricsPort, exporterName string) {
+// assertNoFailureRecorded checks that the exporter reports the send_failed series
+// with a value of 0 and without error attributes, i.e. that no failure was counted.
+func assertNoFailureRecorded(t *testing.T, metricsPort, exporterName string) {
 	t.Helper()
+	sawZeroSeries := false
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {
 		if metric := scrapeFailureMetric(t, metricsPort, exporterName); metric != nil {
-			failurePermanent, _ := labelValue(metric, "error_permanent")
-			t.Fatalf("unexpected failure metric recorded, error_permanent=%s", failurePermanent)
+			if failurePermanent, ok := labelValue(metric, "error_permanent"); ok {
+				t.Fatalf("unexpected failure metric recorded, error_permanent=%s", failurePermanent)
+			}
+			if v := metric.GetCounter().GetValue(); v != 0 {
+				t.Fatalf("unexpected failure count recorded: %v", v)
+			}
+			sawZeroSeries = true
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
+	require.True(t, sawZeroSeries, "expected a send_failed series with a value of 0")
 }

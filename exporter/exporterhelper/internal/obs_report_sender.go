@@ -115,10 +115,11 @@ func (ors *obsReportSender[K]) endOp(ctx context.Context, numRecords int, err er
 
 	ors.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricSent, numSent)
 
-	if numFailedToSend > 0 {
-		withFailedAttrs := metric.WithAttributeSet(extractFailureAttributes(err))
-		ors.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricSendFailure, numFailedToSend, withFailedAttrs)
-	}
+	// Record send_failed even when nothing failed, so healthy exporters still
+	// expose the series with a value of 0. extractFailureAttributes returns an
+	// empty set for a nil error, so the error attributes are only set on failures.
+	withFailedAttrs := metric.WithAttributeSet(extractFailureAttributes(err))
+	ors.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricSendFailure, numFailedToSend, withFailedAttrs)
 
 	span := trace.SpanFromContext(ctx)
 	defer span.End()
