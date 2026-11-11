@@ -41,6 +41,7 @@ Tier 1 platforms are currently:
 | Platform      | Owner(s)                                                                                                    |
 |---------------|-------------------------------------------------------------------------------------------------------------|
 | linux/amd64   | [OpenTelemetry Collector approvers](https://github.com/open-telemetry/opentelemetry-collector#contributing) |
+| linux/arm64   | [@atoulme](https://github.com/atoulme)             |
 | windows/amd64 | [@pjanotti](https://github.com/pjanotti)                                                                    |
 
 ### Tier 2 – Secondary Support
@@ -51,7 +52,6 @@ Tier 2 platforms are currently:
 | Platform      | Owner(s)                                           |
 |---------------|----------------------------------------------------|
 | darwin/arm64  | [@MovieStoreGuy](https://github.com/MovieStoreGuy) |
-| linux/arm64   | [@atoulme](https://github.com/atoulme)             |
 | windows/arm64 | [@pjanotti](https://github.com/pjanotti)           |
 
 ### Tier 3 - Community Support
