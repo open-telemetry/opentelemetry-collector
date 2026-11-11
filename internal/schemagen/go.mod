@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/collector/pipeline v1.71.0
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.165.0
 	go.yaml.in/yaml/v3 v3.0.6
-	golang.org/x/mod v0.42.0
+	golang.org/x/mod v0.43.0
 	golang.org/x/tools v0.52.0
 )
 
