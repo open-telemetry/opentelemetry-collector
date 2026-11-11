@@ -51,9 +51,9 @@ func NewDefaultSendingQueueConfig() configoptional.Optional[exporterhelper.Queue
 	{{- if .SendingQueue.HasOverride "storage" }}
 	{{- if $cfg.StorageConstructor }}
 	storageID := {{ $cfg.StorageConstructor }}
-	cfg.StorageID = &storageID
+	cfg.StorageID =  configoptional.Some(configstorage.ID(storageID))
 	{{- else }}
-	cfg.StorageID = nil
+	cfg.StorageID = configoptional.None[configstorage.ID]()
 	{{- end }}
 	{{- end }}
 	{{- if .SendingQueue.HasOverride "num_consumers" }}
