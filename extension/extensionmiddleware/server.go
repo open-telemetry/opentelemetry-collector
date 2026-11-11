@@ -5,6 +5,7 @@ package extensionmiddleware // import "go.opentelemetry.io/collector/extension/e
 
 import (
 	"context"
+	"errors"
 	"net"
 	"net/http"
 
@@ -67,7 +68,7 @@ type GetListenerFunc func(context.Context) (ListenContextFunc, error)
 
 func (f GetListenerFunc) GetListenContext(ctx context.Context) (ListenContextFunc, error) {
 	if f == nil {
-		return nil, nil
+		return nil, errors.New("listener is not initialized")
 	}
 	return f(ctx)
 }
