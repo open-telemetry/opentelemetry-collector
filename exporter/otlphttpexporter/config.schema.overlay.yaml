@@ -1,0 +1,6 @@
+properties:
+  retryable_http_status_codes:
+    uniqueItems: true
+    items:
+      minimum: 401
+      maximum: 599

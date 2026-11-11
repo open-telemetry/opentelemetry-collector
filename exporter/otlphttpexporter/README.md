@@ -44,6 +44,9 @@ The following settings can be optionally configured:
 - `write_buffer_size` (default = 512 * 1024): WriteBufferSize for HTTP client.
 - `encoding` (default = proto): The encoding to use for the messages (valid options: `proto`, `json`)
 - `retry_on_failure`:  see [Retry on Failure](../exporterhelper/README.md#retry-on-failure) for the full set of available options.
+- `retryable_http_status_codes` (default = empty): Additional HTTP status codes (`401`-`599`) to retry alongside the
+  [OTLP specification](https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#retryable-response-codes)
+  defaults when `retry_on_failure` is enabled. Listed codes honor `Retry-After` headers when present.
 - `sending_queue`: see [Sending Queue](../exporterhelper/README.md#sending-queue) for the full set of available options.
 
 Example:
@@ -70,6 +73,17 @@ exporters:
   otlp_http:
     ...
     encoding: json
+```
+
+By default, only OTLP specification status codes (`429`, `502`, `503`, `504`) are retried. To opt into retrying additional status codes in `401`-`599` such as `408 Request Timeout`:
+
+```yaml
+exporters:
+  otlp_http:
+    ...
+    retry_on_failure:
+      enabled: true
+    retryable_http_status_codes: [408]
 ```
 
 The full list of settings exposed for this exporter are documented [here](./config.go)

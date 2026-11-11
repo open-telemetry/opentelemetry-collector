@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"runtime"
+	"slices"
 	"strconv"
 	"time"
 
@@ -239,13 +240,15 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 	}
 	formattedErr = statusutil.NewStatusFromMsgAndHTTPCode(errString, resp.StatusCode).Err()
 
-	if !isRetryableStatusCode(resp.StatusCode) {
+	if !isRetryableStatusCode(resp.StatusCode, e.config.RetryableHTTPStatusCodes) {
 		return consumererror.NewPermanent(formattedErr)
 	}
 
-	// Check if the server is overwhelmed.
+	// Check if the server is overwhelmed. Configured retryable status codes also honor Retry-After.
 	// See spec https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md#otlphttp-throttling
-	isThrottleError := resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusServiceUnavailable
+	isThrottleError := resp.StatusCode == http.StatusTooManyRequests ||
+		resp.StatusCode == http.StatusServiceUnavailable ||
+		slices.Contains(e.config.RetryableHTTPStatusCodes, resp.StatusCode)
 	if isThrottleError {
 		// Use Values to check if the header is present, and if present even if it is empty return ThrottleRetry.
 		values := resp.Header.Values(headerRetryAfter)
@@ -268,9 +271,9 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 	return formattedErr
 }
 
-// Determine if the status code is retryable according to the specification.
+// Determine if the status code is retryable according to the specification or retryable_http_status_codes.
 // For more, see https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md#failures-1
-func isRetryableStatusCode(code int) bool {
+func isRetryableStatusCode(code int, additionalCodes []int) bool {
 	switch code {
 	case http.StatusTooManyRequests:
 		return true
@@ -281,7 +284,7 @@ func isRetryableStatusCode(code int) bool {
 	case http.StatusGatewayTimeout:
 		return true
 	default:
-		return false
+		return slices.Contains(additionalCodes, code)
 	}
 }
 

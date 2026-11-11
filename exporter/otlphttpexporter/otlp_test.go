@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -25,9 +26,11 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -130,6 +133,25 @@ func TestErrorResponses(t *testing.T) {
 			responseBody:   status.New(codes.InvalidArgument, "Bad field"),
 			checkErr: func(t *testing.T, err error, _ *httptest.Server) {
 				assert.True(t, consumererror.IsPermanent(err))
+			},
+		},
+		{
+			name:           "408",
+			responseStatus: http.StatusRequestTimeout,
+			responseBody:   nil,
+			checkErr: func(t *testing.T, err error, _ *httptest.Server) {
+				assert.True(t, consumererror.IsPermanent(err))
+				assert.ErrorContains(t, err, "HTTP Status Code 408")
+			},
+		},
+		{
+			name:           "408-Retry-After-ignored-by-default",
+			responseStatus: http.StatusRequestTimeout,
+			responseBody:   nil,
+			headers:        map[string]string{"Retry-After": "30"},
+			checkErr: func(t *testing.T, err error, _ *httptest.Server) {
+				assert.True(t, consumererror.IsPermanent(err))
+				assert.NotContains(t, err.Error(), "Throttle (")
 			},
 		},
 		{
@@ -276,6 +298,147 @@ func TestErrorResponses(t *testing.T) {
 			err = exp.ConsumeTraces(context.Background(), traces)
 			require.Error(t, err)
 			test.checkErr(t, err, srv)
+		})
+	}
+}
+
+func TestRetryableHTTPStatusCodes(t *testing.T) {
+	signalPaths := map[string]string{
+		tracesTelemetryType:   "/v1/traces",
+		metricsTelemetryType:  "/v1/metrics",
+		logsTelemetryType:     "/v1/logs",
+		profilesTelemetryType: "/v1development/profiles",
+	}
+	for _, tt := range []struct {
+		name           string
+		signal         string
+		status         int
+		retryAfter     string
+		retryableCodes []int
+		wantRequests   int32
+		wantErr        bool
+	}{
+		{name: "408 permanent by default (logs)", signal: logsTelemetryType, status: http.StatusRequestTimeout, wantRequests: 1, wantErr: true},
+		{name: "408 retried (traces)", signal: tracesTelemetryType, status: http.StatusRequestTimeout, retryableCodes: []int{408}, wantRequests: 2},
+		{name: "408 retried (metrics)", signal: metricsTelemetryType, status: http.StatusRequestTimeout, retryableCodes: []int{408}, wantRequests: 2},
+		{name: "408 retried (logs)", signal: logsTelemetryType, status: http.StatusRequestTimeout, retryableCodes: []int{408}, wantRequests: 2},
+		{name: "408 retried (profiles)", signal: profilesTelemetryType, status: http.StatusRequestTimeout, retryableCodes: []int{408}, wantRequests: 2},
+		{name: "408 with Retry-After retried", signal: tracesTelemetryType, status: http.StatusRequestTimeout, retryAfter: "0", retryableCodes: []int{408}, wantRequests: 2},
+		{name: "non-opted-in 500 stays permanent", signal: tracesTelemetryType, status: http.StatusInternalServerError, retryableCodes: []int{408}, wantRequests: 1, wantErr: true},
+		{name: "opted-in 500 retried", signal: tracesTelemetryType, status: http.StatusInternalServerError, retryableCodes: []int{500}, wantRequests: 2},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			path := signalPaths[tt.signal]
+			var requests atomic.Int32
+			srv := createBackend(path, func(w http.ResponseWriter, r *http.Request) {
+				_, _ = io.Copy(io.Discard, r.Body)
+				if requests.Add(1) == 1 {
+					if tt.retryAfter != "" {
+						w.Header().Set("Retry-After", tt.retryAfter)
+					}
+					w.WriteHeader(tt.status)
+					return
+				}
+				w.WriteHeader(http.StatusOK)
+			})
+			defer srv.Close()
+
+			ctx := context.Background()
+			set := exportertest.NewNopSettings(metadata.Type)
+			cfg := &Config{
+				Encoding:                 EncodingProto,
+				RetryableHTTPStatusCodes: tt.retryableCodes,
+				RetryConfig:              configretry.BackOffConfig{Enabled: true, InitialInterval: time.Millisecond, MaxInterval: time.Millisecond, MaxElapsedTime: 5 * time.Second},
+			}
+			var exp component.Component
+			var send func() error
+			var err error
+			switch tt.signal {
+			case tracesTelemetryType:
+				cfg.TracesEndpoint = srv.URL + path
+				e, createErr := createTraces(ctx, set, cfg)
+				exp, err, send = e, createErr, func() error { return e.ConsumeTraces(ctx, ptrace.NewTraces()) }
+			case metricsTelemetryType:
+				cfg.MetricsEndpoint = srv.URL + path
+				e, createErr := createMetrics(ctx, set, cfg)
+				exp, err, send = e, createErr, func() error { return e.ConsumeMetrics(ctx, pmetric.NewMetrics()) }
+			case logsTelemetryType:
+				cfg.LogsEndpoint = srv.URL + path
+				e, createErr := createLogs(ctx, set, cfg)
+				exp, err, send = e, createErr, func() error { return e.ConsumeLogs(ctx, plog.NewLogs()) }
+			case profilesTelemetryType:
+				cfg.ProfilesEndpoint = srv.URL + path
+				e, createErr := createProfiles(ctx, set, cfg)
+				exp, err, send = e, createErr, func() error { return e.ConsumeProfiles(ctx, pprofile.NewProfiles()) }
+			}
+			require.NoError(t, cfg.Validate())
+			require.NoError(t, err)
+			require.NoError(t, exp.Start(ctx, componenttest.NewNopHost()))
+			t.Cleanup(func() { require.NoError(t, exp.Shutdown(ctx)) })
+
+			err = send()
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.True(t, consumererror.IsPermanent(err))
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, tt.wantRequests, requests.Load())
+		})
+	}
+}
+
+func TestRetryableHTTPStatusCodes_RetryAfter(t *testing.T) {
+	for _, tt := range []struct {
+		name           string
+		status         int
+		grpcCode       codes.Code
+		retryableCodes []int
+		retryAfter     string
+		wantThrottle   bool
+		wantHTTPDate   bool
+	}{
+		{name: "408 delay-seconds", status: http.StatusRequestTimeout, grpcCode: codes.Unknown, retryableCodes: []int{408}, retryAfter: "30", wantThrottle: true},
+		{name: "408 HTTP-date", status: http.StatusRequestTimeout, grpcCode: codes.Unknown, retryableCodes: []int{408}, retryAfter: "Sun, 09 Feb 2025 15:04:05 GMT", wantHTTPDate: true},
+		{name: "408 malformed", status: http.StatusRequestTimeout, grpcCode: codes.Unknown, retryableCodes: []int{408}, retryAfter: "Malformed"},
+		{name: "502 ignored by default", status: http.StatusBadGateway, grpcCode: codes.Unavailable, retryAfter: "30"},
+		{name: "502 explicitly listed", status: http.StatusBadGateway, grpcCode: codes.Unavailable, retryableCodes: []int{502}, retryAfter: "30", wantThrottle: true},
+		{name: "504 ignored by default", status: http.StatusGatewayTimeout, grpcCode: codes.Unavailable, retryAfter: "30"},
+		{name: "504 explicitly listed", status: http.StatusGatewayTimeout, grpcCode: codes.Unavailable, retryableCodes: []int{504}, retryAfter: "30", wantThrottle: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := createBackend("/v1/traces", func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Retry-After", tt.retryAfter)
+				w.WriteHeader(tt.status)
+			})
+			defer srv.Close()
+
+			cfg := &Config{
+				Encoding:                 EncodingProto,
+				TracesEndpoint:           srv.URL + "/v1/traces",
+				RetryConfig:              configretry.NewDefaultBackOffConfig(),
+				RetryableHTTPStatusCodes: tt.retryableCodes,
+			}
+			require.NoError(t, cfg.Validate())
+			exp, err := newExporter(cfg, exportertest.NewNopSettings(metadata.Type))
+			require.NoError(t, err)
+			exp.tracesURL = cfg.TracesEndpoint
+			require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
+			defer exp.client.CloseIdleConnections()
+
+			err = exp.pushTraces(context.Background(), ptrace.NewTraces())
+			require.Error(t, err)
+			assert.False(t, consumererror.IsPermanent(err))
+			baseErr := status.New(tt.grpcCode, fmt.Sprintf("error exporting items, request to %s/v1/traces responded with HTTP Status Code %d, Message=, Details=[]", srv.URL, tt.status))
+			switch {
+			case tt.wantHTTPDate:
+				require.ErrorContains(t, err, "Throttle (-")
+				require.ErrorContains(t, err, "), error: "+baseErr.String())
+			case tt.wantThrottle:
+				require.EqualError(t, err, exporterhelper.NewThrottleRetry(baseErr.Err(), 30*time.Second).Error())
+			default:
+				require.EqualError(t, err, baseErr.String())
+			}
 		})
 	}
 }
