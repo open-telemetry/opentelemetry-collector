@@ -128,7 +128,7 @@ func TestGetListenerFunc(t *testing.T) {
 	ctx := context.Background()
 	var empty GetListenerFunc
 	listen, err := empty.GetListenContext(ctx)
-	require.NoError(t, err)
+	require.Error(t, err)
 	require.Nil(t, listen)
 
 	expected := func(context.Context, string, string) (net.Listener, error) { return nil, nil }

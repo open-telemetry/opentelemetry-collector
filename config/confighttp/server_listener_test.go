@@ -68,7 +68,12 @@ func TestServerCustomListener(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	require.Equal(t, "ok", string(body))
-	require.Equal(t, config.NetAddr, <-called)
+	select {
+	case callerAddress := <-called:
+		require.Equal(t, config.NetAddr, callerAddress)
+	case <-time.After(1 * time.Second):
+		require.Fail(t, "timed out waiting for the call")
+	}
 }
 
 func TestServerCustomListenerErrors(t *testing.T) {
@@ -104,13 +109,11 @@ func TestServerCustomListenerErrors(t *testing.T) {
 		extension.Extension
 		extensionmiddleware.GetListenerFunc
 	}{
-		Extension: extensionmiddlewaretest.NewNop(),
-		GetListenerFunc: func(context.Context) (extensionmiddleware.ListenContextFunc, error) {
-			return func(context.Context, string, string) (net.Listener, error) { return nil, nil }, nil
-		},
+		Extension:       extensionmiddlewaretest.NewNop(),
+		GetListenerFunc: nil,
 	}
 	_, err = config.ToListener(t.Context(), extensions)
-	require.ErrorContains(t, err, "nil listener")
+	require.ErrorContains(t, err, "listener is not initialized")
 }
 
 func TestServerListenerConfigUnmarshal(t *testing.T) {

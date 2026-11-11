@@ -86,9 +86,6 @@ func (sc *ServerConfig) ToListener(ctx context.Context, extensions ...map[compon
 	if err != nil {
 		return nil, err
 	}
-	if listener == nil {
-		return nil, errors.New("listener extension returned a nil listener")
-	}
 
 	if sc.TLS.HasValue() {
 		var tlsCfg *tls.Config

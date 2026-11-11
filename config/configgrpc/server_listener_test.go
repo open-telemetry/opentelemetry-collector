@@ -102,13 +102,11 @@ func TestServerCustomListenerErrors(t *testing.T) {
 		extension.Extension
 		extensionmiddleware.GetListenerFunc
 	}{
-		Extension: extensionmiddlewaretest.NewNop(),
-		GetListenerFunc: func(context.Context) (extensionmiddleware.ListenContextFunc, error) {
-			return func(context.Context, string, string) (net.Listener, error) { return nil, nil }, nil
-		},
+		Extension:       extensionmiddlewaretest.NewNop(),
+		GetListenerFunc: nil,
 	}
 	_, err = config.ToListener(t.Context(), extensions)
-	require.ErrorContains(t, err, "nil listener")
+	require.ErrorContains(t, err, "listener is not initialized")
 }
 
 func TestServerListenerConfigUnmarshal(t *testing.T) {
