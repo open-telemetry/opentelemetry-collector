@@ -97,6 +97,8 @@ func (r *clientCAsFileReloader) getClientConfig(original *tls.Config) (*tls.Conf
 		GetClientCertificate: original.GetClientCertificate,
 		MinVersion:           original.MinVersion,
 		MaxVersion:           original.MaxVersion,
+		CipherSuites:         original.CipherSuites,
+		CurvePreferences:     original.CurvePreferences,
 		NextProtos:           original.NextProtos,
 		ClientCAs:            r.certPool,
 		ClientAuth:           tls.RequireAndVerifyClientCert,

@@ -125,9 +125,11 @@ func TestReloaderPreservesOriginalConfigFields(t *testing.T) {
 	reloader, _, _ := createReloader(t)
 
 	original := &tls.Config{
-		MinVersion: tls.VersionTLS12,
-		MaxVersion: tls.VersionTLS13,
-		NextProtos: []string{"h2"},
+		MinVersion:       tls.VersionTLS12,
+		MaxVersion:       tls.VersionTLS13,
+		NextProtos:       []string{"h2"},
+		CipherSuites:     []uint16{tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256},
+		CurvePreferences: []tls.CurveID{tls.CurveP256},
 	}
 
 	clientCfg, err := reloader.getClientConfig(original)
@@ -136,6 +138,8 @@ func TestReloaderPreservesOriginalConfigFields(t *testing.T) {
 	assert.Equal(t, original.MinVersion, clientCfg.MinVersion)
 	assert.Equal(t, original.MaxVersion, clientCfg.MaxVersion)
 	assert.Equal(t, original.NextProtos, clientCfg.NextProtos)
+	assert.Equal(t, original.CipherSuites, clientCfg.CipherSuites)
+	assert.Equal(t, original.CurvePreferences, clientCfg.CurvePreferences)
 	assert.Equal(t, tls.RequireAndVerifyClientCert, clientCfg.ClientAuth)
 }
 
