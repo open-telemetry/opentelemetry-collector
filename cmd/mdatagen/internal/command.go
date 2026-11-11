@@ -298,9 +298,7 @@ func run(ymlPath string) error {
 	return nil
 }
 
-// uniqueMigrationGates returns the migration feature gates selected by sel across all metrics,
-// deduplicated and in a deterministic order. Multiple metrics commonly share the same migration
-// gate pair, so this lets the generated tests pin each gate once instead of once per metric.
+// uniqueMigrationGates returns the migration gates selected by sel, deduplicated and in deterministic order.
 func uniqueMigrationGates(md Metadata, sel func(MigrationGates) FeatureGateID) []FeatureGateID {
 	names := make([]MetricName, 0, len(md.Metrics))
 	for mn := range md.Metrics {
