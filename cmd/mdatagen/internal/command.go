@@ -53,11 +53,7 @@ func getVersion() (string, error) {
 	return info.Main.Version, nil
 }
 
-// NewCommand constructs a new cobra.Command using the given Settings.
-// Any URIs specified in CollectorSettings.ConfigProviderSettings.ResolverSettings.URIs
-// are considered defaults and will be overwritten by config flags passed as
-// command-line arguments to the executable.
-// At least one Provider must be set.
+// NewCommand constructs a new cobra.Command.
 func NewCommand() (*cobra.Command, error) {
 	ver, err := getVersion()
 	if err != nil {
@@ -195,7 +191,7 @@ func run(ymlPath string) error {
 	if len(md.Telemetry.Metrics) != 0 { // if there are telemetry metrics, generate telemetry specific files
 		testDir := filepath.Join(ymlDir, "internal", md.GeneratedPackageName+"test")
 		if err = os.MkdirAll(testDir, 0o700); err != nil {
-			return fmt.Errorf("unable to create output test directory %q: %w", codeDir, err)
+			return fmt.Errorf("unable to create output test directory %q: %w", testDir, err)
 		}
 		toGenerate[filepath.Join(tmplDir, "telemetry.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry.go")
 		toGenerate[filepath.Join(tmplDir, "telemetry_test.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry_test.go")
