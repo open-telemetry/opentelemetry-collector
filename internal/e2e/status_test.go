@@ -126,6 +126,16 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 
 	require.Len(t, eventsReceived, 2)
 
+	receiverTestAttrs := pcommon.NewMap()
+	receiverTestAttrs.PutStr("scraper", "test")
+	expectedEvents := []*componentstatus.Event{
+		componentstatus.NewEvent(componentstatus.StatusStarting),
+		componentstatus.NewEvent(componentstatus.StatusRecoverableError, componentstatus.WithAttributes(receiverTestAttrs)),
+		componentstatus.NewEvent(componentstatus.StatusOK),
+		componentstatus.NewEvent(componentstatus.StatusStopping),
+		componentstatus.NewEvent(componentstatus.StatusStopped),
+	}
+
 	for instanceID, events := range eventsReceived {
 		pipelineIDs := ""
 		instanceID.AllPipelineIDs(func(id pipeline.ID) bool {
@@ -135,34 +145,19 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 
 		t.Logf("checking errors for %v - %v - %v", pipelineIDs, instanceID.Kind().String(), instanceID.ComponentID().String())
 
-		var expectedEvents []*componentstatus.Event
-		// The StatusOk is not guaranteed to be in the slice, set it according to the number of captured states
-		assert.True(t, len(events) == 4 || len(events) == 5)
-		receiverTestAttrs := pcommon.NewMap()
-		receiverTestAttrs.PutStr("scraper", "test")
-		if len(events) == 4 {
-			expectedEvents = []*componentstatus.Event{
-				componentstatus.NewEvent(componentstatus.StatusStarting),
-				componentstatus.NewEvent(componentstatus.StatusRecoverableError, componentstatus.WithAttributes(receiverTestAttrs)),
-				componentstatus.NewEvent(componentstatus.StatusStopping),
-				componentstatus.NewEvent(componentstatus.StatusStopped),
-			}
-		} else {
-			expectedEvents = []*componentstatus.Event{
-				componentstatus.NewEvent(componentstatus.StatusStarting),
-				componentstatus.NewEvent(componentstatus.StatusRecoverableError, componentstatus.WithAttributes(receiverTestAttrs)),
-				componentstatus.NewEvent(componentstatus.StatusOK),
-				componentstatus.NewEvent(componentstatus.StatusStopping),
-				componentstatus.NewEvent(componentstatus.StatusStopped),
-			}
-		}
-
 		var eventStr strings.Builder
-		for i, e := range events {
+		for _, e := range events {
 			fmt.Fprintf(&eventStr, "%v,", e.Status())
-			assert.Equal(t, expectedEvents[i].Status(), e.Status())
 		}
 		t.Logf("events received: %v", eventStr.String())
+
+		// StatusOK is always delivered: wg.Wait() ensures it is reported before
+		// Shutdown, and since #11819 hostWrapper replays past events and registers
+		// a new source under the same lock Report holds, so no instance misses it.
+		require.Len(t, events, len(expectedEvents))
+		for i, e := range events {
+			assert.Equal(t, expectedEvents[i].Status(), e.Status())
+		}
 	}
 }
 

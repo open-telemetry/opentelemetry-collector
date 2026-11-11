@@ -72,26 +72,24 @@ func (c *Component[V]) Unwrap() V {
 
 // Start starts the underlying component if it never started before.
 func (c *Component[V]) Start(ctx context.Context, host component.Host) error {
-	if c.hostWrapper == nil {
-		c.startOnce.Do(func() {
-			c.hostWrapper = &hostWrapper{
-				host:           host,
-				sources:        make([]componentstatus.Reporter, 0),
-				previousEvents: ring.New(5),
-			}
-			statusReporter, isStatusReporter := host.(componentstatus.Reporter)
-			if isStatusReporter {
-				c.hostWrapper.addSource(statusReporter)
-			}
-
-			// Cache the start error so it is returned to every pipeline that shares
-			// this component, not only the one that triggered the actual Start.
-			c.startErr = c.component.Start(ctx, c.hostWrapper)
-		})
-		return c.startErr
-	}
 	statusReporter, isStatusReporter := host.(componentstatus.Reporter)
-	if isStatusReporter {
+	started := false
+	c.startOnce.Do(func() {
+		started = true
+		c.hostWrapper = &hostWrapper{
+			host:           host,
+			sources:        make([]componentstatus.Reporter, 0),
+			previousEvents: ring.New(5),
+		}
+		if isStatusReporter {
+			c.hostWrapper.addSource(statusReporter)
+		}
+
+		// Cache the start error so it is returned to every pipeline that shares
+		// this component, not only the one that triggered the actual Start.
+		c.startErr = c.component.Start(ctx, c.hostWrapper)
+	})
+	if !started && isStatusReporter {
 		c.hostWrapper.addSource(statusReporter)
 	}
 	return c.startErr
@@ -114,13 +112,10 @@ func (h *hostWrapper) GetExtensions() map[component.ID]component.Component {
 }
 
 func (h *hostWrapper) Report(e *componentstatus.Event) {
-	// Only remember an event if it will be emitted and it has not been sent already.
 	h.lock.Lock()
 	defer h.lock.Unlock()
-	if len(h.sources) > 0 {
-		h.previousEvents.Value = e
-		h.previousEvents = h.previousEvents.Next()
-	}
+	h.previousEvents.Value = e
+	h.previousEvents = h.previousEvents.Next()
 	for _, s := range h.sources {
 		s.Report(e)
 	}
