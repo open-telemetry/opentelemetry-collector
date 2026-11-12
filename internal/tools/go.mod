@@ -4,7 +4,6 @@ go 1.26.0
 
 tool (
 	actionlint.kjanat.dev/cmd/actionlint
-	github.com/a8m/envsubst/cmd/envsubst
 	github.com/dkorunic/betteralign/cmd/betteralign
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 	github.com/golangci/misspell/cmd/misspell
@@ -52,7 +51,6 @@ require (
 	github.com/MirrexOne/unqueryvet v1.5.4 // indirect
 	github.com/OpenPeeDeeP/depguard/v2 v2.2.1 // indirect
 	github.com/ProtonMail/go-crypto v1.4.1 // indirect
-	github.com/a8m/envsubst v1.4.3 // indirect
 	github.com/alecthomas/chroma/v2 v2.27.0 // indirect
 	github.com/alecthomas/go-check-sumtype v0.5.1-0.20260828200218-ae6904d28606 // indirect
 	github.com/alexkohler/nakedret/v2 v2.0.6 // indirect
