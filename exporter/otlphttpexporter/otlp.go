@@ -56,6 +56,17 @@ const (
 	protobufContentType = "application/x-protobuf"
 )
 
+// retryableHTTPStatusCodes lists the HTTP status codes reported as retryable.
+// In addition to the OTLP/HTTP codes (429, 502, 503, 504), 408 Request Timeout
+// is retried so that slow requests are not dropped as permanent failures.
+var retryableHTTPStatusCodes = map[int]struct{}{
+	http.StatusRequestTimeout:     {},
+	http.StatusTooManyRequests:    {},
+	http.StatusBadGateway:         {},
+	http.StatusServiceUnavailable: {},
+	http.StatusGatewayTimeout:     {},
+}
+
 // Create new exporter.
 func newExporter(cfg component.Config, set exporter.Settings) (*baseExporter, error) {
 	oCfg := cfg.(*Config)
