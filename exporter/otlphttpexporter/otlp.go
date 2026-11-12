@@ -213,7 +213,7 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 			// causing the client to retry and duplicate the data.
 			// Log a warning so the partial-success details are not silently
 			// lost, and treat the export as successful.
-			e.logger.Warn("Failed to read response body from a successful export; partial-success details are unknown",
+			e.logger.Warn("Could not determine partial-success details from successful export response",
 				zap.Error(err),
 				zap.Int("status_code", resp.StatusCode),
 			)
