@@ -1247,7 +1247,12 @@ func TestPartialSuccess_responseBodyTooLarge(t *testing.T) {
 		Encoding:        EncodingProto,
 		MetricsEndpoint: srv.URL + "/v1/metrics",
 	}
-	exp, err := createMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	set := exportertest.NewNopSettings(metadata.Type)
+
+	logger, observed := observer.New(zap.DebugLevel)
+	set.Logger = zap.New(logger)
+
+	exp, err := createMetrics(context.Background(), set, cfg)
 	require.NoError(t, err)
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -1255,10 +1260,55 @@ func TestPartialSuccess_responseBodyTooLarge(t *testing.T) {
 		require.NoError(t, exp.Shutdown(context.Background()))
 	}()
 
+	// The server accepted the data (200), so the export must succeed even
+	// though the response body is too large to parse for partial-success
+	// details.  A warning is logged instead of returning an error.
 	err = exp.ConsumeMetrics(context.Background(), pmetric.NewMetrics())
-	require.Error(t, err)
-	assert.True(t, consumererror.IsPermanent(err))
-	assert.Contains(t, err.Error(), "error parsing protobuf response:")
+	require.NoError(t, err)
+
+	warnLogs := observed.FilterLevelExact(zap.WarnLevel).All()
+	require.Len(t, warnLogs, 1)
+	assert.Contains(t, warnLogs[0].Message, "Failed to read response body from a successful export")
+}
+
+// TestExport_2xxBodyReadError verifies that an unreadable response body on a
+// 2xx response is treated as a successful export with a warning, not as a
+// permanent error.  This covers the scenario described in #16389 where an
+// HTTP/2 GOAWAY after headers causes a body-read failure.
+func TestExport_2xxBodyReadError(t *testing.T) {
+	srv := createBackend("/v1/logs", func(writer http.ResponseWriter, _ *http.Request) {
+		writer.Header().Set("Content-Type", "application/x-protobuf")
+		writer.Header().Set("Content-Length", "100")
+		writer.WriteHeader(http.StatusOK)
+		// Write fewer bytes than Content-Length, then close.  This makes
+		// io.ReadFull return an unexpected-EOF-like error on the client.
+		_, _ = writer.Write([]byte("partial"))
+	})
+	defer srv.Close()
+
+	cfg := &Config{
+		Encoding:     EncodingProto,
+		LogsEndpoint: srv.URL + "/v1/logs",
+	}
+	set := exportertest.NewNopSettings(metadata.Type)
+
+	logger, observed := observer.New(zap.DebugLevel)
+	set.Logger = zap.New(logger)
+
+	exp, err := createLogs(context.Background(), set, cfg)
+	require.NoError(t, err)
+	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, exp.Shutdown(context.Background()))
+	}()
+
+	err = exp.ConsumeLogs(context.Background(), plog.NewLogs())
+	require.NoError(t, err)
+
+	warnLogs := observed.FilterLevelExact(zap.WarnLevel).All()
+	require.Len(t, warnLogs, 1)
+	assert.Contains(t, warnLogs[0].Message, "Failed to read response body from a successful export")
 }
 
 func TestExport_StatusErrorShowsResolvedURL(t *testing.T) {
