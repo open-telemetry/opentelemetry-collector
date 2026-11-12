@@ -137,8 +137,8 @@ func (cc *ClientConfig) defaultServiceConfig() string {
 	return fmt.Sprintf(`{"loadBalancingPolicy":%q}`, cc.BalancerName)
 }
 
-// usesPickFirst reports whether the client uses the pick_first balancer.
-// gRPC falls back to pick_first when no balancer is configured.
+// usesPickFirst treats an empty balancer_name as pick_first because gRPC
+// defaults to pick_first when no load balancing policy is set.
 func (cc *ClientConfig) usesPickFirst() bool {
 	return cc.BalancerName == "" || cc.BalancerName == pickfirst.Name
 }
