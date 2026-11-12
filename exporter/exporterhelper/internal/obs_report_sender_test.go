@@ -152,6 +152,10 @@ func TestExportTraceFailureAttributes(t *testing.T) {
 			metadatatest.AssertEqualExporterSendFailedSpans(t, telemetry,
 				[]metricdata.DataPoint[int64]{
 					{
+						Attributes: attribute.NewSet(attribute.String("exporter", exporterID.String())),
+						Value:      0,
+					},
+					{
 						Attributes: wantAttrs,
 						Value:      int64(req.Items),
 					},
@@ -233,6 +237,10 @@ func TestExportTraceFailureAttributesGRPCError(t *testing.T) {
 
 			metadatatest.AssertEqualExporterSendFailedSpans(t, telemetry,
 				[]metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(attribute.String("exporter", exporterID.String())),
+						Value:      0,
+					},
 					{
 						Attributes: wantAttrs,
 						Value:      int64(req.Items),
@@ -317,7 +325,7 @@ func TestExportTraceDataOp(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
-	// Successful sends record a 0 with no error attributes; failed sends add the error attributes.
+	// The 0 point with no error attributes is recorded at startup; failed sends add the error attributes.
 	expectedDataPoints := []metricdata.DataPoint[int64]{
 		{
 			Attributes: attribute.NewSet(attribute.String("exporter", exporterID.String())),
@@ -414,7 +422,7 @@ func TestExportMetricsOp(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
-	// Successful sends record a 0 with no error attributes; failed sends add the error attributes.
+	// The 0 point with no error attributes is recorded at startup; failed sends add the error attributes.
 	expectedDataPoints := []metricdata.DataPoint[int64]{
 		{
 			Attributes: attribute.NewSet(attribute.String("exporter", exporterID.String())),
@@ -511,7 +519,7 @@ func TestExportLogsOp(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
-	// Successful sends record a 0 with no error attributes; failed sends add the error attributes.
+	// The 0 point with no error attributes is recorded at startup; failed sends add the error attributes.
 	expectedDataPoints := []metricdata.DataPoint[int64]{
 		{
 			Attributes: attribute.NewSet(attribute.String("exporter", exporterID.String())),
@@ -533,8 +541,7 @@ func TestExportLogsOp(t *testing.T) {
 		metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
-// TestDetermineErrorType tests the determineErrorType function directly
-func TestExportSuccessRecordsZeroSendFailed(t *testing.T) {
+func TestSendFailedReportedAsZeroWithoutFailures(t *testing.T) {
 	tests := []struct {
 		name         string
 		signal       pipeline.Signal
@@ -567,19 +574,25 @@ func TestExportSuccessRecordsZeroSendFailed(t *testing.T) {
 				sender.NewSender(func(context.Context, request.Request) error { return nil }),
 			)
 			require.NoError(t, err)
-			require.NoError(t, obsrep.Send(context.Background(), &requesttest.FakeRequest{Items: 5}))
 
-			// A healthy exporter must still report the send_failed series with a value of 0.
-			tc.assertFailed(t, tt,
-				[]metricdata.DataPoint[int64]{
-					{
-						Attributes: attribute.NewSet(attribute.String("exporter", exporterID.String())),
-						Value:      0,
-					},
-				}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+			want := []metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(attribute.String("exporter", exporterID.String())),
+					Value:      0,
+				},
+			}
+
+			// An exporter that has not sent anything yet already reports send_failed as 0.
+			tc.assertFailed(t, tt, want, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+			// A successful send keeps it at 0, with no error attributes.
+			require.NoError(t, obsrep.Send(context.Background(), &requesttest.FakeRequest{Items: 5}))
+			tc.assertFailed(t, tt, want, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 		})
 	}
 }
+
+// TestDetermineErrorType tests the determineErrorType function directly
 
 func TestDetermineErrorType(t *testing.T) {
 	tests := []struct {
@@ -777,7 +790,7 @@ func TestExportProfilesOp(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
-	// Successful sends record a 0 with no error attributes; failed sends add the error attributes.
+	// The 0 point with no error attributes is recorded at startup; failed sends add the error attributes.
 	expectedDataPoints := []metricdata.DataPoint[int64]{
 		{
 			Attributes: attribute.NewSet(attribute.String("exporter", exporterID.String())),

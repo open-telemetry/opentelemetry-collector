@@ -68,6 +68,10 @@ func newObsReportSender[K request.Request](
 	idStr := set.ID.String()
 	expAttr := attribute.String(ExporterKey, idStr)
 
+	// Record send_failed once with a value of 0, so the series exists from startup,
+	// before the first send. Failed sends add to it later with the error attributes.
+	obsMetrics.RecordInt(context.Background(), queuebatchtelemetry.MetricSendFailure, 0)
+
 	return &obsReportSender[K]{
 		spanName:     ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
 		tracer:       tracer,
@@ -115,11 +119,10 @@ func (ors *obsReportSender[K]) endOp(ctx context.Context, numRecords int, err er
 
 	ors.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricSent, numSent)
 
-	// Record send_failed even when nothing failed, so healthy exporters still
-	// expose the series with a value of 0. extractFailureAttributes returns an
-	// empty set for a nil error, so the error attributes are only set on failures.
-	withFailedAttrs := metric.WithAttributeSet(extractFailureAttributes(err))
-	ors.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricSendFailure, numFailedToSend, withFailedAttrs)
+	if numFailedToSend > 0 {
+		withFailedAttrs := metric.WithAttributeSet(extractFailureAttributes(err))
+		ors.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricSendFailure, numFailedToSend, withFailedAttrs)
+	}
 
 	span := trace.SpanFromContext(ctx)
 	defer span.End()

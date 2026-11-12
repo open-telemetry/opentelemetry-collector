@@ -382,6 +382,10 @@ func checkRecordedMetricsForTraces(t *testing.T, tt *componenttest.Telemetry, id
 		metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
 			[]metricdata.DataPoint[int64]{
 				{
+					Attributes: attribute.NewSet(attribute.String(internal.ExporterKey, id.String())),
+					Value:      0,
+				},
+				{
 					Attributes: attribute.NewSet(
 						attribute.String(internal.ExporterKey, id.String()),
 						attribute.String(string(semconv.ErrorTypeKey), "_OTHER"),

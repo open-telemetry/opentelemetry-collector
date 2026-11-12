@@ -47,12 +47,7 @@ func TestExporterFailureAttributesDetailed(t *testing.T) {
 		require.NoError(t, sendTestMetrics(otelPort))
 
 		require.Eventually(t, func() bool {
-			metric := scrapeFailureMetric(t, metricsPort, "otlp_http/test")
-			if metric == nil {
-				return false
-			}
-			failurePermanent, ok := labelValue(metric, "error_permanent")
-			return ok && failurePermanent == "true"
+			return hasFailureSeries(scrapeFailureMetrics(t, metricsPort, "otlp_http/test"), "true")
 		}, 5*time.Second, 200*time.Millisecond, "expected permanent failure metric")
 	})
 
@@ -92,12 +87,7 @@ func TestExporterFailureAttributesDetailed(t *testing.T) {
 		require.NoError(t, sendTestMetrics(otelPort))
 
 		require.Eventually(t, func() bool {
-			metric := scrapeFailureMetric(t, metricsPort, "otlp_http/test")
-			if metric == nil {
-				return false
-			}
-			failurePermanent, ok := labelValue(metric, "error_permanent")
-			return ok && failurePermanent == "false"
+			return hasFailureSeries(scrapeFailureMetrics(t, metricsPort, "otlp_http/test"), "false")
 		}, 5*time.Second, 200*time.Millisecond, "expected retry exhaustion metric")
 	})
 }
@@ -150,7 +140,9 @@ func startFailureAttributeCollector(t *testing.T, exporterEndpoint string) (stri
 	return otelPort, metricsPort
 }
 
-func scrapeFailureMetric(t *testing.T, metricsPort, exporterName string) *dto.Metric {
+// scrapeFailureMetrics returns every send_failed series of the exporter. There can be
+// more than one: the 0 series recorded at startup, and one per set of error attributes.
+func scrapeFailureMetrics(t *testing.T, metricsPort, exporterName string) []*dto.Metric {
 	t.Helper()
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%s/metrics", metricsPort))
 	if err != nil {
@@ -175,13 +167,24 @@ func scrapeFailureMetric(t *testing.T, metricsPort, exporterName string) *dto.Me
 		return nil
 	}
 
+	var metrics []*dto.Metric
 	for _, metric := range metricFamily.Metric {
 		if hasLabel(metric, "exporter", exporterName) {
-			return metric
+			metrics = append(metrics, metric)
 		}
 	}
 
-	return nil
+	return metrics
+}
+
+// hasFailureSeries reports whether one of the series has error_permanent set to the given value.
+func hasFailureSeries(metrics []*dto.Metric, errorPermanent string) bool {
+	for _, metric := range metrics {
+		if value, ok := labelValue(metric, "error_permanent"); ok && value == errorPermanent {
+			return true
+		}
+	}
+	return false
 }
 
 func hasLabel(metric *dto.Metric, name, expected string) bool {
@@ -203,13 +206,13 @@ func labelValue(metric *dto.Metric, labelName string) (string, bool) {
 }
 
 // assertNoFailureRecorded checks that the exporter reports the send_failed series
-// with a value of 0 and without error attributes, i.e. that no failure was counted.
+// with a value of 0, and that no series has error attributes or a non-zero value.
 func assertNoFailureRecorded(t *testing.T, metricsPort, exporterName string) {
 	t.Helper()
 	sawZeroSeries := false
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {
-		if metric := scrapeFailureMetric(t, metricsPort, exporterName); metric != nil {
+		for _, metric := range scrapeFailureMetrics(t, metricsPort, exporterName) {
 			if failurePermanent, ok := labelValue(metric, "error_permanent"); ok {
 				t.Fatalf("unexpected failure metric recorded, error_permanent=%s", failurePermanent)
 			}
