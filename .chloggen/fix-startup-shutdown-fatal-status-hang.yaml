@@ -3,5 +3,5 @@ component: pkg/service
 note: "Fix a deadlock that hung the collector while starting or shutting down after a component reported fatal error."
 issues: [16309]
 subtext: |
-  A fatal error reported during Component.Start now fails the collector's startup and logs the component's error.
+  A fatal error reported during startup no longer hangs the collector's startup and shuts the collector down after.
 change_logs: [user]

@@ -316,9 +316,14 @@ func (col *Collector) reloadConfiguration(ctx context.Context) error {
 	}
 	// An old fatal error before reloading configuration should not
 	// terminate its successor
+	var staleErr error
 	select {
-	case <-col.asyncErrorChannel: //nolint:errcheck // stale error from the retired service, intentionally discarded
+	case staleErr = <-col.asyncErrorChannel:
 	default:
+	}
+
+	if staleErr != nil {
+		col.service.Logger().Warn("Fatal error from previous configuration, discarding...", zap.Error(staleErr))
 	}
 
 	if err := col.setupConfigurationComponents(ctx); err != nil {
