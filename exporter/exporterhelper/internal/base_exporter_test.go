@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
 func TestBaseExporter(t *testing.T) {
@@ -184,6 +185,47 @@ func TestBaseExporterExtraAttrs(t *testing.T) {
 			Value: int64(0),
 		},
 	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
+func TestBaseExporterStartRecordsZeroSendFailed(t *testing.T) {
+	tests := []struct {
+		name         string
+		signal       pipeline.Signal
+		assertFailed func(*testing.T, *componenttest.Telemetry, []metricdata.DataPoint[int64], ...metricdatatest.Option)
+	}{
+		{name: "traces", signal: pipeline.SignalTraces, assertFailed: metadatatest.AssertEqualExporterSendFailedSpans},
+		{name: "metrics", signal: pipeline.SignalMetrics, assertFailed: metadatatest.AssertEqualExporterSendFailedMetricPoints},
+		{name: "logs", signal: pipeline.SignalLogs, assertFailed: metadatatest.AssertEqualExporterSendFailedLogRecords},
+		{name: "profiles", signal: xpipeline.SignalProfiles, assertFailed: metadatatest.AssertEqualExporterSendFailedProfileSamples},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tt := componenttest.NewTelemetry()
+			t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+			set := exportertest.NewNopSettings(exportertest.NopType)
+			set.TelemetrySettings = tt.NewTelemetrySettings()
+
+			be, err := NewBaseExporter(set, tc.signal, noopExport)
+			require.NoError(t, err)
+			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+			t.Cleanup(func() { require.NoError(t, be.Shutdown(context.Background())) })
+
+			want := []metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(attribute.String("exporter", set.ID.String())),
+					Value:      0,
+				},
+			}
+
+			// The send_failed series exists with a value of 0 right after Start, before any send.
+			tc.assertFailed(t, tt, want, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+			// A successful send keeps it at 0, with no error attributes.
+			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 5}))
+			tc.assertFailed(t, tt, want, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		})
+	}
 }
 
 func TestWithQueue_MetadataKeys(t *testing.T) {

@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
+	queuebatchtelemetry "go.opentelemetry.io/collector/internal/telemetry/queuebatch"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -151,6 +152,10 @@ func (be *BaseExporter) Start(ctx context.Context, host component.Host) error {
 	if err := be.StartFunc.Start(ctx, host); err != nil {
 		return err
 	}
+
+	// Record send_failed once with a value of 0, so the series exists from startup,
+	// before the first send. Failed sends add to it later with the error attributes.
+	be.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricSendFailure, 0)
 
 	// Last start the QueueBatch.
 	if be.QueueSender != nil {

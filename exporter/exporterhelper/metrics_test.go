@@ -357,10 +357,6 @@ func checkRecordedMetricsForMetrics(t *testing.T, tt *componenttest.Telemetry, i
 		metadatatest.AssertEqualExporterSendFailedMetricPoints(t, tt,
 			[]metricdata.DataPoint[int64]{
 				{
-					Attributes: attribute.NewSet(append(extraAttributes, attribute.String(internal.ExporterKey, id.String()))...),
-					Value:      0,
-				},
-				{
 					Attributes: attribute.NewSet(append(extraAttributes,
 						attribute.String(internal.ExporterKey, id.String()),
 						attribute.String(string(semconv.ErrorTypeKey), "_OTHER"),
