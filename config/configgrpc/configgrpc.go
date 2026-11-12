@@ -73,8 +73,8 @@ func validateClientConfig(cc *ClientConfig) error {
 		}
 	}
 
-	if cc.PickFirst.HasValue() && cc.BalancerName != pickfirst.Name {
-		return fmt.Errorf("pick_first can only be set when balancer_name is %s, got %q", pickfirst.Name, cc.BalancerName)
+	if cc.PickFirst.HasValue() && !cc.usesPickFirst() {
+		return fmt.Errorf("pick_first can only be set when balancer_name is %s or empty, got %q", pickfirst.Name, cc.BalancerName)
 	}
 
 	if cc.DialerMiddleware.HasValue() && !configmiddleware.IsCustomTCPRoutingEnabled() {
@@ -131,10 +131,16 @@ func (cc *ClientConfig) grpcDialTarget() string {
 // loadBalancingPolicy cannot carry policy options, so the pick_first block is passed
 // through loadBalancingConfig instead.
 func (cc *ClientConfig) defaultServiceConfig() string {
-	if cc.PickFirst.HasValue() && cc.BalancerName == pickfirst.Name {
+	if cc.PickFirst.HasValue() && cc.usesPickFirst() {
 		return fmt.Sprintf(`{"loadBalancingConfig":[{%q:{"shuffleAddressList":%t}}]}`, pickfirst.Name, cc.PickFirst.Get().ShuffleAddressList)
 	}
 	return fmt.Sprintf(`{"loadBalancingPolicy":%q}`, cc.BalancerName)
+}
+
+// usesPickFirst reports whether the client uses the pick_first balancer.
+// gRPC falls back to pick_first when no balancer is configured.
+func (cc *ClientConfig) usesPickFirst() bool {
+	return cc.BalancerName == "" || cc.BalancerName == pickfirst.Name
 }
 
 func (cc *ClientConfig) isSchemeHTTP() bool {
@@ -275,7 +281,7 @@ func (cc *ClientConfig) getGrpcDialOptions(
 		opts = append(opts, grpc.WithPerRPCCredentials(perRPCCredentials))
 	}
 
-	if cc.BalancerName != "" {
+	if cc.BalancerName != "" || cc.PickFirst.HasValue() {
 		opts = append(opts, grpc.WithDefaultServiceConfig(cc.defaultServiceConfig()))
 	}
 

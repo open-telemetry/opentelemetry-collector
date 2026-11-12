@@ -314,6 +314,12 @@ func TestDefaultServiceConfig(t *testing.T) {
 			pickFirst:    configoptional.Some(PickFirstConfig{}),
 			expected:     `{"loadBalancingConfig":[{"pick_first":{"shuffleAddressList":false}}]}`,
 		},
+		{
+			name:         "empty balancer_name uses pick_first",
+			balancerName: "",
+			pickFirst:    configoptional.Some(PickFirstConfig{ShuffleAddressList: true}),
+			expected:     `{"loadBalancingConfig":[{"pick_first":{"shuffleAddressList":true}}]}`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -351,7 +357,7 @@ func TestValidatePickFirstRequiresPickFirstBalancer(t *testing.T) {
 	cfg := NewDefaultClientConfig()
 	cfg.Endpoint = "localhost:4317"
 	cfg.PickFirst = configoptional.Some(PickFirstConfig{ShuffleAddressList: true})
-	assert.ErrorContains(t, cfg.Validate(), `pick_first can only be set when balancer_name is pick_first, got "round_robin"`)
+	assert.ErrorContains(t, cfg.Validate(), `pick_first can only be set when balancer_name is pick_first or empty, got "round_robin"`)
 }
 
 func TestGrpcDialTarget(t *testing.T) {

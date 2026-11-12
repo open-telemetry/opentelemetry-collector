@@ -101,7 +101,7 @@
               "description": "Shuffles the resolved addresses before connecting, so clients that receive\nthe same address list spread across backends.\n"
             }
           },
-          "description": "Configures the pick_first balancer. Only valid when balancer_name is pick_first.\n"
+          "description": "Configures the pick_first balancer. Only valid when balancer_name is pick_first or empty.\n"
         },
         "read_buffer_size": {
           "type": "integer",

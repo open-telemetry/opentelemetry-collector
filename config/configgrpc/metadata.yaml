@@ -29,7 +29,7 @@ exported_configs:
         default: round_robin
       pick_first:
         description: |
-          Configures the pick_first balancer. Only valid when balancer_name is pick_first.
+          Configures the pick_first balancer. Only valid when balancer_name is pick_first or empty.
         optional: true
         $ref: pick_first_config
       compression:

@@ -14,7 +14,7 @@ $defs:
         description: Sets the balancer in grpclb_policy to discover the servers. Default is pick_first. https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
         type: string
       pick_first:
-        description: Configures the pick_first balancer. Only valid when balancer_name is pick_first.
+        description: Configures the pick_first balancer. Only valid when balancer_name is pick_first or empty.
         x-optional: true
         $ref: pick_first_config
       compression:

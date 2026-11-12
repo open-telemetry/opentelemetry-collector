@@ -29,7 +29,7 @@ type ClientConfig struct {
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
 	BalancerName string `mapstructure:"balancer_name"`
 
-	// PickFirst configures the pick_first balancer. Only valid when balancer_name is pick_first.
+	// PickFirst configures the pick_first balancer. Only valid when balancer_name is pick_first or empty.
 	PickFirst configoptional.Optional[PickFirstConfig] `mapstructure:"pick_first,omitempty"`
 
 	// Compression the compression key for supported compression types within collector.
