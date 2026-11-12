@@ -347,7 +347,7 @@ func TestMetricsBuilder(t *testing.T) {
 						validatedMetrics["{{ $name }}"] = true
 						assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, mi.Type())
 						assert.Equal(t, 1, mi.{{ $metric.Data.Type }}().DataPoints().Len())
-						assert.Equal(t, "{{ trimRight $metric.Description "\n" }}", mi.Description())
+						assert.Equal(t, {{ trimRight $metric.Description "\n" | printf "%q" }}, mi.Description())
 						{{- if len $metric.Unit}}
 						assert.Equal(t, "{{ $metric.Unit }}", mi.Unit())
 						{{- else }}
@@ -382,7 +382,7 @@ func TestMetricsBuilder(t *testing.T) {
 						// 2 points: the merged one above, plus one with a different timestamp that must not have merged with it.
 						assert.Equal(t, 2, mi.{{ $metric.Data.Type }}().DataPoints().Len())
 						assert.Equal(t, ts+1, mi.{{ $metric.Data.Type }}().DataPoints().At(1).Timestamp())
-						assert.Equal(t, "{{ trimRight $metric.Description "\n" }}", mi.Description())
+						assert.Equal(t, {{ trimRight $metric.Description "\n" | printf "%q" }}, mi.Description())
 						{{- if len $metric.Unit}}
 						assert.Equal(t, "{{ $metric.Unit }}", mi.Unit())
 						{{- else }}
@@ -443,7 +443,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["{{ $name }}"] = true
 					assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, mi.Type())
 					assert.Equal(t, 1, mi.{{ $metric.Data.Type }}().DataPoints().Len())
-					assert.Equal(t, "{{ trimRight $metric.Description "\n" }}", mi.Description())
+					assert.Equal(t, {{ trimRight $metric.Description "\n" | printf "%q" }}, mi.Description())
 					{{- if len $metric.Unit}}
 					assert.Equal(t, "{{ $metric.Unit }}", mi.Unit())
 					{{- else }}
