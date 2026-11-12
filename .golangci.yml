@@ -2,6 +2,7 @@ formatters:
   enable:
     - gofumpt
     - goimports
+    - gci
 
   settings:
     gofmt:
@@ -13,6 +14,12 @@ formatters:
         group-params: true
         clothe-returns: true
         balance-calls: true
+
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(go.opentelemetry.io/collector)
 
     goimports:
       # put imports beginning with prefix after 3rd-party packages;
