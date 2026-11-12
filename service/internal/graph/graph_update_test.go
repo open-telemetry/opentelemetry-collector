@@ -17,6 +17,9 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
@@ -36,8 +39,61 @@ var (
 	logsID   = pipeline.NewID(pipeline.SignalLogs)
 
 	testProcessorFactories = map[component.Type]processor.Factory{
-		testcomponents.ExampleProcessorFactory.Type(): testcomponents.ExampleProcessorFactory,
+		tagProcessorFactory.Type(): tagProcessorFactory,
 	}
+)
+
+// tagAttribute is the resource attribute that tagProcessor appends its name to.
+const tagAttribute = "processors"
+
+// tagProcessor marks the data it handles by appending its component name to
+// the tagAttribute resource attribute, so tests can tell which processors
+// modified the data and in what order.
+type tagProcessor struct {
+	tag              string
+	nextTraces       consumer.Traces
+	nextLogs         consumer.Logs
+	started, stopped bool
+}
+
+func (p *tagProcessor) Start(context.Context, component.Host) error { p.started = true; return nil }
+func (p *tagProcessor) Shutdown(context.Context) error              { p.stopped = true; return nil }
+func (p *tagProcessor) Started() bool                               { return p.started }
+func (p *tagProcessor) Stopped() bool                               { return p.stopped }
+func (*tagProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
+func (p *tagProcessor) tagResource(attrs pcommon.Map) {
+	if v, ok := attrs.Get(tagAttribute); ok {
+		v.Slice().AppendEmpty().SetStr(p.tag)
+		return
+	}
+	attrs.PutEmptySlice(tagAttribute).AppendEmpty().SetStr(p.tag)
+}
+
+func (p *tagProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	for _, rs := range td.ResourceSpans().All() {
+		p.tagResource(rs.Resource().Attributes())
+	}
+	return p.nextTraces.ConsumeTraces(ctx, td)
+}
+
+func (p *tagProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	for _, rl := range ld.ResourceLogs().All() {
+		p.tagResource(rl.Resource().Attributes())
+	}
+	return p.nextLogs.ConsumeLogs(ctx, ld)
+}
+
+var tagProcessorFactory = processor.NewFactory(testcomponents.ExampleProcessorFactory.Type(),
+	func() component.Config { return &struct{ _ int }{} },
+	processor.WithTraces(func(_ context.Context, set processor.Settings, _ component.Config, next consumer.Traces) (processor.Traces, error) {
+		return &tagProcessor{tag: set.ID.Name(), nextTraces: next}, nil
+	}, component.StabilityLevelDevelopment),
+	processor.WithLogs(func(_ context.Context, set processor.Settings, _ component.Config, next consumer.Logs) (processor.Logs, error) {
+		return &tagProcessor{tag: set.ID.Name(), nextLogs: next}, nil
+	}, component.StabilityLevelDevelopment),
 )
 
 // testReceiver is a distinct instance per build, so tests can tell whether it was rebuilt.
@@ -70,7 +126,7 @@ var (
 func testProcessorCfgs() map[component.ID]component.Config {
 	cfgs := map[component.ID]component.Config{}
 	for _, id := range []component.ID{procA, procB, procC} {
-		cfgs[id] = testcomponents.ExampleProcessorFactory.CreateDefaultConfig()
+		cfgs[id] = tagProcessorFactory.CreateDefaultConfig()
 	}
 	return cfgs
 }
@@ -135,10 +191,10 @@ func buildProcessorTestGraph(t *testing.T, pipelineCfgs pipelines.Config, connCf
 	return pg, host, set
 }
 
-func processorComponents(pg *Graph, pid pipeline.ID) []*testcomponents.ExampleProcessor {
-	var out []*testcomponents.ExampleProcessor
+func processorComponents(pg *Graph, pid pipeline.ID) []*tagProcessor {
+	var out []*tagProcessor
 	for _, n := range pg.pipelines[pid].processors {
-		out = append(out, n.(*processorNode).Component.(*testcomponents.ExampleProcessor))
+		out = append(out, n.(*processorNode).Component.(*tagProcessor))
 	}
 	return out
 }
@@ -150,9 +206,34 @@ func receiverComponent(pg *Graph, pid pipeline.ID) *testReceiver {
 	return nil
 }
 
-func sendTraces(t *testing.T, pg *Graph) {
+// processedBy sends traces through the given receiver consumer and returns the
+// names of the processors that modified the data that reached the exporter, in
+// order. It is empty when no processor touched the data.
+func processedBy(t *testing.T, pg *Graph, c consumer.Traces) []string {
 	t.Helper()
-	require.NoError(t, receiverComponent(pg, tracesID).traces.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
+	exp := exporterComponent(pg)
+	before := len(exp.Traces)
+	require.NoError(t, c.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
+	require.Len(t, exp.Traces, before+1)
+
+	v, ok := exp.Traces[before].ResourceSpans().At(0).Resource().Attributes().Get(tagAttribute)
+	if !ok {
+		return nil
+	}
+	var names []string
+	for _, e := range v.Slice().All() {
+		names = append(names, e.Str())
+	}
+	return names
+}
+
+// processorNames returns the names of the given processor IDs.
+func processorNames(ids ...component.ID) []string {
+	var names []string
+	for _, id := range ids {
+		names = append(names, id.Name())
+	}
+	return names
 }
 
 func exporterComponent(pg *Graph) *testcomponents.ExampleExporter {
@@ -235,10 +316,8 @@ func TestUpdate_ProcessorsConfigChange(t *testing.T) {
 	assert.False(t, logsProcs[0].Stopped())
 	assert.Equal(t, expStoppedBefore, exp.Stopped())
 
-	// Data flows through the rebuilt pipeline.
-	exportedBefore := len(exporterComponent(pg).Traces)
-	sendTraces(t, pg)
-	assert.Len(t, exporterComponent(pg).Traces, exportedBefore+1)
+	// Data flows through the rebuilt pipeline and is modified by both processors.
+	assert.Equal(t, processorNames(procA, procB), processedBy(t, pg, receiverComponent(pg, tracesID).traces))
 }
 
 func TestUpdate_ProcessorsKeepsUnchangedDownstreamProcessors(t *testing.T) {
@@ -257,9 +336,8 @@ func TestUpdate_ProcessorsKeepsUnchangedDownstreamProcessors(t *testing.T) {
 	assert.Same(t, before[1], after[1])
 	assert.False(t, before[1].Stopped())
 
-	exportedBefore := len(exporterComponent(pg).Traces)
-	sendTraces(t, pg)
-	assert.Len(t, exporterComponent(pg).Traces, exportedBefore+1)
+	// The new first processor and the kept second one both modify the data.
+	assert.Equal(t, processorNames(procA, procB), processedBy(t, pg, receiverComponent(pg, tracesID).traces))
 }
 
 func TestUpdate_ProcessorsListChanges(t *testing.T) {
@@ -296,10 +374,8 @@ func TestUpdate_ProcessorsListChanges(t *testing.T) {
 				assert.True(t, after[i].Started())
 			}
 
-			// Data reaches the exporter.
-			exportedBefore := len(exporterComponent(pg).Traces)
-			sendTraces(t, pg)
-			assert.Len(t, exporterComponent(pg).Traces, exportedBefore+1)
+			// The data is modified by exactly the processors on the new list, in order.
+			assert.Equal(t, processorNames(tt.newProcs...), processedBy(t, pg, receiverComponent(pg, tracesID).traces))
 		})
 	}
 }
@@ -469,9 +545,7 @@ func TestUpdate_ReceiversAndProcessorsTogether(t *testing.T) {
 		assert.Equal(t, 1, newRcvr.starts)
 		assert.Equal(t, 0, newRcvr.stops)
 
-		exportedBefore := len(exporterComponent(pg).Traces)
-		require.NoError(t, newRcvr.traces.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
-		assert.Len(t, exporterComponent(pg).Traces, exportedBefore+1)
+		assert.Equal(t, processorNames(procA), processedBy(t, pg, newRcvr.traces))
 	})
 
 	t.Run("receiver_added_and_processor_replaced", func(t *testing.T) {
@@ -490,9 +564,9 @@ func TestUpdate_ReceiversAndProcessorsTogether(t *testing.T) {
 		assert.Len(t, processorComponents(pg, tracesID), 1)
 		assert.True(t, processorComponents(pg, tracesID)[0].Started())
 
-		exportedBefore := len(exporterComponent(pg).Traces)
-		require.NoError(t, receiverNodeFor(t, pg, tracesID, testReceiverID2).traces.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
-		assert.Len(t, exporterComponent(pg).Traces, exportedBefore+1)
+		// Both receivers feed the replaced processor, not the old one.
+		assert.Equal(t, processorNames(procB), processedBy(t, pg, receiverNodeFor(t, pg, tracesID, testReceiverID2).traces))
+		assert.Equal(t, processorNames(procB), processedBy(t, pg, receiverNodeFor(t, pg, tracesID, testReceiverID).traces))
 	})
 
 	t.Run("receiver_removed_from_affected_pipeline", func(t *testing.T) {

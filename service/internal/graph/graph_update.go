@@ -279,6 +279,10 @@ func (g *Graph) replaceProcessorNodes(reload *processorReload) {
 	}
 	pipe.processors = append(pipe.processors, reload.keptProcessors...)
 
+	for _, next := range graph.NodesOf(g.componentGraph.From(pipe.capabilitiesNode.ID())) {
+		g.componentGraph.RemoveEdge(pipe.capabilitiesNode.ID(), next.ID())
+	}
+
 	var from graph.Node = pipe.capabilitiesNode
 	for _, node := range pipe.processors {
 		g.componentGraph.SetEdge(g.componentGraph.NewEdge(from, node))
