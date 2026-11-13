@@ -5,6 +5,7 @@ package configtls // import "go.opentelemetry.io/collector/config/configtls"
 
 import (
 	"context"
+	"crypto/fips140"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -23,6 +24,17 @@ const defaultMinTLSVersion = tls.VersionTLS12
 
 // Uses the default MaxVersion from "crypto/tls" which is the maximum supported version
 const defaultMaxTLSVersion = 0
+
+// tlsCurveTypes maps the accepted curve_preferences names to crypto/tls curve IDs.
+var tlsCurveTypes = map[string]tls.CurveID{
+	"P256":               tls.CurveP256,
+	"P384":               tls.CurveP384,
+	"P521":               tls.CurveP521,
+	"X25519":             tls.X25519,
+	"X25519MLKEM768":     tls.X25519MLKEM768,
+	"SecP256r1MLKEM768":  tls.SecP256r1MLKEM768,
+	"SecP384r1MLKEM1024": tls.SecP384r1MLKEM1024,
+}
 
 var systemCertPool = x509.SystemCertPool
 
@@ -105,6 +117,10 @@ func (c Config) Validate() error {
 		return errors.New("invalid TLS configuration: min_version cannot be greater than max_version")
 	}
 
+	if _, err = convertCurvePreferences(c.CurvePreferences, fips140.Enabled()); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -151,21 +167,9 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 		return nil, err
 	}
 
-	allowedCurves := slices.Collect(maps.Values(tlsCurveTypes))
-	curvePreferences := make([]tls.CurveID, 0, len(c.CurvePreferences))
-	for _, curve := range c.CurvePreferences {
-		curveID, ok := tlsCurveTypes[curve]
-		if !ok {
-			return nil, fmt.Errorf("invalid curve type: %s. Expected values are %s", curve, allowedCurves)
-		}
-		curvePreferences = append(curvePreferences, curveID)
-	}
-
-	// If no curve preferences were explicitly specified in the configuration, use
-	// the ones we allow. This helps in particular with FIPS builds where not all curves
-	// are allowed.
-	if len(curvePreferences) == 0 {
-		curvePreferences = allowedCurves
+	curvePreferences, err := convertCurvePreferences(c.CurvePreferences, fips140.Enabled())
+	if err != nil {
+		return nil, err
 	}
 
 	return &tls.Config{
@@ -177,6 +181,27 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 		CipherSuites:         cipherSuites,
 		CurvePreferences:     curvePreferences,
 	}, nil
+}
+
+// convertCurvePreferences maps the configured curve names to crypto/tls curve IDs.
+// An empty list returns nil so that crypto/tls applies its own defaults. crypto/tls
+// already filters the curves at runtime when the collector runs in FIPS 140-3 mode
+// (GODEBUG=fips140=on or only). X25519 is the only accepted name that FIPS mode never
+// allows, so it is rejected here with a clear error instead of being dropped silently
+// during the handshake.
+func convertCurvePreferences(names []string, fipsEnabled bool) ([]tls.CurveID, error) {
+	var curves []tls.CurveID
+	for _, name := range names {
+		curveID, ok := tlsCurveTypes[name]
+		if !ok {
+			return nil, fmt.Errorf("invalid curve type: %s. Expected values are %v", name, slices.Sorted(maps.Keys(tlsCurveTypes)))
+		}
+		if fipsEnabled && curveID == tls.X25519 {
+			return nil, fmt.Errorf("curve type %s is not available in FIPS 140-3 mode", name)
+		}
+		curves = append(curves, curveID)
+	}
+	return curves, nil
 }
 
 func convertCipherSuites(cipherSuites []string, includeInsecure bool) ([]uint16, error) {
