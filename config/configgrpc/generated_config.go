@@ -198,6 +198,9 @@ type ServerConfig struct {
 	// Keepalive anchor for all the settings related to keepalive.
 	Keepalive configoptional.Optional[KeepaliveServerConfig] `mapstructure:"keepalive,omitempty"`
 
+	// ListenerMiddleware listener middleware is a handler customizing how the server will listen for connections over TCP.
+	ListenerMiddleware configoptional.Optional[configmiddleware.Config] `mapstructure:"listener_middleware,omitempty"`
+
 	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
 	// It has effect only for streaming RPCs.
 	MaxConcurrentStreams uint32 `mapstructure:"max_concurrent_streams,omitempty"`
@@ -252,9 +255,10 @@ func NewDefaultServerConfig() ServerConfig {
 	addrConfig := confignet.NewDefaultAddrConfig()
 	addrConfig.Transport = "tcp"
 	return ServerConfig{
-		Auth:      configoptional.None[configauth.Config](),
-		Keepalive: configoptional.Some(NewDefaultKeepaliveServerConfig()),
-		TLS:       configoptional.None[configtls.ServerConfig](),
-		NetAddr:   addrConfig,
+		Auth:               configoptional.None[configauth.Config](),
+		Keepalive:          configoptional.Some(NewDefaultKeepaliveServerConfig()),
+		ListenerMiddleware: configoptional.None[configmiddleware.Config](),
+		TLS:                configoptional.None[configtls.ServerConfig](),
+		NetAddr:            addrConfig,
 	}
 }

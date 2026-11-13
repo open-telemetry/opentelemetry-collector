@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -33,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 var (
@@ -1194,6 +1196,19 @@ func TestServerUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	assert.Equal(t, component.MustNewID("server_middleware1"), serverConfig.Middlewares[0].ID)
 	assert.Equal(t, component.MustNewID("server_middleware2"), serverConfig.Middlewares[1].ID)
 	assert.Equal(t, component.MustNewID("server_middleware3"), serverConfig.Middlewares[2].ID)
+}
+
+func TestValidate(t *testing.T) {
+	gateID := "pkg.configmiddleware.CustomTCPRouting"
+	previous := configmiddleware.IsCustomTCPRoutingEnabled()
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gateID, previous))
+	})
+
+	require.NoError(t, featuregate.GlobalRegistry().Set(gateID, false))
+	sc := NewDefaultServerConfig()
+	sc.ListenerMiddleware = configoptional.Some(configmiddleware.Config{ID: dummyID})
+	require.ErrorContains(t, sc.Validate(), "use of the listener_middleware feature requires to enable the feature gate")
 }
 
 func startServer(tb testing.TB, sc *ServerConfig, ln net.Listener, h http.Handler) {

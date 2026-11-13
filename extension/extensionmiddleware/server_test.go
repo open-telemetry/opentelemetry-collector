@@ -6,6 +6,7 @@ package extensionmiddleware
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -121,4 +122,25 @@ func TestGetGRPCServerOptionsFunc(t *testing.T) {
 		require.Equal(t, expectedErr, err)
 		require.Nil(t, opts)
 	})
+}
+
+func TestGetListenerFunc(t *testing.T) {
+	var empty GetListenerFunc
+	listen, err := empty.GetListenContext(t.Context())
+	require.Error(t, err)
+	require.Nil(t, listen)
+
+	expected := func(context.Context, string, string) (net.Listener, error) { return nil, nil }
+	listen, err = GetListenerFunc(func(context.Context) (ListenContextFunc, error) {
+		return expected, nil
+	}).GetListenContext(t.Context())
+	require.NoError(t, err)
+	require.NotNil(t, listen)
+
+	wantErr := errors.New("listener failure")
+	listen, err = GetListenerFunc(func(context.Context) (ListenContextFunc, error) {
+		return nil, wantErr
+	}).GetListenContext(t.Context())
+	require.ErrorIs(t, err, wantErr)
+	require.Nil(t, listen)
 }
