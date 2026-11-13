@@ -24,6 +24,11 @@ type AddrConfig struct {
 	// "ip6" (IPv6-only), "unix", "unixgram", "unixpacket" and "npipe" (Windows named pipes, Windows-only).
 	Transport TransportType `mapstructure:"transport,omitempty"`
 
+	// ReusePort enables the SO_REUSEPORT socket option on the listener, so multiple processes can bind the same address.
+	// This lets a new collector start before the old one stops, without refusing connections in between.
+	// Only supported on Linux, Darwin and the BSDs.
+	ReusePort bool `mapstructure:"reuse_port,omitempty"`
+
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
