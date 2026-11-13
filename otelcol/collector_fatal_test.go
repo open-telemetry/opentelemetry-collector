@@ -80,10 +80,18 @@ func TestCollectorFatalErrorInStartFailsStartup(t *testing.T) {
 func TestCollectorFatalErrorFromBackgroundGoroutineDuringStartup(t *testing.T) {
 	col := newFatalTestCollector(t, func() fatalTestExt {
 		return fatalTestExt{StartFunc: func(_ context.Context, host component.Host) error {
-			go componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errors.New("boom")))
-			// Let the goroutine take the reporter lock before Start returns, so the
-			// host's next status report (after Start) needs a lock the goroutine holds.
-			time.Sleep(100 * time.Millisecond)
+			// Using reported channel to signal report status complete
+			reported := make(chan struct{})
+			go func() {
+				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errors.New("boom")))
+				close(reported)
+			}()
+
+			// waiting on report status completion to avoid sleeping excessively in case of no deadlocks.
+			select {
+			case <-reported:
+			case <-time.After(100 * time.Millisecond):
+			}
 			return nil
 		}}
 	})
@@ -139,12 +147,22 @@ func TestCollectorFatalErrorDuringShutdown(t *testing.T) {
 	go func() { done <- col.Run(context.Background()) }()
 	require.Eventually(t, func() bool { return col.GetState() == StateRunning }, 2*time.Second, 10*time.Millisecond)
 
-	go col.Shutdown() // blocks until Run has finished its cleanup
+	shutdownDone := make(chan struct{})
+
+	go func() {
+		col.Shutdown() // blocks until Run has finished its cleanup
+		close(shutdownDone)
+	}()
 	select {
 	case err := <-done:
 		require.NoError(t, err)
 	case <-time.After(5 * time.Second):
 		t.Fatal("collector hung during shutdown")
+	}
+	select {
+	case <-shutdownDone:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Shutdown did not return")
 	}
 	assert.Equal(t, StateClosed, col.GetState())
 }
