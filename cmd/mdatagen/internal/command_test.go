@@ -32,6 +32,24 @@ func TestNewCommand(t *testing.T) {
 	assert.True(t, cmd.SilenceUsage)
 }
 
+func TestIsComponent(t *testing.T) {
+	tests := []struct {
+		name   string
+		status *Status
+		want   bool
+	}{
+		{name: "component class", status: &Status{Class: "receiver"}, want: true},
+		{name: "internal class", status: &Status{Class: "internal"}, want: false},
+		{name: "nil status", status: nil, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, isComponent(tt.status))
+		})
+	}
+}
+
 func TestCommandNoArgs(t *testing.T) {
 	cmd, err := NewCommand()
 	require.NoError(t, err)

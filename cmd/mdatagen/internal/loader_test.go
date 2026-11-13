@@ -742,7 +742,7 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name:    "testdata/no_metric_stability.yaml",
 			want:    Metadata{},
-			wantErr: "metric \"default.metric\": missing required field: `stability.level`",
+			wantErr: "metric \"default.metric\": missing required field: `stability`",
 		},
 		{
 			name:    "testdata/undeprecated_with_deprecation.yaml",

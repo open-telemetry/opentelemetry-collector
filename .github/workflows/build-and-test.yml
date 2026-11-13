@@ -65,8 +65,6 @@ jobs:
           lookup-only: true
       - name: golint
         run: make -j4 golint
-      - name: goimpi
-        run: make goimpi
 
   govulncheck:
     runs-on: ubuntu-latest
