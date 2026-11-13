@@ -90,7 +90,7 @@ func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 			"only one of the following has to be specified: sum, gauge, histogram"))
 	}
 	if m.Stability == component.StabilityLevelUndefined {
-		errs = errors.Join(errs, errors.New("missing required field: `stability.level`"))
+		errs = errors.Join(errs, errors.New("missing required field: `stability`"))
 	}
 	if m.Description == "" {
 		errs = errors.Join(errs, errors.New(`missing metric description`))
