@@ -141,7 +141,7 @@ The configuration file is composed of two main parts: `dist` and module types. A
 ocb --config=config.yaml
 ```
 
-The module types are specified at the top-level. Available options are `extensions`, `exporters`, `receivers`, `processors`, `providers`, and `converters`. They all accept a list of components, and each component is required to have at least the `gomod` entry. The telemetry provider for the Collector binary can also be specified through the `telemetry` key, which can be set to a single module, also requiring a `gomod` entry at a minimum.
+The module types are specified at the top-level. Available options are `extensions`, `exporters`, `receivers`, `processors`, `connectors`, `providers`, and `converters`. They all accept a list of components, and each component is required to have at least the `gomod` entry. The telemetry provider for the Collector binary can also be specified through the `telemetry` key, which can be set to a single module, also requiring a `gomod` entry at a minimum.
 
 When not specified, the `import` value is inferred from the `gomod`. When not specified, the `name` is inferred from the `import`.
 
@@ -149,7 +149,7 @@ The `import` might specify a more specific path than what is specified in the `g
 
 The `name` will typically be omitted, except when multiple components have the same name. In such case, set a unique name for each module.
 
-Optionally, a list of `go mod` replace entries can be provided, in case custom overrides are needed. This is typically necessary when a processor or some of its transitive dependencies have dependency problems.
+Optionally, a list of `go mod` `replaces` and `excludes` directives can be provided, in case custom overrides or exclusions are needed. This is typically necessary when a component or some of its transitive dependencies have dependency problems.
 
 ```yaml
 dist:
@@ -161,17 +161,28 @@ dist:
     go: "/usr/bin/go" # which Go binary to use to compile the generated sources. Optional.
     debug_compilation: false # enabling this causes the builder to keep the debug symbols in the resulting binary. Optional.
     use_absolute_replace_paths: false # when using local path overrides, uses absolute paths instead of relative paths. Optional.
+    build_tags: "customTag" # custom Go build tags to pass during compilation. Optional.
+    resource: # controls which resourcedetectionprocessor detectors are compiled in. Optional.
+      detection:
+        detectors:
+          - env:
+          - system:
 exporters:
   - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.146.0" # the Go module for the component. Required.
     import: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter" # the import path for the component. Optional.
     name: "alibabacloudlogserviceexporter" # package name to use in the generated sources. Optional.
     path: "./alibabacloudlogserviceexporter" # in case a local version should be used for the module, the path relative to the current dir, or a full path can be specified. Optional.
+connectors:
+  - gomod: "go.opentelemetry.io/collector/connector/forwardconnector v0.146.0" # the Go module for the component. Required.
 telemetry:
   gomod: go.opentelemetry.io/collector/service v0.146.0
   import: go.opentelemetry.io/collector/service/telemetry/otelconftelemetry
 replaces:
   # a list of "replaces" directives that will be part of the resulting go.mod
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.128.0
+excludes:
+  # a list of "exclude" directives that will be part of the resulting go.mod
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.127.0
 ```
 
 The builder also allows setting the scheme to use as the default URI scheme via `conf_resolver.default_uri_scheme`:
