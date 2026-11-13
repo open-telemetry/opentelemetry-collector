@@ -16,7 +16,8 @@ This receiver is used for testing purposes to check the output of mdatagen.
 | Distributions | [] |
 | Warnings      | [Any additional information that should be brought to the consumer's attention](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fsample%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fsample) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fsample%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fsample) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@braydonk](https://www.github.com/braydonk), [@dmathieu](https://www.github.com/dmathieu) |
+| Emeritus      | [@dmitryax](https://www.github.com/dmitryax) |
 
 [deprecated]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#deprecated
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -34,15 +35,15 @@ This is where warnings are described.
 ## Configuration
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
-| `api_token` | string |  | no | API token used to authenticate with the endpoint. |
-| `component_id` | string |  | no | Component ID used to identify this receiver instance. |
-| `endpoint` | string | localhost:12345 | **yes** | The endpoint to scrape metrics from. |
-| `headers` | map[string]string |  | no | Extra HTTP headers to attach to each request. |
-| `max_results` | int64 | 100 | no | Maximum number of results to return per scrape. |
 | `metrics` | object (see [metrics](#metrics)) |  | no | MetricsConfig provides config for sample metrics. |
 | `resource_attributes` | object (see [resource_attributes](#resource_attributes)) |  | no | ResourceAttributesConfig provides config for sample resource attributes. |
-| `sample_pkg` | object (see [sample_pkg](#sample_pkg)) |  | no |  |
+| `endpoint` | string | localhost:12345 | **yes** | The endpoint to scrape metrics from. |
 | `timeout` | duration | 10s | no | Timeout for scraping metrics. |
+| `max_results` | int64 | 100 | no | Maximum number of results to return per scrape. |
+| `api_token` | string |  | no | API token used to authenticate with the endpoint. |
+| `component_id` | string |  | no | Component ID used to identify this receiver instance. |
+| `headers` | map[string]string |  | no | Extra HTTP headers to attach to each request. |
+| `sample_pkg` | object (see [sample_pkg](#sample_pkg)) |  | no |  |
 
 ### <a id="metrics"></a>metrics
 | Setting | Type | Default | Required | Description |
@@ -60,9 +61,9 @@ This is where warnings are described.
 ### <a id="metrics.default.metric"></a>metrics.default.metric
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
+| `enabled` | bool | true | no |  |
 | `aggregation_strategy` | string (one of: sum, avg, min, max) | sum | no |  |
 | `attributes` | []string (one of: string_attr, state, enum_attr, slice_attr, map_attr, conditional_int_attr, conditional_string_attr, opt_in_bool_attr) | [string_attr, state, enum_attr, slice_attr, map_attr, conditional_int_attr, conditional_string_attr] | no |  |
-| `enabled` | bool | true | no |  |
 
 ### <a id="metrics.default.metric.to_be_removed"></a>metrics.default.metric.to_be_removed
 | Setting | Type | Default | Required | Description |
@@ -72,51 +73,51 @@ This is where warnings are described.
 ### <a id="metrics.metric.input_type"></a>metrics.metric.input_type
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
+| `enabled` | bool | true | no |  |
 | `aggregation_strategy` | string (one of: sum, avg, min, max) | sum | no |  |
 | `attributes` | []string (one of: string_attr, state, enum_attr, slice_attr, map_attr) | [string_attr, state, enum_attr, slice_attr, map_attr] | no |  |
-| `enabled` | bool | true | no |  |
 
 ### <a id="metrics.optional.metric"></a>metrics.optional.metric
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
+| `enabled` | bool | false | no |  |
 | `aggregation_strategy` | string (one of: sum, avg, min, max) | avg | no |  |
 | `attributes` | []string (one of: string_attr, boolean_attr, boolean_attr2, conditional_string_attr) | [string_attr, boolean_attr, boolean_attr2, conditional_string_attr] | no |  |
-| `enabled` | bool | false | no |  |
 
 ### <a id="metrics.optional.metric.empty_unit"></a>metrics.optional.metric.empty_unit
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
+| `enabled` | bool | false | no |  |
 | `aggregation_strategy` | string (one of: sum, avg, min, max) | avg | no |  |
 | `attributes` | []string (one of: string_attr, boolean_attr) | [string_attr, boolean_attr] | no |  |
-| `enabled` | bool | false | no |  |
 
 ### <a id="metrics.reaggregate.metric"></a>metrics.reaggregate.metric
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
+| `enabled` | bool | true | no |  |
 | `aggregation_strategy` | string (one of: sum, avg, min, max) | avg | no |  |
 | `attributes` | []string (one of: string_attr, boolean_attr) | [string_attr, boolean_attr] | no |  |
-| `enabled` | bool | true | no |  |
 
 ### <a id="metrics.reaggregate.metric.with_required"></a>metrics.reaggregate.metric.with_required
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
+| `enabled` | bool | true | no |  |
 | `aggregation_strategy` | string (one of: sum, avg, min, max) | avg | no |  |
 | `attributes` | []string (one of: required_string_attr, string_attr, boolean_attr) | [required_string_attr, string_attr, boolean_attr] | no |  |
-| `enabled` | bool | true | no |  |
 
 ### <a id="metrics.system.cpu.time"></a>metrics.system.cpu.time
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
+| `enabled` | bool | true | no |  |
 | `aggregation_strategy` | string (one of: sum, avg, min, max) | sum | no |  |
 | `attributes` | []string (one of: cpu) | [cpu] | no |  |
-| `enabled` | bool | true | no |  |
 
 ### <a id="metrics.system.memory.usage"></a>metrics.system.memory.usage
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
+| `enabled` | bool | true | no |  |
 | `aggregation_strategy` | string (one of: sum, avg, min, max) | sum | no |  |
 | `attributes` | []string (one of: state) | [state] | no |  |
-| `enabled` | bool | true | no |  |
 
 ### <a id="resource_attributes"></a>resource_attributes
 | Setting | Type | Default | Required | Description |
@@ -136,91 +137,91 @@ This is where warnings are described.
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `enabled` | bool | false | no |  |
-| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
-| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
-| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 | `metrics_include` | []object |  | no | Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted. |
+| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
+| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
+| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
 
 ### <a id="resource_attributes.map.resource.attr"></a>resource_attributes.map.resource.attr
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `enabled` | bool | true | no |  |
-| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
-| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
-| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 | `metrics_include` | []object |  | no | Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted. |
+| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
+| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
+| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
 
 ### <a id="resource_attributes.optional.resource.attr"></a>resource_attributes.optional.resource.attr
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `enabled` | bool | false | no |  |
-| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
-| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
-| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 | `metrics_include` | []object |  | no | Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted. |
+| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
+| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
+| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
 
 ### <a id="resource_attributes.slice.resource.attr"></a>resource_attributes.slice.resource.attr
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `enabled` | bool | true | no |  |
-| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
-| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
-| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 | `metrics_include` | []object |  | no | Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted. |
+| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
+| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
+| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
 
 ### <a id="resource_attributes.string.enum.resource.attr"></a>resource_attributes.string.enum.resource.attr
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `enabled` | bool | true | no |  |
-| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
-| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
-| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 | `metrics_include` | []object |  | no | Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted. |
+| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
+| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
+| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
 
 ### <a id="resource_attributes.string.resource.attr"></a>resource_attributes.string.resource.attr
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `enabled` | bool | true | no |  |
-| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
-| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
-| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 | `metrics_include` | []object |  | no | Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted. |
+| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
+| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
+| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
 
 ### <a id="resource_attributes.string.resource.attr_disable_warning"></a>resource_attributes.string.resource.attr_disable_warning
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `enabled` | bool | true | no |  |
-| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
-| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
-| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 | `metrics_include` | []object |  | no | Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted. |
+| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
+| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
+| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
 
 ### <a id="resource_attributes.string.resource.attr_remove_warning"></a>resource_attributes.string.resource.attr_remove_warning
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `enabled` | bool | false | no |  |
-| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
-| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
-| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 | `metrics_include` | []object |  | no | Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted. |
+| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
+| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
+| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
 
 ### <a id="resource_attributes.string.resource.attr_to_be_removed"></a>resource_attributes.string.resource.attr_to_be_removed
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `enabled` | bool | true | no |  |
-| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
-| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
-| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 | `metrics_include` | []object |  | no | Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted. |
+| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
+| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
+| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
 
 ### <a id="resource_attributes.string.resource.disabled_attr_to_be_removed"></a>resource_attributes.string.resource.disabled_attr_to_be_removed
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `enabled` | bool | false | no |  |
-| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
-| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
-| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
 | `metrics_include` | []object |  | no | Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted. |
+| `metrics_exclude` | []object |  | no | Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude. |
+| `events_include` | []object |  | no | Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted. |
+| `events_exclude` | []object |  | no | Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude. |
 
 ### <a id="sample_pkg"></a>sample_pkg
 | Setting | Type | Default | Required | Description |

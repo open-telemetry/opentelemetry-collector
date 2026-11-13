@@ -15,8 +15,6 @@ type FieldInterface interface {
 
 	GenTestEncodingValues() string
 
-	GenPool() string
-
 	GenDelete() string
 
 	GenCopy() string
@@ -30,6 +28,11 @@ type FieldInterface interface {
 	GenMarshalProto() string
 
 	GenUnmarshalProto() string
+
+	// GenUnmarshalProtoNoDepth generates proto unmarshal code that always calls
+	// child.UnmarshalProto(buf) (resetting depth to 0) instead of propagating depth.
+	// Used for types that cannot be nested inside AnyValue.
+	GenUnmarshalProtoNoDepth() string
 
 	GenMessageField() string
 
@@ -221,6 +224,7 @@ func (pf *Field) getTemplateFields() map[string]any {
 		"goType":            pf.GoType(),
 		"defaultValue":      pf.DefaultValue(),
 		"testValue":         pf.TestValue(),
+		"generatedMessage":  pf.MessageName == "AnyValue" || pf.MessageName == "ArrayValue" || pf.MessageName == "KeyValueList" || pf.MessageName == "KeyValue",
 	}
 }
 

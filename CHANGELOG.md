@@ -7,6 +7,128 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.71.0/v0.165.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/confighttp`: Remove deprecated fields `IdleConnTimeout`, `MaxIdleConns`, `MaxIdleConnsPerHost`, `DisableKeepAlives`. (#15973)
+
+### 🚀 New components 🚀
+
+- `pkg/xreceiverhelper`: Add xreceiverhelper with an `ObsReport` that reports profile sample metrics per sample type. (#16251)
+  `ObsReport.EndProfilesOpBySampleType` records the
+  `otelcol_receiver_{accepted,refused,failed}_profile_samples` metrics with an additional
+  `sample_type` attribute, formatted as "type:unit", as a single payload can hold multiple profiles
+  with different sample types. Use `ProfileSampleCountsByType` to compute the sample counts before
+  the profiles are passed to the next consumer, as the data may be mutated downstream.
+  The OTLP receiver now uses `EndProfilesOpBySampleType`.
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/configmiddleware`: allow to override the dialer used by confighttp.ToClient and configgrpc.ToClient (#16019)
+- `pkg/featuregate`: Allow underscores in feature gate IDs. (#16243)
+- `pkg/pdata`: Improve performance of pcommon.Map Get, Range, and All functions. (#16282, #16321)
+- `pkg/pdata`: Reduce number of allocations when updating an oneof primitive (#16226)
+- `pkg/service`: Service now supports configuring additional resource detectors for internal telemetry as per the update to otelconf v0.26.0. (#15869)
+- `pkg/service`: Warn at startup when a pipeline combines the batch processor with exporterhelper batching. (#15965)
+  Detection does not cross connectors or inspect exporter wrappers that hide exporterhelper's batching capability.
+- `pkg/xprocessorhelper`: Instrument `xprocessorhelper.NewProfiles` with `otelcol_processor_incoming_items`, `otelcol_processor_outgoing_items`, and `otelcol_processor_internal_duration`, consistent with the other signal constructors. (#15523)
+- `processor/memory_limiter`: Add `garbage_collector` config section to allow disabling forced garbage collection via `enabled` field. (#15081)
+- `processor/queue_batch`: Promote the queue_batch processor to beta for traces, metrics, and logs, and to alpha for profiles. (#12022)
+- `processor/queue_batch`: Report queue and batch metrics as processor metrics (#14038)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Fix panic in `Attribute.TestValue()` and `Attribute.TestValueTwo()` when handling single-element or empty enum attributes. (#15644)
+- `cmd/mdatagen`: Fix generated metrics tests failing when a metric migration's `through_gates` feature gates are promoted past alpha. (#16249)
+  The generated tests now explicitly set the migration feature gates for each test case and restore
+  their previous state on cleanup, instead of assuming the gates are disabled by default.
+  When a gate's stage forbids the state a case needs, such as disabling a stable gate, the metrics-builder
+  test skips only its gate-dependent count and warning assertions, and the per-combination versioned-metric
+  sub-tests for that combination are skipped.
+  
+- `cmd/mdatagen`: Generate README configuration docs for `exported_configs` definitions. (#16164)
+  Object definitions and scalar type aliases under `exported_configs` are now rendered in the README after the `config:` table.
+  Packages that only declare `exported_configs` can now get generated docs once their README contains the config markers.
+  Components that only declare `exported_configs` no longer get an empty configuration table.
+  
+- `cmd/schemagen`: Handle file-not-found errors when loading schemas (#15925)
+- `pkg/configgrpc`: Bound the zstd decoder window by the configured maximum receive message size instead of the library default. (#16280)
+  A zstd frame declares its window in the header and the decoder allocated it
+  before producing any output, so a small crafted message could drive a large
+  allocation regardless of `max_recv_msg_size_mib`. The decoder is also
+  returned to its pool as soon as gRPC is done with a message.
+  
+- `pkg/confighttp`: Bound the zstd decoder window by `max_request_body_size` instead of the library default. (#16280)
+  A zstd frame declares its window in the header and the decoder allocated it
+  before producing any output, so a small crafted body could drive a large
+  allocation regardless of the configured request body size.
+  
+- `pkg/confighttp`: Accept Content-Encoding: identity as equivalent to no encoding. (#15122)
+- `pkg/exporterhelper`: Fix a `Cannot unref freed data` panic when a persistent sending queue forwards requests into another pipeline (#15256)
+- `pkg/exporterhelper`: With `wait_for_result`, canceling a request that the sending queue already accepted no longer returns early (#16255)
+  Previously a canceled context made it return `context.Canceled` while the request was still
+  delivered, so callers could report a failure for data that had been sent. Canceling still takes
+  effect while nothing has been done with the request.
+  
+- `pkg/pdata`: Add recursion depth limit (100) to proto unmarshalling of AnyValue, ArrayValue, KeyValueList, and KeyValue to prevent stack overflow from maliciously crafted deeply nested payloads. (#15301)
+- `pkg/service`: Skip graph nodes that have not been built during shutdown to prevent a panic when a partial receiver reload fails to build a receiver. (#16261)
+
+<!-- previous-version -->
+
+## v1.70.0/v0.164.0
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add support for supported_platforms in component metadata, allowing generated component tests to target explicitly supported platforms (#13319)
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Fix the generated `dataPointKey` function triggering gosec G115 (`uint64` to `int64` conversion) in components that use mdatagen. (#16176)
+  The generated hash values are unchanged.
+- `exporter/otlp_http`: Report the URL the request was actually sent to in HTTP status error messages when a middleware rewrites the request URL. (#14673)
+  Middleware RoundTrippers that clone the request before rewriting its URL left
+  the configured placeholder URL in 4xx/5xx error messages. The exporter now
+  reads the destination from the response instead.
+  
+- `pkg/otelcol`: Redact non-empty literal defaults in unexpanded env provider references such as `${env:NAME:-literal}` in the raw config reported by the OpAMP extension when `reports_raw_config` is enabled (#16141)
+  Empty defaults such as `${env:NAME:-}` stay visible. Other provider schemes are unchanged.
+  
+
+<!-- previous-version -->
+
+## v1.69.0/v0.163.0
+
+### 💡 Enhancements 💡
+
+- `cmd/builder`: Add `dist.resource.detection.detectors` to the builder config, letting distributions opt into a smaller set of resourcedetectionprocessor detectors via generated go build tags. (#16075)
+- `cmd/mdatagen`: Generate exporter queue/batch sender defaults from an opt-in `sending_queue` field in metadata.yaml. See the [batching migration RFC](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/batching-migration.md). (#15963)
+  Declaring `sending_queue` is opt-in; an exporter that omits it is unaffected until it explicitly opts in one at a time during Phase 2 of the migration. Set MDATAGEN_SENDING_QUEUE_OPT_OUT=true to generate the standard default for every undeclared exporter while auditing a whole repository.
+- `pkg/pprofile`: Implement Profiles development-version metadata in the OTLP receiver and exporters. (#16147, #16009)
+  The receiver rejects malformed, repeated, or unsupported versions before decoding.
+  OTLP exporters send the version associated with their compiled-in Profiles schema.
+  The version is not configurable, and existing clients without metadata identify
+  the initial development version.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/mdatagen`: Replace the O(n) scan in generated `recordDataPoint` with an O(1) hash lookup, fixing an O(n²) cost per scrape when many data points land on one resource. (#15912)
+- `cmd/mdatagen`: When both migration gates are enabled, only the latest metric with its v1 attributes is emitted (legacy attributes are no longer included). (#15979)
+- `pkg/exporterhelper`: Fix sending queue deadlocks when blocked offers are cancelled with block_on_overflow enabled. (#15700)
+- `pkg/exporterhelper`: Drop only the oversized profile when splitting a profiles batch, instead of discarding every profile queued behind it (#16087)
+  Same fix as
+- `pkg/exporterhelper`: Drop only the oversized span when splitting a traces batch, instead of discarding every span queued behind it (#16087)
+  Same fix as
+- `pkg/pprofile`: Use the profiles dictionary for resource and scope attribute strings sent over OTLP/gRPC. (#15861)
+  The OTLP/gRPC profiles client now interns attribute strings before transmission, matching the OTLP/HTTP path. The server resolves the references before exposing pdata to consumers.
+  
+- `pkg/xpdata`: Fix `xhash` producing the same hash for different maps by length-prefixing keys, strings and bytes. (#16048)
+  All hash values produced by `xhash` change.
+
+<!-- previous-version -->
+
 ## v1.68.0/v0.162.0
 
 ### 🛑 Breaking changes 🛑

@@ -43,6 +43,9 @@ type ClientConfig struct {
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
 	Keepalive configoptional.Optional[KeepaliveClientConfig] `mapstructure:"keepalive,omitempty"`
 
+	// DialerMiddleware dialer middleware is a handler customizing how the client will dial connections over TCP.
+	DialerMiddleware configoptional.Optional[configmiddleware.Config] `mapstructure:"dialer_middleware,omitempty"`
+
 	// Middlewares middlewares for the gRPC client.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 
@@ -86,10 +89,11 @@ func (c *ClientConfig) Validate() error {
 // Prefer this over an empty struct literal so default changes stay in sync automatically.
 func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
-		Auth:         configoptional.None[configauth.Config](),
-		BalancerName: "round_robin",
-		Keepalive:    configoptional.Some(NewDefaultKeepaliveClientConfig()),
-		TLS:          configtls.NewDefaultClientConfig(),
+		Auth:             configoptional.None[configauth.Config](),
+		BalancerName:     "round_robin",
+		Keepalive:        configoptional.Some(NewDefaultKeepaliveClientConfig()),
+		DialerMiddleware: configoptional.None[configmiddleware.Config](),
+		TLS:              configtls.NewDefaultClientConfig(),
 	}
 }
 
@@ -185,9 +189,6 @@ func NewDefaultKeepaliveServerParameters() KeepaliveServerParameters {
 
 // ServerConfig defines common settings for a gRPC server configuration.
 type ServerConfig struct {
-	// Represents a network endpoint address.
-	NetAddr confignet.AddrConfig `mapstructure:",squash"`
-
 	// Auth authentication for this receiver
 	Auth configoptional.Optional[configauth.Config] `mapstructure:"auth,omitempty"`
 
@@ -217,6 +218,9 @@ type ServerConfig struct {
 	// WriteBufferSize writeBufferSize for gRPC server. See grpc.WriteBufferSize.
 	// (https://godoc.org/google.golang.org/grpc#WriteBufferSize).
 	WriteBufferSize int `mapstructure:"write_buffer_size,omitempty"`
+
+	// NetAddr represents a network endpoint address.
+	NetAddr confignet.AddrConfig `mapstructure:",squash"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -248,9 +252,9 @@ func NewDefaultServerConfig() ServerConfig {
 	addrConfig := confignet.NewDefaultAddrConfig()
 	addrConfig.Transport = "tcp"
 	return ServerConfig{
-		NetAddr:   addrConfig,
 		Auth:      configoptional.None[configauth.Config](),
 		Keepalive: configoptional.Some(NewDefaultKeepaliveServerConfig()),
 		TLS:       configoptional.None[configtls.ServerConfig](),
+		NetAddr:   addrConfig,
 	}
 }

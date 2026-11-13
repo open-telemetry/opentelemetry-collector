@@ -5,6 +5,7 @@ package queue // import "go.opentelemetry.io/collector/exporter/exporterhelper/i
 
 import (
 	"context"
+	"runtime"
 	"sync"
 )
 
@@ -18,7 +19,8 @@ type cond struct {
 }
 
 func newCond(l sync.Locker) *cond {
-	return &cond{L: l, ch: make(chan struct{}, 1)}
+	// Add NumCPU slots to reduce chance of blocking the Signal routine and avoid having to release the lock.
+	return &cond{L: l, ch: make(chan struct{}, runtime.NumCPU()), waiting: 0}
 }
 
 // Signal wakes one goroutine waiting on c, if there is any.
@@ -28,14 +30,15 @@ func (c *cond) Signal() {
 		return
 	}
 	c.waiting--
-	c.ch <- struct{}{}
-}
-
-// Broadcast wakes all goroutines waiting on c.
-// It requires for the caller to hold c.L during the call.
-func (c *cond) Broadcast() {
-	for ; c.waiting > 0; c.waiting-- {
+	select {
+	case c.ch <- struct{}{}:
+		// Happy path, no need to unlock the lock.
+	default:
+		// All signal slots are occupied and canceled requests are potentially blocked waiting for the lock
+		// before they can free slots. Need to release the lock to allow them to free slots.
+		c.L.Unlock()
 		c.ch <- struct{}{}
+		c.L.Lock()
 	}
 }
 

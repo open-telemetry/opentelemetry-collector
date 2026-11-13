@@ -910,7 +910,7 @@ func TestCurvePreferences(t *testing.T) {
 			name:             "invalid-curve",
 			preferences:      []string{"P25223236"},
 			expectedCurveIDs: []tls.CurveID{},
-			expectedErr:      "invalid curve type",
+			expectedErr:      "invalid curve type: P25223236",
 		},
 	}
 

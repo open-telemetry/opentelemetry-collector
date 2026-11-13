@@ -50,6 +50,7 @@ var replaceModules = []string{
 	"/config/configopaque",
 	"/config/configoptional",
 	"/config/configretry",
+	"/config/configstorage",
 	"/config/configtelemetry",
 	"/config/configtls",
 	"/confmap",
@@ -112,6 +113,7 @@ var replaceModules = []string{
 	"/receiver/otlpreceiver",
 	"/receiver/receivertest",
 	"/receiver/receiverhelper",
+	"/receiver/receiverhelper/xreceiverhelper",
 	"/receiver/xreceiver",
 	"/service",
 	"/service/hostcapabilities",
@@ -377,6 +379,9 @@ func TestGenerateAndCompile(t *testing.T) {
 		{
 			name: "CGoEnabled set to true",
 			cfgBuilder: func(t *testing.T) *Config {
+				if runtime.GOOS == "windows" {
+					t.Skip("skipping test on windows")
+				}
 				cfg := newTestConfig(t)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)

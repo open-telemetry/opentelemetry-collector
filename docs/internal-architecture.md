@@ -13,7 +13,7 @@ flowchart TD
     A --> |3| D("`**Collector.Run**
     Starts the collector and blocks until it shuts down`")
     D --> E("`**setupConfigurationComponents**`")
-    E -->  |1| F("`**getConfMap**`")
+    E -->  |1| F("`**ConfigProvider.getWithConf**`")
     E ---> |2| G("`**Service.New**
      Initializes telemetry, then initializes the pipelines`")
     E --> |3| Q("`**Service.Start**
@@ -24,8 +24,10 @@ flowchart TD
     `")
     Q --> R("`**Graph.StartAll**
     Calls Start on each component in reverse topological order`")
-    G --> H("`**initExtensionsAndPipeline**
-     Creates extensions and then builds the pipeline graph`")
+    G --> |1| H("`**Service.initGraph**
+     Builds the pipeline graph`")
+    G --> |2| X("`**Service.initExtensions**
+     Creates the extensions`")
     H --> I("`**Graph.Build**
      Converts the settings to an internal graph representation`")
     I --> |1| J("`**createNodes**
@@ -58,7 +60,7 @@ The partial reload path (`Collector.tryPartialReceiverReload`) delegates to `Gra
 
 1. **Collect** all current receiver nodes from pipelines (skipping connectors-as-receivers)
 2. **Determine** the desired receiver set from the new pipeline configs
-3. **Categorize** receivers into add, remove, and rebuild sets
+3. **Categorize** receivers into add, remove, and rebuild sets; a node with the same component ID as an added, removed or rebuilt node is rebuilt as well, since a receiver such as `otlp` shares one instance across signals
 4. **Shutdown** receivers that are being removed or rebuilt
 5. **Remove** old receiver nodes and edges from the graph
 6. **Create** new receiver nodes for added and rebuilt receivers

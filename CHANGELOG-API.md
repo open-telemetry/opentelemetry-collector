@@ -7,6 +7,61 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.71.0/v0.165.0
+
+### 🚩 Deprecations 🚩
+
+- `pkg/componentstatus`: Deprecate componentstatus.Watcher in favour of extensioncapabilities.ComponentStatusWatcher (#16304)
+
+### 🚀 New components 🚀
+
+- `pkg/xreceiverhelper`: Add xreceiverhelper with an `ObsReport` that reports profile sample metrics per sample type. (#16251)
+  `ObsReport.EndProfilesOpBySampleType` records the
+  `otelcol_receiver_{accepted,refused,failed}_profile_samples` metrics with an additional
+  `sample_type` attribute, formatted as "type:unit", as a single payload can hold multiple profiles
+  with different sample types. Use `ProfileSampleCountsByType` to compute the sample counts before
+  the profiles are passed to the next consumer, as the data may be mutated downstream.
+  The OTLP receiver now uses `EndProfilesOpBySampleType`.
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/confighttp`: Mark confighttp as stable (#9380)
+- `receiver/otlp`: Migrate the OTLP receiver configuration to metadata.yaml and generate its config schema from the metadata. (#16212)
+
+<!-- previous-version -->
+
+## v1.70.0/v0.164.0
+
+### 💡 Enhancements 💡
+
+- `pkg/xpdata`: Add `xhash.WithUint64` to hash a `uint64` value without converting it to `int64`. (#16176)
+  It produces the same hash as `xhash.WithValue(pcommon.NewValueInt(int64(v)))`.
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/exporterhelper`: Expose PartitionConfig and NewDefaultPartitionConfig so that users can modify it. (#16197)
+
+<!-- previous-version -->
+
+## v1.69.0/v0.163.0
+
+### 💡 Enhancements 💡
+
+- `pkg/component`: Document compatibility guidelines for adding fields to public structs in the component interface RFC. (#16069)
+- `pkg/pprofile`: Implement Profiles development-version metadata in the OTLP receiver and exporters. (#16147, #16009)
+  The receiver rejects malformed, repeated, or unsupported versions before decoding.
+  OTLP exporters send the version associated with their compiled-in Profiles schema.
+  The version is not configurable, and existing clients without metadata identify
+  the initial development version.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/otelcol`: Redact config opaque MapList values in unexpanded configuration snapshots (#15980)
+
+<!-- previous-version -->
+
 ## v1.68.0/v0.162.0
 
 ### 💡 Enhancements 💡

@@ -21,7 +21,10 @@ func (ms {{ .structName }}) {{ .typeFuncName }}() {{ .typeName }} {
 	return {{ .typeName }}Empty
 }
 
-{{ range .values -}}
+{{ range $i, $v := .values -}}
+{{- if $i }}
+
+{{ end -}}
 {{ .GenerateAccessors $.baseStruct $.OneOfField }}
 {{- end }}`
 
@@ -45,11 +48,6 @@ const oneOfTestValuesTemplate = `
 	{{ .GenTestEncodingValues }}
 	{{- end }}`
 
-const oneOfPoolOrigTemplate = `
-	{{ range .fields -}}
-	{{ .GenPool }}
-	{{- end }}`
-
 const oneOfMessageOrigTemplate = `
 func (m *{{ .protoName }}) Get{{ .originFieldName }}() any {
 	if m != nil {
@@ -58,16 +56,24 @@ func (m *{{ .protoName }}) Get{{ .originFieldName }}() any {
 	return nil
 }
 
+func (m *{{ .protoName }}) delete{{ .originFieldName }}() {
+	if m == nil {
+		return
+	}
+	switch ov := m.{{ .originFieldName }}.(type) {
+		{{ range .fields -}}
+		case *{{ $.protoName }}_{{ .GetName }}:
+			delete{{ $.protoName }}_{{ .GetName }}(ov)
+		{{ end -}}
+	}
+	m.{{ .originFieldName }} = nil
+}
+
 {{ range .fields -}}
 {{ .GenOneOfMessages }}
 {{- end }}`
 
-const oneOfDeleteOrigTemplate = `switch ov := orig.{{ .originFieldName }}.(type) {
-	{{ range .fields -}}
-	case *{{ $.protoName }}_{{ .GetName }}:
-		{{ .GenDelete }}
-	{{ end -}}
-}`
+const oneOfDeleteOrigTemplate = `orig.delete{{ .originFieldName }}()`
 
 const oneOfCopyOrigTemplate = `switch t := src.{{ .originFieldName }}.(type) {
 	{{ range .fields -}}
@@ -110,6 +116,11 @@ const oneOfMarshalProtoTemplate = `switch orig := orig.{{ .originFieldName }}.(t
 const oneOfUnmarshalProtoTemplate = `
 	{{- range .fields }}
 		{{ .GenUnmarshalProto }}
+	{{ end }}`
+
+const oneOfUnmarshalProtoNoDepthTemplate = `
+	{{- range .fields }}
+		{{ .GenUnmarshalProtoNoDepth }}
 	{{ end }}`
 
 type OneOfField struct {
@@ -194,10 +205,6 @@ func (of *oneOfProtoField) GenTestEncodingValues() string {
 	return tmplutil.Execute(tmplutil.Parse("oneOfTestValuesTemplate", []byte(oneOfTestValuesTemplate)), of.templateFields())
 }
 
-func (of *oneOfProtoField) GenPool() string {
-	return tmplutil.Execute(tmplutil.Parse("oneOfPoolOrigTemplate", []byte(oneOfPoolOrigTemplate)), of.templateFields())
-}
-
 func (of *oneOfProtoField) GenDelete() string {
 	return tmplutil.Execute(tmplutil.Parse("oneOfDeleteOrigTemplate", []byte(oneOfDeleteOrigTemplate)), of.templateFields())
 }
@@ -226,6 +233,11 @@ func (of *oneOfProtoField) GenMarshalProto() string {
 
 func (of *oneOfProtoField) GenUnmarshalProto() string {
 	t := tmplutil.Parse("oneOfUnmarshalProtoTemplate", []byte(oneOfUnmarshalProtoTemplate))
+	return tmplutil.Execute(t, of.templateFields())
+}
+
+func (of *oneOfProtoField) GenUnmarshalProtoNoDepth() string {
+	t := tmplutil.Parse("oneOfUnmarshalProtoNoDepthTemplate", []byte(oneOfUnmarshalProtoNoDepthTemplate))
 	return tmplutil.Execute(t, of.templateFields())
 }
 

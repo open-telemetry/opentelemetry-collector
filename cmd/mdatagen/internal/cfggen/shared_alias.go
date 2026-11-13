@@ -58,11 +58,14 @@ const (
 )
 
 var (
-	ErrNotFound     = schemagen.ErrNotFound
-	NewLoader       = schemagen.NewLoader
-	NewRef          = schemagen.NewRef
-	WithOrigin      = schemagen.WithOrigin
-	LocalizeRef     = schemagen.LocalizeRef
-	NewResolver     = schemagen.NewResolver
-	WriteJSONSchema = schemagen.WriteJSONSchema
+	ErrNotFound         = schemagen.ErrNotFound
+	NewLoader           = schemagen.NewLoader
+	NewRef              = schemagen.NewRef
+	WithOrigin          = schemagen.WithOrigin
+	LocalizeRef         = schemagen.LocalizeRef
+	NewResolver         = schemagen.NewResolver
+	WriteJSONSchema     = schemagen.WriteJSONSchema
+	OrderedPropNames    = schemagen.OrderedPropNames
+	ApplyConfigsOrder   = schemagen.ApplyConfigsOrder
+	ApplyNamedDefsOrder = schemagen.ApplyNamedDefsOrder
 )
