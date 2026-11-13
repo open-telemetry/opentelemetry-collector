@@ -9,6 +9,8 @@ import (
 	jsoniter "github.com/json-iterator/go"
 )
 
+const maxRecursionDepth = 100
+
 func BorrowIterator(data []byte) *Iterator {
 	return &Iterator{
 		delegate: jsoniter.ConfigFastest.BorrowIterator(data),
@@ -22,6 +24,26 @@ func ReturnIterator(s *Iterator) {
 type Iterator struct {
 	delegate              *jsoniter.Iterator
 	disallowUnknownFields bool
+	depth                 int
+}
+
+// EnterRecursive increments the nesting counter and reports an error if the maximum
+// recursion depth is exceeded, returning false in that case. Generated UnmarshalJSON
+// methods call it on entry and, when it returns true, pair it with [Iterator.ExitRecursive]
+// on exit. When it returns false the caller must return without recursing further.
+func (iter *Iterator) EnterRecursive() bool {
+	iter.depth++
+	if iter.depth > maxRecursionDepth {
+		iter.depth--
+		iter.ReportError("UnmarshalJSON", "max recursion depth exceeded")
+		return false
+	}
+	return true
+}
+
+// ExitRecursive decrements the nesting counter set by [Iterator.EnterRecursive].
+func (iter *Iterator) ExitRecursive() {
+	iter.depth--
 }
 
 // SetDisallowUnknownFields configures whether unknown fields encountered during
