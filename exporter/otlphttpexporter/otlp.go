@@ -207,7 +207,16 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 
 	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 		if err := handlePartialSuccessResponse(resp, partialSuccessHandler); err != nil {
-			return consumererror.NewPermanent(err)
+			// The server accepted the data (2xx), so returning an error here
+			// would misreport the batch as dropped and, without a sending
+			// queue, propagate the error back to the receiver — potentially
+			// causing the client to retry and duplicate the data.
+			// Log a warning so the partial-success details are not silently
+			// lost, and treat the export as successful.
+			e.logger.Warn("Could not determine partial-success details from successful export response",
+				zap.Error(err),
+				zap.Int("status_code", resp.StatusCode),
+			)
 		}
 		return nil
 	}

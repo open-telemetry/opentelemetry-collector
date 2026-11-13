@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"testing/iotest"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -1247,7 +1248,12 @@ func TestPartialSuccess_responseBodyTooLarge(t *testing.T) {
 		Encoding:        EncodingProto,
 		MetricsEndpoint: srv.URL + "/v1/metrics",
 	}
-	exp, err := createMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	set := exportertest.NewNopSettings(metadata.Type)
+
+	logger, observed := observer.New(zap.DebugLevel)
+	set.Logger = zap.New(logger)
+
+	exp, err := createMetrics(context.Background(), set, cfg)
 	require.NoError(t, err)
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -1255,10 +1261,49 @@ func TestPartialSuccess_responseBodyTooLarge(t *testing.T) {
 		require.NoError(t, exp.Shutdown(context.Background()))
 	}()
 
+	// The server accepted the data (200), so the export must succeed even
+	// though the response body is too large to parse for partial-success
+	// details.  A warning is logged instead of returning an error.
 	err = exp.ConsumeMetrics(context.Background(), pmetric.NewMetrics())
-	require.Error(t, err)
-	assert.True(t, consumererror.IsPermanent(err))
-	assert.Contains(t, err.Error(), "error parsing protobuf response:")
+	require.NoError(t, err)
+
+	warnLogs := observed.FilterLevelExact(zap.WarnLevel).All()
+	require.Len(t, warnLogs, 1)
+	assert.Contains(t, warnLogs[0].Message, "partial-success details")
+}
+
+// TestExport_2xxBodyReadError verifies that a body-read failure on a 2xx
+// response (e.g. HTTP/2 GOAWAY after headers) is treated as a successful
+// export with a warning, not as a permanent error.  It uses a mockTransport
+// returning a response whose Body.Read always fails, which exercises the
+// readResponseBody error path — the exact path hit in #16389.
+func TestExport_2xxBodyReadError(t *testing.T) {
+	readErr := errors.New("http2: server sent GOAWAY and closed the connection")
+	transport := &mockTransport{
+		roundTripFunc: func(_ *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode:    http.StatusOK,
+				Header:        http.Header{"Content-Type": []string{protobufContentType}},
+				ContentLength: 100,
+				Body:          io.NopCloser(iotest.ErrReader(readErr)),
+			}, nil
+		},
+	}
+
+	logger, observed := observer.New(zap.DebugLevel)
+	exp := &baseExporter{
+		client: &http.Client{Transport: transport},
+		logger: zap.New(logger),
+		config: &Config{Encoding: EncodingProto},
+	}
+
+	err := exp.export(context.Background(), "http://localhost:4318/v1/logs", nil, exp.logsPartialSuccessHandler)
+	require.NoError(t, err)
+
+	warnLogs := observed.FilterLevelExact(zap.WarnLevel).All()
+	require.Len(t, warnLogs, 1)
+	assert.Contains(t, warnLogs[0].Message, "partial-success details")
+	assert.Contains(t, warnLogs[0].ContextMap()["error"], readErr.Error())
 }
 
 func TestExport_StatusErrorShowsResolvedURL(t *testing.T) {
