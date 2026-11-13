@@ -10,21 +10,21 @@ import (
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
-	{{.Telemetry.Name}} "{{.Telemetry.Import}}"
+	{{.Telemetry.Name}} {{ printf "%q" .Telemetry.Import }}
 	{{- range .Connectors}}
-	{{.Name}} "{{.Import}}"
+	{{.Name}} {{ printf "%q" .Import }}
 	{{- end}}
 	{{- range .Exporters}}
-	{{.Name}} "{{.Import}}"
+	{{.Name}} {{ printf "%q" .Import }}
 	{{- end}}
 	{{- range .Extensions}}
-	{{.Name}} "{{.Import}}"
+	{{.Name}} {{ printf "%q" .Import }}
 	{{- end}}
 	{{- range .Processors}}
-	{{.Name}} "{{.Import}}"
+	{{.Name}} {{ printf "%q" .Import }}
 	{{- end}}
 	{{- range .Receivers}}
-	{{.Name}} "{{.Import}}"
+	{{.Name}} {{ printf "%q" .Import }}
 	{{- end}}
 )
 
@@ -58,7 +58,7 @@ func components() (otelcol.Factories, error) {
 	}
 	factories.ExtensionModules = makeModulesMap(factories.Extensions, map[component.Type]string{
 		{{- range .Extensions}}
-		{{.Name}}.NewFactory().Type(): "{{.GoMod}}",
+		{{.Name}}.NewFactory().Type(): {{ printf "%q" .GoMod }},
 		{{- end}}
 	})
 
@@ -72,7 +72,7 @@ func components() (otelcol.Factories, error) {
 	}
 	factories.ReceiverModules = makeModulesMap(factories.Receivers, map[component.Type]string{
 		{{- range .Receivers}}
-		{{.Name}}.NewFactory().Type(): "{{.GoMod}}",
+		{{.Name}}.NewFactory().Type(): {{ printf "%q" .GoMod }},
 		{{- end}}
 	})
 
@@ -86,7 +86,7 @@ func components() (otelcol.Factories, error) {
 	}
 	factories.ExporterModules = makeModulesMap(factories.Exporters, map[component.Type]string{
 		{{- range .Exporters}}
-		{{.Name}}.NewFactory().Type(): "{{.GoMod}}",
+		{{.Name}}.NewFactory().Type(): {{ printf "%q" .GoMod }},
 		{{- end}}
 	})
 
@@ -100,7 +100,7 @@ func components() (otelcol.Factories, error) {
 	}
 	factories.ProcessorModules = makeModulesMap(factories.Processors, map[component.Type]string{
 		{{- range .Processors}}
-		{{.Name}}.NewFactory().Type(): "{{.GoMod}}",
+		{{.Name}}.NewFactory().Type(): {{ printf "%q" .GoMod }},
 		{{- end}}
 	})
 
@@ -114,7 +114,7 @@ func components() (otelcol.Factories, error) {
 	}
 	factories.ConnectorModules = makeModulesMap(factories.Connectors, map[component.Type]string{
 		{{- range .Connectors}}
-		{{.Name}}.NewFactory().Type(): "{{.GoMod}}",
+		{{.Name}}.NewFactory().Type(): {{ printf "%q" .GoMod }},
 		{{- end}}
 	})
 
