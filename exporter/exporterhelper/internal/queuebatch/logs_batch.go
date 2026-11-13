@@ -43,8 +43,10 @@ func (req *logsRequest) MergeSplit(_ context.Context, maxSize int, szt request.S
 
 func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer, szt request.SizerType) {
 	if sz != nil {
-		dst.sizes.Update(szt, dst.size(sz, szt)+req.size(sz, szt))
-		req.sizes.Update(szt, 0)
+		_ = dst.size(sz, szt)
+		_ = req.size(sz, szt)
+		dst.sizes.Merge(req.sizes)
+		req.sizes.Reset()
 	}
 	req.ld.ResourceLogs().MoveAndAppendTo(dst.ld.ResourceLogs())
 }
