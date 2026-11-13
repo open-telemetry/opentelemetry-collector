@@ -61,10 +61,9 @@ func (r *Resolver) Resolve(ctx context.Context, config []byte) (Result, error) {
 
 	list, versionsOf := r.List, r.Versions
 	if list == nil || versionsOf == nil {
-		var g *goRunner
-		g, err = newGoRunner()
-		if err != nil {
-			return Result{}, fmt.Errorf("failed to prepare module lookups: %w", err)
+		g, runnerErr := newGoRunner()
+		if runnerErr != nil {
+			return Result{}, fmt.Errorf("failed to prepare module lookups: %w", runnerErr)
 		}
 		// Failing to remove the temporary folder does not affect the result.
 		defer func() { _ = g.close() }()
