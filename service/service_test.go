@@ -5,6 +5,7 @@ package service
 
 import (
 	"context"
+	"crypto/fips140"
 	"errors"
 	"net/http"
 	"testing"
@@ -92,6 +93,30 @@ func TestServiceTelemetryLogging(t *testing.T) {
 	entries := observedLogs.All()
 	require.Len(t, entries, 1)
 	assert.Equal(t, "warn_message", entries[0].Message)
+}
+
+func TestServiceTelemetryLoggingFIPSState(t *testing.T) {
+	observerCore, observedLogs := observer.New(zapcore.InfoLevel)
+	zapLogger := zap.New(observerCore)
+
+	set := newNopSettings()
+	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}
+	set.TelemetryFactory = telemetry.NewFactory(
+		func() component.Config { return nil },
+		telemetrytest.WithLogger(zapLogger, nil),
+	)
+
+	srv, err := New(context.Background(), set, newNopConfig())
+	require.NoError(t, err)
+	require.NoError(t, srv.Start(context.Background()))
+	defer func() {
+		assert.NoError(t, srv.Shutdown(context.Background()))
+	}()
+
+	entries := observedLogs.FilterMessage("Starting " + otelCommand + "...").All()
+	require.Len(t, entries, 1)
+	fields := entries[0].ContextMap()
+	assert.Equal(t, fips140.Enabled(), fields["FIPS140"])
 }
 
 func TestServiceTelemetryLogging_Settings(t *testing.T) {
