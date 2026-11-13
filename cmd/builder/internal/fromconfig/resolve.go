@@ -56,7 +56,7 @@ func (r *Resolver) Resolve(ctx context.Context, config []byte) (Result, error) {
 		return Result{}, err
 	}
 	if len(components) == 0 {
-		return Result{}, nil
+		return Result{Release: r.Release}, nil
 	}
 
 	list, versionsOf := r.List, r.Versions

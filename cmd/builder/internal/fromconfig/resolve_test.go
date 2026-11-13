@@ -77,6 +77,7 @@ func TestResolveNoComponents(t *testing.T) {
 	}}
 	got, err := r.Resolve(t.Context(), []byte("service: {}"))
 	require.NoError(t, err)
+	assert.Equal(t, "v0.162.0", got.Release)
 	assert.Empty(t, got.Resolved)
 	assert.Empty(t, got.Unresolved)
 	assert.Empty(t, proxy.calls)
