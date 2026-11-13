@@ -96,7 +96,7 @@ func (ml *memoryLimiterExtension) wrapHTTPHandler(_ context.Context, base http.H
 }
 
 func (ml *memoryLimiterExtension) GetGRPCServerOptions(_ context.Context) ([]grpc.ServerOption, error) {
-	if metadata.ExtensionMemorylimiterUseGRPCTapFeatureGate.IsEnabled() {
+	if metadata.ExtensionMemoryLimiterUseGRPCTapFeatureGate.IsEnabled() {
 		// The tap handle rejects requests before the server decodes them,
 		// so the interceptors are not needed.
 		return nil, nil
@@ -109,7 +109,7 @@ func (ml *memoryLimiterExtension) GetGRPCServerOptions(_ context.Context) ([]grp
 
 // GetGRPCServerInTapHandle implements extensionmiddleware.GRPCServerInTap
 func (ml *memoryLimiterExtension) GetGRPCServerInTapHandle(_ context.Context) (tap.ServerInHandle, error) {
-	if !metadata.ExtensionMemorylimiterUseGRPCTapFeatureGate.IsEnabled() {
+	if !metadata.ExtensionMemoryLimiterUseGRPCTapFeatureGate.IsEnabled() {
 		return nil, nil
 	}
 	return ml.grpcInTapHandle, nil

@@ -1,6 +1,6 @@
 change_type: enhancement
 component: extension/memory_limiter
-note: Add the Alpha feature gate `extension.memorylimiter.UseGRPCTap` to reject gRPC requests before protobuf decoding under memory pressure.
+note: Add the Alpha feature gate `extension.memory_limiter.UseGRPCTap` to reject gRPC requests before protobuf decoding under memory pressure.
 issues: [16184]
 subtext: |
   The gate is disabled by default and applies to the existing gRPC middleware configuration.

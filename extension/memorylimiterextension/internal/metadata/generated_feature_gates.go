@@ -6,10 +6,10 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var ExtensionMemorylimiterUseGRPCTapFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"extension.memorylimiter.UseGRPCTap",
+var ExtensionMemoryLimiterUseGRPCTapFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"extension.memory_limiter.UseGRPCTap",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Reject gRPC requests before protobuf decoding when the memory limiter refuses requests."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/16184"),
-	featuregate.WithRegisterFromVersion("v0.164.0"),
+	featuregate.WithRegisterFromVersion("v0.166.0"),
 )

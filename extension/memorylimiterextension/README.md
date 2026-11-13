@@ -51,7 +51,7 @@ see [memorylimiterprocessor](../../processor/memorylimiterprocessor/README.md) f
 
 See [documentation.md](./documentation.md) for the complete list of feature gates supported by this extension.
 
-### `extension.memorylimiter.UseGRPCTap`
+### `extension.memory_limiter.UseGRPCTap`
 
 When this feature gate is enabled, the extension checks gRPC requests before the
 server reads and decodes the request message, instead of in the gRPC interceptors.
@@ -68,4 +68,4 @@ metrics and spans (`rpc.server.*`), because the server aborts them before its
 instrumentation runs.
 
 This feature gate is disabled by default. To enable it, use the flag:
-`--feature-gates=extension.memorylimiter.UseGRPCTap`
+`--feature-gates=extension.memory_limiter.UseGRPCTap`

@@ -1,5 +1,5 @@
 change_type: enhancement
-component: pkg/config/configgrpc
+component: pkg/configgrpc
 note: Support gRPC server middlewares that implement `extensionmiddleware.GRPCServerInTap`.
 issues: [16184]
 subtext: |

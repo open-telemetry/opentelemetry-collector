@@ -413,7 +413,7 @@ func TestWrapHTTPHandler_Refused(t *testing.T) {
 }
 
 func TestGetGRPCServerOptions_GateDisabled(t *testing.T) {
-	testutil.SetFeatureGate(t, metadata.ExtensionMemorylimiterUseGRPCTapFeatureGate.ID(), false)
+	testutil.SetFeatureGate(t, metadata.ExtensionMemoryLimiterUseGRPCTapFeatureGate.ID(), false)
 
 	cfg := &Config{
 		CheckInterval:         time.Second,
@@ -431,7 +431,7 @@ func TestGetGRPCServerOptions_GateDisabled(t *testing.T) {
 }
 
 func TestGetGRPCServerOptions_GateEnabled(t *testing.T) {
-	testutil.SetFeatureGate(t, metadata.ExtensionMemorylimiterUseGRPCTapFeatureGate.ID(), true)
+	testutil.SetFeatureGate(t, metadata.ExtensionMemoryLimiterUseGRPCTapFeatureGate.ID(), true)
 
 	cfg := &Config{
 		CheckInterval:         time.Second,
@@ -449,7 +449,7 @@ func TestGetGRPCServerOptions_GateEnabled(t *testing.T) {
 }
 
 func TestGetGRPCServerInTapHandle_GateDisabled(t *testing.T) {
-	testutil.SetFeatureGate(t, metadata.ExtensionMemorylimiterUseGRPCTapFeatureGate.ID(), false)
+	testutil.SetFeatureGate(t, metadata.ExtensionMemoryLimiterUseGRPCTapFeatureGate.ID(), false)
 
 	cfg := &Config{
 		CheckInterval:         time.Second,
@@ -467,7 +467,7 @@ func TestGetGRPCServerInTapHandle_GateDisabled(t *testing.T) {
 }
 
 func TestGRPCInTapHandle_Normal(t *testing.T) {
-	testutil.SetFeatureGate(t, metadata.ExtensionMemorylimiterUseGRPCTapFeatureGate.ID(), true)
+	testutil.SetFeatureGate(t, metadata.ExtensionMemoryLimiterUseGRPCTapFeatureGate.ID(), true)
 	ctx := context.Background()
 
 	cfg := &Config{
@@ -490,7 +490,7 @@ func TestGRPCInTapHandle_Normal(t *testing.T) {
 }
 
 func TestGRPCInTapHandle_Refused(t *testing.T) {
-	testutil.SetFeatureGate(t, metadata.ExtensionMemorylimiterUseGRPCTapFeatureGate.ID(), true)
+	testutil.SetFeatureGate(t, metadata.ExtensionMemoryLimiterUseGRPCTapFeatureGate.ID(), true)
 	ctx := context.Background()
 
 	testTel := componenttest.NewTelemetry()
