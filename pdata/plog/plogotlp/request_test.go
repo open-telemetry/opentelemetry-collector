@@ -95,3 +95,37 @@ func TestLogsProtoWireCompatibility(t *testing.T) {
 	otlp.MigrateLogs(ld.orig.ResourceLogs)
 	assert.Equal(t, ld, ld2)
 }
+
+func TestSanitizeUTF8(t *testing.T) {
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("bad\xff", "bad\xff")
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName("scope\xff")
+	lr := sl.LogRecords().AppendEmpty()
+	lr.Body().SetStr("body\xff")
+	lr.SetSeverityText("INFO\xff")
+	lr.Attributes().PutStr("ok", "ok")
+	lr.Attributes().PutEmptyMap("nested").PutStr("k\xff", "v\xff")
+
+	NewExportRequestFromLogs(ld).SanitizeUTF8()
+
+	expected := plog.NewLogs()
+	erl := expected.ResourceLogs().AppendEmpty()
+	erl.Resource().Attributes().PutStr("bad�", "bad�")
+	esl := erl.ScopeLogs().AppendEmpty()
+	esl.Scope().SetName("scope�")
+	elr := esl.LogRecords().AppendEmpty()
+	elr.Body().SetStr("body�")
+	elr.SetSeverityText("INFO�")
+	elr.Attributes().PutStr("ok", "ok")
+	elr.Attributes().PutEmptyMap("nested").PutStr("k�", "v�")
+	assert.Equal(t, expected, ld)
+}
+
+func TestSanitizeUTF8ReadOnly(t *testing.T) {
+	ld := plog.NewLogs()
+	ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("bad\xff")
+	ld.MarkReadOnly()
+	assert.Panics(t, func() { NewExportRequestFromLogs(ld).SanitizeUTF8() })
+}
