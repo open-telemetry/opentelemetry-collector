@@ -222,24 +222,171 @@ func TestTracesConsumeFailure(t *testing.T) {
 	require.Equal(t, int64(1), itemData.DataPoints[0].Value)
 
 	itemAttrs := itemData.DataPoints[0].Attributes
-	require.Equal(t, 1, itemAttrs.Len())
+
 	val, ok := itemAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "failure", val.String())
+
+	errorType, ok := itemAttrs.Value(attribute.Key(obsconsumer.ComponentErrorType))
+	require.True(t, ok)
+	require.Equal(t, "unspecified", errorType.String())
 
 	sizeData := sizeMetric.Data.(metricdata.Sum[int64])
 	require.Len(t, sizeData.DataPoints, 1)
 	require.Positive(t, sizeData.DataPoints[0].Value)
 
 	sizeAttrs := sizeData.DataPoints[0].Attributes
-	require.Equal(t, 1, sizeAttrs.Len())
+
 	val, ok = sizeAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "failure", val.String())
 
+	errorType, ok = sizeAttrs.Value(attribute.Key(obsconsumer.ComponentErrorType))
+	require.True(t, ok)
+	require.Equal(t, "unspecified", errorType.String())
+
 	// Check that the logger was called with an error
 	require.Len(t, logs.All(), 1)
 	assert.Contains(t, logs.All()[0].Message, "Traces pipeline component had an error")
+}
+
+func TestTracesConsumeErrorType(t *testing.T) {
+	tests := []struct {
+		name         string
+		err          error
+		expectedType string
+	}{
+		{
+			name:         "canceled",
+			err:          context.Canceled,
+			expectedType: "canceled",
+		},
+		{
+			name:         "wrapped canceled",
+			err:          errors.Join(errors.New("operation failed"), context.Canceled),
+			expectedType: "canceled",
+		},
+		{
+			name:         "deadline exceeded",
+			err:          context.DeadlineExceeded,
+			expectedType: "deadline_exceeded",
+		},
+		{
+			name:         "wrapped deadline exceeded",
+			err:          errors.Join(errors.New("operation failed"), context.DeadlineExceeded),
+			expectedType: "deadline_exceeded",
+		},
+		{
+			name:         "ordinary error",
+			err:          errors.New("test error"),
+			expectedType: "unspecified",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setGateForTest(t, true)
+
+			ctx := context.Background()
+			mockConsumer := &mockTracesConsumer{err: tt.err}
+
+			reader := sdkmetric.NewManualReader()
+			mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+			meter := mp.Meter("test")
+
+			itemCounter, err := meter.Int64Counter("item_counter")
+			require.NoError(t, err)
+			sizeCounter, err := meter.Int64Counter("size_counter")
+			require.NoError(t, err)
+
+			consumer := obsconsumer.NewTraces(
+				mockConsumer,
+				obsconsumer.Settings{
+					ItemCounter: itemCounter,
+					SizeCounter: sizeCounter,
+					Logger:      zap.NewNop(),
+				},
+			)
+
+			td := ptrace.NewTraces()
+			td.ResourceSpans().AppendEmpty().
+				ScopeSpans().AppendEmpty().
+				Spans().AppendEmpty()
+
+			consumeErr := consumer.ConsumeTraces(ctx, td)
+			require.Error(t, consumeErr)
+
+			var rm metricdata.ResourceMetrics
+			require.NoError(t, reader.Collect(ctx, &rm))
+			require.Len(t, rm.ScopeMetrics, 1)
+
+			for _, metric := range rm.ScopeMetrics[0].Metrics {
+				data := metric.Data.(metricdata.Sum[int64])
+				require.Len(t, data.DataPoints, 1)
+
+				attrs := data.DataPoints[0].Attributes
+
+				outcome, ok := attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
+				require.True(t, ok)
+				require.Equal(t, "failure", outcome.String())
+
+				errorType, ok := attrs.Value(attribute.Key(obsconsumer.ComponentErrorType))
+				require.True(t, ok)
+				require.Equal(t, tt.expectedType, errorType.String())
+			}
+		})
+	}
+}
+
+func TestTracesConsumeRefused(t *testing.T) {
+	setGateForTest(t, true)
+	ctx := context.Background()
+
+	mockConsumer := &mockTracesConsumer{
+		err: consumererror.NewDownstream(context.Canceled),
+	}
+
+	reader := sdkmetric.NewManualReader()
+	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	meter := mp.Meter("test")
+
+	itemCounter, err := meter.Int64Counter("item_counter")
+	require.NoError(t, err)
+
+	sizeCounter, err := meter.Int64Counter("size_counter")
+	require.NoError(t, err)
+
+	consumer := obsconsumer.NewTraces(mockConsumer, obsconsumer.Settings{
+		ItemCounter: itemCounter,
+		SizeCounter: sizeCounter,
+		Logger:      zap.NewNop(),
+	})
+
+	td := ptrace.NewTraces()
+	td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+	consumeErr := consumer.ConsumeTraces(ctx, td)
+	require.Error(t, consumeErr)
+	require.True(t, consumererror.IsDownstream(consumeErr))
+
+	var rm metricdata.ResourceMetrics
+	require.NoError(t, reader.Collect(ctx, &rm))
+	require.Len(t, rm.ScopeMetrics, 1)
+
+	for _, metric := range rm.ScopeMetrics[0].Metrics {
+		data := metric.Data.(metricdata.Sum[int64])
+		require.Len(t, data.DataPoints, 1)
+
+		attrs := data.DataPoints[0].Attributes
+
+		outcome, ok := attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
+		require.True(t, ok)
+		require.Equal(t, "refused", outcome.String())
+
+		errorType, ok := attrs.Value(attribute.Key(obsconsumer.ComponentErrorType))
+		require.True(t, ok)
+		require.Equal(t, "canceled", errorType.String())
+	}
 }
 
 func TestTracesWithStaticAttributes(t *testing.T) {
