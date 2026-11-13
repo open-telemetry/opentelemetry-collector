@@ -82,7 +82,7 @@ func TestServerCustomListenerErrors(t *testing.T) {
 		NetAddr:            confignet.AddrConfig{Transport: confignet.TransportTypeTCP, Endpoint: "127.0.0.1:0"},
 		ListenerMiddleware: configoptional.Some(configmiddleware.Config{ID: id}),
 	}
-	_, err := config.ToListener(t.Context())
+	_, err := config.ToListener(t.Context(), nil)
 	require.ErrorContains(t, err, "middleware not found")
 
 	wantErr := errors.New("listen failed")

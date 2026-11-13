@@ -331,17 +331,12 @@ type grpcServerOptionWrapper struct {
 }
 
 // ToListener creates a net.Listener for the gRPC server.
-// Pass the host extensions when Listener is configured.
-func (sc *ServerConfig) ToListener(ctx context.Context, extensions ...map[component.ID]component.Component) (net.Listener, error) {
+func (sc *ServerConfig) ToListener(ctx context.Context, extensions map[component.ID]component.Component) (net.Listener, error) {
 	if !sc.ListenerMiddleware.HasValue() {
 		return sc.NetAddr.Listen(ctx)
 	}
-	var available map[component.ID]component.Component
-	if len(extensions) > 0 {
-		available = extensions[0]
-	}
 	var listen extensionmiddleware.ListenContextFunc
-	listen, err := sc.ListenerMiddleware.Get().GetListener(ctx, available)
+	listen, err := sc.ListenerMiddleware.Get().GetListener(ctx, extensions)
 	if err != nil {
 		return nil, err
 	}

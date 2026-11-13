@@ -125,23 +125,22 @@ func TestGetGRPCServerOptionsFunc(t *testing.T) {
 }
 
 func TestGetListenerFunc(t *testing.T) {
-	ctx := context.Background()
 	var empty GetListenerFunc
-	listen, err := empty.GetListenContext(ctx)
+	listen, err := empty.GetListenContext(t.Context())
 	require.Error(t, err)
 	require.Nil(t, listen)
 
 	expected := func(context.Context, string, string) (net.Listener, error) { return nil, nil }
 	listen, err = GetListenerFunc(func(context.Context) (ListenContextFunc, error) {
 		return expected, nil
-	}).GetListenContext(ctx)
+	}).GetListenContext(t.Context())
 	require.NoError(t, err)
 	require.NotNil(t, listen)
 
 	wantErr := errors.New("listener failure")
 	listen, err = GetListenerFunc(func(context.Context) (ListenContextFunc, error) {
 		return nil, wantErr
-	}).GetListenContext(ctx)
+	}).GetListenContext(t.Context())
 	require.ErrorIs(t, err, wantErr)
 	require.Nil(t, listen)
 }
