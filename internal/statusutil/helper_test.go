@@ -11,9 +11,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
+	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
@@ -130,6 +132,36 @@ func TestGetRetryInfo(t *testing.T) {
 				return dt
 			}(),
 			expected: &errdetails.RetryInfo{RetryDelay: durationpb.New(1 * time.Second)},
+		},
+		{
+			name: "WithUndecodableOtherDetails",
+			input: func() *status.Status {
+				// A detail of an unregistered type and one that does not decode as its type
+				// must be skipped without being decoded, and must not hide the RetryInfo.
+				retryInfo, err := anypb.New(&errdetails.RetryInfo{RetryDelay: durationpb.New(1 * time.Second)})
+				require.NoError(t, err)
+				return status.FromProto(&spb.Status{
+					Code:    int32(codes.ResourceExhausted),
+					Message: "test",
+					Details: []*anypb.Any{
+						{TypeUrl: "type.googleapis.com/unknown.Type", Value: []byte{0xff}},
+						{TypeUrl: "type.googleapis.com/google.rpc.BadRequest", Value: []byte{0xff}},
+						retryInfo,
+					},
+				})
+			}(),
+			expected: &errdetails.RetryInfo{RetryDelay: durationpb.New(1 * time.Second)},
+		},
+		{
+			name: "WithMalformedRetryInfo",
+			input: status.FromProto(&spb.Status{
+				Code:    int32(codes.ResourceExhausted),
+				Message: "test",
+				Details: []*anypb.Any{
+					{TypeUrl: "type.googleapis.com/google.rpc.RetryInfo", Value: []byte{0xff}},
+				},
+			}),
+			expected: nil,
 		},
 	}
 	for _, tt := range tests {

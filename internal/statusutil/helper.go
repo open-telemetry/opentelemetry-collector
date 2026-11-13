@@ -36,10 +36,17 @@ func NewStatusFromMsgAndHTTPCode(errMsg string, statusCode int) *status.Status {
 	return status.New(c, errMsg)
 }
 
+// GetRetryInfo returns the RetryInfo detail attached to the status, or nil if there is none.
 func GetRetryInfo(status *status.Status) *errdetails.RetryInfo {
-	for _, detail := range status.Details() {
-		if t, ok := detail.(*errdetails.RetryInfo); ok {
-			return t
+	// The details may come from a remote peer. Do not use status.Details(): it decodes
+	// every detail, whatever its type and size, only to discard all but RetryInfo.
+	for _, detail := range status.Proto().GetDetails() {
+		if !detail.MessageIs((*errdetails.RetryInfo)(nil)) {
+			continue
+		}
+		retryInfo := &errdetails.RetryInfo{}
+		if err := detail.UnmarshalTo(retryInfo); err == nil {
+			return retryInfo
 		}
 	}
 	return nil
