@@ -28,6 +28,10 @@ var (
 	//go:embed templates/go.mod.tmpl
 	goModBytes    []byte
 	goModTemplate = parseTemplate("go.mod", goModBytes)
+
+	//go:embed templates/schema.go.tmpl
+	schemaBytes    []byte
+	schemaTemplate = parseTemplate("schema.go", schemaBytes)
 )
 
 func parseTemplate(name string, bytes []byte) *template.Template {
