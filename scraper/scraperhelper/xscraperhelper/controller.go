@@ -137,7 +137,9 @@ func scrapeProfiles(ctx context.Context, c *controller.Controller[xscraper.Profi
 		}
 	}
 
-	// TODO: Add proper receiver observability for profiles when receiverhelper supports it
-	// For now, we skip the obs report and just consume the profiles directly
-	return errors.Join(append(errs, nextConsumer.ConsumeProfiles(ctx, profiles))...)
+	sampleCount := profiles.SampleCount()
+	ctx = c.Obsrecv.StartProfilesOp(ctx)
+	err := nextConsumer.ConsumeProfiles(ctx, profiles)
+	c.Obsrecv.EndProfilesOp(ctx, "", sampleCount, err)
+	return errors.Join(append(errs, err)...)
 }
