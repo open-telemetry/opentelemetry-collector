@@ -314,20 +314,25 @@ func (col *Collector) reloadConfiguration(ctx context.Context) error {
 	if err := col.service.Shutdown(ctx); err != nil {
 		return fmt.Errorf("failed to shutdown the retiring config: %w", err)
 	}
+
 	// An old fatal error before reloading configuration should not
 	// terminate its successor
+	prevLogger := col.service.Logger()
 	var staleErr error
 	select {
 	case staleErr = <-col.asyncErrorChannel:
 	default:
 	}
 
-	if staleErr != nil {
-		col.service.Logger().Warn("Fatal error from previous configuration, discarding...", zap.Error(staleErr))
+	if err := col.setupConfigurationComponents(ctx); err != nil {
+		if staleErr != nil {
+			prevLogger.Warn("Fatal error from previous configuration was discarded before reload", zap.Error(staleErr))
+		}
+		return fmt.Errorf("failed to setup configuration components: %w", err)
 	}
 
-	if err := col.setupConfigurationComponents(ctx); err != nil {
-		return fmt.Errorf("failed to setup configuration components: %w", err)
+	if staleErr != nil {
+		col.service.Logger().Warn("Fatal error from previous configuration was discarded before reload", zap.Error(staleErr))
 	}
 
 	return nil
