@@ -20,9 +20,9 @@ var prefixes = []string{corePrefix, contribPrefix}
 
 // exceptions lists the components whose module is not reachable by any pattern.
 var exceptions = map[Component]string{
-	{Extension, "asapclient"}:  contribPrefix + "extension/asapauthextension",
-	{Receiver, "podman_stats"}: contribPrefix + "receiver/podmanreceiver",
-	{Exporter, "otlp_grpc"}:    corePrefix + "exporter/otlpexporter",
+	{Class: Extension, Type: "asapclient"}:  contribPrefix + "extension/asapauthextension",
+	{Class: Receiver, Type: "podman_stats"}: contribPrefix + "receiver/podmanreceiver",
+	{Class: Exporter, Type: "otlp_grpc"}:    corePrefix + "exporter/otlpexporter",
 }
 
 // candidate is a module path that may host a component.

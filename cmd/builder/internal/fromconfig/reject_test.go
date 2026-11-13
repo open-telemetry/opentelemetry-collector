@@ -48,10 +48,10 @@ func TestIsNotComponent(t *testing.T) {
 
 func TestCandidatesSkipNotComponents(t *testing.T) {
 	// "storage" would otherwise resolve to the extension/storage module through pattern #2.
-	got := paths(candidates(Component{Extension, "storage"}))
+	got := paths(candidates(Component{Class: Extension, Type: "storage"}))
 	assert.NotContains(t, got, contribPrefix+"extension/storage")
 	assert.Contains(t, got, contribPrefix+"extension/storageextension")
 
-	got = paths(candidates(Component{Extension, "extensionauth"}))
+	got = paths(candidates(Component{Class: Extension, Type: "extensionauth"}))
 	assert.NotContains(t, got, corePrefix+"extension/extensionauth")
 }

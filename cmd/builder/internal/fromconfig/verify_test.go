@@ -50,9 +50,9 @@ func TestVerifyHighestPriorityWins(t *testing.T) {
 		contribPrefix + "extension/storage/filestorageextension": {"v0.1.0"},
 	}}
 	components := []Component{
-		{Receiver, "otlp"},
-		{Receiver, "hostmetrics"},
-		{Extension, "file_storage"},
+		{Class: Receiver, Type: "otlp"},
+		{Class: Receiver, Type: "hostmetrics"},
+		{Class: Extension, Type: "file_storage"},
 	}
 
 	got, err := verify(t.Context(), proxy.list, components, acceptAll)
@@ -74,12 +74,12 @@ func TestVerifyBatchesByLevel(t *testing.T) {
 		contribPrefix + "exporter/elasticsearchexporter":   {"v0.1.0"},
 	}}
 	components := []Component{
-		{Receiver, "otlp"},
-		{Receiver, "hostmetrics"},
-		{Processor, "batch"},
-		{Processor, "k8sattributes"},
-		{Exporter, "debug"},
-		{Exporter, "elasticsearch"},
+		{Class: Receiver, Type: "otlp"},
+		{Class: Receiver, Type: "hostmetrics"},
+		{Class: Processor, Type: "batch"},
+		{Class: Processor, Type: "k8sattributes"},
+		{Class: Exporter, Type: "debug"},
+		{Class: Exporter, Type: "elasticsearch"},
 	}
 
 	got, err := verify(t.Context(), proxy.list, components, acceptAll)
@@ -96,7 +96,7 @@ func TestVerifyUnresolved(t *testing.T) {
 	proxy := &fakeProxy{modules: map[string][]string{
 		sentinelModule: {"v0.1.0"},
 	}}
-	components := []Component{{Extension, "myvendor"}}
+	components := []Component{{Class: Extension, Type: "myvendor"}}
 
 	got, err := verify(t.Context(), proxy.list, components, acceptAll)
 	require.NoError(t, err)
@@ -112,7 +112,7 @@ func TestVerifyAccept(t *testing.T) {
 		corePrefix + "processor/batchprocessor":    {"v0.2.0"},
 		contribPrefix + "processor/batchprocessor": {"v0.1.0"},
 	}}
-	components := []Component{{Processor, "batch"}}
+	components := []Component{{Class: Processor, Type: "batch"}}
 
 	// The core module is skipped because it is not accepted, the contrib one is used.
 	got, err := verify(t.Context(), proxy.list, components, func(m ListedModule) (string, bool) {
@@ -148,7 +148,7 @@ func TestVerifySentinelFailure(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := verify(t.Context(), tt.list, []Component{{Receiver, "otlp"}}, acceptAll)
+			_, err := verify(t.Context(), tt.list, []Component{{Class: Receiver, Type: "otlp"}}, acceptAll)
 			require.ErrorIs(t, err, errLookupUnavailable)
 			require.ErrorContains(t, err, tt.want)
 			require.ErrorContains(t, err, "ocb init --from-config needs access to the Go module proxy")
@@ -160,7 +160,7 @@ func TestVerifyListError(t *testing.T) {
 	list := func(context.Context, []string) ([]ListedModule, error) {
 		return nil, assert.AnError
 	}
-	_, err := verify(t.Context(), list, []Component{{Receiver, "otlp"}}, acceptAll)
+	_, err := verify(t.Context(), list, []Component{{Class: Receiver, Type: "otlp"}}, acceptAll)
 	require.ErrorIs(t, err, assert.AnError)
 }
 
@@ -212,11 +212,11 @@ func TestVerifySentinelInFirstChunk(t *testing.T) {
 	var components []Component
 	modules := map[string][]string{sentinelModule: {"v0.1.0"}}
 	for i := range 300 {
-		c := Component{Exporter, fmt.Sprintf("component%03d", i)}
+		c := Component{Class: Exporter, Type: fmt.Sprintf("component%03d", i)}
 		components = append(components, c)
 		modules[candidates(c)[0].path] = []string{"v0.1.0"}
 	}
-	components = append(components, Component{Receiver, "otlp"})
+	components = append(components, Component{Class: Receiver, Type: "otlp"})
 	proxy := &fakeProxy{modules: modules}
 
 	got, err := verify(t.Context(), proxy.list, components, acceptAll)

@@ -34,11 +34,11 @@ service:
   pipelines: {}
 `,
 			want: []Component{
-				{Receiver, "otlp"},
-				{Processor, "batch"},
-				{Exporter, "debug"},
-				{Extension, "file_storage"},
-				{Connector, "forward"},
+				{Class: Receiver, Type: "otlp"},
+				{Class: Processor, Type: "batch"},
+				{Class: Exporter, Type: "debug"},
+				{Class: Extension, Type: "file_storage"},
+				{Class: Connector, Type: "forward"},
 			},
 		},
 		{
@@ -49,7 +49,7 @@ receivers:
   otlp/2:
   otlp/with/slash:
 `,
-			want: []Component{{Receiver, "otlp"}},
+			want: []Component{{Class: Receiver, Type: "otlp"}},
 		},
 		{
 			name: "sorted by type within class",
@@ -58,7 +58,7 @@ receivers:
   zipkin:
   hostmetrics:
 `,
-			want: []Component{{Receiver, "hostmetrics"}, {Receiver, "zipkin"}},
+			want: []Component{{Class: Receiver, Type: "hostmetrics"}, {Class: Receiver, Type: "zipkin"}},
 		},
 		{
 			name: "null and absent sections",
@@ -79,7 +79,7 @@ exporters: null
 receivers:
   ${env:FOO}:
 `,
-			want: []Component{{Receiver, "${env:FOO}"}},
+			want: []Component{{Class: Receiver, Type: "${env:FOO}"}},
 		},
 		{
 			name: "section from an environment variable",

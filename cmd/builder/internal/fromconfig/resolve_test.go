@@ -48,18 +48,18 @@ connectors:
 	require.NoError(t, err)
 
 	assert.Equal(t, []Resolved{
-		{Component{Receiver, "otlp"}, corePrefix + "receiver/otlpreceiver", "v0.162.0"},
-		{Component{Receiver, "prometheus_simple"}, contribPrefix + "receiver/simpleprometheusreceiver", "v0.162.0"},
-		{Component{Processor, "batch"}, corePrefix + "processor/batchprocessor", "v0.162.0"},
-		{Component{Processor, "k8sattributes"}, contribPrefix + "processor/k8sattributesprocessor", "v0.162.0"},
-		{Component{Exporter, "debug"}, corePrefix + "exporter/debugexporter", "v0.162.0"},
-		{Component{Extension, "file_storage"}, contribPrefix + "extension/storage/filestorage", "v0.162.0"},
-		{Component{Connector, "forward"}, corePrefix + "connector/forwardconnector", "v1.68.0"},
+		{Component: Component{Class: Receiver, Type: "otlp"}, Module: corePrefix + "receiver/otlpreceiver", Version: "v0.162.0"},
+		{Component: Component{Class: Receiver, Type: "prometheus_simple"}, Module: contribPrefix + "receiver/simpleprometheusreceiver", Version: "v0.162.0"},
+		{Component: Component{Class: Processor, Type: "batch"}, Module: corePrefix + "processor/batchprocessor", Version: "v0.162.0"},
+		{Component: Component{Class: Processor, Type: "k8sattributes"}, Module: contribPrefix + "processor/k8sattributesprocessor", Version: "v0.162.0"},
+		{Component: Component{Class: Exporter, Type: "debug"}, Module: corePrefix + "exporter/debugexporter", Version: "v0.162.0"},
+		{Component: Component{Class: Extension, Type: "file_storage"}, Module: contribPrefix + "extension/storage/filestorage", Version: "v0.162.0"},
+		{Component: Component{Class: Connector, Type: "forward"}, Module: corePrefix + "connector/forwardconnector", Version: "v1.68.0"},
 	}, got.Resolved)
 
 	assert.Equal(t, []Unresolved{
-		{Component{Extension, "myvendor"}, `no Go module found for extension "myvendor"`},
-		{Component{Extension, "zpages"}, `the Go module of extension "zpages" is not published at release v0.162.0`},
+		{Component: Component{Class: Extension, Type: "myvendor"}, Reason: `no Go module found for extension "myvendor"`},
+		{Component: Component{Class: Extension, Type: "zpages"}, Reason: `the Go module of extension "zpages" is not published at release v0.162.0`},
 	}, got.Unresolved)
 }
 
