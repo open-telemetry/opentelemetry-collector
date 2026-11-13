@@ -21,7 +21,7 @@ import (
 // setVsockFeatureGate sets the vsock feature gate for the duration of the test.
 func setVsockFeatureGate(t *testing.T, enabled bool) {
 	t.Helper()
-	gate := metadata.PkgConfignetVsockTransportFeatureGate
+	gate := metadata.PkgConfignetVsockTransportEnabledFeatureGate
 	prev := gate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
 	t.Cleanup(func() {
@@ -220,7 +220,7 @@ func Test_NetAddr_Vsock_FeatureGateDisabled(t *testing.T) {
 		Transport: TransportTypeVsock,
 		Endpoint:  "2:8080",
 	}
-	gateID := metadata.PkgConfignetVsockTransportFeatureGate.ID()
+	gateID := metadata.PkgConfignetVsockTransportEnabledFeatureGate.ID()
 
 	err := na.Validate()
 	require.ErrorContains(t, err, gateID)

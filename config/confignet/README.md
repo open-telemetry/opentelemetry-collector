@@ -17,7 +17,7 @@ leverage network configuration to set connection and transport information.
   Linux-only). For vsock, the endpoint must be in the form `cid:port` where
   `cid` is the 32-bit VM context ID (e.g. `2` for the host) and `port` is
   a 32-bit port number. The "vsock" transport is experimental and requires
-  the `pkg.confignet.VsockTransport` feature gate to be enabled.
+  the `pkg.confignet.vsockTransportEnabled` feature gate to be enabled.
 - `dialer`: Dialer configuration
   - `timeout`: Dialer timeout is the maximum amount of time a dial will wait for a connect to complete. The default is no timeout.
 

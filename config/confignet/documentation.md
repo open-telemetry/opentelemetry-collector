@@ -10,6 +10,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `pkg.confignet.VsockTransport` | alpha | When enabled, the vsock transport type can be used. | v0.165.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/242) |
+| `pkg.confignet.vsockTransportEnabled` | alpha | When enabled, the vsock transport type can be used. | v0.166.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/242) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

@@ -6,10 +6,10 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var PkgConfignetVsockTransportFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"pkg.confignet.VsockTransport",
+var PkgConfignetVsockTransportEnabledFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"pkg.confignet.vsockTransportEnabled",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the vsock transport type can be used."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/242"),
-	featuregate.WithRegisterFromVersion("v0.165.0"),
+	featuregate.WithRegisterFromVersion("v0.166.0"),
 )

@@ -134,7 +134,10 @@ func TestVsockListenAndDial(t *testing.T) {
 	// the first AF_VSOCK socket is created.
 	//
 	// Use the local loopback CID (vsock.Local = 1) for self-connections,
-	// which requires Linux 5.6+. Port 0 lets the kernel assign a free port.
+	// which requires Linux 5.6+ and the vsock_loopback module. Unlike the
+	// vsock core module, vsock_loopback is not loaded on demand; CI loads it
+	// explicitly (see .github/workflows/build-and-test.yml).
+	// Port 0 lets the kernel assign a free port.
 	listenEndpoint := fmt.Sprintf("%d:0", vsock.Local)
 	nas := &AddrConfig{
 		Endpoint:  listenEndpoint,

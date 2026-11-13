@@ -149,13 +149,13 @@ func validateNpipePath(endpoint string) error {
 // checkVsockFeatureGate returns an error if the experimental vsock transport
 // has not been enabled through its feature gate.
 func checkVsockFeatureGate() error {
-	if metadata.PkgConfignetVsockTransportFeatureGate.IsEnabled() {
+	if metadata.PkgConfignetVsockTransportEnabledFeatureGate.IsEnabled() {
 		return nil
 	}
 	return fmt.Errorf("transport type %q is experimental and requires the %q feature gate to be enabled (e.g. --feature-gates=%s)",
 		TransportTypeVsock,
-		metadata.PkgConfignetVsockTransportFeatureGate.ID(),
-		metadata.PkgConfignetVsockTransportFeatureGate.ID())
+		metadata.PkgConfignetVsockTransportEnabledFeatureGate.ID(),
+		metadata.PkgConfignetVsockTransportEnabledFeatureGate.ID())
 }
 
 func validateVsockEndpoint(endpoint string) error {

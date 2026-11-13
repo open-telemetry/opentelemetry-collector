@@ -23,7 +23,7 @@ type AddrConfig struct {
 	// "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only), "udp6" (IPv6-only), "ip", "ip4" (IPv4-only),
 	// "ip6" (IPv6-only), "unix", "unixgram", "unixpacket", "npipe" (Windows named pipes, Windows-only)
 	// and "vsock" (VM sockets, Linux-only). For vsock, the endpoint must be in the form "cid:port".
-	// The "vsock" transport is experimental and requires the `pkg.confignet.VsockTransport` feature gate.
+	// The "vsock" transport is experimental and requires the `pkg.confignet.vsockTransportEnabled` feature gate.
 	Transport TransportType `mapstructure:"transport,omitempty"`
 
 	// prevent unkeyed literal initialization

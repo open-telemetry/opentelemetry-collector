@@ -29,7 +29,7 @@ exported_configs:
           "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only), "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), 
           "ip6" (IPv6-only), "unix", "unixgram", "unixpacket", "npipe" (Windows named pipes, Windows-only)
           and "vsock" (VM sockets, Linux-only). For vsock, the endpoint must be in the form "cid:port".
-          The "vsock" transport is experimental and requires the `pkg.confignet.VsockTransport` feature gate.
+          The "vsock" transport is experimental and requires the `pkg.confignet.vsockTransportEnabled` feature gate.
         $ref: transport_type
   dialer_config:
     description: Contains options for connecting to an address.
@@ -58,10 +58,10 @@ exported_configs:
     type: string
 
 feature_gates:
-  - id: pkg.confignet.VsockTransport
+  - id: pkg.confignet.vsockTransportEnabled
     description: When enabled, the vsock transport type can be used.
     stage: alpha
-    from_version: v0.165.0
+    from_version: v0.166.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector/issues/242
 
 tests:
