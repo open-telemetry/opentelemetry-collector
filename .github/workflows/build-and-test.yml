@@ -198,6 +198,10 @@ jobs:
           path: ~/.cache/go-build
           key: unittest-${{ runner.os }}-${{ matrix.runner }}-go-build-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
           lookup-only: true
+      # Enables the vsock local loopback transport (CID 1) used by confignet vsock tests.
+      # The kernel auto-loads the vsock core module but not vsock_loopback.
+      - name: Load vsock_loopback kernel module
+        run: sudo modprobe vsock_loopback || echo "::warning::vsock_loopback kernel module not available; vsock loopback tests will be skipped"
       - name: Run Unit Tests
         run: |
           make -j4 gotest-with-junit
@@ -255,6 +259,10 @@ jobs:
           path: ~/.cache/go-build
           key: coverage-${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
           lookup-only: true
+      # Enables the vsock local loopback transport (CID 1) used by confignet vsock tests.
+      # The kernel auto-loads the vsock core module but not vsock_loopback.
+      - name: Load vsock_loopback kernel module
+        run: sudo modprobe vsock_loopback || echo "::warning::vsock_loopback kernel module not available; vsock loopback tests will be skipped"
       - name: Run Unit Tests With Coverage
         run: make gotest-with-cover
       - name: check-stability
