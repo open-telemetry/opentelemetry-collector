@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: pkg/exporterhelper
+
+note: Skip item counting in the sending queue when queue metrics are disabled
+
+issues: [16271]
+
+change_logs: [user]
