@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service/internal/builders"
@@ -4168,4 +4169,96 @@ func TestSharedReceiverStartOrder(t *testing.T) {
 			Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {}),
 		}))
 	}
+}
+
+func TestProcessorSettingsPipelineID(t *testing.T) {
+	procType := component.MustNewType("recording")
+	sharedProcID := component.NewIDWithName(procType, "shared")
+
+	var gotSettings []processor.Settings
+	procFactory := xprocessor.NewFactory(
+		procType,
+		func() component.Config { return &struct{}{} },
+		xprocessor.WithTraces(func(_ context.Context, set processor.Settings, _ component.Config, _ consumer.Traces) (processor.Traces, error) {
+			gotSettings = append(gotSettings, set)
+			return &errComponent{}, nil
+		}, component.StabilityLevelDevelopment),
+		xprocessor.WithMetrics(func(_ context.Context, set processor.Settings, _ component.Config, _ consumer.Metrics) (processor.Metrics, error) {
+			gotSettings = append(gotSettings, set)
+			return &errComponent{}, nil
+		}, component.StabilityLevelDevelopment),
+		xprocessor.WithLogs(func(_ context.Context, set processor.Settings, _ component.Config, _ consumer.Logs) (processor.Logs, error) {
+			gotSettings = append(gotSettings, set)
+			return &errComponent{}, nil
+		}, component.StabilityLevelDevelopment),
+		xprocessor.WithProfiles(func(_ context.Context, set processor.Settings, _ component.Config, _ xconsumer.Profiles) (xprocessor.Profiles, error) {
+			gotSettings = append(gotSettings, set)
+			return &errComponent{}, nil
+		}, component.StabilityLevelDevelopment),
+	)
+
+	nopRecvID := component.NewID(receivertest.NopType)
+	nopExpID := component.NewID(exportertest.NopType)
+
+	tracesP1 := pipeline.NewIDWithName(pipeline.SignalTraces, "1")
+	tracesP2 := pipeline.NewIDWithName(pipeline.SignalTraces, "2")
+	metricsP := pipeline.NewID(pipeline.SignalMetrics)
+	logsP := pipeline.NewID(pipeline.SignalLogs)
+	profilesP := pipeline.NewID(xpipeline.SignalProfiles)
+
+	set := Settings{
+		Telemetry: componenttest.NewNopTelemetrySettings(),
+		BuildInfo: component.NewDefaultBuildInfo(),
+		ReceiverBuilder: builders.NewReceiver(
+			map[component.ID]component.Config{nopRecvID: receivertest.NewNopFactory().CreateDefaultConfig()},
+			map[component.Type]receiver.Factory{receivertest.NopType: receivertest.NewNopFactory()},
+		),
+		ProcessorBuilder: builders.NewProcessor(
+			map[component.ID]component.Config{sharedProcID: procFactory.CreateDefaultConfig()},
+			map[component.Type]processor.Factory{procType: procFactory},
+		),
+		ExporterBuilder: builders.NewExporter(
+			map[component.ID]component.Config{nopExpID: exportertest.NewNopFactory().CreateDefaultConfig()},
+			map[component.Type]exporter.Factory{exportertest.NopType: exportertest.NewNopFactory()},
+		),
+		ConnectorBuilder: builders.NewConnector(nil, nil),
+		PipelineConfigs: pipelines.Config{
+			tracesP1: {
+				Receivers:  []component.ID{nopRecvID},
+				Processors: []component.ID{sharedProcID},
+				Exporters:  []component.ID{nopExpID},
+			},
+			tracesP2: {
+				Receivers:  []component.ID{nopRecvID},
+				Processors: []component.ID{sharedProcID},
+				Exporters:  []component.ID{nopExpID},
+			},
+			metricsP: {
+				Receivers:  []component.ID{nopRecvID},
+				Processors: []component.ID{sharedProcID},
+				Exporters:  []component.ID{nopExpID},
+			},
+			logsP: {
+				Receivers:  []component.ID{nopRecvID},
+				Processors: []component.ID{sharedProcID},
+				Exporters:  []component.ID{nopExpID},
+			},
+			profilesP: {
+				Receivers:  []component.ID{nopRecvID},
+				Processors: []component.ID{sharedProcID},
+				Exporters:  []component.ID{nopExpID},
+			},
+		},
+	}
+
+	_, err := Build(context.Background(), set)
+	require.NoError(t, err)
+	require.Len(t, gotSettings, 5)
+
+	gotPipelineIDs := make([]pipeline.ID, 0, len(gotSettings))
+	for _, s := range gotSettings {
+		assert.Equal(t, sharedProcID, s.ID)
+		gotPipelineIDs = append(gotPipelineIDs, s.PipelineID)
+	}
+	assert.ElementsMatch(t, []pipeline.ID{tracesP1, tracesP2, metricsP, logsP, profilesP}, gotPipelineIDs)
 }
