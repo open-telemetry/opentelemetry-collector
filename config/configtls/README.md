@@ -80,6 +80,10 @@ Additionally certificates may be reloaded by setting the below configuration.
    If not set, it will never be reloaded.
    Accepts a [duration string](https://pkg.go.dev/time#ParseDuration),
    valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+   For clients, `reload_interval` also reloads the CA certificate set in `ca_file`,
+   so a rotated CA is trusted without restarting the collector.
+   CA reloading is not available when Go runs in FIPS 140 mode; the CA file is
+   then loaded only at startup.
 
 How TLS/mTLS is configured depends on whether configuring the client or server.
 See below for examples.
