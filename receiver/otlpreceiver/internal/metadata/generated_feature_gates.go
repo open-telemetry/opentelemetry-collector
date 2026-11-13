@@ -11,5 +11,5 @@ var ReceiverOtlpRejectInvalidUTF8FeatureGate = featuregate.GlobalRegistry().Must
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("Controls whether the OTLP receiver rejects telemetry items containing invalid UTF-8 and reports them through OTLP partial success."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/11449"),
-	featuregate.WithRegisterFromVersion("v0.163.0"),
+	featuregate.WithRegisterFromVersion("v0.166.0"),
 )
