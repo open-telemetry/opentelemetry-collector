@@ -1,4 +1,5 @@
 endpoint: "https://1.2.3.4:1234"
+unix_socket_path: /run/otel/otlp.sock
 tls:
   ca_file: /var/lib/mycert.pem
   cert_file: certfile
