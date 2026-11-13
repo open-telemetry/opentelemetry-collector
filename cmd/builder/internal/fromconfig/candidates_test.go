@@ -21,17 +21,17 @@ func paths(cs []candidate) []string {
 func TestCandidatesSimpleType(t *testing.T) {
 	got := candidates(Component{Class: Receiver, Type: "otlp"})
 	assert.Equal(t, []candidate{
-		{0, corePrefix + "receiver/otlpreceiver"},
-		{1, contribPrefix + "receiver/otlpreceiver"},
-		{2, corePrefix + "receiver/otlp"},
-		{3, contribPrefix + "receiver/otlp"},
+		{0, CorePrefix + "receiver/otlpreceiver"},
+		{1, ContribPrefix + "receiver/otlpreceiver"},
+		{2, CorePrefix + "receiver/otlp"},
+		{3, ContribPrefix + "receiver/otlp"},
 	}, got)
 }
 
 func TestCandidatesExtensionAuth(t *testing.T) {
 	got := paths(candidates(Component{Class: Extension, Type: "oauth2client"}))
-	assert.Contains(t, got, contribPrefix+"extension/oauth2clientauthextension")
-	assert.NotContains(t, paths(candidates(Component{Class: Receiver, Type: "oauth2client"})), contribPrefix+"receiver/oauth2clientauthreceiver")
+	assert.Contains(t, got, ContribPrefix+"extension/oauth2clientauthextension")
+	assert.NotContains(t, paths(candidates(Component{Class: Receiver, Type: "oauth2client"})), ContribPrefix+"receiver/oauth2clientauthreceiver")
 }
 
 func TestCandidatesKnownComponents(t *testing.T) {
@@ -39,15 +39,15 @@ func TestCandidatesKnownComponents(t *testing.T) {
 		component Component
 		want      string
 	}{
-		{Component{Class: Extension, Type: "file_storage"}, contribPrefix + "extension/storage/filestorage"},
-		{Component{Class: Extension, Type: "redis_storage"}, contribPrefix + "extension/storage/redisstorageextension"},
-		{Component{Class: Extension, Type: "k8s_observer"}, contribPrefix + "extension/observer/k8sobserver"},
-		{Component{Class: Extension, Type: "json_log_encoding"}, contribPrefix + "extension/encoding/jsonlogencodingextension"},
-		{Component{Class: Extension, Type: "oauth2client"}, contribPrefix + "extension/oauth2clientauthextension"},
-		{Component{Class: Receiver, Type: "prometheus_simple"}, contribPrefix + "receiver/simpleprometheusreceiver"},
-		{Component{Class: Receiver, Type: "receiver_creator"}, contribPrefix + "receiver/receivercreator"},
-		{Component{Class: Receiver, Type: "hostmetrics"}, contribPrefix + "receiver/hostmetricsreceiver"},
-		{Component{Class: Processor, Type: "batch"}, corePrefix + "processor/batchprocessor"},
+		{Component{Class: Extension, Type: "file_storage"}, ContribPrefix + "extension/storage/filestorage"},
+		{Component{Class: Extension, Type: "redis_storage"}, ContribPrefix + "extension/storage/redisstorageextension"},
+		{Component{Class: Extension, Type: "k8s_observer"}, ContribPrefix + "extension/observer/k8sobserver"},
+		{Component{Class: Extension, Type: "json_log_encoding"}, ContribPrefix + "extension/encoding/jsonlogencodingextension"},
+		{Component{Class: Extension, Type: "oauth2client"}, ContribPrefix + "extension/oauth2clientauthextension"},
+		{Component{Class: Receiver, Type: "prometheus_simple"}, ContribPrefix + "receiver/simpleprometheusreceiver"},
+		{Component{Class: Receiver, Type: "receiver_creator"}, ContribPrefix + "receiver/receivercreator"},
+		{Component{Class: Receiver, Type: "hostmetrics"}, ContribPrefix + "receiver/hostmetricsreceiver"},
+		{Component{Class: Processor, Type: "batch"}, CorePrefix + "processor/batchprocessor"},
 	} {
 		t.Run(string(tt.component.Class)+"/"+tt.component.Type, func(t *testing.T) {
 			assert.Contains(t, paths(candidates(tt.component)), tt.want)
@@ -63,14 +63,14 @@ func TestCandidatesPriority(t *testing.T) {
 	for i := 1; i < len(got); i++ {
 		assert.GreaterOrEqual(t, got[i].level, got[i-1].level)
 	}
-	assert.Equal(t, corePrefix+"extension/filestorageextension", got[0].path)
-	assert.Equal(t, contribPrefix+"extension/filestorageextension", got[1].path)
+	assert.Equal(t, CorePrefix+"extension/filestorageextension", got[0].path)
+	assert.Equal(t, ContribPrefix+"extension/filestorageextension", got[1].path)
 
 	// Pattern #4 precedes pattern #5.
 	p := paths(got)
 	assert.Less(t,
-		indexOf(p, contribPrefix+"extension/storage/filestorageextension"),
-		indexOf(p, contribPrefix+"extension/storage/filestorage"))
+		indexOf(p, ContribPrefix+"extension/storage/filestorageextension"),
+		indexOf(p, ContribPrefix+"extension/storage/filestorage"))
 }
 
 func TestCandidatesDeduplicated(t *testing.T) {
@@ -87,9 +87,9 @@ func TestCandidatesExceptions(t *testing.T) {
 		component Component
 		want      string
 	}{
-		{Component{Class: Extension, Type: "asapclient"}, contribPrefix + "extension/asapauthextension"},
-		{Component{Class: Receiver, Type: "podman_stats"}, contribPrefix + "receiver/podmanreceiver"},
-		{Component{Class: Exporter, Type: "otlp_grpc"}, corePrefix + "exporter/otlpexporter"},
+		{Component{Class: Extension, Type: "asapclient"}, ContribPrefix + "extension/asapauthextension"},
+		{Component{Class: Receiver, Type: "podman_stats"}, ContribPrefix + "receiver/podmanreceiver"},
+		{Component{Class: Exporter, Type: "otlp_grpc"}, CorePrefix + "exporter/otlpexporter"},
 	} {
 		t.Run(tt.component.Type, func(t *testing.T) {
 			assert.Equal(t, []candidate{{0, tt.want}}, candidates(tt.component))

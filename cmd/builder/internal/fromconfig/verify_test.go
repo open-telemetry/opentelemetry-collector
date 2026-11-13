@@ -44,10 +44,10 @@ func acceptAll(ListedModule) (string, bool) { return "", true }
 
 func TestVerifyHighestPriorityWins(t *testing.T) {
 	proxy := &fakeProxy{modules: map[string][]string{
-		corePrefix + "receiver/otlpreceiver":                     {"v0.1.0"},
-		contribPrefix + "receiver/hostmetricsreceiver":           {"v0.1.0"},
-		contribPrefix + "extension/storage/filestorage":          {"v0.1.0"},
-		contribPrefix + "extension/storage/filestorageextension": {"v0.1.0"},
+		CorePrefix + "receiver/otlpreceiver":                     {"v0.1.0"},
+		ContribPrefix + "receiver/hostmetricsreceiver":           {"v0.1.0"},
+		ContribPrefix + "extension/storage/filestorage":          {"v0.1.0"},
+		ContribPrefix + "extension/storage/filestorageextension": {"v0.1.0"},
 	}}
 	components := []Component{
 		{Class: Receiver, Type: "otlp"},
@@ -58,20 +58,20 @@ func TestVerifyHighestPriorityWins(t *testing.T) {
 	got, err := verify(t.Context(), proxy.list, components, acceptAll)
 	require.NoError(t, err)
 
-	assert.Equal(t, corePrefix+"receiver/otlpreceiver", got.modules[components[0]].module.Path)
-	assert.Equal(t, contribPrefix+"receiver/hostmetricsreceiver", got.modules[components[1]].module.Path)
+	assert.Equal(t, CorePrefix+"receiver/otlpreceiver", got.modules[components[0]].module.Path)
+	assert.Equal(t, ContribPrefix+"receiver/hostmetricsreceiver", got.modules[components[1]].module.Path)
 	// Pattern #4 outranks pattern #5.
-	assert.Equal(t, contribPrefix+"extension/storage/filestorageextension", got.modules[components[2]].module.Path)
+	assert.Equal(t, ContribPrefix+"extension/storage/filestorageextension", got.modules[components[2]].module.Path)
 }
 
 func TestVerifyBatchesByLevel(t *testing.T) {
 	proxy := &fakeProxy{modules: map[string][]string{
-		corePrefix + "receiver/otlpreceiver":               {"v0.1.0"},
-		contribPrefix + "receiver/hostmetricsreceiver":     {"v0.1.0"},
-		corePrefix + "processor/batchprocessor":            {"v0.1.0"},
-		contribPrefix + "processor/k8sattributesprocessor": {"v0.1.0"},
-		corePrefix + "exporter/debugexporter":              {"v0.1.0"},
-		contribPrefix + "exporter/elasticsearchexporter":   {"v0.1.0"},
+		CorePrefix + "receiver/otlpreceiver":               {"v0.1.0"},
+		ContribPrefix + "receiver/hostmetricsreceiver":     {"v0.1.0"},
+		CorePrefix + "processor/batchprocessor":            {"v0.1.0"},
+		ContribPrefix + "processor/k8sattributesprocessor": {"v0.1.0"},
+		CorePrefix + "exporter/debugexporter":              {"v0.1.0"},
+		ContribPrefix + "exporter/elasticsearchexporter":   {"v0.1.0"},
 	}}
 	components := []Component{
 		{Class: Receiver, Type: "otlp"},
@@ -109,8 +109,8 @@ func TestVerifyUnresolved(t *testing.T) {
 func TestVerifyAccept(t *testing.T) {
 	proxy := &fakeProxy{modules: map[string][]string{
 		sentinelModule:                             {"v0.1.0"},
-		corePrefix + "processor/batchprocessor":    {"v0.2.0"},
-		contribPrefix + "processor/batchprocessor": {"v0.1.0"},
+		CorePrefix + "processor/batchprocessor":    {"v0.2.0"},
+		ContribPrefix + "processor/batchprocessor": {"v0.1.0"},
 	}}
 	components := []Component{{Class: Processor, Type: "batch"}}
 
@@ -119,7 +119,7 @@ func TestVerifyAccept(t *testing.T) {
 		return "v0.1.0", m.Versions[0] == "v0.1.0"
 	})
 	require.NoError(t, err)
-	assert.Equal(t, contribPrefix+"processor/batchprocessor", got.modules[components[0]].module.Path)
+	assert.Equal(t, ContribPrefix+"processor/batchprocessor", got.modules[components[0]].module.Path)
 
 	// When nothing is accepted, the component is reported as found.
 	got, err = verify(t.Context(), proxy.list, components, func(ListedModule) (string, bool) { return "", false })

@@ -10,19 +10,20 @@ import (
 	"golang.org/x/mod/module"
 )
 
+// The module path prefixes of the repositories hosting official components.
 const (
-	corePrefix    = "go.opentelemetry.io/collector/"
-	contribPrefix = "github.com/open-telemetry/opentelemetry-collector-contrib/"
+	CorePrefix    = "go.opentelemetry.io/collector/"
+	ContribPrefix = "github.com/open-telemetry/opentelemetry-collector-contrib/"
 )
 
 // prefixes lists the repositories to search, in priority order.
-var prefixes = []string{corePrefix, contribPrefix}
+var prefixes = []string{CorePrefix, ContribPrefix}
 
 // exceptions lists the components whose module is not reachable by any pattern.
 var exceptions = map[Component]string{
-	{Class: Extension, Type: "asapclient"}:  contribPrefix + "extension/asapauthextension",
-	{Class: Receiver, Type: "podman_stats"}: contribPrefix + "receiver/podmanreceiver",
-	{Class: Exporter, Type: "otlp_grpc"}:    corePrefix + "exporter/otlpexporter",
+	{Class: Extension, Type: "asapclient"}:  ContribPrefix + "extension/asapauthextension",
+	{Class: Receiver, Type: "podman_stats"}: ContribPrefix + "receiver/podmanreceiver",
+	{Class: Exporter, Type: "otlp_grpc"}:    CorePrefix + "exporter/otlpexporter",
 }
 
 // candidate is a module path that may host a component.

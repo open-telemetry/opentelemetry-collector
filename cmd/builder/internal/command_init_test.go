@@ -95,9 +95,6 @@ receivers:
 }
 
 const (
-	corePrefix    = "go.opentelemetry.io/collector/"
-	contribPrefix = "github.com/open-telemetry/opentelemetry-collector-contrib/"
-
 	fromConfigExample = `receivers:
   otlp:
   hostmetrics:
@@ -117,12 +114,12 @@ service:
 // fakeResolver resolves components against a fixed set of published modules.
 func fakeResolver() *fromconfig.Resolver {
 	published := map[string][]string{
-		corePrefix + "receiver/otlpreceiver":                {"v0.1.0"},
-		corePrefix + "processor/batchprocessor":             {"v0.1.0"},
-		corePrefix + "exporter/debugexporter":               {"v0.1.0"},
-		contribPrefix + "receiver/hostmetricsreceiver":      {"v0.1.0"},
-		contribPrefix + "receiver/simpleprometheusreceiver": {"v0.1.0"},
-		contribPrefix + "extension/storage/filestorage":     {"v0.1.0"},
+		fromconfig.CorePrefix + "receiver/otlpreceiver":                {"v0.1.0"},
+		fromconfig.CorePrefix + "processor/batchprocessor":             {"v0.1.0"},
+		fromconfig.CorePrefix + "exporter/debugexporter":               {"v0.1.0"},
+		fromconfig.ContribPrefix + "receiver/hostmetricsreceiver":      {"v0.1.0"},
+		fromconfig.ContribPrefix + "receiver/simpleprometheusreceiver": {"v0.1.0"},
+		fromconfig.ContribPrefix + "extension/storage/filestorage":     {"v0.1.0"},
 	}
 	return &fromconfig.Resolver{
 		Release: "v0.1.0",
@@ -155,15 +152,15 @@ func TestRunInitFromConfig(t *testing.T) {
     name: test-distro
     output_path: ./build/collector
 exporters:
-    - gomod: `+corePrefix+`exporter/debugexporter v0.1.0
+    - gomod: `+fromconfig.CorePrefix+`exporter/debugexporter v0.1.0
 extensions:
-    - gomod: `+contribPrefix+`extension/storage/filestorage v0.1.0
+    - gomod: `+fromconfig.ContribPrefix+`extension/storage/filestorage v0.1.0
 processors:
-    - gomod: `+corePrefix+`processor/batchprocessor v0.1.0
+    - gomod: `+fromconfig.CorePrefix+`processor/batchprocessor v0.1.0
 receivers:
-    - gomod: `+contribPrefix+`receiver/hostmetricsreceiver v0.1.0
-    - gomod: `+corePrefix+`receiver/otlpreceiver v0.1.0
-    - gomod: `+contribPrefix+`receiver/simpleprometheusreceiver v0.1.0
+    - gomod: `+fromconfig.ContribPrefix+`receiver/hostmetricsreceiver v0.1.0
+    - gomod: `+fromconfig.CorePrefix+`receiver/otlpreceiver v0.1.0
+    - gomod: `+fromconfig.ContribPrefix+`receiver/simpleprometheusreceiver v0.1.0
 
 # The following components are referenced by `+configPath+` but could
 # not be matched to a Go module in the opentelemetry-collector or
@@ -180,7 +177,7 @@ receivers:
 	require.NoError(t, err)
 	assert.Equal(t, fromConfigExample, string(config))
 
-	assert.Contains(t, stderr.String(), "ocb: resolved receiver otlp -> "+corePrefix+"receiver/otlpreceiver v0.1.0\n")
+	assert.Contains(t, stderr.String(), "ocb: resolved receiver otlp -> "+fromconfig.CorePrefix+"receiver/otlpreceiver v0.1.0\n")
 	assert.Contains(t, stderr.String(), `ocb: warning: no Go module found for extension "myvendor"; add its gomod to manifest.yaml manually`+"\n")
 	assert.Contains(t, stderr.String(), "ocb: resolved 6 of 7 components referenced by "+configPath+"\n")
 }

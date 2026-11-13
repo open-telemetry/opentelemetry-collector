@@ -12,13 +12,13 @@ import (
 // notComponents lists modules that exist under the class directories but do not
 // provide a component factory.
 var notComponents = []string{
-	contribPrefix + "extension/storage",
-	contribPrefix + "extension/observer",
-	contribPrefix + "extension/encoding",
-	contribPrefix + "extension/opampcustommessages",
-	corePrefix + "extension/extensionauth",
-	corePrefix + "extension/extensioncapabilities",
-	corePrefix + "extension/extensionmiddleware",
+	ContribPrefix + "extension/storage",
+	ContribPrefix + "extension/observer",
+	ContribPrefix + "extension/encoding",
+	ContribPrefix + "extension/opampcustommessages",
+	CorePrefix + "extension/extensionauth",
+	CorePrefix + "extension/extensioncapabilities",
+	CorePrefix + "extension/extensionmiddleware",
 }
 
 // isNotComponent reports whether a candidate module path is known to be a Go

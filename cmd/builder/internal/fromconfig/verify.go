@@ -19,7 +19,7 @@ import (
 
 // sentinelModule is looked up with the first batch to tell apart "the module
 // does not exist" from "module lookups are unavailable".
-const sentinelModule = corePrefix + "receiver/otlpreceiver"
+const sentinelModule = CorePrefix + "receiver/otlpreceiver"
 
 // lookupHint tells the user how to proceed when module lookups do not work.
 const lookupHint = "ocb init --from-config needs access to the Go module proxy; run `ocb init` without --from-config for a default manifest"

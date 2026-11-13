@@ -14,11 +14,11 @@ import (
 )
 
 const (
-	otelcolModule = corePrefix + "otelcol"
+	otelcolModule = CorePrefix + "otelcol"
 	// betaMarker is a module of the beta (v0) series required by otelcol.
-	betaMarker = corePrefix + "component/componentstatus"
+	betaMarker = CorePrefix + "component/componentstatus"
 	// stableMarker is a module of the stable (v1) series required by otelcol.
-	stableMarker = corePrefix + "component"
+	stableMarker = CorePrefix + "component"
 )
 
 // Versions holds the versions of the two series published by a Collector release.
