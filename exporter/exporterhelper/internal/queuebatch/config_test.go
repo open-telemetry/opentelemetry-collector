@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configstorage"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -22,7 +23,7 @@ func TestConfig_Validate(t *testing.T) {
 	cfg := newTestConfig()
 	require.NoError(t, confmap.Validate(cfg))
 
-	storageID := component.MustNewID("test")
+	storageID := configstorage.ID(component.MustNewID("test"))
 	cfg = newTestConfig()
 	cfg.WaitForResult = true
 	cfg.StorageID = configoptional.Some(storageID)
