@@ -16,29 +16,41 @@ func (ms KeyValueAndUnit) Equal(val KeyValueAndUnit) bool {
 // switchDictionary updates the KeyValueAndUnit, switching its indices from one
 // dictionary to another.
 func (ms KeyValueAndUnit) switchDictionary(src, dst ProfilesDictionary, mi *mergeIndex) error {
-	if ms.KeyStrindex() > 0 {
-		if src.StringTable().Len() <= int(ms.KeyStrindex()) {
-			return fmt.Errorf("invalid key index %d", ms.KeyStrindex())
-		}
-
-		idx, err := mi.setString(dst.StringTable(), src.StringTable().At(int(ms.KeyStrindex())))
-		if err != nil {
-			return fmt.Errorf("couldn't set key: %w", err)
-		}
-		ms.SetKeyStrindex(idx)
+	key, unit, err := ms.translateStrings(src, dst, mi)
+	if err != nil {
+		return err
 	}
-
-	if ms.UnitStrindex() > 0 {
-		if src.StringTable().Len() <= int(ms.UnitStrindex()) {
-			return fmt.Errorf("invalid unit index %d", ms.UnitStrindex())
-		}
-
-		idx, err := mi.setString(dst.StringTable(), src.StringTable().At(int(ms.UnitStrindex())))
-		if err != nil {
-			return fmt.Errorf("couldn't set unit: %w", err)
-		}
-		ms.SetUnitStrindex(idx)
-	}
-
+	ms.SetKeyStrindex(key)
+	ms.SetUnitStrindex(unit)
 	return nil
+}
+
+// translateStrings returns the destination key and unit string indices of the
+// KeyValueAndUnit, adding the strings to dst as needed, without modifying it.
+func (ms KeyValueAndUnit) translateStrings(src, dst ProfilesDictionary, mi *mergeIndex) (key, unit int32, err error) {
+	key, unit = ms.KeyStrindex(), ms.UnitStrindex()
+
+	if key > 0 {
+		if src.StringTable().Len() <= int(key) {
+			return 0, 0, fmt.Errorf("invalid key index %d", key)
+		}
+
+		key, err = mi.setString(dst.StringTable(), src.StringTable().At(int(key)))
+		if err != nil {
+			return 0, 0, fmt.Errorf("couldn't set key: %w", err)
+		}
+	}
+
+	if unit > 0 {
+		if src.StringTable().Len() <= int(unit) {
+			return 0, 0, fmt.Errorf("invalid unit index %d", unit)
+		}
+
+		unit, err = mi.setString(dst.StringTable(), src.StringTable().At(int(unit)))
+		if err != nil {
+			return 0, 0, fmt.Errorf("couldn't set unit: %w", err)
+		}
+	}
+
+	return key, unit, nil
 }
