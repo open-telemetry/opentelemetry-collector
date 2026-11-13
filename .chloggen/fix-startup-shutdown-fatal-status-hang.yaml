@@ -4,4 +4,5 @@ note: "Fix a deadlock that hung the collector while starting or shutting down af
 issues: [16309]
 subtext: |
   A fatal error reported during startup no longer hangs the collector's startup and shuts the collector down after.
-change_logs: [user]
+  External callers to Service.New should now pass AsyncErrorChannel a buffered channel to with at least capacity of 1 `make(chan error, 1)`. Otherwise fatal errors will be dropped if no goroutine is receiving at that moment.
+change_logs: [user, api]
