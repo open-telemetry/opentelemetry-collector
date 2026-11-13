@@ -2383,8 +2383,8 @@ func TestRunQuotedDescriptions(t *testing.T) {
 func TestRunConfigCommentsDoNotInjectDirectives(t *testing.T) {
 	tmpdir := filepath.Join(t.TempDir(), "shortname")
 	require.NoError(t, os.MkdirAll(tmpdir, 0o750))
-	ymlContent, err := os.ReadFile(filepath.Join("testdata", "hostile_config_comments.yaml"))
-	require.NoError(t, err)
+	ymlContent, readErr := os.ReadFile(filepath.Join("testdata", "hostile_config_comments.yaml"))
+	require.NoError(t, readErr)
 	metadataFile := filepath.Join(tmpdir, "metadata.yaml")
 	require.NoError(t, os.WriteFile(metadataFile, ymlContent, 0o600)) // #nosec G703
 	require.NoError(t, os.WriteFile(filepath.Join(tmpdir, "empty.go"), []byte("package shortname"), 0o600))
@@ -2406,7 +2406,7 @@ func TestRunConfigCommentsDoNotInjectDirectives(t *testing.T) {
 			assert.NotRegexp(t, `(?m)^//go:generate`, string(content), f.Name())
 		}
 	}
-	cfg, err := os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "generated_config.go")))
-	require.NoError(t, err)
+	cfg, readErr := os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "generated_config.go")))
+	require.NoError(t, readErr)
 	assert.Contains(t, string(cfg), "// //go:generate sh -c \"id > /tmp/config-description\"")
 }
