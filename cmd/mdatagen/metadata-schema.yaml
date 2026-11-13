@@ -53,7 +53,7 @@ sending_queue:
 # Required for components (Optional for subcomponents): A high-level view of the development status and use of this component
 status:
   # Required: The class of the component (For example receiver)
-  class: <receiver|processor|exporter|connector|extension|cmd|pkg|scraper|converter|provider>
+  class: <receiver|processor|exporter|connector|extension|cmd|pkg|scraper|converter|provider|internal>
   # Required: The stability of the component - See https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#stability-levels
   stability:
     development: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension,converter,provider>]
@@ -424,12 +424,8 @@ telemetry:
       enabled: bool
       # Required: metric description.
       description:
-      # Optional: the stability of the metric. Set to alpha by default.
-      stability:
-        # Optional: the stability level of the metric. Set to alpha by default.
-        level: [alpha|stable|deprecated]
-        # Optional: the version current stability was introduced
-        from:
+      # Required: metric stability.
+      stability: <development|alpha|beta|stable|deprecated|unmaintained>
       # Deprecation information for the metric. Required when stability is `deprecated`.
       deprecated:
         # Required: version when the metric was deprecated
