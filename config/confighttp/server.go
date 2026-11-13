@@ -65,7 +65,7 @@ func NewDefaultServerConfig() ServerConfig {
 	}
 }
 
-// ToListener creates a net.Listener. Pass the host extensions when Listener is configured.
+// ToListener creates a net.Listener.
 func (sc *ServerConfig) ToListener(ctx context.Context, extensions ...map[component.ID]component.Component) (net.Listener, error) {
 	var listener net.Listener
 	var err error
