@@ -91,7 +91,6 @@ func TestService_Host_GetExporters(t *testing.T) {
 
 func TestService_Host_FatalError(t *testing.T) {
 	set := newNopSettings()
-	set.AsyncErrorChannel = make(chan error)
 
 	srv, err := New(context.Background(), set, newNopConfig())
 	require.NoError(t, err)

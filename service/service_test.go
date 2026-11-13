@@ -517,7 +517,7 @@ func newNopSettings() Settings {
 		ConnectorsFactories: connectorsFactories,
 		ExtensionsConfigs:   extensionsConfigs,
 		ExtensionsFactories: extensionsFactories,
-		AsyncErrorChannel:   make(chan error),
+		AsyncErrorChannel:   make(chan error, 1),
 		TelemetryFactory:    telemetryFactory,
 	}
 }
