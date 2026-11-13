@@ -6,6 +6,7 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"context"
 	"fmt"
+	"sync"
 	"sync/atomic"
 
 	"go.uber.org/multierr"
@@ -17,13 +18,30 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
-var _ Batcher[request.Request] = (*shardedBatcher)(nil)
+var (
+	_ Batcher[request.Request] = (*shardedBatcher)(nil)
+	_ fullQueueFlusher         = (*shardedBatcher)(nil)
+)
+
+// fullQueueFlusher is a Batcher that can flush its partial batches when the queue runs out of
+// capacity, so producers do not wait for min_size or flush_timeout to free space.
+type fullQueueFlusher interface {
+	// onQueueFull returns the hook the queue calls when it has no free capacity, or nil when the
+	// batcher does not need to be notified. The hook must not block.
+	onQueueFull() func()
+}
 
 // shardedBatcher spreads unpartitioned requests across independent partitionBatcher instances.
 // All shards share one worker pool, so worker concurrency remains bounded by the queue setting.
 type shardedBatcher struct {
 	shards []*partitionBatcher
 	next   atomic.Uint64
+
+	// flushCh has a buffer of one so repeated flush requests collapse into one.
+	flushCh      chan struct{}
+	shutdownCh   chan struct{}
+	shutdownOnce sync.Once
+	stopWG       sync.WaitGroup
 }
 
 func newShardedBatcher(
@@ -40,7 +58,9 @@ func newShardedBatcher(
 	}
 
 	sb := &shardedBatcher{
-		shards: make([]*partitionBatcher, 0, shardCount),
+		shards:     make([]*partitionBatcher, 0, shardCount),
+		flushCh:    make(chan struct{}, 1),
+		shutdownCh: make(chan struct{}),
 	}
 	for range shardCount {
 		sb.shards = append(sb.shards, newPartitionBatcher(cfg, sizer, mergeCtx, wp, next, logger, nil))
@@ -53,7 +73,46 @@ func (sb *shardedBatcher) Start(ctx context.Context, host component.Host) error 
 	for _, shard := range sb.shards {
 		err = multierr.Append(err, shard.Start(ctx, host))
 	}
+	if sb.flushesOnFull() {
+		sb.stopWG.Go(func() {
+			for {
+				select {
+				case <-sb.shutdownCh:
+					return
+				case <-sb.flushCh:
+					sb.flushPartialBatches()
+				}
+			}
+		})
+	}
 	return err
+}
+
+// flushesOnFull reports whether a full queue must flush the partial batches. With a single shard
+// the batcher behaves like the previous unsharded one, so neither the hook nor the flush
+// goroutine is wired.
+func (sb *shardedBatcher) flushesOnFull() bool {
+	return len(sb.shards) > 1
+}
+
+func (sb *shardedBatcher) onQueueFull() func() {
+	if !sb.flushesOnFull() {
+		return nil
+	}
+	return sb.requestFlush
+}
+
+func (sb *shardedBatcher) requestFlush() {
+	select {
+	case sb.flushCh <- struct{}{}:
+	default:
+	}
+}
+
+func (sb *shardedBatcher) flushPartialBatches() {
+	for _, shard := range sb.shards {
+		shard.flushCurrentBatchOrRemovePartition()
+	}
 }
 
 func (sb *shardedBatcher) Consume(ctx context.Context, req request.Request, done queue.Done) {
@@ -62,6 +121,8 @@ func (sb *shardedBatcher) Consume(ctx context.Context, req request.Request, done
 }
 
 func (sb *shardedBatcher) Shutdown(ctx context.Context) error {
+	sb.shutdownOnce.Do(func() { close(sb.shutdownCh) })
+	sb.stopWG.Wait()
 	var err error
 	for _, shard := range sb.shards {
 		err = multierr.Append(err, shard.Shutdown(ctx))

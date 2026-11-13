@@ -33,6 +33,7 @@ type memoryQueue[T request.Request] struct {
 	stopped         bool
 	waitForResult   bool
 	blockOnOverflow bool
+	onFull          func()
 }
 
 // newMemoryQueue creates a sized elements channel. Each element is assigned a size by the provided sizer.
@@ -44,6 +45,7 @@ func newMemoryQueue[T request.Request](set Settings[T]) readableQueue[T] {
 		items:           &linkedQueue[T]{},
 		waitForResult:   set.WaitForResult,
 		blockOnOverflow: set.BlockOnOverflow,
+		onFull:          set.OnFull,
 	}
 	if !set.WaitForResult {
 		// With WaitForResult the caller stays blocked until the element is done, so it keeps the
@@ -133,6 +135,9 @@ func (mq *memoryQueue[T]) add(ctx context.Context, el T, elSize int64) (*node[T]
 	defer mq.mu.Unlock()
 
 	for mq.size+elSize > mq.cap {
+		if mq.onFull != nil && !mq.items.hasElements() {
+			mq.onFull()
+		}
 		if !mq.blockOnOverflow {
 			return nil, nil, ErrQueueIsFull
 		}
@@ -168,6 +173,10 @@ func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool)
 	for {
 		if mq.items.hasElements() {
 			n := mq.items.pop()
+			if mq.onFull != nil && !mq.items.hasElements() && mq.hasMoreSpace.waiting > 0 {
+				// Last unread element taken while producers wait: only the consumer can free space now.
+				mq.onFull()
+			}
 			// The caller that gave up on an abandoned element owns the request, so it must neither
 			// be read here nor handed to a consumer.
 			if mq.waitForResult && n.abandoned {

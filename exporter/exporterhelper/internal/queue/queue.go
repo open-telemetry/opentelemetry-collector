@@ -82,6 +82,7 @@ type Settings[T request.Request] struct {
 	ID               component.ID
 	Telemetry        component.TelemetrySettings
 	ObsMetrics       queuebatchtelemetry.ObsMetrics
+	OnFull           func()
 }
 
 func NewQueue[T request.Request](set Settings[T], next ConsumeFunc[T]) (Queue[T], error) {
