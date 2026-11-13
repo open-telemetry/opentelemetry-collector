@@ -1,0 +1,27 @@
+type: metricreceiver
+
+status:
+  class: receiver
+  stability:
+    beta: [traces]
+    stable: [metrics]
+
+feature_gates:
+  - id: receiver.metricreceiver.hostile
+    description: "Gate \" + `\n//go:generate sh -c \"id > /tmp/gate-description\"\n`[:0] + \""
+    stage: alpha
+    from_version: 'v0.100.0'
+    reference_url: 'https://github.com/open-telemetry/opentelemetry-collector/issues/12345'
+
+metrics:
+  metric:
+    enabled: true
+    description: "Number of requests.\" + `\n//go:generate sh -c \"id > /tmp/metric-description\"\n`[:0] + \""
+    stability: development
+    unit: s
+    gauge:
+      value_type: double
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true
