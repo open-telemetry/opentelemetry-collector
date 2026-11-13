@@ -21,6 +21,9 @@ import (
 // does not exist" from "module lookups are unavailable".
 const sentinelModule = corePrefix + "receiver/otlpreceiver"
 
+// lookupHint tells the user how to proceed when module lookups do not work.
+const lookupHint = "ocb init --from-config needs access to the Go module proxy; run `ocb init` without --from-config for a default manifest"
+
 // maxArgBytes bounds the size of the module arguments of a single `go list`
 // invocation, to stay well within the Windows command-line limit.
 const maxArgBytes = 6000
@@ -167,9 +170,8 @@ func checkSentinel(listed []ListedModule) error {
 		if m.Error != nil {
 			reason = m.Error.Err
 		}
-		return fmt.Errorf("failed to verify component modules: %w: %s\n"+
-			"ocb init --from-config needs access to the Go module proxy; run `ocb init` without --from-config for a default manifest",
-			errLookupUnavailable, firstLine(reason))
+		return fmt.Errorf("failed to verify component modules: %w: %s\n%s",
+			errLookupUnavailable, firstLine(reason), lookupHint)
 	}
 	return fmt.Errorf("failed to verify component modules: %w: no result for %s", errLookupUnavailable, sentinelModule)
 }

@@ -75,7 +75,7 @@ func (r *Resolver) Resolve(ctx context.Context, config []byte) (Result, error) {
 
 	versions, err := versionsOf(ctx, r.Release)
 	if err != nil {
-		return Result{}, err
+		return Result{}, fmt.Errorf("failed to determine the versions of release %s: %w\n%s", r.Release, err, lookupHint)
 	}
 
 	found, err := verify(ctx, list, components, func(m ListedModule) (string, bool) {

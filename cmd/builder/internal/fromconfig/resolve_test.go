@@ -91,6 +91,7 @@ func TestResolveErrors(t *testing.T) {
 	r.Versions = func(context.Context, string) (Versions, error) { return Versions{}, assert.AnError }
 	_, err = r.Resolve(t.Context(), []byte("receivers:\n  otlp:\n"))
 	require.ErrorIs(t, err, assert.AnError)
+	require.ErrorContains(t, err, "needs access to the Go module proxy")
 
 	// The module proxy is unreachable: nothing can be resolved.
 	r.Versions = fixedVersions
