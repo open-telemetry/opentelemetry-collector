@@ -827,7 +827,33 @@ func TestReceiverPartialReloadEnabled(t *testing.T) {
 	}
 }
 
-func TestServiceUpdateReceivers(t *testing.T) {
+func TestProcessorPartialReloadEnabled(t *testing.T) {
+	// Both the master gate and the processor phase gate must be enabled.
+	cases := []struct {
+		name      string
+		master    bool
+		processor bool
+		want      bool
+	}{
+		{"both disabled", false, false, false},
+		{"master only", true, false, false},
+		{"processor only", false, true, false},
+		{"both enabled", true, true, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", tc.master))
+			require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReloadProcessors", tc.processor))
+			defer func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", false))
+				require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReloadProcessors", true))
+			}()
+			assert.Equal(t, tc.want, ProcessorPartialReloadEnabled())
+		})
+	}
+}
+
+func TestServiceUpdate(t *testing.T) {
 	ctx := context.Background()
 	cfg := newNopConfig()
 	srv, err := New(ctx, newNopSettings(), cfg)
@@ -838,7 +864,24 @@ func TestServiceUpdateReceivers(t *testing.T) {
 	})
 
 	// An unchanged update is a no-op that still exercises the public
-	// UpdateReceivers entry point on the running service.
+	// Update entry point on the running service.
+	procCfgs, procFactories := builders.NewNopProcessorConfigsAndFactories()
 	rcvrCfgs, rcvrFactories := builders.NewNopReceiverConfigsAndFactories()
-	require.NoError(t, srv.UpdateReceivers(ctx, nil, rcvrCfgs, rcvrFactories, cfg.Pipelines))
+	applied, err := srv.Update(ctx, nil, rcvrCfgs, rcvrFactories, nil, procCfgs, procFactories, cfg.Pipelines)
+	require.NoError(t, err)
+	assert.True(t, applied)
+
+	// Marking receivers and processors as changed restarts them, and the
+	// receivers feeding the changed processors, in a single pass.
+	changedProcs := map[component.ID]bool{}
+	for id := range procCfgs {
+		changedProcs[id] = true
+	}
+	changedRcvrs := map[component.ID]bool{}
+	for id := range rcvrCfgs {
+		changedRcvrs[id] = true
+	}
+	applied, err = srv.Update(ctx, changedRcvrs, rcvrCfgs, rcvrFactories, changedProcs, procCfgs, procFactories, cfg.Pipelines)
+	require.NoError(t, err)
+	assert.True(t, applied)
 }
