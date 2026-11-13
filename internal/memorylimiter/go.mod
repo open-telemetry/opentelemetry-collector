@@ -3,19 +3,19 @@ module go.opentelemetry.io/collector/internal/memorylimiter
 go 1.26.0
 
 require (
-	github.com/shirou/gopsutil/v4 v4.26.9
+	github.com/shirou/gopsutil/v4 v4.26.10
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/component v1.70.0
-	go.opentelemetry.io/collector/component/componentstatus v0.164.0
-	go.opentelemetry.io/collector/component/componenttest v0.164.0
-	go.opentelemetry.io/collector/confmap v1.70.0
+	go.opentelemetry.io/collector/component v1.71.0
+	go.opentelemetry.io/collector/component/componentstatus v0.165.0
+	go.opentelemetry.io/collector/component/componenttest v0.165.0
+	go.opentelemetry.io/collector/confmap v1.71.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 )
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/ebitengine/purego v0.11.1 // indirect
+	github.com/ebitengine/purego v0.11.2 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -26,7 +26,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.3 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.1 // indirect
-	github.com/knadh/koanf/v2 v2.3.8 // indirect
+	github.com/knadh/koanf/v2 v2.4.1 // indirect
 	github.com/lufia/plan9stats v0.0.0-20251013123823-9fd1530e3ec3 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -37,9 +37,10 @@ require (
 	github.com/tklauser/numcpus v0.12.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.70.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.70.0 // indirect
-	go.opentelemetry.io/collector/pipeline v1.70.0 // indirect
+	go.opentelemetry.io/collector/config/configoptional v1.71.0
+	go.opentelemetry.io/collector/featuregate v1.71.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.71.0 // indirect
+	go.opentelemetry.io/collector/pipeline v1.71.0 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
 	go.opentelemetry.io/otel/metric v1.47.0 // indirect
@@ -47,7 +48,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.47.0 // indirect
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.yaml.in/yaml/v3 v3.0.5 // indirect
+	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 )
 
@@ -66,3 +67,5 @@ replace go.opentelemetry.io/collector/component/componenttest => ../../component
 replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
+
+replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional

@@ -1,4 +1,4 @@
-type: config/configstorage
+type: configstorage
 parent: config
 github_project: open-telemetry/opentelemetry-collector
 
