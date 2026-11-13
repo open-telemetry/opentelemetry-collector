@@ -4,13 +4,13 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
-component: pkg/confighttp
+component: pkg/service
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Accept Content-Encoding: identity as equivalent to no encoding."
+note: Rebuild a receiver for all of its signals when it is added, removed or rebuilt for one of them during a partial receiver reload, so that a receiver sharing one instance across signals, such as `otlp`, keeps serving the others.
 
 # One or more tracking issues or pull requests related to the change
-issues: [15122]
+issues: [16260]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

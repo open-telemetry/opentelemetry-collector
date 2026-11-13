@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/profiles"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/receiverhelper/xreceiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -42,7 +43,7 @@ func TestHTTPProfilesDevelopmentVersion(t *testing.T) {
 				t.Parallel()
 				sink := new(consumertest.ProfilesSink)
 				set := receivertest.NewNopSettings(metadata.Type)
-				obs, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+				obs, err := xreceiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 					ReceiverID: set.ID, Transport: "http", ReceiverCreateSettings: set,
 				})
 				require.NoError(t, err)

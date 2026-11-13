@@ -59,6 +59,10 @@ $defs:
         description: Cookies configures the cookie management of the HTTP client.
         x-optional: true
         $ref: cookies_config
+      dialer_middleware:
+        description: Dialer middleware is a handler customizing how the client will dial connections over TCP.
+        optional: true
+        $ref: /config/configmiddleware.config
       endpoint:
         description: 'The target URL to send data to (e.g.: http://some.url:9411/v1/traces).'
         type: string

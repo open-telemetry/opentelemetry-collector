@@ -31,14 +31,13 @@ exported_configs:
           Determines the behavior when the component's TotalSize limit is reached.
           If true, the component will wait for space; otherwise, operations will immediately return a retryable error.
       storage:
-        type: component_id
-        # TODO: This will be changed to Optional when available.
-        # See https://github.com/open-telemetry/opentelemetry-collector/issues/13822
-        pointer: true
+        type: string
+        optional: true
         description: |
           If not empty, enables the persistent storage and uses the component specified
           as a storage extension for the persistent queue.
         go_struct:
+          type: go.opentelemetry.io/collector/config/configstorage.ID
           field_name: StorageID
       num_consumers:
         type: int

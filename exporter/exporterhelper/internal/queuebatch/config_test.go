@@ -25,7 +25,7 @@ func TestConfig_Validate(t *testing.T) {
 	storageID := component.MustNewID("test")
 	cfg = newTestConfig()
 	cfg.WaitForResult = true
-	cfg.StorageID = &storageID
+	cfg.StorageID = configoptional.Some(storageID)
 	require.EqualError(t, confmap.Validate(cfg), "`wait_for_result` is not supported with a persistent queue configured with `storage`")
 
 	cfg = newTestConfig()

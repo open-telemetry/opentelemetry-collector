@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/receiverhelper/xreceiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -92,7 +93,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc xconsumer.Profiles) net.Addr {
 
 	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = component.MustNewIDWithName("otlp", "profiles")
-	obsreport, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+	obsreport, err := xreceiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "grpc",
 		ReceiverCreateSettings: set,

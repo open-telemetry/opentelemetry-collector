@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configstorage"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
@@ -88,7 +88,7 @@ type Config struct {
 
 	// StorageID if not empty, enables the persistent storage and uses the component specified
 	// as a storage extension for the persistent queue.
-	StorageID *component.ID `mapstructure:"storage,omitempty"`
+	StorageID configoptional.Optional[configstorage.ID] `mapstructure:"storage,omitempty"`
 
 	// NumConsumers is the maximum number of concurrent consumers from the queue.
 	// This applies across all different optional configurations from above
