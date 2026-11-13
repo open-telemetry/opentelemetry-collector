@@ -61,7 +61,7 @@ feature_gates:
   - id: pkg.confignet.VsockTransport
     description: When enabled, the vsock transport type can be used.
     stage: alpha
-    from_version: v0.165.0
+    from_version: v0.166.0
     reference_url: https://github.com/open-telemetry/opentelemetry-collector/issues/242
 
 tests:

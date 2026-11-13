@@ -11,5 +11,5 @@ var PkgConfignetVsockTransportFeatureGate = featuregate.GlobalRegistry().MustReg
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the vsock transport type can be used."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/242"),
-	featuregate.WithRegisterFromVersion("v0.165.0"),
+	featuregate.WithRegisterFromVersion("v0.166.0"),
 )
