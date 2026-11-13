@@ -194,6 +194,31 @@ func TestRunInitFromConfigAllResolved(t *testing.T) {
 	assert.NotContains(t, string(manifest), "#")
 }
 
+func TestRunInitFromConfigNotPublished(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte("receivers:\n  otlp:\n  hostmetrics:\n"), 0o600))
+	path := filepath.Join(t.TempDir(), distributionName)
+
+	// The hostmetrics module exists, but not at the release.
+	resolver := fakeResolver()
+	list := resolver.List
+	resolver.List = func(ctx context.Context, modules []string) ([]fromconfig.ListedModule, error) {
+		listed, err := list(ctx, modules)
+		for i := range listed {
+			if listed[i].Path == fromconfig.ContribPrefix+"receiver/hostmetricsreceiver" {
+				listed[i].Versions = []string{"v0.0.1"}
+			}
+		}
+		return listed, err
+	}
+
+	var stderr bytes.Buffer
+	require.NoError(t, run(t.Context(), path, initOptions{fromConfig: configPath, resolver: resolver, stderr: &stderr}))
+
+	assert.Contains(t, stderr.String(), `ocb: warning: the Go module of receiver "hostmetrics" is not published at release v0.1.0; add its gomod to manifest.yaml manually`+"\n")
+	assert.Contains(t, stderr.String(), "ocb: resolved 1 of 2 components referenced by "+configPath+"\n")
+}
+
 func TestRunInitFromConfigErrors(t *testing.T) {
 	dir := t.TempDir()
 	badConfig := filepath.Join(dir, "bad.yaml")
