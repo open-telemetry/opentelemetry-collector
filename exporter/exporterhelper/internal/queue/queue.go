@@ -74,6 +74,7 @@ type Settings[T request.Request] struct {
 	Capacity         int64
 	NumConsumers     int
 	WaitForResult    bool
+	FastTrack        bool
 	BlockOnOverflow  bool
 	Signal           pipeline.Signal
 	StorageID        configoptional.Optional[configstorage.ID]
