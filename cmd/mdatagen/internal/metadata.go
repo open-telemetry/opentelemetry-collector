@@ -6,6 +6,7 @@ package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 import (
 	"errors"
 	"fmt"
+	"go/token"
 	"regexp"
 	"slices"
 	"strconv"
@@ -114,6 +115,10 @@ func (md *Metadata) Validate() error {
 		errs = errors.Join(errs, err)
 	}
 
+	if err := md.validateGeneratedPackageName(); err != nil {
+		errs = errors.Join(errs, err)
+	}
+
 	// status is optional for subcomponents but required for components.
 	if md.Parent == "" || md.Status != nil {
 		errs = errors.Join(errs, md.Status.Validate())
@@ -152,6 +157,19 @@ func (md *Metadata) Validate() error {
 	}
 
 	return errs
+}
+
+// validateGeneratedPackageName ensures generated_package_name is a plain Go identifier. The value is used
+// both as a directory name below internal/ and as the package clause of the generated files, so anything
+// else (path separators, "..", quotes, line breaks, "//") could write outside the component or inject code.
+func (md *Metadata) validateGeneratedPackageName() error {
+	if md.GeneratedPackageName == "" {
+		return nil
+	}
+	if !token.IsIdentifier(md.GeneratedPackageName) {
+		return fmt.Errorf("invalid generated_package_name %q: must be a valid Go identifier", md.GeneratedPackageName)
+	}
+	return nil
 }
 
 func (md *Metadata) validateSendingQueue() error {

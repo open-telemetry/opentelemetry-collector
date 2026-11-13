@@ -8,7 +8,7 @@ For platforms not listed as supported by any of the tiers, support cannot be ass
 
 ## Current Test Strategy
 
-The current verification process of the OpenTelemetry Collector includes unit and performance tests for core and additional end-to-end and integration tests for contrib. In the end-to-end tests, receivers, processors, and exporters etc. are tested in a testbed, while the integration tests rely on actual instances and available container images. Additional stability tests are in preparation for the future as well. All verification tests are run on the linux/amd64 as the primary platform today. In addition, unit tests are run for the _contrib_ collector on windows/amd64. The tests use as execution environments the latest Ubuntu and Windows Server versions [supported as Github runners](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources).
+The current verification process of the OpenTelemetry Collector includes unit and performance tests for core and additional end-to-end and integration tests for contrib. In the end-to-end tests, receivers, processors, and exporters etc. are tested in a testbed, while the integration tests rely on actual instances and available container images. Additional stability tests are in preparation for the future as well. All verification tests are run on the linux/amd64 as the primary platform today. In addition, unit tests are run for the _contrib_ collector on windows/amd64. The tests use as execution environments the latest Ubuntu and Windows Server versions [supported as Github runners](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners).
 
 The cross compile supports the following targets:
 - darwin/amd64 and darwin/arm64
@@ -41,6 +41,7 @@ Tier 1 platforms are currently:
 | Platform      | Owner(s)                                                                                                    |
 |---------------|-------------------------------------------------------------------------------------------------------------|
 | linux/amd64   | [OpenTelemetry Collector approvers](https://github.com/open-telemetry/opentelemetry-collector#contributing) |
+| linux/arm64   | [@atoulme](https://github.com/atoulme)             |
 | windows/amd64 | [@pjanotti](https://github.com/pjanotti)                                                                    |
 
 ### Tier 2 – Secondary Support
@@ -51,7 +52,6 @@ Tier 2 platforms are currently:
 | Platform      | Owner(s)                                           |
 |---------------|----------------------------------------------------|
 | darwin/arm64  | [@MovieStoreGuy](https://github.com/MovieStoreGuy) |
-| linux/arm64   | [@atoulme](https://github.com/atoulme)             |
 | windows/arm64 | [@pjanotti](https://github.com/pjanotti)           |
 
 ### Tier 3 - Community Support
