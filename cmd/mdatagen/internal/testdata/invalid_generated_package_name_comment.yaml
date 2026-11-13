@@ -1,0 +1,10 @@
+type: custom
+
+generated_package_name: "metadata //../../../../tmp/x"
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]

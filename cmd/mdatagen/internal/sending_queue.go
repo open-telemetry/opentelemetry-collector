@@ -232,15 +232,16 @@ func (sq *SendingQueue) TemplateData() (SendingQueueTemplateData, error) {
 
 	storageConstructor := ""
 	storageValue := ""
-	if cfg.StorageID != nil {
+	if cfg.StorageID.HasValue() {
+		storageID := cfg.StorageID.Get().ComponentID()
 		constructor := "component.MustNewID"
-		args := strconv.Quote(cfg.StorageID.Type().String())
-		if cfg.StorageID.Name() != "" {
+		args := strconv.Quote(storageID.Type().String())
+		if storageID.Name() != "" {
 			constructor = "component.MustNewIDWithName"
-			args += ", " + strconv.Quote(cfg.StorageID.Name())
+			args += ", " + strconv.Quote(storageID.Name())
 		}
 		storageConstructor = constructor + "(" + args + ")"
-		storageValue = cfg.StorageID.String()
+		storageValue = storageID.String()
 	}
 
 	keys := make([]string, 0, len(batchCfg.Partition.MetadataKeys))
