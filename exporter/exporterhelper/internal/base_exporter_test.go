@@ -85,6 +85,36 @@ func TestBaseExporterBatchingEnabled(t *testing.T) {
 	require.True(t, be.ExporterHelperBatchingEnabled())
 }
 
+func TestBaseExporterPersistentQueueEnabled(t *testing.T) {
+	qCfg := NewDefaultQueueConfig()
+	set := exportertest.NewNopSettings(exportertest.NopType)
+
+	be, err := NewBaseExporter(set, pipeline.SignalMetrics, noopExport)
+	require.NoError(t, err)
+	require.False(t, be.ExporterHelperPersistentQueueEnabled())
+
+	be, err = NewBaseExporter(
+		set,
+		pipeline.SignalMetrics,
+		noopExport,
+		WithQueueBatchSettings(newFakeQueueBatch()),
+		WithQueueBatch(configoptional.Some(qCfg), newFakeQueueBatch()),
+	)
+	require.NoError(t, err)
+	require.False(t, be.ExporterHelperPersistentQueueEnabled())
+
+	qCfg.StorageID = configoptional.Some(configstorage.ID(component.NewID(component.MustNewType("test"))))
+	be, err = NewBaseExporter(
+		set,
+		pipeline.SignalMetrics,
+		noopExport,
+		WithQueueBatchSettings(newFakeQueueBatch()),
+		WithQueueBatch(configoptional.Some(qCfg), newFakeQueueBatch()),
+	)
+	require.NoError(t, err)
+	require.True(t, be.ExporterHelperPersistentQueueEnabled())
+}
+
 func TestBaseExporterWithTracer(t *testing.T) {
 	telemetry := componenttest.NewTelemetry()
 	t.Cleanup(func() {

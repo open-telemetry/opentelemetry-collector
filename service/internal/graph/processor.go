@@ -23,6 +23,11 @@ import (
 
 var _ consumerNode = (*processorNode)(nil)
 
+// exporterHelperPersistentQueue is implemented by components built with exporterhelper.
+type exporterHelperPersistentQueue interface {
+	ExporterHelperPersistentQueueEnabled() bool
+}
+
 // Every processor instance is unique to one pipeline.
 // Therefore, nodeID is derived from "pipeline ID" and "component ID".
 type processorNode struct {
@@ -30,7 +35,8 @@ type processorNode struct {
 	componentID component.ID
 	pipelineID  pipeline.ID
 	component.Component
-	consumer baseConsumer
+	consumer                          baseConsumer
+	exporterHelperPersistentQueueUsed bool
 }
 
 func newProcessorNode(pipelineID pipeline.ID, procID component.ID) *processorNode {
@@ -109,6 +115,9 @@ func (n *processorNode) buildComponent(ctx context.Context,
 		n.consumer = refconsumer.NewProfiles(n.consumer.(xconsumer.Profiles))
 	default:
 		return fmt.Errorf("error creating processor %q in pipeline %q, data type %q is not supported", set.ID, n.pipelineID.String(), n.pipelineID.Signal())
+	}
+	if helper, ok := n.Component.(exporterHelperPersistentQueue); ok {
+		n.exporterHelperPersistentQueueUsed = helper.ExporterHelperPersistentQueueEnabled()
 	}
 	return nil
 }

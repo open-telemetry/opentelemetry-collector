@@ -144,4 +144,31 @@ serialized as it enters the queue and read back from disk before
 export. The `wait_for_result` setting is not supported together with
 `storage`.
 
+The persistent queue is identified by the processor ID and the signal.
+Do not use one processor instance with `storage` in more than one
+pipeline of the same signal, because both pipelines would read and
+write the same stored queue. The Collector rejects such a
+configuration at startup and in `validate`. Define a named instance
+for each pipeline instead:
+
+```yaml
+processors:
+  queue_batch/a:
+    storage: file_storage
+  queue_batch/b:
+    storage: file_storage
+
+service:
+  extensions: [file_storage]
+  pipelines:
+    traces/a:
+      receivers: [otlp/a]
+      processors: [queue_batch/a]
+      exporters: [otlp/a]
+    traces/b:
+      receivers: [otlp/b]
+      processors: [queue_batch/b]
+      exporters: [otlp/b]
+```
+
 [filestorage]: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/storage/filestorage
