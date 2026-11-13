@@ -205,7 +205,9 @@ func buildManifest(path string, meta metadata, source *configSource) error {
 			{GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver " + meta.BetaVersion},
 		}
 	} else {
-		addResolved(&cfg, source.result.Resolved)
+		if err := addResolved(&cfg, source.result.Resolved); err != nil {
+			return err
+		}
 	}
 
 	data, err := yaml.Marshal(cfg)
@@ -220,7 +222,7 @@ func buildManifest(path string, meta metadata, source *configSource) error {
 }
 
 // addResolved adds the resolved components to the sections of the manifest.
-func addResolved(cfg *builder.Config, resolved []fromconfig.Resolved) {
+func addResolved(cfg *builder.Config, resolved []fromconfig.Resolved) error {
 	for _, r := range resolved {
 		module := builder.Module{GoMod: r.GoMod()}
 		switch r.Class {
@@ -234,17 +236,11 @@ func addResolved(cfg *builder.Config, resolved []fromconfig.Resolved) {
 			cfg.Extensions = append(cfg.Extensions, module)
 		case fromconfig.Connector:
 			cfg.Connectors = append(cfg.Connectors, module)
+		default:
+			return fmt.Errorf("unknown class %q of component %q", r.Class, r.Type)
 		}
 	}
-}
-
-// manifestClasses lists the component classes in the order of the manifest sections.
-var manifestClasses = []fromconfig.Class{
-	fromconfig.Exporter,
-	fromconfig.Extension,
-	fromconfig.Receiver,
-	fromconfig.Processor,
-	fromconfig.Connector,
+	return nil
 }
 
 // unresolvedPlaceholders returns a commented-out block listing the components
@@ -264,7 +260,7 @@ func unresolvedPlaceholders(source *configSource) []byte {
 #
 `, source.name)
 
-	for _, class := range manifestClasses {
+	for _, class := range fromconfig.Classes {
 		first := true
 		for _, u := range source.result.Unresolved {
 			if u.Class != class {

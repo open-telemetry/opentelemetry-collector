@@ -235,3 +235,9 @@ func validateCollector(t *testing.T, path string) {
 	require.FileExists(t, filepath.Join(path, "Makefile"))
 	require.FileExists(t, filepath.Join(path, "config.yaml"))
 }
+
+func TestAddResolvedUnknownClass(t *testing.T) {
+	var cfg builder.Config
+	err := addResolved(&cfg, []fromconfig.Resolved{{Component: fromconfig.Component{Class: "unknown", Type: "foo"}}})
+	require.ErrorContains(t, err, `unknown class "unknown"`)
+}
