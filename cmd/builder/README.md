@@ -214,10 +214,10 @@ The builder checks the relevant `go.mod`
 file for the following things after `go get`ing all components and calling
 `go mod tidy`:
 
-1. The `dist::otelcol_version` field in the build configuration must have
-   matching major and minor versions as the core library version calculated by
-   the Go toolchain, considering all components.  A mismatch could happen, for
-   example, when the builder or one of the components depends on a newer release
+1. The core library version calculated by the Go toolchain, considering all
+   components, must have matching major and minor versions as the core library
+   version built into the builder itself. A mismatch could happen, for
+   example, when one of the components depends on a newer release
    of the core collector library.
 2. For each component in the build configuration, the major and minor versions
    included in the `gomod` module specifier must match the one calculated by
@@ -225,7 +225,8 @@ file for the following things after `go get`ing all components and calling
    happen, for example, when the enclosing Go module uses a newer
    release of the core collector library.
 
-The `--skip-strict-versioning` flag disables these versioning checks.
+Strict versioning checks are disabled by default (`--skip-strict-versioning` defaults to `true`).
+To enable these versioning checks, pass `--skip-strict-versioning=false`.
 This flag is available temporarily and
 **will be removed in a future minor version**.
 
