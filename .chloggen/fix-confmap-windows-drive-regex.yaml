@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: pkg/confmap
+note: Fix Windows drive letter check to prevent non-drive characters like '_' and '[' from matching as drive letters
+issues: [16390]
+subtext:
+change_logs: [user]
