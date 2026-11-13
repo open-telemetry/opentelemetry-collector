@@ -149,6 +149,23 @@ func TestGenerateInvalidOutputPath(t *testing.T) {
 	require.ErrorContains(t, err, "failed to create output path")
 }
 
+func TestGenerateSymlinkOutsideOutputPath(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires extra privileges on windows")
+	}
+	cfg := newInitializedConfig(t)
+	cfg.Distribution.OutputPath = t.TempDir()
+	// A symlink already present in the output path must not redirect a generated file outside of it.
+	target := filepath.Join(t.TempDir(), "target")
+	require.NoError(t, os.Symlink(target, filepath.Join(cfg.Distribution.OutputPath, "main.go")))
+
+	err := Generate(cfg)
+	require.ErrorContains(t, err, "failed to generate source file \"main.go\"")
+
+	_, err = os.Stat(target)
+	require.ErrorIs(t, err, os.ErrNotExist, "generated file should not be written outside the output path")
+}
+
 func TestOutputBinaryName(t *testing.T) {
 	for _, tt := range []struct {
 		name string
