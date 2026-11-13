@@ -25,12 +25,15 @@ func (r Resolved) GoMod() string {
 // Unresolved is a component that could not be matched to a module.
 type Unresolved struct {
 	Component
-	// Reason describes why the component was not resolved.
-	Reason string
+	// NotPublished is set when a module exists for the component, but not at the release.
+	// Otherwise, no module was found.
+	NotPublished bool
 }
 
 // Result is the outcome of resolving the components of a configuration.
 type Result struct {
+	// Release is the Collector release the modules were selected from.
+	Release    string
 	Resolved   []Resolved
 	Unresolved []Unresolved
 }
@@ -85,15 +88,11 @@ func (r *Resolver) Resolve(ctx context.Context, config []byte) (Result, error) {
 		return Result{}, err
 	}
 
-	var result Result
+	result := Result{Release: r.Release}
 	for _, c := range components {
 		sel, ok := found.modules[c]
 		if !ok {
-			reason := fmt.Sprintf("no Go module found for %s %q", c.Class, c.Type)
-			if found.found[c] {
-				reason = fmt.Sprintf("the Go module of %s %q is not published at release %s", c.Class, c.Type, r.Release)
-			}
-			result.Unresolved = append(result.Unresolved, Unresolved{Component: c, Reason: reason})
+			result.Unresolved = append(result.Unresolved, Unresolved{Component: c, NotPublished: found.found[c]})
 			continue
 		}
 		result.Resolved = append(result.Resolved, Resolved{Component: c, Module: sel.module.Path, Version: sel.version})

@@ -57,9 +57,10 @@ connectors:
 		{Component: Component{Class: Connector, Type: "forward"}, Module: corePrefix + "connector/forwardconnector", Version: "v1.68.0"},
 	}, got.Resolved)
 
+	assert.Equal(t, "v0.162.0", got.Release)
 	assert.Equal(t, []Unresolved{
-		{Component: Component{Class: Extension, Type: "myvendor"}, Reason: `no Go module found for extension "myvendor"`},
-		{Component: Component{Class: Extension, Type: "zpages"}, Reason: `the Go module of extension "zpages" is not published at release v0.162.0`},
+		{Component: Component{Class: Extension, Type: "myvendor"}},
+		{Component: Component{Class: Extension, Type: "zpages"}, NotPublished: true},
 	}, got.Unresolved)
 }
 

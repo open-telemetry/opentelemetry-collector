@@ -175,7 +175,11 @@ func resolveConfig(ctx context.Context, opts initOptions) (*configSource, error)
 		fmt.Fprintf(stderr, "ocb: resolved %s %s -> %s\n", r.Class, r.Type, r.GoMod())
 	}
 	for _, u := range result.Unresolved {
-		fmt.Fprintf(stderr, "ocb: warning: %s; add its gomod to manifest.yaml manually\n", u.Reason)
+		reason := fmt.Sprintf("no Go module found for %s %q", u.Class, u.Type)
+		if u.NotPublished {
+			reason = fmt.Sprintf("the Go module of %s %q is not published at release %s", u.Class, u.Type, result.Release)
+		}
+		fmt.Fprintf(stderr, "ocb: warning: %s; add its gomod to manifest.yaml manually\n", reason)
 	}
 	fmt.Fprintf(stderr, "ocb: resolved %d of %d components referenced by %s\n",
 		len(result.Resolved), len(result.Resolved)+len(result.Unresolved), opts.fromConfig)
