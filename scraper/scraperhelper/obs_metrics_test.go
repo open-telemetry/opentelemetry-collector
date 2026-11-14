@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -165,4 +166,50 @@ func checkScraperMetrics(t *testing.T, tt *componenttest.Telemetry, receiver, sc
 				Value: erroredMetricPoints,
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
+func TestScrapeMetricsRecordsDuration(t *testing.T) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+
+	const delay = 20 * time.Millisecond
+	// One successful scrape and one failed scrape: both must be timed.
+	sm, err := scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
+		time.Sleep(delay)
+		return testdata.GenerateMetrics(1), nil
+	})
+	require.NoError(t, err)
+	sf, err := wrapObsMetrics(sm, receiverID, scraperID, tel.NewTelemetrySettings())
+	require.NoError(t, err)
+	_, err = sf.ScrapeMetrics(context.Background())
+	require.NoError(t, err)
+
+	failing, err := scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
+		return pmetric.NewMetrics(), errFake
+	})
+	require.NoError(t, err)
+	ff, err := wrapObsMetrics(failing, receiverID, scraperID, tel.NewTelemetrySettings())
+	require.NoError(t, err)
+	_, err = ff.ScrapeMetrics(context.Background())
+	require.ErrorIs(t, err, errFake)
+
+	checkScrapeDuration(t, tel, receiverID, scraperID, 2, delay)
+}
+
+// checkScrapeDuration asserts that the scrape duration histogram holds count observations for the
+// given receiver and scraper, totalling at least minSum seconds.
+func checkScrapeDuration(t *testing.T, tt *componenttest.Telemetry, receiver, scraper component.ID, count uint64, minSum time.Duration) {
+	t.Helper()
+	got, err := tt.GetMetric("otelcol_scraper_scrape_duration")
+	require.NoError(t, err)
+	hist, ok := got.Data.(metricdata.Histogram[float64])
+	require.True(t, ok, "otelcol_scraper_scrape_duration must be a float64 histogram, got %T", got.Data)
+	require.Len(t, hist.DataPoints, 1)
+	dp := hist.DataPoints[0]
+	assert.Equal(t, attribute.NewSet(
+		attribute.String(receiverKey, receiver.String()),
+		attribute.String(scraperKey, scraper.String()),
+	), dp.Attributes)
+	assert.Equal(t, count, dp.Count)
+	assert.GreaterOrEqual(t, dp.Sum, minSum.Seconds())
 }
