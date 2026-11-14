@@ -40,6 +40,9 @@ var xpdataEntity = &Package{
 		entityRefSlice,
 		entityRef,
 	},
+	enums: []*proto.Enum{
+		idScopeEnum,
+	},
 }
 
 var entityRefSlice = &messageSlice{
@@ -77,5 +80,34 @@ var entityRef = &messageStruct{
 			protoType:   proto.TypeString,
 			returnSlice: stringSlice,
 		},
+		&TypedField{
+			fieldName:  "IdScope",
+			protoID:    5,
+			returnType: idScopeType,
+		},
+		&PrimitiveField{
+			fieldName: "IdScopeEntityType",
+			protoID:   6,
+			protoType: proto.TypeString,
+		},
+	},
+}
+
+var idScopeType = &TypedType{
+	structName:  "IdScope",
+	packageName: "entity",
+	protoType:   proto.TypeEnum,
+	messageName: "IdScope",
+	defaultVal:  "IdScope_ID_SCOPE_UNSPECIFIED",
+	testVal:     "IdScope_ID_SCOPE_LOCAL",
+}
+
+var idScopeEnum = &proto.Enum{
+	Name:        "IdScope",
+	Description: "// IdScope states whether an entity's ID is unique on its own or only within another entity.",
+	Fields: []*proto.EnumField{
+		{Name: "ID_SCOPE_UNSPECIFIED", Value: 0},
+		{Name: "ID_SCOPE_GLOBAL", Value: 1},
+		{Name: "ID_SCOPE_LOCAL", Value: 2},
 	},
 }

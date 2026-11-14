@@ -14,6 +14,8 @@ Resource entity refs:
                -> service.version
      -> Entity ref #1:
           -> Type: host
+          -> ID scope: Local
+          -> ID scope entity type: cloud
           -> ID keys:
                -> host.name
 ScopeSpans #0
