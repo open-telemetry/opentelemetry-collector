@@ -71,6 +71,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []SystemMemoryUsageMetricAttributeKey{SystemMemoryUsageMetricAttributeKeyState},
 					},
+					TestHistogram: TestHistogramMetricConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					HostArch:                              HostArchResourceAttributeConfig{Enabled: true},
@@ -133,6 +136,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []SystemMemoryUsageMetricAttributeKey{SystemMemoryUsageMetricAttributeKeyState},
 					},
+					TestHistogram: TestHistogramMetricConfig{
+						Enabled: false,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					HostArch:                              HostArchResourceAttributeConfig{Enabled: false},
@@ -152,7 +158,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(DefaultMetricMetricConfig{}, DefaultMetricToBeRemovedMetricConfig{}, MetricInputTypeMetricConfig{}, OptionalMetricMetricConfig{}, OptionalMetricEmptyUnitMetricConfig{}, ReaggregateMetricMetricConfig{}, ReaggregateMetricWithRequiredMetricConfig{}, SystemCPUTimeMetricConfig{}, SystemMemoryUsageMetricConfig{}, HostArchResourceAttributeConfig{}, MapResourceAttrResourceAttributeConfig{}, OptionalResourceAttrResourceAttributeConfig{}, SliceResourceAttrResourceAttributeConfig{}, StringEnumResourceAttrResourceAttributeConfig{}, StringResourceAttrResourceAttributeConfig{}, StringResourceAttrDisableWarningResourceAttributeConfig{}, StringResourceAttrRemoveWarningResourceAttributeConfig{}, StringResourceAttrToBeRemovedResourceAttributeConfig{}, StringResourceDisabledAttrToBeRemovedResourceAttributeConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(DefaultMetricMetricConfig{}, DefaultMetricToBeRemovedMetricConfig{}, MetricInputTypeMetricConfig{}, OptionalMetricMetricConfig{}, OptionalMetricEmptyUnitMetricConfig{}, ReaggregateMetricMetricConfig{}, ReaggregateMetricWithRequiredMetricConfig{}, SystemCPUTimeMetricConfig{}, SystemMemoryUsageMetricConfig{}, TestHistogramMetricConfig{}, HostArchResourceAttributeConfig{}, MapResourceAttrResourceAttributeConfig{}, OptionalResourceAttrResourceAttributeConfig{}, SliceResourceAttrResourceAttributeConfig{}, StringEnumResourceAttrResourceAttributeConfig{}, StringResourceAttrResourceAttributeConfig{}, StringResourceAttrDisableWarningResourceAttributeConfig{}, StringResourceAttrRemoveWarningResourceAttributeConfig{}, StringResourceAttrToBeRemovedResourceAttributeConfig{}, StringResourceDisabledAttrToBeRemovedResourceAttributeConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
