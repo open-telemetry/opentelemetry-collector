@@ -66,7 +66,7 @@ func collectPropDocs(cfg *ConfigMetadata, docs *[]PropDoc) {
 			Name:        name,
 			Schema:      prop,
 			Required:    slices.Contains(cfg.Required, name),
-			Description: prop.Description,
+			Description: CfgDocCell(prop.Description),
 			Deprecated:  prop.Deprecated != nil,
 		})
 	}
@@ -164,6 +164,13 @@ func escapeTableCell(s string) string {
 	return strings.ReplaceAll(s, "|", `\|`)
 }
 
+// CfgDocCell makes s safe to place in a Markdown table cell: every run of
+// whitespace (including newlines) is collapsed into a single space and
+// column separators are escaped.
+func CfgDocCell(s string) string {
+	return escapeTableCell(strings.Join(strings.Fields(s), " "))
+}
+
 // CfgDocDefault returns a human-readable default value for display in the docs table.
 // Primitives are returned as-is; slices and maps are marshaled to a compact single-line
 // YAML flow representation to avoid breaking Markdown table cells.
@@ -225,6 +232,7 @@ func NewCfgDocFns() map[string]any {
 		"cfgExportedSections": CfgExportedSections,
 		"cfgDocConstraints":   CfgDocConstraints,
 		"cfgExportedRef":      CfgExportedRef,
+		"cfgDocCell":          CfgDocCell,
 	}
 }
 
