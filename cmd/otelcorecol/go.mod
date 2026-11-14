@@ -227,6 +227,8 @@ replace go.opentelemetry.io/collector/component/componenttest => ../../component
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 
+replace go.opentelemetry.io/collector/component/xcomponentdiscovery => ../../component/xcomponentdiscovery
+
 replace go.opentelemetry.io/collector/config/configauth => ../../config/configauth
 
 replace go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression
@@ -386,7 +388,3 @@ replace go.opentelemetry.io/collector/service => ../../service
 replace go.opentelemetry.io/collector/service/hostcapabilities => ../../service/hostcapabilities
 
 replace go.opentelemetry.io/collector/service/telemetry/telemetrytest => ../../service/telemetry/telemetrytest
-
-replace go.opentelemetry.io/collector/component/xcomponentdiscovery => ../../component/xcomponentdiscovery
-
-replace go.opentelemetry.io/collector/scraper => ../../scraper
