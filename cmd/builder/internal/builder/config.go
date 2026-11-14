@@ -74,6 +74,7 @@ type Config struct {
 	Receivers         []Module     `mapstructure:"receivers,omitempty"`
 	Processors        []Module     `mapstructure:"processors,omitempty"`
 	Connectors        []Module     `mapstructure:"connectors,omitempty"`
+	Scrapers          []Module     `mapstructure:"scrapers,omitempty"`
 	Telemetry         Module       `mapstructure:"telemetry,omitempty"`
 	ConfmapProviders  []Module     `mapstructure:"providers,omitempty"`
 	ConfmapConverters []Module     `mapstructure:"converters,omitempty"`
@@ -276,6 +277,7 @@ func (c *Config) Validate() error {
 		validateModules("exporter", c.Exporters),
 		validateModules("processor", c.Processors),
 		validateModules("connector", c.Connectors),
+		validateModules("scraper", c.Scrapers),
 		validateModules("provider", c.ConfmapProviders),
 		validateModules("converter", c.ConfmapConverters),
 		validateTelemetry(c),
@@ -350,6 +352,11 @@ func (c *Config) ParseModules() error {
 		return err
 	}
 
+	c.Scrapers, err = c.parseModules(c.Scrapers, usedNames)
+	if err != nil {
+		return err
+	}
+
 	telemetry, err := c.parseModules([]Module{c.Telemetry}, usedNames)
 	if err != nil {
 		return err
@@ -368,7 +375,7 @@ func (c *Config) ParseModules() error {
 }
 
 func (c *Config) allComponents() []Module {
-	return slices.Concat(c.Exporters, c.Receivers, c.Processors, c.Extensions, c.Connectors, []Module{c.Telemetry}, c.ConfmapProviders, c.ConfmapConverters)
+	return slices.Concat(c.Exporters, c.Receivers, c.Processors, c.Extensions, c.Connectors, c.Scrapers, []Module{c.Telemetry}, c.ConfmapProviders, c.ConfmapConverters)
 }
 
 // validateDistribution ensures the dist values that are not written as quoted

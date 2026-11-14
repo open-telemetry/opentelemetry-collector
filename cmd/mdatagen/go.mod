@@ -9,6 +9,7 @@ require (
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/component v1.71.0
 	go.opentelemetry.io/collector/component/componenttest v0.165.0
+	go.opentelemetry.io/collector/component/xcomponentdiscovery v0.165.0
 	go.opentelemetry.io/collector/config/confignet v1.71.0
 	go.opentelemetry.io/collector/config/configopaque v1.71.0
 	go.opentelemetry.io/collector/config/configoptional v1.71.0
@@ -240,3 +241,5 @@ replace go.opentelemetry.io/collector/receiver/receiverhelper => ../../receiver/
 replace go.opentelemetry.io/collector/scraper/scraperhelper => ../../scraper/scraperhelper
 
 replace go.opentelemetry.io/collector/config/configstorage => ../../config/configstorage
+
+replace go.opentelemetry.io/collector/component/xcomponentdiscovery => ../../component/xcomponentdiscovery

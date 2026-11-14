@@ -104,6 +104,7 @@ require (
 	go.opentelemetry.io/collector/client v1.71.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.165.0 // indirect
 	go.opentelemetry.io/collector/component/componenttest v0.165.0 // indirect
+	go.opentelemetry.io/collector/component/xcomponentdiscovery v0.165.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v1.71.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.71.0 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v1.71.0 // indirect
@@ -154,6 +155,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receiverhelper/xreceiverhelper v0.165.0 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.165.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.165.0 // indirect
+	go.opentelemetry.io/collector/scraper v0.165.0 // indirect
 	go.opentelemetry.io/collector/service/hostcapabilities v0.165.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.21.0 // indirect
 	go.opentelemetry.io/contrib/detectors/aws/ec2/v2 v2.6.0 // indirect
@@ -384,3 +386,7 @@ replace go.opentelemetry.io/collector/service => ../../service
 replace go.opentelemetry.io/collector/service/hostcapabilities => ../../service/hostcapabilities
 
 replace go.opentelemetry.io/collector/service/telemetry/telemetrytest => ../../service/telemetry/telemetrytest
+
+replace go.opentelemetry.io/collector/component/xcomponentdiscovery => ../../component/xcomponentdiscovery
+
+replace go.opentelemetry.io/collector/scraper => ../../scraper

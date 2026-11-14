@@ -6,6 +6,7 @@ package metadata
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/xcomponentdiscovery"
 )
 
 var (
@@ -18,3 +19,14 @@ const (
 	ProfilesStability = component.StabilityLevelDevelopment
 	MetricsStability  = component.StabilityLevelStable
 )
+
+// DiscoveryRule returns the default discovery rule declared in metadata.yaml.
+func DiscoveryRule() xcomponentdiscovery.Rule {
+	return xcomponentdiscovery.Rule{
+		DefaultConfig: map[string]any{"endpoint": "`endpoint`"},
+		Endpoints: map[xcomponentdiscovery.EndpointType]xcomponentdiscovery.EndpointRule{
+			"hostport": {Rule: "port == 1234 and process_name matches \"(?i)sample\""},
+			"port":     {Rule: "port == 1234 and container_image matches \"(?i)sample\""},
+		},
+	}
+}

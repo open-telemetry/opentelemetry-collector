@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/xcomponentdiscovery"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/componentalias"
 	"go.opentelemetry.io/collector/pipeline"
@@ -36,6 +37,10 @@ type Factory interface {
 
 	// ProfilesStability gets the stability level of the Profiles receiver.
 	ProfilesStability() component.StabilityLevel
+
+	// DiscoveryRule returns the default discovery rule. It returns the zero
+	// value if the receiver doesn't have one. Callers must not modify it.
+	DiscoveryRule() xcomponentdiscovery.Rule
 }
 
 // CreateProfilesFunc is the equivalent of Factory.CreateProfiles.
@@ -60,10 +65,15 @@ type factory struct {
 	opts                   []receiver.FactoryOption
 	createProfilesFunc     CreateProfilesFunc
 	profilesStabilityLevel component.StabilityLevel
+	discoveryRule          xcomponentdiscovery.Rule
 }
 
 func (f *factory) ProfilesStability() component.StabilityLevel {
 	return f.profilesStabilityLevel
+}
+
+func (f *factory) DiscoveryRule() xcomponentdiscovery.Rule {
+	return f.discoveryRule
 }
 
 func (f *factory) CreateProfiles(ctx context.Context, set receiver.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
@@ -110,6 +120,13 @@ func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel
 func WithDeprecatedTypeAlias(alias component.Type) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.SetDeprecatedAlias(alias)
+	})
+}
+
+// WithDiscoveryRule configures the default discovery rule for the receiver.
+func WithDiscoveryRule(rule xcomponentdiscovery.Rule) FactoryOption {
+	return factoryOptionFunc(func(o *factory) {
+		o.discoveryRule = rule
 	})
 }
 

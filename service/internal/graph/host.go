@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/hostcapabilities"
 	"go.opentelemetry.io/collector/service/internal/builders"
@@ -26,6 +27,7 @@ var (
 	_ hostcapabilities.ModuleInfo       = (*Host)(nil)
 	_ hostcapabilities.ExposeExporters  = (*Host)(nil) //nolint:staticcheck // SA1019
 	_ hostcapabilities.ComponentFactory = (*Host)(nil)
+	_ hostcapabilities.ScraperFactory   = (*Host)(nil)
 )
 
 type Host struct {
@@ -35,6 +37,7 @@ type Host struct {
 	Exporters         *builders.ExporterBuilder
 	Connectors        *builders.ConnectorBuilder
 	Extensions        *builders.ExtensionBuilder
+	Scrapers          map[component.Type]scraper.Factory
 
 	ModuleInfos moduleinfo.ModuleInfos
 	BuildInfo   component.BuildInfo
@@ -59,6 +62,10 @@ func (host *Host) GetFactory(kind component.Kind, componentType component.Type) 
 		return host.Extensions.Factory(componentType)
 	}
 	return nil
+}
+
+func (host *Host) GetScraperFactory(scraperType component.Type) scraper.Factory {
+	return host.Scrapers[scraperType]
 }
 
 func (host *Host) GetExtensions() map[component.ID]component.Component {

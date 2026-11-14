@@ -23,6 +23,7 @@ func NewFactory() scraper.Factory {
 		xscraper.WithMetrics(createMetrics, metadata.MetricsStability),
 		xscraper.WithLogs(createLogs, metadata.LogsStability),
 		xscraper.WithProfiles(createProfiles, metadata.ProfilesStability),
+		xscraper.WithDiscoveryRule(metadata.DiscoveryRule()),
 	)
 }
 
