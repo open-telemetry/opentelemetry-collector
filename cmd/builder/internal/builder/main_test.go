@@ -5,11 +5,14 @@ package builder
 
 import (
 	"fmt"
+	"go/parser"
+	"go/token"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -142,11 +145,53 @@ func TestGenerateDefault(t *testing.T) {
 	require.NoError(t, Generate(newInitializedConfig(t)))
 }
 
+// TestGenerateQuotesStrings checks that dist and module values written into
+// Go string literals cannot terminate the literal, whatever they contain.
+func TestGenerateQuotesStrings(t *testing.T) {
+	cfg := newTestConfig(t)
+	cfg.Distribution.OutputPath = t.TempDir()
+	cfg.Distribution.Name = `otelcol"+f()+"`
+	cfg.Distribution.Description = "line one\" + func() string { return \"\" }() + \"\nline two"
+	cfg.Distribution.Version = `1.0.0"; var _ = "`
+	cfg.ConfResolver.DefaultURIScheme = `env"; var _ = "`
+	require.NoError(t, cfg.Validate())
+	require.NoError(t, cfg.ParseModules())
+	require.NoError(t, Generate(cfg))
+
+	mainFile := filepath.Clean(filepath.Join(cfg.Distribution.OutputPath, "main.go"))
+	_, err := parser.ParseFile(token.NewFileSet(), mainFile, nil, 0)
+	require.NoError(t, err)
+
+	src, err := os.ReadFile(mainFile)
+	require.NoError(t, err)
+	assert.Contains(t, string(src), "Command:     "+strconv.Quote(cfg.Distribution.Name)+",")
+	assert.Contains(t, string(src), "Description: "+strconv.Quote(cfg.Distribution.Description)+",")
+	assert.Contains(t, string(src), "Version:     "+strconv.Quote(cfg.Distribution.Version)+",")
+	assert.Contains(t, string(src), "DefaultScheme: "+strconv.Quote(cfg.ConfResolver.DefaultURIScheme)+",")
+}
+
 func TestGenerateInvalidOutputPath(t *testing.T) {
 	cfg := newInitializedConfig(t)
 	cfg.Distribution.OutputPath = ":/invalid"
 	err := Generate(cfg)
 	require.ErrorContains(t, err, "failed to create output path")
+}
+
+func TestGenerateSymlinkOutsideOutputPath(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires extra privileges on windows")
+	}
+	cfg := newInitializedConfig(t)
+	cfg.Distribution.OutputPath = t.TempDir()
+	// A symlink already present in the output path must not redirect a generated file outside of it.
+	target := filepath.Join(t.TempDir(), "target")
+	require.NoError(t, os.Symlink(target, filepath.Join(cfg.Distribution.OutputPath, "main.go")))
+
+	err := Generate(cfg)
+	require.ErrorContains(t, err, "failed to generate source file \"main.go\"")
+
+	_, err = os.Stat(target)
+	require.ErrorIs(t, err, os.ErrNotExist, "generated file should not be written outside the output path")
 }
 
 func TestOutputBinaryName(t *testing.T) {

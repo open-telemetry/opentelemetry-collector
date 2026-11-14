@@ -762,3 +762,33 @@ func TestMarshalYAML(t *testing.T) {
 	assert.NotContains(t, m, "conf_resolver")
 	assert.NotContains(t, m, "telemetry")
 }
+
+func TestValidateRejectsInjection(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		mutate func(*Config)
+		err    error
+	}{
+		{"module name", func(c *Config) {
+			c.Receivers = []Module{{GoMod: "example.com/r v1.0.0", Name: "r\nfunc init() {}\nvar x"}}
+		}, errInvalidName},
+		{"module import", func(c *Config) { c.Receivers = []Module{{GoMod: "example.com/r v1.0.0", Import: `example.com/r"`}} }, errInvalidImport},
+		{"gomod path", func(c *Config) { c.Exporters = []Module{{GoMod: `example.com/r" v1.0.0`}} }, errInvalidGoMod},
+		{"gomod extra directive", func(c *Config) { c.Exporters = []Module{{GoMod: "example.com/r v1.0.0\ngodebug tlssha1=1"}} }, errInvalidGoMod},
+		{"gomod version quote", func(c *Config) { c.Exporters = []Module{{GoMod: `example.com/r v1.0.0"`}} }, errInvalidGoMod},
+		{"module path newline", func(c *Config) {
+			c.Exporters = []Module{{GoMod: "example.com/r v1.0.0", Path: "/a\ngodebug tlssha1=1"}}
+		}, errMultiLineValue},
+		{"telemetry name", func(c *Config) { c.Telemetry = Module{GoMod: "example.com/t v1.0.0", Name: "t\nvar x"} }, errInvalidName},
+		{"dist name newline", func(c *Config) { c.Distribution.Name = "otelcol\n//go:debug tlssha1=1" }, errInvalidDistName},
+		{"dist module newline", func(c *Config) { c.Distribution.Module = "example.com/dist\ngodebug tlssha1=1" }, errInvalidDistModule},
+		{"replaces newline", func(c *Config) { c.Replaces = []string{"a => b\ngodebug tlssha1=1"} }, errMultiLineValue},
+		{"excludes newline", func(c *Config) { c.Excludes = []string{"a v1.0.0\ngodebug tlssha1=1"} }, errMultiLineValue},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := newTestConfig(t)
+			tt.mutate(cfg)
+			require.ErrorIs(t, cfg.Validate(), tt.err)
+		})
+	}
+}
