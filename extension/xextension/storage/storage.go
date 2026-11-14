@@ -18,7 +18,8 @@ type Extension interface {
 	// GetClient will create a client for use by the specified component.
 	// Each component can have multiple storages (e.g. one for each signal),
 	// which can be identified using storageName parameter.
-	// The component can use the client to manage state
+	// The component can use the client to manage state.
+	// This function must be implemented as idempotent: the same client must be returned
 	GetClient(ctx context.Context, kind component.Kind, id component.ID, storageName string) (Client, error)
 }
 

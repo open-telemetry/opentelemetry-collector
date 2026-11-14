@@ -272,7 +272,7 @@ func TestConfig_GetGRPCClientOptions(t *testing.T) {
 }
 
 func TestConfig_GetDialer(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	oldValue := metadata.PkgConfigmiddlewareCustomTCPRoutingFeatureGate.IsEnabled()
 	_ = featuregate.GlobalRegistry().Set(metadata.PkgConfigmiddlewareCustomTCPRoutingFeatureGate.ID(), true)
 	t.Cleanup(func() {
@@ -328,6 +328,74 @@ func TestConfig_GetDialer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			value, err := tt.middleware.GetDialer(ctx, tt.extensions)
+
+			if tt.wantErr != nil {
+				require.ErrorIs(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, value)
+			}
+		})
+	}
+}
+
+func TestConfig_GetListener(t *testing.T) {
+	ctx := t.Context()
+	oldValue := metadata.PkgConfigmiddlewareCustomTCPRoutingFeatureGate.IsEnabled()
+	_ = featuregate.GlobalRegistry().Set(metadata.PkgConfigmiddlewareCustomTCPRoutingFeatureGate.ID(), true)
+	t.Cleanup(func() {
+		_ = featuregate.GlobalRegistry().Set(metadata.PkgConfigmiddlewareCustomTCPRoutingFeatureGate.ID(), oldValue)
+	})
+
+	tests := []struct {
+		name       string
+		middleware Config
+		extensions map[component.ID]component.Component
+		wantErr    error
+	}{
+		{
+			name: "found_and_valid",
+			middleware: Config{
+				ID: testID,
+			},
+			extensions: map[component.ID]component.Component{
+				testID: struct {
+					extension.Extension
+					extensionmiddleware.GetListenerFunc
+				}{
+					Extension: extensionmiddlewaretest.NewNop(),
+					GetListenerFunc: func(_ context.Context) (extensionmiddleware.ListenContextFunc, error) {
+						return func(_ context.Context, _, _ string) (net.Listener, error) {
+							return nil, nil
+						}, nil
+					},
+				},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "middleware_not_found",
+			middleware: Config{
+				ID: testID,
+			},
+			extensions: map[component.ID]component.Component{},
+			wantErr:    errMiddlewareNotFound,
+		},
+		{
+			name: "middleware_wrong_type",
+			middleware: Config{
+				ID: testID,
+			},
+			extensions: map[component.ID]component.Component{
+				testID: mockWrongType{},
+			},
+			wantErr: errNotListener,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			value, err := tt.middleware.GetListener(ctx, tt.extensions)
 
 			if tt.wantErr != nil {
 				require.ErrorIs(t, err, tt.wantErr)
