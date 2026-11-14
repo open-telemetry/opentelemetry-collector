@@ -7,8 +7,10 @@ import (
 	"context"
 	"errors"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -351,6 +353,101 @@ func TestPartitionBatcher_Shutdown(t *testing.T) {
 	assert.EqualValues(t, 2, done.success.Load())
 }
 
+// TestPartitionBatcher_FlushRacesWithShutdown is a regression test for
+// https://github.com/open-telemetry/opentelemetry-collector/issues/15422.
+// consumeInternal() drops currentBatchMu before flush() calls stopWG.Add(1), so a
+// Consume that already observed active==true can Add while shutdownInternal is
+// returning from stopWG.Wait, panicking with "sync: WaitGroup is reused before
+// previous Wait has returned". The panic crashes the test binary on the unfixed
+// code, usually within a few iterations.
+func TestPartitionBatcher_FlushRacesWithShutdown(t *testing.T) {
+	for range 200 {
+		cfg := BatchConfig{
+			FlushTimeout: time.Millisecond,
+			Sizer:        request.SizerTypeItems,
+			MinSize:      0, // every request flushes right away, maximizing Add/Wait overlap
+		}
+
+		sink := requesttest.NewSink()
+		ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(4), sink.Export, zap.NewNop(), nil)
+		require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+
+		done := newFakeDone()
+		const producers = 8
+		var wg sync.WaitGroup
+		for range producers {
+			wg.Go(func() {
+				ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 1, Bytes: 1}, done)
+			})
+		}
+
+		require.NoError(t, ba.Shutdown(context.Background()))
+		wg.Wait()
+
+		// Whether a batch went to a worker or was exported inline after losing the
+		// race with shutdown, nothing may be dropped or failed.
+		assert.Equal(t, producers, sink.ItemsCount())
+		assert.EqualValues(t, 0, done.errors.Load())
+		assert.EqualValues(t, producers, done.success.Load())
+	}
+}
+
+// TestPartitionBatcher_ConsumeAfterShutdownFlushesInline covers the production window where
+// multiBatcher evicts a partition from the LRU while a Consume still holds a reference to it:
+// flush() runs after shutdown started waiting on stopWG. The batch must be exported inline by
+// the caller, not dropped and not handed to a worker (that Add would panic).
+func TestPartitionBatcher_ConsumeAfterShutdownFlushesInline(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: 200 * time.Second,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      100,
+	}
+
+	sink := requesttest.NewSink()
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(1), sink.Export, zap.NewNop(), nil)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, ba.Shutdown(context.Background()))
+
+	// Partition is stopped: the request stays under MinSize, lands in currentBatch and
+	// the inactive-partition path must flush it inline rather than wait for the dead timer.
+	done := newFakeDone()
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Bytes: 8}, done)
+
+	assert.Equal(t, 1, sink.RequestsCount())
+	assert.Equal(t, 8, sink.ItemsCount())
+	assert.EqualValues(t, 0, done.errors.Load())
+	assert.EqualValues(t, 1, done.success.Load())
+}
+
+// TestPartitionBatcher_ShutdownDoesNotDeadlockWithFastTimer guards the ordering in
+// shutdownInternal: currentBatchMu must be released before stopWG.Wait. The timer goroutine
+// is counted in stopWG and takes currentBatchMu inside flushCurrentBatchOrRemovePartition,
+// so holding the lock across Wait wedges shutdown for good.
+func TestPartitionBatcher_ShutdownDoesNotDeadlockWithFastTimer(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: time.Nanosecond,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      100,
+	}
+	sink := requesttest.NewSink()
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(2), sink.Export, zap.NewNop(), nil)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 1}, newFakeDone())
+
+	shutdownDone := make(chan struct{})
+	go func() {
+		defer close(shutdownDone)
+		_ = ba.Shutdown(context.Background())
+	}()
+
+	select {
+	case <-shutdownDone:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Shutdown deadlocked")
+	}
+}
+
 func TestPartitionBatcher_MergeError(t *testing.T) {
 	cfg := BatchConfig{
 		FlushTimeout: 200 * time.Second,
@@ -628,4 +725,47 @@ func TestPartitionBatcher_OnEmptyNotCalledWithActiveData(t *testing.T) {
 	assert.Equal(t, int64(0), onEmptyCalled.Load())
 	// But data should have been flushed
 	assert.GreaterOrEqual(t, sink.RequestsCount(), 1)
+}
+
+// A stale partition reference may still be consumed after LRU eviction. Such
+// synchronous flushes must share the concurrency limit with active partitions.
+func TestPartitionBatcher_StoppedPartitionRespectsWorkerLimit(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		cfg := BatchConfig{Sizer: request.SizerTypeItems}
+		wp := newWorkerPool(1)
+		release := make(chan struct{})
+		var exports atomic.Int64
+		export := func(context.Context, request.Request) error {
+			exports.Add(1)
+			<-release
+			return nil
+		}
+		active := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, wp, export, zap.NewNop(), nil)
+		stopped := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, wp, export, zap.NewNop(), nil)
+		require.NoError(t, stopped.Shutdown(context.Background()))
+		done := newFakeDone()
+		active.Consume(context.Background(), &requesttest.FakeRequest{Items: 1}, done)
+		synctest.Wait()
+		assert.EqualValues(t, 1, exports.Load())
+
+		const producers = 8
+		var wg sync.WaitGroup
+		for range producers {
+			wg.Go(func() {
+				stopped.Consume(context.Background(), &requesttest.FakeRequest{Items: 1}, done)
+			})
+		}
+		synctest.Wait()
+		assert.EqualValues(t, 1, exports.Load(), "stopped partitions must wait for a worker")
+		assert.EqualValues(t, 0, done.success.Load())
+
+		close(release)
+		wg.Wait()
+		require.NoError(t, active.Shutdown(context.Background()))
+		assert.EqualValues(t, producers+1, exports.Load())
+		assert.EqualValues(t, producers+1, done.success.Load())
+		assert.EqualValues(t, 0, done.errors.Load())
+		synctest.Wait()
+		assert.Len(t, wp.workers, 1, "the synchronous flush must return its worker")
+	})
 }
