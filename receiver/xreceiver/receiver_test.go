@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/xcomponentdiscovery"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/componentalias"
@@ -77,4 +78,19 @@ func TestNewFactoryWithDeprecatedAlias(t *testing.T) {
 	require.NoError(t, err)
 	_, err = f.CreateProfiles(context.Background(), receiver.Settings{ID: component.MustNewID("wrongname")}, &defaultCfg, consumertest.NewNop())
 	require.Error(t, err)
+}
+
+func TestNewFactoryWithDiscoveryRule(t *testing.T) {
+	testType := component.MustNewType("test")
+	defaultCfg := struct{}{}
+	f := NewFactory(testType, func() component.Config { return &defaultCfg })
+	assert.True(t, f.DiscoveryRule().IsEmpty())
+
+	rule := xcomponentdiscovery.Rule{
+		Endpoints: map[xcomponentdiscovery.EndpointType]xcomponentdiscovery.EndpointRule{
+			"pod.container": {Rule: "true"},
+		},
+	}
+	f = NewFactory(testType, func() component.Config { return &defaultCfg }, WithDiscoveryRule(rule))
+	assert.Equal(t, rule, f.DiscoveryRule())
 }

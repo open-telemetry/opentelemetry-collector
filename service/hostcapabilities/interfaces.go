@@ -8,6 +8,7 @@ package hostcapabilities // import "go.opentelemetry.io/collector/service/hostca
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/service/internal/moduleinfo"
 )
 
@@ -34,4 +35,12 @@ type ComponentFactory interface {
 	// GetFactory returns the component factory for the given
 	// component type
 	GetFactory(kind component.Kind, componentType component.Type) component.Factory
+}
+
+// ScraperFactory is an interface that may be implemented by the host to
+// provide the scraper factories the collector was built with.
+type ScraperFactory interface {
+	// GetScraperFactory returns the scraper factory for the given type,
+	// or nil if the collector wasn't built with it.
+	GetScraperFactory(scraperType component.Type) scraper.Factory
 }

@@ -66,6 +66,7 @@ require (
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.71.0 // indirect
+	go.opentelemetry.io/collector/component/xcomponentdiscovery v0.165.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.71.0 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v1.71.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.71.0 // indirect
@@ -170,3 +171,5 @@ replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/
 replace go.opentelemetry.io/collector/internal/statusutil => ../../internal/statusutil
 
 replace go.opentelemetry.io/collector/receiver/receiverhelper/xreceiverhelper => ../receiverhelper/xreceiverhelper
+
+replace go.opentelemetry.io/collector/component/xcomponentdiscovery => ../../component/xcomponentdiscovery

@@ -243,6 +243,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		ConnectorsFactories: factories.Connectors,
 		ExtensionsConfigs:   cfg.Extensions,
 		ExtensionsFactories: factories.Extensions,
+		ScrapersFactories:   factories.Scrapers,
 
 		ModuleInfos: service.ModuleInfos{
 			Receiver:  buildModuleInfo(factories.ReceiverModules),

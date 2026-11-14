@@ -22,6 +22,15 @@ status:
   warnings:
     - Any additional information that should be brought to the consumer's attention
 
+discovery:
+  default_config:
+    endpoint: "`endpoint`"
+  endpoints:
+    port:
+      rule: port == 1234 and container_image matches "(?i)sample"
+    hostport:
+      rule: port == 1234 and process_name matches "(?i)sample"
+
 exported_configs:
   sample_pkg:
     $ref: ../samplepkg.sample_config

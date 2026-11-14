@@ -14,6 +14,9 @@ require (
 	{{- range .Connectors}}
 	{{if .GoMod}}{{.GoMod}}{{end}}
 	{{- end}}
+	{{- range .Scrapers}}
+	{{if .GoMod}}{{.GoMod}}{{end}}
+	{{- end}}
 	{{- range .Extensions}}
 	{{if .GoMod}}{{.GoMod}}{{end}}
 	{{- end}}
@@ -42,6 +45,9 @@ require (
 {{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
 {{- end}}
 {{- range .Connectors}}
+{{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
+{{- end}}
+{{- range .Scrapers}}
 {{if ne .Path ""}}replace {{.GoMod}} => {{.Path}}{{end}}
 {{- end}}
 {{- range .Extensions}}

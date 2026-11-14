@@ -33,6 +33,7 @@ cmd/schemagen/                                         @open-telemetry/collector
 component/                                             @open-telemetry/collector-approvers
 component/componentstatus/                             @open-telemetry/collector-approvers
 component/componenttest/                               @open-telemetry/collector-approvers
+component/xcomponentdiscovery/                         @open-telemetry/collector-approvers
 config/configauth/                                     @open-telemetry/collector-approvers
 config/configcompression/                              @open-telemetry/collector-approvers
 config/configgrpc/                                     @open-telemetry/collector-approvers

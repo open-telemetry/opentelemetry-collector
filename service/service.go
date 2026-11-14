@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/graph"
@@ -75,6 +76,10 @@ type Settings struct {
 	ExtensionsConfigs   map[component.ID]component.Config
 	ExtensionsFactories map[component.Type]extension.Factory
 
+	// ScrapersFactories maps scraper type names to their factories. Scrapers
+	// aren't configured in pipelines; components can look them up through the host.
+	ScrapersFactories map[component.Type]scraper.Factory
+
 	// ModuleInfo describes the go module for each component.
 	ModuleInfos ModuleInfos
 
@@ -114,6 +119,7 @@ func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr e
 			Exporters:  builders.NewExporter(set.ExportersConfigs, set.ExportersFactories),
 			Connectors: builders.NewConnector(set.ConnectorsConfigs, set.ConnectorsFactories),
 			Extensions: builders.NewExtension(set.ExtensionsConfigs, set.ExtensionsFactories),
+			Scrapers:   set.ScrapersFactories,
 
 			ModuleInfos:       set.ModuleInfos,
 			BuildInfo:         set.BuildInfo,
