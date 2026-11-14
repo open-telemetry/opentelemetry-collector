@@ -4,6 +4,7 @@
 package otlphttpexporter
 
 import (
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"testing"
@@ -82,7 +83,8 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxConnsPerHost:   defaultMaxConnsPerHost,
 				ForceAttemptHTTP2: true,
 			},
-			ProfilesEndpoint: "https://custom.profiles.endpoint:8080/v1development/profiles",
+			ProfilesEndpoint:         "https://custom.profiles.endpoint:8080/v1development/profiles",
+			RetryableHTTPStatusCodes: []int{http.StatusRequestTimeout},
 		}, cfg)
 }
 
@@ -138,6 +140,61 @@ func TestUnmarshalEncoding(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConfigValidateRetryableHTTPStatusCodes(t *testing.T) {
+	const (
+		errDisabled = "retryable_http_status_codes cannot be configured when retry_on_failure is disabled"
+		err400      = "retryable_http_status_codes cannot contain 400 (Bad Request)"
+		errRange    = "retryable_http_status_codes must only contain HTTP status codes in the range 401-599, got %d"
+	)
+	for _, tt := range []struct {
+		name         string
+		codes        []int
+		retryEnabled bool
+		wantErr      string
+	}{
+		{name: "empty", retryEnabled: true},
+		{name: "nil with retry disabled"},
+		{name: "empty slice with retry disabled", codes: []int{}},
+		{name: "configured with retry disabled", codes: []int{http.StatusRequestTimeout}, wantErr: errDisabled},
+		{name: "valid 401-599", codes: []int{http.StatusUnauthorized, http.StatusRequestTimeout, http.StatusInternalServerError, 599}, retryEnabled: true},
+		{name: "default retryable codes allowed", codes: []int{http.StatusTooManyRequests, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout}, retryEnabled: true},
+		{name: "400 Bad Request rejected", codes: []int{http.StatusBadRequest}, retryEnabled: true, wantErr: err400},
+		{name: "duplicate status code rejected", codes: []int{408, 408}, retryEnabled: true, wantErr: "duplicate status code 408 in retryable_http_status_codes"},
+		{name: "below 401 rejected", codes: []int{http.StatusOK}, retryEnabled: true, wantErr: fmt.Sprintf(errRange, http.StatusOK)},
+		{name: "399 boundary rejected", codes: []int{399}, retryEnabled: true, wantErr: fmt.Sprintf(errRange, 399)},
+		{name: "600 boundary rejected", codes: []int{600}, retryEnabled: true, wantErr: fmt.Sprintf(errRange, 600)},
+		{name: "negative code rejected", codes: []int{408, -1}, retryEnabled: true, wantErr: fmt.Sprintf(errRange, -1)},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			retryCfg := configretry.NewDefaultBackOffConfig()
+			retryCfg.Enabled = tt.retryEnabled
+			cfg := &Config{
+				ClientConfig:             confighttp.ClientConfig{Endpoint: "http://localhost:4318"},
+				RetryConfig:              retryCfg,
+				RetryableHTTPStatusCodes: tt.codes,
+			}
+			if tt.wantErr != "" {
+				require.EqualError(t, cfg.Validate(), tt.wantErr)
+				require.EqualError(t, confmap.Validate(cfg), tt.wantErr)
+				return
+			}
+			require.NoError(t, cfg.Validate())
+			require.NoError(t, confmap.Validate(cfg))
+		})
+	}
+
+	t.Run("unmarshal disabled retry fails Validate", func(t *testing.T) {
+		cm := confmap.NewFromStringMap(map[string]any{
+			"endpoint":                    "http://localhost:4318",
+			"retry_on_failure":            map[string]any{"enabled": false},
+			"retryable_http_status_codes": []int{http.StatusRequestTimeout},
+		})
+		cfg := NewFactory().CreateDefaultConfig()
+		require.NoError(t, cm.Unmarshal(&cfg))
+		require.EqualError(t, confmap.Validate(cfg), errDisabled)
+	})
 }
 
 func TestConfigValidate(t *testing.T) {

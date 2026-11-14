@@ -12,3 +12,6 @@ mappings:
       schemaType: string
 allowedRefs:
   - go.opentelemetry.io/collector
+componentOverrides:
+  exporter/otlp_http:
+    overlayFile: exporter/otlphttpexporter/config.schema.overlay.yaml
