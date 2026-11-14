@@ -94,11 +94,11 @@ func TestMetricsBuilder(t *testing.T) {
 			// stage forbids the requested state (e.g. once promoted to stable), only the gate-dependent
 			// assertions below are skipped; the rest of the test still runs.
 			migrationGatesPinned := true
-			{{- range $name, $metric := .Metrics }}
-			{{- if $metric.Migration }}
-			migrationGatesPinned = setFeatureGateForTest(t, {{ printf "%s" $metric.Migration.ThroughGates.DisableOld | publicVar }}FeatureGate, false) && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, {{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar }}FeatureGate, tt.name == "all_set") && migrationGatesPinned
+			{{- range $gate := migrationDisableOldGates }}
+			migrationGatesPinned = setFeatureGateForTest(t, {{ printf "%s" $gate | publicVar }}FeatureGate, false) && migrationGatesPinned
 			{{- end }}
+			{{- range $gate := migrationEnableNewGates }}
+			migrationGatesPinned = setFeatureGateForTest(t, {{ printf "%s" $gate | publicVar }}FeatureGate, tt.name == "all_set") && migrationGatesPinned
 			{{- end }}
 			{{- end }}
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
