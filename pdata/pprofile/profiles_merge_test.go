@@ -603,49 +603,134 @@ func newConformantProfiles() Profiles {
 	return p
 }
 
+// TestProfilesMergeTo_OnlyReferencedEntries checks that MergeTo only copies the
+// dictionary entries referenced by the merged profiles, so the destination
+// carries no unreferenced (orphan) entries, and that the source dictionary is
+// left untouched.
+func TestProfilesMergeTo_OnlyReferencedEntries(t *testing.T) {
+	src := newConformantProfiles()
+	d := src.Dictionary()
+
+	// Entries no profile references, one of each kind.
+	d.StringTable().Append("unused-string")
+	d.AttributeTable().AppendEmpty().SetKeyStrindex(int32(d.StringTable().Len() - 1))
+	d.FunctionTable().AppendEmpty().SetNameStrindex(int32(d.StringTable().Len() - 1))
+	d.MappingTable().AppendEmpty().SetFilenameStrindex(int32(d.StringTable().Len() - 1))
+	unusedLoc := int32(d.LocationTable().Len())
+	d.LocationTable().AppendEmpty().Lines().AppendEmpty().SetFunctionIndex(int32(d.FunctionTable().Len() - 1))
+	d.StackTable().AppendEmpty().LocationIndices().Append(unusedLoc)
+
+	// A referenced chain: sample -> stack -> location -> {mapping, function},
+	// plus a profile attribute, each with its own strings.
+	str := func(v string) int32 {
+		d.StringTable().Append(v)
+		return int32(d.StringTable().Len() - 1)
+	}
+	fnIdx := int32(d.FunctionTable().Len())
+	d.FunctionTable().AppendEmpty().SetNameStrindex(str("used-function"))
+	maIdx := int32(d.MappingTable().Len())
+	d.MappingTable().AppendEmpty().SetFilenameStrindex(str("used-file"))
+	locIdx := int32(d.LocationTable().Len())
+	loc := d.LocationTable().AppendEmpty()
+	loc.SetMappingIndex(maIdx)
+	loc.Lines().AppendEmpty().SetFunctionIndex(fnIdx)
+	stIdx := int32(d.StackTable().Len())
+	d.StackTable().AppendEmpty().LocationIndices().Append(locIdx)
+	attrIdx := int32(d.AttributeTable().Len())
+	attr := d.AttributeTable().AppendEmpty()
+	attr.SetKeyStrindex(str("used-key"))
+	attr.Value().SetStr("used-value")
+
+	prof := newReferencingProfile(src)
+	prof.AttributeIndices().Append(attrIdx)
+	sample := prof.Samples().AppendEmpty()
+	sample.SetStackIndex(stIdx)
+	sample.Values().Append(1)
+
+	before := NewProfilesDictionary()
+	d.CopyTo(before)
+
+	dest := newConformantProfiles()
+	require.NoError(t, src.MergeTo(dest))
+
+	assert.Equal(t, before.orig, src.Dictionary().orig, "source dictionary must not be modified")
+
+	// Index 0 placeholders plus exactly the referenced entries.
+	dd := dest.Dictionary()
+	assert.Equal(t, []string{"", "used-key", "used-file", "used-function"}, dd.StringTable().AsRaw())
+	assert.Equal(t, 2, dd.AttributeTable().Len())
+	assert.Equal(t, 2, dd.StackTable().Len())
+	assert.Equal(t, 2, dd.LocationTable().Len())
+	assert.Equal(t, 2, dd.FunctionTable().Len())
+	assert.Equal(t, 2, dd.MappingTable().Len())
+
+	// References resolve to the same values in the destination.
+	got := dest.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+	gotAttr := dd.AttributeTable().At(int(got.AttributeIndices().At(0)))
+	assert.Equal(t, "used-key", dd.StringTable().At(int(gotAttr.KeyStrindex())))
+	assert.Equal(t, "used-value", gotAttr.Value().Str())
+	gotLoc := dd.LocationTable().At(int(dd.StackTable().At(int(got.Samples().At(0).StackIndex())).LocationIndices().At(0)))
+	assert.Equal(t, "used-file", dd.StringTable().At(int(dd.MappingTable().At(int(gotLoc.MappingIndex())).FilenameStrindex())))
+	assert.Equal(t, "used-function", dd.StringTable().At(int(dd.FunctionTable().At(int(gotLoc.Lines().At(0).FunctionIndex())).NameStrindex())))
+
+	assertConformant(t, dd, got)
+}
+
 // TestProfilesMergeTo_SwitchDictionaryErrors exercises each error-propagation
 // path in the switchDictionary chain by injecting a single out-of-range index
 // into an otherwise spec-conformant source. Every case asserts the wrapped
 // error surfaces and that the destination is left untouched.
 func TestProfilesMergeTo_SwitchDictionaryErrors(t *testing.T) {
-	const badIdx = 99
-
 	for _, tt := range []struct {
 		name    string
-		mutate  func(Profiles)
+		mutate  func(p Profiles, badIdx int32)
 		wantErr string
 	}{
 		{
 			name: "dictionary attribute key index",
-			mutate: func(p Profiles) {
+			mutate: func(p Profiles, badIdx int32) {
 				p.Dictionary().AttributeTable().AppendEmpty().SetKeyStrindex(badIdx)
 			},
 			wantErr: "invalid key index",
 		},
 		{
 			name: "dictionary function name index",
-			mutate: func(p Profiles) {
+			mutate: func(p Profiles, badIdx int32) {
 				p.Dictionary().FunctionTable().AppendEmpty().SetNameStrindex(badIdx)
 			},
 			wantErr: "invalid name index",
 		},
 		{
 			name: "dictionary mapping filename index",
-			mutate: func(p Profiles) {
+			mutate: func(p Profiles, badIdx int32) {
 				p.Dictionary().MappingTable().AppendEmpty().SetFilenameStrindex(badIdx)
 			},
 			wantErr: "invalid filename index",
 		},
 		{
+			name: "dictionary mapping attribute index",
+			mutate: func(p Profiles, badIdx int32) {
+				p.Dictionary().MappingTable().AppendEmpty().AttributeIndices().Append(badIdx)
+			},
+			wantErr: "invalid attribute index",
+		},
+		{
+			name: "dictionary location attribute index",
+			mutate: func(p Profiles, badIdx int32) {
+				p.Dictionary().LocationTable().AppendEmpty().AttributeIndices().Append(badIdx)
+			},
+			wantErr: "invalid attribute index",
+		},
+		{
 			name: "dictionary stack location index",
-			mutate: func(p Profiles) {
+			mutate: func(p Profiles, badIdx int32) {
 				p.Dictionary().StackTable().AppendEmpty().LocationIndices().Append(badIdx)
 			},
 			wantErr: "invalid location index",
 		},
 		{
 			name: "dictionary location line function index",
-			mutate: func(p Profiles) {
+			mutate: func(p Profiles, badIdx int32) {
 				loc := p.Dictionary().LocationTable().AppendEmpty()
 				loc.Lines().AppendEmpty().SetFunctionIndex(badIdx)
 			},
@@ -653,7 +738,7 @@ func TestProfilesMergeTo_SwitchDictionaryErrors(t *testing.T) {
 		},
 		{
 			name: "sample attribute index",
-			mutate: func(p Profiles) {
+			mutate: func(p Profiles, badIdx int32) {
 				s := p.ResourceProfiles().AppendEmpty().
 					ScopeProfiles().AppendEmpty().
 					Profiles().AppendEmpty().
@@ -664,7 +749,7 @@ func TestProfilesMergeTo_SwitchDictionaryErrors(t *testing.T) {
 		},
 		{
 			name: "profile period type index",
-			mutate: func(p Profiles) {
+			mutate: func(p Profiles, badIdx int32) {
 				prof := p.ResourceProfiles().AppendEmpty().
 					ScopeProfiles().AppendEmpty().
 					Profiles().AppendEmpty()
@@ -674,7 +759,7 @@ func TestProfilesMergeTo_SwitchDictionaryErrors(t *testing.T) {
 		},
 		{
 			name: "profile sample type index",
-			mutate: func(p Profiles) {
+			mutate: func(p Profiles, badIdx int32) {
 				prof := p.ResourceProfiles().AppendEmpty().
 					ScopeProfiles().AppendEmpty().
 					Profiles().AppendEmpty()
@@ -682,17 +767,47 @@ func TestProfilesMergeTo_SwitchDictionaryErrors(t *testing.T) {
 			},
 			wantErr: "error switching dictionary for sample type",
 		},
+		{
+			name: "dictionary location mapping index",
+			mutate: func(p Profiles, badIdx int32) {
+				p.Dictionary().LocationTable().AppendEmpty().SetMappingIndex(badIdx)
+			},
+			wantErr: "invalid mapping index",
+		},
+		{
+			name: "sample stack index",
+			mutate: func(p Profiles, badIdx int32) {
+				newReferencingProfile(p).Samples().AppendEmpty().SetStackIndex(badIdx)
+			},
+			wantErr: "invalid stack index",
+		},
+		{
+			name: "sample link index",
+			mutate: func(p Profiles, badIdx int32) {
+				newReferencingProfile(p).Samples().AppendEmpty().SetLinkIndex(badIdx)
+			},
+			wantErr: "invalid link index",
+		},
+		{
+			name: "profile sample type unit index",
+			mutate: func(p Profiles, badIdx int32) {
+				newReferencingProfile(p).SampleType().SetUnitStrindex(badIdx)
+			},
+			wantErr: "invalid unit index",
+		},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
-			src := newConformantProfiles()
-			tt.mutate(src)
-			dest := newConformantProfiles()
+		for _, badIdx := range []int32{99, -1} {
+			t.Run(fmt.Sprintf("%s/%d", tt.name, badIdx), func(t *testing.T) {
+				src := newConformantProfiles()
+				tt.mutate(src, badIdx)
+				dest := newConformantProfiles()
 
-			err := src.MergeTo(dest)
-			require.ErrorContains(t, err, tt.wantErr)
-			assert.Equal(t, 0, dest.ResourceProfiles().Len(),
-				"destination must be left untouched on error")
-		})
+				err := src.MergeTo(dest)
+				require.ErrorContains(t, err, tt.wantErr)
+				assert.Equal(t, 0, dest.ResourceProfiles().Len(),
+					"destination must be left untouched on error")
+			})
+		}
 	}
 }
 
@@ -1027,4 +1142,10 @@ func assertNoDuplicateDictEntries(t *testing.T, d ProfilesDictionary) {
 			require.False(t, lnk.At(i).Equal(lnk.At(j)), "duplicate link %d/%d", i, j)
 		}
 	}
+}
+
+// newReferencingProfile appends a profile to p, so that dictionary entries it
+// references are visited by MergeTo.
+func newReferencingProfile(p Profiles) Profile {
+	return p.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
 }

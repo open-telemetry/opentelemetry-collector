@@ -16,8 +16,8 @@ func (fn Function) Equal(val Function) bool {
 // switchDictionary updates the Function, switching its indices from one
 // dictionary to another.
 func (fn Function) switchDictionary(src, dst ProfilesDictionary, mi *mergeIndex) error {
-	if fn.NameStrindex() > 0 {
-		if src.StringTable().Len() <= int(fn.NameStrindex()) {
+	if fn.NameStrindex() != 0 {
+		if fn.NameStrindex() < 0 || src.StringTable().Len() <= int(fn.NameStrindex()) {
 			return fmt.Errorf("invalid name index %d", fn.NameStrindex())
 		}
 
@@ -28,8 +28,8 @@ func (fn Function) switchDictionary(src, dst ProfilesDictionary, mi *mergeIndex)
 		fn.SetNameStrindex(idx)
 	}
 
-	if fn.SystemNameStrindex() > 0 {
-		if src.StringTable().Len() <= int(fn.SystemNameStrindex()) {
+	if fn.SystemNameStrindex() != 0 {
+		if fn.SystemNameStrindex() < 0 || src.StringTable().Len() <= int(fn.SystemNameStrindex()) {
 			return fmt.Errorf("invalid system name index %d", fn.SystemNameStrindex())
 		}
 
@@ -40,8 +40,8 @@ func (fn Function) switchDictionary(src, dst ProfilesDictionary, mi *mergeIndex)
 		fn.SetSystemNameStrindex(idx)
 	}
 
-	if fn.FilenameStrindex() > 0 {
-		if src.StringTable().Len() <= int(fn.FilenameStrindex()) {
+	if fn.FilenameStrindex() != 0 {
+		if fn.FilenameStrindex() < 0 || src.StringTable().Len() <= int(fn.FilenameStrindex()) {
 			return fmt.Errorf("invalid filename index %d", fn.FilenameStrindex())
 		}
 
