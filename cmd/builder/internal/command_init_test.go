@@ -4,6 +4,8 @@
 package internal // import "go.opentelemetry.io/collector/cmd/builder/internal"
 
 import (
+	"bytes"
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/cmd/builder/internal/builder"
+	"go.opentelemetry.io/collector/cmd/builder/internal/fromconfig"
 )
 
 func TestInitCommand(t *testing.T) {
@@ -54,7 +57,7 @@ func TestRunInit(t *testing.T) {
 				os.RemoveAll(path)
 			})
 
-			err := run(path)
+			err := run(t.Context(), path, initOptions{})
 
 			if tt.wantErr == "" {
 				require.NoError(t, err)
@@ -73,7 +76,7 @@ func TestBuildManifest(t *testing.T) {
 		Description: defaultDescription,
 		BetaVersion: builder.DefaultBetaOtelColVersion,
 	}
-	require.NoError(t, buildManifest(dir, meta))
+	require.NoError(t, buildManifest(dir, meta, nil))
 
 	content, err := os.ReadFile(filepath.Join(dir, "manifest.yaml")) //nolint:gosec // G304: path is test-controlled
 	require.NoError(t, err)
@@ -91,6 +94,160 @@ receivers:
 	assert.Equal(t, expected, string(content))
 }
 
+const (
+	fromConfigExample = `receivers:
+  otlp:
+  hostmetrics:
+  prometheus_simple:
+processors:
+  batch:
+exporters:
+  debug:
+extensions:
+  file_storage:
+  myvendor:
+service:
+  extensions: [file_storage]
+`
+)
+
+// fakeResolver resolves components against a fixed set of published modules.
+func fakeResolver() *fromconfig.Resolver {
+	published := map[string][]string{
+		fromconfig.CorePrefix + "receiver/otlpreceiver":                {"v0.1.0"},
+		fromconfig.CorePrefix + "processor/batchprocessor":             {"v0.1.0"},
+		fromconfig.CorePrefix + "exporter/debugexporter":               {"v0.1.0"},
+		fromconfig.ContribPrefix + "receiver/hostmetricsreceiver":      {"v0.1.0"},
+		fromconfig.ContribPrefix + "receiver/simpleprometheusreceiver": {"v0.1.0"},
+		fromconfig.ContribPrefix + "extension/storage/filestorage":     {"v0.1.0"},
+	}
+	return &fromconfig.Resolver{
+		Release: "v0.1.0",
+		List: func(_ context.Context, modules []string) ([]fromconfig.ListedModule, error) {
+			out := make([]fromconfig.ListedModule, 0, len(modules))
+			for _, m := range modules {
+				out = append(out, fromconfig.ListedModule{Path: m, Versions: published[m]})
+			}
+			return out, nil
+		},
+		Versions: func(context.Context, string) (fromconfig.Versions, error) {
+			return fromconfig.Versions{Beta: "v0.1.0", Stable: "v1.0.0"}, nil
+		},
+	}
+}
+
+func TestRunInitFromConfig(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "collector-config.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte(fromConfigExample), 0o600))
+	path := filepath.Join(t.TempDir(), distributionName)
+
+	var stderr bytes.Buffer
+	require.NoError(t, run(t.Context(), path, initOptions{fromConfig: configPath, resolver: fakeResolver(), stderr: &stderr}))
+	validateCollector(t, path)
+
+	manifest, err := os.ReadFile(filepath.Join(path, "manifest.yaml")) //nolint:gosec // G304: path is test-controlled
+	require.NoError(t, err)
+	assert.Equal(t, `dist:
+    description: Custom OpenTelemetry Collector
+    name: test-distro
+    output_path: ./build/collector
+exporters:
+    - gomod: `+fromconfig.CorePrefix+`exporter/debugexporter v0.1.0
+extensions:
+    - gomod: `+fromconfig.ContribPrefix+`extension/storage/filestorage v0.1.0
+processors:
+    - gomod: `+fromconfig.CorePrefix+`processor/batchprocessor v0.1.0
+receivers:
+    - gomod: `+fromconfig.ContribPrefix+`receiver/hostmetricsreceiver v0.1.0
+    - gomod: `+fromconfig.CorePrefix+`receiver/otlpreceiver v0.1.0
+    - gomod: `+fromconfig.ContribPrefix+`receiver/simpleprometheusreceiver v0.1.0
+
+# The following components are referenced by `+configPath+` but could
+# not be matched to a Go module in the opentelemetry-collector or
+# opentelemetry-collector-contrib repositories. Fill in the module path and
+# version for each one and uncomment it, or remove it from your Collector
+# configuration.
+#
+# extensions:
+#     - gomod: <module path> <version> # myvendor
+`, string(manifest))
+
+	// The configuration is copied instead of the static template.
+	config, err := os.ReadFile(filepath.Join(path, "config.yaml")) //nolint:gosec // G304: path is test-controlled
+	require.NoError(t, err)
+	assert.Equal(t, fromConfigExample, string(config))
+
+	assert.Contains(t, stderr.String(), "ocb: resolved receiver otlp -> "+fromconfig.CorePrefix+"receiver/otlpreceiver v0.1.0\n")
+	assert.Contains(t, stderr.String(), `ocb: warning: no Go module found for extension "myvendor"; add its gomod to manifest.yaml manually`+"\n")
+	assert.Contains(t, stderr.String(), "ocb: resolved 6 of 7 components referenced by "+configPath+"\n")
+}
+
+func TestRunInitFromConfigAllResolved(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte("receivers:\n  otlp:\n"), 0o600))
+	path := filepath.Join(t.TempDir(), distributionName)
+
+	require.NoError(t, run(t.Context(), path, initOptions{fromConfig: configPath, resolver: fakeResolver()}))
+
+	manifest, err := os.ReadFile(filepath.Join(path, "manifest.yaml")) //nolint:gosec // G304: path is test-controlled
+	require.NoError(t, err)
+	assert.NotContains(t, string(manifest), "#")
+}
+
+func TestRunInitFromConfigNotPublished(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	require.NoError(t, os.WriteFile(configPath, []byte("receivers:\n  otlp:\n  hostmetrics:\n"), 0o600))
+	path := filepath.Join(t.TempDir(), distributionName)
+
+	// The hostmetrics module exists, but not at the release.
+	resolver := fakeResolver()
+	list := resolver.List
+	resolver.List = func(ctx context.Context, modules []string) ([]fromconfig.ListedModule, error) {
+		listed, err := list(ctx, modules)
+		for i := range listed {
+			if listed[i].Path == fromconfig.ContribPrefix+"receiver/hostmetricsreceiver" {
+				listed[i].Versions = []string{"v0.0.1"}
+			}
+		}
+		return listed, err
+	}
+
+	var stderr bytes.Buffer
+	require.NoError(t, run(t.Context(), path, initOptions{fromConfig: configPath, resolver: resolver, stderr: &stderr}))
+
+	assert.Contains(t, stderr.String(), `ocb: warning: the Go module of receiver "hostmetrics" is not published at release v0.1.0; add its gomod to manifest.yaml manually`+"\n")
+	assert.Contains(t, stderr.String(), "ocb: resolved 1 of 2 components referenced by "+configPath+"\n")
+}
+
+func TestRunInitFromConfigErrors(t *testing.T) {
+	dir := t.TempDir()
+	badConfig := filepath.Join(dir, "bad.yaml")
+	require.NoError(t, os.WriteFile(badConfig, []byte("receivers: ${env:FOO}\n"), 0o600))
+
+	for _, tt := range []struct {
+		name       string
+		fromConfig string
+		wantErr    string
+	}{
+		{"missing file", filepath.Join(dir, "missing.yaml"), "failed reading configuration"},
+		{"unresolvable section", badConfig, "must be a mapping"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), distributionName)
+			err := run(t.Context(), path, initOptions{fromConfig: tt.fromConfig, resolver: fakeResolver()})
+			require.ErrorContains(t, err, tt.wantErr)
+			// Nothing is written on failure.
+			assert.NoDirExists(t, path)
+		})
+	}
+}
+
+func TestInitCommandFromConfigFlag(t *testing.T) {
+	flag := initCommand().Flags().Lookup("from-config")
+	require.NotNil(t, flag)
+	assert.Empty(t, flag.DefValue)
+}
+
 func validateCollector(t *testing.T, path string) {
 	require.FileExists(t, filepath.Join(path, ".gitignore"))
 	require.FileExists(t, filepath.Join(path, "README.md"))
@@ -99,4 +256,10 @@ func validateCollector(t *testing.T, path string) {
 	require.FileExists(t, filepath.Join(path, "go.sum"))
 	require.FileExists(t, filepath.Join(path, "Makefile"))
 	require.FileExists(t, filepath.Join(path, "config.yaml"))
+}
+
+func TestAddResolvedUnknownClass(t *testing.T) {
+	var cfg builder.Config
+	err := addResolved(&cfg, []fromconfig.Resolved{{Component: fromconfig.Component{Class: "unknown", Type: "foo"}}})
+	require.ErrorContains(t, err, `unknown class "unknown"`)
 }
