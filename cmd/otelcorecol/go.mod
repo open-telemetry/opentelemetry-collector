@@ -383,6 +383,8 @@ replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/re
 
 replace go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver
 
+replace go.opentelemetry.io/collector/scraper => ../../scraper
+
 replace go.opentelemetry.io/collector/service => ../../service
 
 replace go.opentelemetry.io/collector/service/hostcapabilities => ../../service/hostcapabilities

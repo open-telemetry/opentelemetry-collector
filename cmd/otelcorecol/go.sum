@@ -189,8 +189,6 @@ github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
-go.opentelemetry.io/collector/scraper v0.165.0 h1:TO/RFNj9FmYLPOpylNTaF29iJSY55d3r2zviNzI4UdM=
-go.opentelemetry.io/collector/scraper v0.165.0/go.mod h1:y9TFjeDQepWcJ7o0mwQCSG11ZJvKeo1V9RmMTF56z/Q=
 go.opentelemetry.io/contrib/bridges/otelzap v0.21.0 h1:p23nklcy3VVRcfZ2ce5AXQa6RHQPQvIMM+fW3GzXCU0=
 go.opentelemetry.io/contrib/bridges/otelzap v0.21.0/go.mod h1:7NPD4VToURMipQu1xgz6seTz8aXmbCqQNZs7bQADEjU=
 go.opentelemetry.io/contrib/detectors/aws/ec2/v2 v2.6.0 h1:DercSDxi3/a76k9pY+RM2xK2c0fpRHNoXnoFrgcJbOA=
