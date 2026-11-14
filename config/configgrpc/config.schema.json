@@ -93,6 +93,16 @@
           },
           "description": "Middlewares for the gRPC client."
         },
+        "pick_first": {
+          "type": "object",
+          "properties": {
+            "shuffle_address_list": {
+              "type": "boolean",
+              "description": "Shuffles the resolved addresses before connecting, so clients that receive\nthe same address list spread across backends.\n"
+            }
+          },
+          "description": "Configures the pick_first balancer. Only valid when balancer_name is pick_first or empty.\n"
+        },
         "read_buffer_size": {
           "type": "integer",
           "description": "ReadBufferSize for gRPC client. See grpc.WithReadBufferSize. \n(https://godoc.org/google.golang.org/grpc#WithReadBufferSize).\n"
@@ -324,6 +334,16 @@
       },
       "description": "Configuration of the keepalive.ServerParameters. The same default values \nas keepalive.ServerParameters are applicable and get applied by the server. \nSee https://godoc.org/google.golang.org/grpc/keepalive#ServerParameters for details.\n",
       "default": {}
+    },
+    "pick_first_config": {
+      "type": "object",
+      "properties": {
+        "shuffle_address_list": {
+          "type": "boolean",
+          "description": "Shuffles the resolved addresses before connecting, so clients that receive\nthe same address list spread across backends.\n"
+        }
+      },
+      "description": "Mirrors the pick_first load balancing config of gRPC.\nhttps://github.com/grpc/proposal/blob/master/A62-pick-first.md\n"
     },
     "server_config": {
       "type": "object",
