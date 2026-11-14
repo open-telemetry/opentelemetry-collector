@@ -70,6 +70,13 @@
           enabled:
             type: bool
             default: {{ $attr.Enabled }}
+        {{- if $attr.Type.Template }}
+          keys:
+            description: Keys defines the keys to record. Only "{{ $name }}.<key>" attributes with a listed key are emitted.
+            type: slice
+            values:
+              type: string
+        {{- else }}
         {{- if $.Metrics }}
           metrics_include:
             description: "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
@@ -93,6 +100,7 @@
             type: slice
             values:
               $ref: {{ schemaRef "go.opentelemetry.io/collector/filter.config" }}
+        {{- end }}
         {{- end }}
     {{- end }}
 {{- end }}

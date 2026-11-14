@@ -55,6 +55,9 @@ all_set:
       enabled: true
     string.resource.disabled_attr_to_be_removed:
       enabled: true
+    template.resource.attr:
+      enabled: true
+      keys: ["test_key"]
 reaggregate_set:
   metrics:
     default.metric:
@@ -111,6 +114,9 @@ reaggregate_set:
       enabled: true
     string.resource.disabled_attr_to_be_removed:
       enabled: true
+    template.resource.attr:
+      enabled: true
+      keys: ["test_key"]
 none_set:
   metrics:
     default.metric:
@@ -167,6 +173,8 @@ none_set:
       enabled: false
     string.resource.disabled_attr_to_be_removed:
       enabled: false
+    template.resource.attr:
+      enabled: false
 override_set:
   resource_attributes:
     host.arch:
@@ -200,6 +208,8 @@ override_set:
     string.resource.disabled_attr_to_be_removed:
       enabled: true
       override_value: "override-string.resource.disabled_attr_to_be_removed"
+    template.resource.attr:
+      enabled: true
 filter_set_include:
   resource_attributes:
     host.arch:
@@ -262,6 +272,8 @@ filter_set_include:
         - regexp: ".*"
       events_include:
         - regexp: ".*"
+    template.resource.attr:
+      enabled: true
 filter_set_exclude:
   resource_attributes:
     host.arch:
@@ -324,3 +336,5 @@ filter_set_exclude:
         - strict: "string.resource.disabled_attr_to_be_removed-val"
       events_exclude:
         - strict: "string.resource.disabled_attr_to_be_removed-val"
+    template.resource.attr:
+      enabled: true

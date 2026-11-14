@@ -42,6 +42,7 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	rb.SetStringResourceAttrRemoveWarning("string.resource.attr_remove_warning-val")
 	rb.SetStringResourceAttrToBeRemoved("string.resource.attr_to_be_removed-val")
 	rb.SetStringResourceDisabledAttrToBeRemoved("string.resource.disabled_attr_to_be_removed-val")
+	rb.SetTemplateResourceAttr("test_key", "template.resource.attr-val")
 	res := rb.Emit()
 
 	// append the first log record
@@ -186,6 +187,7 @@ func TestLogsBuilder(t *testing.T) {
 			rb.SetStringResourceAttrRemoveWarning("string.resource.attr_remove_warning-val")
 			rb.SetStringResourceAttrToBeRemoved("string.resource.attr_to_be_removed-val")
 			rb.SetStringResourceDisabledAttrToBeRemoved("string.resource.disabled_attr_to_be_removed-val")
+			rb.SetTemplateResourceAttr("test_key", "template.resource.attr-val")
 			res := rb.Emit()
 			logs := lb.Emit(WithLogsResource(res))
 

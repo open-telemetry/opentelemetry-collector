@@ -98,6 +98,14 @@ func (rb *ResourceBuilder) SetStringResourceDisabledAttrToBeRemoved(val string) 
 	}
 }
 
+// SetTemplateResourceAttr sets provided value as "template.resource.attr.<key>" attribute.
+// The attribute is set only if the key is configured in the resource attribute keys.
+func (rb *ResourceBuilder) SetTemplateResourceAttr(key string, val string) {
+	if rb.config.TemplateResourceAttr.KeyEnabled(key) {
+		rb.res.Attributes().PutStr("template.resource.attr."+key, val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	rb.config.applyOverrideValues(rb.res)
