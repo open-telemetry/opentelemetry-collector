@@ -68,12 +68,18 @@ func TestMetricsBuilder(t *testing.T) {
 			migrationGatesPinned = setFeatureGateForTest(t, ScraperSamplemigrationEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
 			migrationGatesPinned = setFeatureGateForTest(t, ScraperSamplemigrationDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
 			migrationGatesPinned = setFeatureGateForTest(t, ScraperSamplemigrationEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ScraperSamplemigrationDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
+			migrationGatesPinned = setFeatureGateForTest(t, ScraperSamplemigrationEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["system.cpu.utilization"] = mb.metricSystemCPUUtilization.config.AggregationStrategy
 			aggMap["system.cpu.utilization@v1"] = mb.metricSystemCPUUtilizationV1.config.AggregationStrategy
 
 			expectedWarnings := 0
+			if tt.metricsSet == testDataSetAll || tt.metricsSet == testDataSetNone {
+				assert.Equal(t, "[WARNING] `system.memory.limit.utilization` should not be configured: This metric is in development.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 			if tt.name == "all_set" {
 				expectedWarnings++ // type differs
 				expectedWarnings++ // attributes differ
@@ -98,6 +104,12 @@ func TestMetricsBuilder(t *testing.T) {
 				defaultMetricsCount++
 				allMetricsCount++
 				mb.RecordSystemCPUUtilizationDataPoint(ts, 1, "cpu-val", AttributeStateIdle, 18, AttributeCPUModeSystem)
+			}
+			if tt.name != "all_set" {
+
+				allMetricsCount++
+				mb.RecordSystemMemoryLimitUtilizationDataPoint(ts, 1)
+				mb.RecordSystemMemoryLimitUtilizationV1DataPoint(ts, 1)
 			}
 
 			res := pcommon.NewResource()
@@ -319,6 +331,91 @@ func TestVersionedMetrics(t *testing.T) {
 				}
 				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
 				assert.Equal(t, tt.expectNewMetric, newFound)
+			})
+		}
+	})
+	t.Run("system.memory.limit_utilization", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			disableOld         bool
+			enableNew          bool
+			expectLegacyMetric bool
+			expectNewMetric    bool
+		}{
+			{
+				name:               "legacy_only",
+				disableOld:         false,
+				enableNew:          false,
+				expectLegacyMetric: true,
+				expectNewMetric:    false,
+			},
+			{
+				name:               "dual_emission",
+				disableOld:         false,
+				enableNew:          true,
+				expectLegacyMetric: true,
+				expectNewMetric:    true,
+			},
+
+			{
+				name:               "new_only",
+				disableOld:         true,
+				enableNew:          true,
+				expectLegacyMetric: false,
+				expectNewMetric:    true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				// This subtest only makes sense for the specific gate combination it describes, so skip
+				// it when a gate's stage forbids that combination (e.g. a stable gate cannot be disabled).
+				disableOldSet := setFeatureGateForTest(t, ScraperSamplemigrationDontEmitV0SystemConventionsFeatureGate, tt.disableOld)
+				enableNewSet := setFeatureGateForTest(t, ScraperSamplemigrationEmitV1SystemConventionsFeatureGate, tt.enableNew)
+				if !disableOldSet || !enableNewSet {
+					t.Skip("feature gate stage does not allow this gate combination")
+				}
+
+				start := pcommon.Timestamp(1_000_000_000)
+				ts := pcommon.Timestamp(1_000_001_000)
+				observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+				settings := scrapertest.NewNopSettings(scrapertest.NopType)
+				settings.Logger = zap.New(observedZapCore)
+				mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, "all_set"), settings, WithStartTime(start))
+
+				mb.RecordSystemMemoryLimitUtilizationDataPoint(ts, 1)
+				mb.RecordSystemMemoryLimitUtilizationV1DataPoint(ts, 1)
+
+				metrics := mb.Emit(WithResource(pcommon.NewResource()))
+
+				// Count metrics by name and type
+				var legacyFound, newFound bool
+				for ri := 0; ri < metrics.ResourceMetrics().Len(); ri++ {
+					ms := metrics.ResourceMetrics().At(ri).ScopeMetrics().At(0).Metrics()
+					for mi := 0; mi < ms.Len(); mi++ {
+						m := ms.At(mi)
+						// Different emitted names - distinguish by name
+						if m.Name() == "system.memory.limit_utilization" {
+							legacyFound = true
+						}
+						if m.Name() == "system.memory.limit.utilization" {
+							newFound = true
+						}
+					}
+				}
+				assert.Equal(t, tt.expectLegacyMetric, legacyFound)
+				assert.Equal(t, tt.expectNewMetric, newFound)
+				// For metrics with different emitted names, no collision warning should be logged
+				// This guards against the regression where same name collision logic was
+				// incorrectly applied to renamed metrics.
+				if tt.enableNew {
+					for _, log := range observedLogs.All() {
+						if strings.Contains(log.Message, "system.memory.limit_utilization") {
+							assert.NotContains(t, log.Message, "same emitted name",
+								"should not log same name collision warning for metrics with different names")
+						}
+					}
+				}
 			})
 		}
 	})

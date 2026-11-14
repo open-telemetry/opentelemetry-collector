@@ -368,17 +368,17 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings {{ .Status.Class }}.Se
 	{{- range $name, $metric := .Metrics }}
 	{{- if $metric.Warnings.IfEnabled }}
 	if mbc.Metrics.{{ $name.Render }}.Enabled {
-		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be enabled: {{ $metric.Warnings.IfEnabled }}")
+		settings.Logger.Warn("[WARNING] `{{ metricConfigKey $name }}` should not be enabled: {{ $metric.Warnings.IfEnabled }}")
 	}
 	{{- end }}
 	{{- if $metric.Warnings.IfEnabledNotSet }}
 	if !mbc.Metrics.{{ $name.Render }}.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `{{ $name }}`: {{ $metric.Warnings.IfEnabledNotSet }}")
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `{{ metricConfigKey $name }}`: {{ $metric.Warnings.IfEnabledNotSet }}")
 	}
 	{{- end }}
 	{{- if $metric.Warnings.IfConfigured }}
 	if mbc.Metrics.{{ $name.Render }}.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be configured: {{ $metric.Warnings.IfConfigured }}")
+		settings.Logger.Warn("[WARNING] `{{ metricConfigKey $name }}` should not be configured: {{ $metric.Warnings.IfConfigured }}")
 	}
 	{{- end }}
 	{{- end }}
@@ -442,13 +442,13 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings {{ .Status.Class }}.Se
       if mb.metric{{ $name.Render }}.data.Type() != mb.metric{{ $metric.Migration.To.Render }}.data.Type() {
         // Disable legacy metric if legacy and latest have same name but different types
         disable = true
-        settings.Logger.Warn("[WARNING] Legacy metric `{{ $name }}` disabled: same emitted name as `{{ $metric.Migration.To }}` with different type; only latest will be emitted")
+        settings.Logger.Warn("[WARNING] Legacy metric `{{ metricConfigKey $name }}` disabled: same emitted name as `{{ metricConfigKey $metric.Migration.To }}` with different type; only latest will be emitted")
       }
       if !slices.Equal(MetricsInfo.{{ $name.Render }}.Attributes, MetricsInfo.{{ $metric.Migration.To.Render }}.Attributes) {
         // Disable legacy metric if legacy and latest have same name but different attributes
         // The latest metric will emit both attribute sets during migration
         disable = true
-        settings.Logger.Warn("[WARNING] Legacy metric `{{ $name }}` disabled: same emitted name as `{{ $metric.Migration.To }}` with different attributes; only latest will be emitted with combined attributes",
+        settings.Logger.Warn("[WARNING] Legacy metric `{{ metricConfigKey $name }}` disabled: same emitted name as `{{ metricConfigKey $metric.Migration.To }}` with different attributes; only latest will be emitted with combined attributes",
           zap.Strings("legacy_attributes", MetricsInfo.{{ $name.Render }}.Attributes),
           zap.Strings("latest_attributes", MetricsInfo.{{ $metric.Migration.To.Render }}.Attributes))
       }
@@ -607,7 +607,7 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 {{ range $name, $metric := .Metrics -}}
-{{ if not $metric.Versioned }}
+{{ if or (not $metric.Versioned) (hasIndependentValue $name) }}
 // Record{{ $name.Render }}DataPoint adds a data point to {{ $name }} metric.
 {{- if $metric.Entity }}
 //
@@ -664,6 +664,7 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
         {{- end -}}
         )
 	}
+	{{- if not $metric.Migration.IndependentValue }}
 	{{- $targetMetric := index $.Metrics $metric.Migration.To }}
 	if {{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar }}FeatureGate.IsEnabled() {
 		mb.metric{{ $metric.Migration.To.Render }}.recordDataPoint(mb.startTime, ts, val
@@ -700,6 +701,7 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 		{{- end -}}
 		)
 	}
+	{{- end }}
 	{{- else }}
 	{{- $selfLegacyAttrs := getLegacyAttributes $name }}
 	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts, val

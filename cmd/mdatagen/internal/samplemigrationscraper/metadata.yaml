@@ -113,6 +113,34 @@ metrics:
       monotonic: true
     attributes: [cpu.logical_number, cpu.mode]
 
+  # Metric that is renamed and calculated differently. The legacy and target names
+  # map to the same Go identifier, so the target needs the @v1 suffix in this file,
+  # but is configured and documented by its emitted name.
+  system.memory.limit.utilization@v1:
+    enabled: false
+    description: Memory utilization as a ratio of the limit, based on the memory working set.
+    warnings:
+      if_configured: This metric is in development.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: double
+
+  system.memory.limit_utilization:
+    enabled: false
+    description: Legacy memory utilization as a ratio of the limit, based on memory usage.
+    stability: development
+    unit: "1"
+    gauge:
+      value_type: double
+    migration:
+      to: system.memory.limit.utilization@v1
+      independent_value: true
+      emitted_name_config_key: true
+      through_gates:
+        disable_old: scraper.samplemigration.DontEmitV0SystemConventions
+        enable_new: scraper.samplemigration.EmitV1SystemConventions
+
   system.memory.linux.available@v1:
     enabled: false
     description: An estimate of how much memory is available without swapping. (Linux only)

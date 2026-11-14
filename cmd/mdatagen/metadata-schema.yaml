@@ -366,6 +366,17 @@ metrics:
         disable_old: string
         # Required: when enabled, emission of the new (target) metric is enabled.
         enable_new: string
+      # Optional: when true, the target metric gets its own Record function and the
+      # legacy Record function only records the legacy metric. Use it when the target
+      # metric is calculated differently from the legacy one. Requires the target
+      # metric to have a different emitted name. Default: false.
+      independent_value: bool
+      # Optional: when true, the target metric is configured and documented by its
+      # emitted name, without the version suffix (e.g. `k8s.pod.memory.limit.utilization`
+      # instead of `k8s.pod.memory.limit.utilization@v1`). The suffix is still needed in
+      # this file when the legacy and target names map to the same Go identifier.
+      # Requires the emitted name to be unique in this file. Default: false.
+      emitted_name_config_key: bool
 
 # Optional: map of event names with the key being the event name and value
 # being described below.
