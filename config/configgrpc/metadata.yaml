@@ -30,6 +30,17 @@ exported_configs:
       compression:
         description: The compression key for supported compression types within collector.
         $ref: /config/configcompression.type
+      dscp:
+        description: |
+          Sets the Differentiated Services Code Point (DSCP) value on outgoing gRPC connections. 
+          This value is used to set the DS field in the IP header, enabling QoS classification 
+          by network devices. Valid values are 0 to 63. Common values: 0 (Default/Best Effort, CS0), 
+          46 (Expedited Forwarding, EF, for low-latency traffic), 34 (Assured Forwarding AF41). 
+          Default is 0 (disabled, no marking applied).
+        type: int
+        go_struct:
+          field_name: DSCP
+          custom_validator:
       endpoint:
         description: |
           The target to which the exporter is going to send traces or metrics, using the gRPC protocol. 
