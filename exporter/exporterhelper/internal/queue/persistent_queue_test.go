@@ -48,6 +48,18 @@ func (i intRequest) BytesSize() int {
 
 type int64Encoding struct{}
 
+type toggleErrorEncoding struct {
+	int64Encoding
+	marshalErr error
+}
+
+func (e *toggleErrorEncoding) Marshal(ctx context.Context, val intRequest) ([]byte, error) {
+	if e.marshalErr != nil {
+		return nil, e.marshalErr
+	}
+	return e.int64Encoding.Marshal(ctx, val)
+}
+
 func (int64Encoding) Marshal(_ context.Context, val intRequest) ([]byte, error) {
 	str := strconv.FormatInt(int64(val), 10)
 	return []byte(str), nil
@@ -219,6 +231,22 @@ func (m *fakeStorageClientWithErrors) Reset() {
 	m.nextErrorIndex = 0
 }
 
+// failItemSetClient delegates to another client but fails Batches that set an
+// item key. It covers storage failures while re-enqueueing dispatched items.
+type failItemSetClient struct {
+	storage.Client
+	err error
+}
+
+func (c *failItemSetClient) Batch(ctx context.Context, ops ...*storage.Operation) error {
+	for _, op := range ops {
+		if op.Type == storage.Set && op.Key != metadataKey {
+			return c.err
+		}
+	}
+	return c.Client.Batch(ctx, ops...)
+}
+
 type fakeReferenceCounter struct {
 	mu  sync.Mutex
 	ref int64
@@ -336,6 +364,91 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 			require.NoError(t, pq.Shutdown(context.Background()))
 		})
 	}
+}
+
+func TestPersistentQueue_MarshalErrorDoesNotConsumeCapacity(t *testing.T) {
+	marshalErr := errors.New("marshal failed")
+	encoding := &toggleErrorEncoding{
+		int64Encoding: int64Encoding{},
+		marshalErr:    marshalErr,
+	}
+	set := newSettingsWithStorage(request.SizerTypeRequests, 1)
+	set.Encoding = encoding
+	pq := newPersistentQueue[intRequest](set).(*persistentQueue[intRequest])
+	pq.initClient(context.Background(), newFakeBoundedStorageClient(1024))
+
+	require.ErrorIs(t, pq.Offer(context.Background(), intRequest(10)), marshalErr)
+	assert.Zero(t, pq.Size())
+	assert.Zero(t, pq.metadata.WriteIndex)
+
+	encoding.marshalErr = nil
+	require.NoError(t, pq.Offer(context.Background(), intRequest(10)))
+	assert.EqualValues(t, 1, pq.Size())
+	assert.True(t, consume(pq, func(_ context.Context, val intRequest) error {
+		assert.Equal(t, intRequest(10), val)
+		return nil
+	}))
+	assert.Zero(t, pq.Size())
+	require.NoError(t, pq.Shutdown(context.Background()))
+}
+
+func TestPersistentQueue_EnqueueNotDispatchedMarshalError(t *testing.T) {
+	encoding := &toggleErrorEncoding{}
+	startQueue := func(ext storage.Extension) *persistentQueue[intRequest] {
+		set := newSettingsWithStorage(request.SizerTypeRequests, 1000)
+		set.Encoding = encoding
+		pq := newPersistentQueue[intRequest](set).(*persistentQueue[intRequest])
+		require.NoError(t, pq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{{}: ext})))
+		return pq
+	}
+
+	ext := storagetest.NewMockStorageExtension(nil)
+	pq := startQueue(ext)
+
+	require.NoError(t, pq.Offer(context.Background(), intRequest(10)))
+	// Dispatch the item without completing it, so it is restored on restart.
+	require.True(t, consume(pq, func(context.Context, intRequest) error {
+		return experr.NewShutdownErr(nil)
+	}))
+
+	// Fail marshaling while the dispatched item is re-enqueued on restart.
+	encoding.marshalErr = errors.New("marshal failed")
+	require.NoError(t, pq.Shutdown(context.Background()))
+
+	newPq := startQueue(ext)
+	assert.Zero(t, newPq.Size())
+	requireCurrentlyDispatchedItemsEqual(t, newPq, []uint64{})
+	require.NoError(t, newPq.Shutdown(context.Background()))
+}
+
+func TestPersistentQueue_EnqueueNotDispatchedPutInternalError(t *testing.T) {
+	encoding := &toggleErrorEncoding{}
+	newQueueWithClient := func(client storage.Client) *persistentQueue[intRequest] {
+		set := newSettingsWithStorage(request.SizerTypeRequests, 1000)
+		set.Encoding = encoding
+		pq := newPersistentQueue[intRequest](set).(*persistentQueue[intRequest])
+		pq.initClient(context.Background(), client)
+		return pq
+	}
+
+	stateClient := newFakeBoundedStorageClient(1024)
+	pq := newQueueWithClient(stateClient)
+
+	require.NoError(t, pq.Offer(context.Background(), intRequest(10)))
+	// Dispatch the item without completing it, so it is restored on restart.
+	require.True(t, consume(pq, func(context.Context, intRequest) error {
+		return experr.NewShutdownErr(nil)
+	}))
+	require.NoError(t, pq.Shutdown(context.Background()))
+
+	// Fail the Batch that re-enqueues the dispatched item on restart.
+	newPq := newQueueWithClient(&failItemSetClient{Client: stateClient, err: errors.New("put failed")})
+	// The failed re-enqueue leaves no item behind and clears the dispatched list.
+	bb, err := stateClient.Get(context.Background(), getItemKey(1))
+	require.NoError(t, err)
+	require.Nil(t, bb)
+	requireCurrentlyDispatchedItemsEqual(t, newPq, []uint64{})
+	require.NoError(t, newPq.Shutdown(context.Background()))
 }
 
 func TestPersistentQueue_Shutdown(t *testing.T) {

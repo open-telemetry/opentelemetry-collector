@@ -282,14 +282,19 @@ func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 		}
 	}
 
+	reqBuf, err := pq.encoding.Marshal(ctx, req)
+	if err != nil {
+		return err
+	}
+
 	pq.metadata.ItemsSize += pq.itemsSizer.Sizeof(req)
 	pq.metadata.BytesSize += pq.bytesSizer.Sizeof(req)
 
-	return pq.putInternal(ctx, req)
+	return pq.putInternal(ctx, reqBuf)
 }
 
-// putInternal adds the request to the storage without updating items/bytes sizes.
-func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
+// putInternal adds the already marshaled request to the storage without updating items/bytes sizes.
+func (pq *persistentQueue[T]) putInternal(ctx context.Context, reqBuf []byte) error {
 	pq.metadata.WriteIndex++
 
 	metadataBuf, err := proto.Marshal(&pq.metadata)
@@ -297,10 +302,6 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 		return err
 	}
 
-	reqBuf, err := pq.encoding.Marshal(ctx, req)
-	if err != nil {
-		return err
-	}
 	// Carry out a transaction where we both add the item and update the write index
 	ops := []*storage.Operation{
 		storage.SetOperation(metadataKey, metadataBuf),
@@ -483,7 +484,13 @@ func (pq *persistentQueue[T]) enqueueNotDispatchedReqs(ctx context.Context, disp
 			pq.logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))
 			continue
 		}
-		if pq.putInternal(reqCtx, req) != nil { //nolint:contextcheck
+		reqBuf, err := pq.encoding.Marshal(reqCtx, req) //nolint:contextcheck
+		if err != nil {
+			pq.logger.Warn("Failed marshaling item", zap.String(zapKey, op.Key), zap.Error(err))
+			errCount++
+			continue
+		}
+		if pq.putInternal(reqCtx, reqBuf) != nil { //nolint:contextcheck
 			errCount++
 		}
 	}
