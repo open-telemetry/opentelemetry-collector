@@ -36,8 +36,9 @@ const (
 )
 
 var (
-	errValueNotSet  = errors.New("value not set")
-	errInvalidValue = errors.New("invalid value")
+	errValueNotSet       = errors.New("value not set")
+	errInvalidValue      = errors.New("invalid value")
+	errQueueMetadataRead = errors.New("failed to read queue metadata")
 )
 
 var indexDonePool = sync.Pool{
@@ -118,7 +119,14 @@ func (pq *persistentQueue[T]) Start(ctx context.Context, host component.Host) er
 	if err != nil {
 		return err
 	}
-	pq.initClient(ctx, storageClient)
+	if err := pq.initClient(ctx, storageClient); err != nil {
+		if closeErr := storageClient.Close(ctx); closeErr != nil {
+			err = errors.Join(err, closeErr)
+		}
+		pq.client = nil
+		pq.refClient = 0
+		return err
+	}
 	return nil
 }
 
@@ -147,7 +155,7 @@ func (pq *persistentQueue[T]) Capacity() int64 {
 	return pq.capacity
 }
 
-func (pq *persistentQueue[T]) initClient(ctx context.Context, client storage.Client) {
+func (pq *persistentQueue[T]) initClient(ctx context.Context, client storage.Client) error {
 	pq.client = client
 	// Start with a reference 1 which is the reference we use for the producer goroutines and initialization.
 	pq.refClient = 1
@@ -158,6 +166,8 @@ func (pq *persistentQueue[T]) initClient(ctx context.Context, client storage.Cli
 	case err == nil:
 		pq.enqueueNotDispatchedReqs(ctx, pq.metadata.CurrentlyDispatchedItems)
 		pq.metadata.CurrentlyDispatchedItems = nil
+	case errors.Is(err, errQueueMetadataRead):
+		return err
 	case !errors.Is(err, errValueNotSet):
 		pq.logger.Error("Failed getting metadata, starting with new ones", zap.Error(err))
 		pq.metadata = PersistentMetadata{}
@@ -165,13 +175,14 @@ func (pq *persistentQueue[T]) initClient(ctx context.Context, client storage.Cli
 		pq.logger.Info("New queue metadata key not found, attempting to load legacy format.")
 		pq.loadLegacyMetadata(ctx)
 	}
+	return nil
 }
 
 // loadQueueMetadata loads queue metadata from the consolidated key
 func (pq *persistentQueue[T]) loadQueueMetadata(ctx context.Context) error {
 	buf, err := pq.client.Get(ctx, metadataKey)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w: %w", errQueueMetadataRead, err)
 	}
 
 	if len(buf) == 0 {
