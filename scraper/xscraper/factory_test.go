@@ -41,7 +41,6 @@ func TestNewFactory(t *testing.T) {
 }
 
 func TestNewFactoryWithOptions(t *testing.T) {
-	testType := component.MustNewType("test")
 	defaultCfg := struct{}{}
 	f := NewFactory(
 		testType,

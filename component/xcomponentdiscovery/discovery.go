@@ -23,6 +23,8 @@ type Rule struct {
 	// Endpoints holds the rule per endpoint type. Endpoint types without an
 	// entry are not matched.
 	Endpoints map[EndpointType]EndpointRule
+
+	_ struct{}
 }
 
 // EndpointRule is the discovery rule for a single endpoint type.
@@ -31,6 +33,8 @@ type EndpointRule struct {
 	// e.g. receiver_creator. The endpoint type check is implied by the map
 	// key and must not be part of the rule.
 	Rule string
+
+	_ struct{}
 }
 
 // IsEmpty returns true if the rule doesn't match any endpoint type.
