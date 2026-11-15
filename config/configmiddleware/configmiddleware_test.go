@@ -406,3 +406,15 @@ func TestConfig_GetListener(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckFeatureGate(t *testing.T) {
+	ctx := t.Context()
+	oldValue := metadata.PkgConfigmiddlewareCustomTCPRoutingFeatureGate.IsEnabled()
+	_ = featuregate.GlobalRegistry().Set(metadata.PkgConfigmiddlewareCustomTCPRoutingFeatureGate.ID(), false)
+	t.Cleanup(func() {
+		_ = featuregate.GlobalRegistry().Set(metadata.PkgConfigmiddlewareCustomTCPRoutingFeatureGate.ID(), oldValue)
+	})
+	var c Config
+	_, err := c.GetListener(ctx, nil)
+	require.Error(t, err, "foo")
+}
