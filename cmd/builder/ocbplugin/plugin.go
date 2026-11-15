@@ -11,9 +11,10 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"go.opentelemetry.io/collector/cmd/builder/ocbplugin/internal/helper"
 	"go.yaml.in/yaml/v3"
 	"golang.org/x/mod/semver"
+
+	"go.opentelemetry.io/collector/cmd/builder/ocbplugin/internal/helper"
 )
 
 // OCBPlugin defines the interface that plugins must implement.

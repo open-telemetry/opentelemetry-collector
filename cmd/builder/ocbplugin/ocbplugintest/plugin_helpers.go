@@ -12,9 +12,9 @@ import (
 // isn't invalid and can be effectively used in ocbplugin.RunPlugin.
 func IsValidOCBPlugin(plugin ocbplugin.OCBPlugin) error {
 	// The plugin must specify a valid MinOCBVersion semver string.
-	min := plugin.MinOCBVersion()
+	minVersion := plugin.MinOCBVersion()
 
-	if _, err := helper.NormalizeAndValidateSemver(min); err != nil {
+	if _, err := helper.NormalizeAndValidateSemver(minVersion); err != nil {
 		return err
 	}
 

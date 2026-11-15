@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/cmd/builder/ocbplugin/internal/helper"
 )
 
@@ -174,7 +175,7 @@ func TestRunPlugin_Invalid(t *testing.T) {
 			err := runPlugin(tt.plugin, inputFile)
 			require.Error(t, err)
 			if tt.wantErrIs != nil {
-				assert.ErrorIs(t, err, tt.wantErrIs)
+				require.ErrorIs(t, err, tt.wantErrIs)
 			}
 			if tt.wantErrMsg != "" {
 				assert.ErrorContains(t, err, tt.wantErrMsg)

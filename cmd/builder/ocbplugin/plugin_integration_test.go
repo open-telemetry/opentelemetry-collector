@@ -153,7 +153,7 @@ func TestRunPlugin_Subprocess(t *testing.T) {
 
 			stdout, stderr, err := runDummyPluginSubprocess(t, binPath, args...)
 
-			assert.NoError(t, tt.wantExitCode.ExecErrIsExitCode(err))
+			require.NoError(t, tt.wantExitCode.ExecErrIsExitCode(err))
 
 			assert.Contains(t, stderr, tt.wantStderr)
 			assert.Contains(t, stdout, tt.wantStdout)
