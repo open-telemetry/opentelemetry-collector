@@ -13,7 +13,7 @@ flowchart TD
     A --> |3| D("`**Collector.Run**
     Starts the collector and blocks until it shuts down`")
     D --> E("`**setupConfigurationComponents**`")
-    E -->  |1| F("`**getConfMap**`")
+    E -->  |1| F("`**ConfigProvider.getWithConf**`")
     E ---> |2| G("`**Service.New**
      Initializes telemetry, then initializes the pipelines`")
     E --> |3| Q("`**Service.Start**
@@ -24,8 +24,10 @@ flowchart TD
     `")
     Q --> R("`**Graph.StartAll**
     Calls Start on each component in reverse topological order`")
-    G --> H("`**initExtensionsAndPipeline**
-     Creates extensions and then builds the pipeline graph`")
+    G --> |1| H("`**Service.initGraph**
+     Builds the pipeline graph`")
+    G --> |2| X("`**Service.initExtensions**
+     Creates the extensions`")
     H --> I("`**Graph.Build**
      Converts the settings to an internal graph representation`")
     I --> |1| J("`**createNodes**
