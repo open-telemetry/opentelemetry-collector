@@ -38,8 +38,6 @@ type myType struct{}
 var _ ocbplugin.OCBPlugin = (*myType)(nil)
 
 func TestPluginValid(t *testing.T) {
-  if !ocbplugintest.IsValidOCBPlugin(&myType{}) {
-    t.Fatal("the myType plugin isn't valid")
-  }
+  require.NoError(t, ocbplugintest.IsValidOCBPlugin(&myType{}))
 }
 ```
