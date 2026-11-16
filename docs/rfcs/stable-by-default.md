@@ -11,6 +11,7 @@ This RFC addresses issue [#14064](https://github.com/open-telemetry/opentelemetr
    1. [OCB changes](#ocb-changes)
    2. [Collector CLI changes](#collector-cli-changes)
    3. [Policy changes](#policy-changes)
+   4. [Other changes](#other-changes)
 
 ## Problem statement
 
@@ -171,9 +172,6 @@ When the minimum feature gate stage is set to `stable`,
 whether that be through the distribution defaults or through the above flag,
 specifying `--feature-gates` will lead to an error on startup.
 
-[**Note:** This is probably the most controversial part of the proposal,
-so I welcome all feedback and alternative proposals.]
-
 This is to further incentivize the use of the "bundled" beta release channel,
 instead of cherry-picking Beta feature gates on top of a stable baseline.
 
@@ -209,3 +207,22 @@ which maintainers will need to enforce:
   - In particular, new keys may be added to a config struct in an experimental capacity;
     See [the section on experimental fields in our coding guidelines](../coding-guidelines.md#experimental-fields-on-stable-configuration-structs)
     for more detail.
+
+- Optional behavior which is not designed to become the default:
+  - SHOULD be implemented as a YAML config option if possible;
+  - SHOULD be implemented as a new CLI flag otherwise;
+  - MAY be implemented as an Alpha feature gate if it is meant to always remain experimental;
+  - MUST NOT be implemented as a feature gate otherwise.
+    (This avoids unnecessarily restricting the feature set available with `--channel=stable`.)
+
+### Other changes
+
+To apply the last policy change, maintainers and code owners will need to find
+cases of Alpha feature gates which gate "stable" behavior changes,
+and replace them by either a YAML config option, or a new CLI flag if not possible.
+
+A known example of this is [`confmap.enableMergeAppendOption`](https://github.com/open-telemetry/opentelemetry-collector/blob/main/confmap/internal/metadata/generated_feature_gates.go),
+which controls fundamental config parsing behavior, and thus cannot be implemented as a config option.
+
+This migration need not be completed before the distribution is marked stable;
+the option will simply be considered "experimental" until it is migrated.
