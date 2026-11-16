@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receiver/otlp
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Reject invalid UTF-8 in OTLP requests instead of forwarding invalid data downstream
+note: Add `receiver.otlp.rejectInvalidUTF8` feature gate to reject invalid UTF-8 in OTLP requests instead of forwarding invalid data downstream
 
 # One or more tracking issues or pull requests related to the change
 issues: [11449]
