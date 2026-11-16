@@ -73,8 +73,8 @@ func (*UnimplementedGRPCServer) Export(context.Context, ExportRequest) (ExportRe
 
 func (*UnimplementedGRPCServer) unexported() {}
 
-// RegisterGRPCServer registers the GRPCServer to the grpc.Server.
-func RegisterGRPCServer(s *grpc.Server, srv GRPCServer) {
+// RegisterGRPCServer registers the GRPCServer to the grpc.ServiceRegistrar.
+func RegisterGRPCServer(s grpc.ServiceRegistrar, srv GRPCServer) {
 	otelgrpc.RegisterTraceServiceServer(s, &rawTracesServer{srv: srv})
 }
 
