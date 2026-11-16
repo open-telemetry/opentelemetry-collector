@@ -350,6 +350,36 @@ func TestNonExistent(t *testing.T) {
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
 
+func TestRetrieveErrorsRedactPassword(t *testing.T) {
+	const password = "secret-password"
+	fp := New(HTTPScheme, confmaptest.NewNopProviderSettings())
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer ts.Close()
+	u, err := url.Parse(ts.URL)
+	require.NoError(t, err)
+	u.User = url.UserPassword("user", password)
+
+	// status code other than 200
+	_, err = fp.Retrieve(context.Background(), u.String(), nil)
+	require.ErrorContains(t, err, "user:xxxxx@")
+	assert.NotContains(t, err.Error(), password)
+
+	// transport error
+	ts.Close()
+	_, err = fp.Retrieve(context.Background(), u.String(), nil)
+	require.ErrorContains(t, err, "user:xxxxx@")
+	assert.NotContains(t, err.Error(), password)
+
+	// uri that does not parse
+	_, err = fp.Retrieve(context.Background(), "http://user:"+password+"@{}/", nil)
+	require.ErrorContains(t, err, "invalid uri")
+	assert.NotContains(t, err.Error(), password)
+
+	require.NoError(t, fp.Shutdown(context.Background()))
+}
+
 func TestInvalidYAML(t *testing.T) {
 	fp := New(HTTPScheme, confmaptest.NewNopProviderSettings())
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
