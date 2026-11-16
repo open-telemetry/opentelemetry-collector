@@ -124,7 +124,7 @@ in the first distro release which marks it as `Deprecated`,
 we take the conservative approach of always enabling `Deprecated` and `Unmaintained` components,
 as is the current status quo.
 
-This could lead to bizarre situations where a `Development` component which has been abandonned
+This could lead to bizarre situations where a `Development` component which has been abandoned
 suddenly becomes available by default,
 but paired with visible warnings in logs from the use of a deprecated components,
 we deem this an acceptable compromise.
@@ -169,7 +169,7 @@ in order to keep Collector configuration as simple as possible.
 
 When the minimum feature gate stage is set to `stable`,
 whether that be through the distribution defaults or through the above flag,
-specifing `--feature-gates` will lead to an error on startup.
+specifying `--feature-gates` will lead to an error on startup.
 
 [**Note:** This is probably the most controversial part of the proposal,
 so I welcome all feedback and alternative proposals.]
