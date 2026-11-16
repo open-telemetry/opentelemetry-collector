@@ -86,7 +86,7 @@ the Collector builder (OCB), and `mdatagen`.
 However, the ultimate decision on which stability level to guarantee by default will be left to distribution maintainers.
 
 We aim to make the Core and OTLP distributions default to stable features only as part of their v1 release.
-Other distributions maintained by the Collector SIG may follow suit, but this is left as a future decision. 
+Other distributions maintained by the Collector SIG may follow suit, but this is left as a future decision.
 
 ## Proposed solution
 
@@ -143,7 +143,7 @@ meant to be enabled only in certain circumstances.
 They are not necessarily meant to represent "the future defaults of the Collector",
 and enabling all of them at once could have unpredictable consequences.
 
-Additionally, `deprecated` feature gates simply cannot be enabled by end users currently. 
+Additionally, `deprecated` feature gates simply cannot be enabled by end users currently.
 
 As such, we choose to exclude both values for this field:
 the only valid values will be `beta` and `stable`.
@@ -209,5 +209,4 @@ which maintainers will need to enforce:
   - Such feature gates MAY be migrated to Stable in a minor release.
   - In particular, new keys may be added to a config struct in an experimental capacity;
     See [the section on experimental fields in our coding guidelines](../coding-guidelines.md#experimental-fields-on-stable-configuration-structs)
-    for more detail. 
-    
+    for more detail.
