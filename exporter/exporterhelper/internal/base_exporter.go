@@ -57,6 +57,9 @@ type BaseExporter struct {
 	obsMetricsShutdown func()
 	timeoutCfg         TimeoutConfig
 	retryCfg           configretry.BackOffConfig
+	// hasExporterObsMetrics is true when obsMetrics are the exporter metrics created by
+	// NewBaseExporter, and false when they were set with WithObsMetrics.
+	hasExporterObsMetrics bool
 
 	queueBatchSettings queuebatch.Settings[request.Request]
 	queueCfg           configoptional.Optional[queuebatch.Config]
@@ -80,6 +83,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 			return nil, err
 		}
 		be.obsMetrics = &obsMetrics
+		be.hasExporterObsMetrics = true
 	}
 	be.obsMetricsShutdown = sync.OnceFunc(be.obsMetrics.Shutdown)
 
@@ -154,8 +158,12 @@ func (be *BaseExporter) Start(ctx context.Context, host component.Host) error {
 	}
 
 	// Record send_failed once with a value of 0, so the series exists from startup,
-	// before the first send. Failed sends add to it later with the error attributes.
-	be.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricSendFailure, 0)
+	// before the first send. Failed sends are recorded later with the error attributes.
+	// Only for the exporter metrics: a recorder set with WithObsMetrics reports other
+	// metrics (the queue batch processor's, for example), so it does not get the 0.
+	if be.hasExporterObsMetrics {
+		be.obsMetrics.RecordInt(ctx, queuebatchtelemetry.MetricSendFailure, 0)
+	}
 
 	// Last start the QueueBatch.
 	if be.QueueSender != nil {

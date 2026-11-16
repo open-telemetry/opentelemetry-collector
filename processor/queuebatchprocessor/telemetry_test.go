@@ -74,6 +74,8 @@ func TestProcessorMetrics(t *testing.T) {
 
 	_, err = tt.GetMetric("otelcol_exporter_sent_spans")
 	require.Error(t, err)
+	_, err = tt.GetMetric("otelcol_processor_queuebatch_send_failed_items")
+	require.Error(t, err, "no send failed, so send_failed_items must not be reported")
 	require.NoError(t, p.Shutdown(context.Background()))
 	_, err = tt.GetMetric("otelcol_processor_queuebatch_queue_size")
 	require.Error(t, err, "shutdown must unregister queue observers")

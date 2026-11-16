@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.opentelemetry.io/otel/trace/noop"
@@ -27,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	queuebatchtelemetry "go.opentelemetry.io/collector/internal/telemetry/queuebatch"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
@@ -226,6 +228,25 @@ func TestBaseExporterStartRecordsZeroSendFailed(t *testing.T) {
 			tc.assertFailed(t, tt, want, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 		})
 	}
+}
+
+func TestBaseExporterStartSkipsZeroSendFailedForInjectedObsMetrics(t *testing.T) {
+	var recorded []queuebatchtelemetry.Metric
+	obsMetrics := ObsMetrics{
+		RecordIntFunc: func(_ context.Context, m queuebatchtelemetry.Metric, _ int64, _ ...metric.AddOption) {
+			recorded = append(recorded, m)
+		},
+	}
+
+	be, err := NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
+		WithObsMetrics(obsMetrics))
+	require.NoError(t, err)
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, be.Shutdown(context.Background())) })
+
+	// The startup 0 is only for the exporter's own send_failed metrics. A recorder set with
+	// WithObsMetrics (the queue batch processor, for example) does not get it.
+	require.NotContains(t, recorded, queuebatchtelemetry.MetricSendFailure)
 }
 
 func TestWithQueue_MetadataKeys(t *testing.T) {
