@@ -43,8 +43,10 @@ var errInvalidImport = errors.New("invalid import path for module")
 // errInvalidName indicates a name field that is not a valid Go identifier.
 var errInvalidName = errors.New("invalid name for module")
 
-// errInvalidDistName indicates a dist.name that contains control characters.
-var errInvalidDistName = errors.New("invalid dist.name")
+// errInvalidDistName indicates a dist.name that is not a plain file name: it contains control
+// characters or path elements. The name is handed to "go build -o", which resolves it against
+// dist.output_path, so a path would write the binary outside of it.
+var errInvalidDistName = errors.New("invalid dist.name, it must be a plain file name")
 
 // errInvalidDistModule indicates a dist.module that is not a valid module path.
 var errInvalidDistModule = errors.New("invalid dist.module")
@@ -373,10 +375,11 @@ func (c *Config) allComponents() []Module {
 
 // validateDistribution ensures the dist values that are not written as quoted
 // Go strings are safe: dist.name is also written to a comment above the package
-// clause, and dist.module is the go.mod module line.
+// clause and is the "go build -o" argument, so it must be a plain file name written
+// directly inside dist.output_path, and dist.module is the go.mod module line.
 func validateDistribution(dist Distribution) error {
 	var errs error
-	if strings.ContainsFunc(dist.Name, unicode.IsControl) {
+	if dist.Name == "." || dist.Name == ".." || strings.ContainsAny(dist.Name, `/\`) || strings.ContainsFunc(dist.Name, unicode.IsControl) {
 		errs = multierr.Append(errs, fmt.Errorf("%w: %q", errInvalidDistName, dist.Name))
 	}
 	if dist.Module != "" {
