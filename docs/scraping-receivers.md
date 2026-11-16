@@ -18,6 +18,11 @@ receivers:
 This document covers built-in scraping metrics receivers. It defines which metrics these receivers can emit,
 defines stability guarantees and provides guidelines for metric updates.
 
+## Configuring scraping interval
+
+For new scraping metrics receivers that may execute queries against a database to collect metrics, the default scraping
+interval should be set to 60 seconds. This applies to both generic and built-in scraping metrics receivers.
+
 ## Defining emitted metrics
 
 Each built-in scraping metrics receiver has a `metadata.yaml` file that MUST define all the metrics emitted by the
