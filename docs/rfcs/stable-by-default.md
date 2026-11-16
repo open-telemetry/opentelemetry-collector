@@ -188,16 +188,15 @@ To make these changes useful, I propose the following changes to
 (or clarifications of) our coding guidelines and stability policy,
 which maintainers will need to enforce:
 
-- All changes in existing behavior after a component is Stable MUST be gated by an Alpha or Beta feature gate.
+- Changes to intended behavior after a component is Stable MUST be gated by an Alpha or Beta feature gate.
   - While such feature gates can be migrated from Alpha to Beta at any time,
     migration to Stable MUST take place during a major release
     of the component.
   - For Collector distributions maintained by the Collector SIG,
     this must also correspond to a major release of the distribution.
 
-- Changes in behavior which are deemed to be bug fixes
-  MAY be released in a minor or patch release of the component without a feature gate.
-  - However, if it seems that a significant fraction of users may rely on the buggy behavior,
+- Bug fixes MAY be released without a feature gate.
+  - However, if it seems that a significant fraction of users may rely on the existing buggy behavior,
     it is RECOMMENDED to place these bug fixes under a feature gate.
   - In that case, migration to Stable SHOULD wait until a major release.
 
