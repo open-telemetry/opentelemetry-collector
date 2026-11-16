@@ -13,11 +13,15 @@ import (
 	"net/url"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/status"
+	grpcstatus "google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -229,7 +233,7 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 	if respStatus != nil {
 		errString = fmt.Sprintf(
 			"error exporting items, request to %s responded with HTTP Status Code %d, Message=%s, Details=%v",
-			destURL, resp.StatusCode, respStatus.Message, respStatus.Details,
+			destURL, resp.StatusCode, respStatus.Message, formatStatusDetails(respStatus.Details),
 		)
 	} else {
 		errString = fmt.Sprintf(
@@ -266,6 +270,26 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 		}
 	}
 	return formattedErr
+}
+
+// formatStatusDetails formats the details of a status returned by the server as %v would, within bounds.
+// %v uses prototext's Format, which is meant for trusted messages: it decodes every google.protobuf.Any
+// recursively without a depth limit, keeping a copy of the nested bytes at each level, and it prints
+// unknown fields in time quadratic in the nesting depth of groups. Here the details are bounded by
+// statusutil.BoundDetails, which keeps what is within its limits and reduces the rest to its type, and
+// unknown fields are omitted.
+func formatStatusDetails(details []*anypb.Any) string {
+	bounded := statusutil.BoundDetails(grpcstatus.FromProto(&status.Status{Details: details}))
+	opts := prototext.MarshalOptions{AllowPartial: true}
+	formatted := make([]string, 0, len(details))
+	for _, detail := range bounded.Proto().GetDetails() {
+		text, err := opts.Marshal(detail)
+		if err != nil {
+			text = []byte(detail.GetTypeUrl())
+		}
+		formatted = append(formatted, string(text))
+	}
+	return "[" + strings.Join(formatted, " ") + "]"
 }
 
 // Determine if the status code is retryable according to the specification.

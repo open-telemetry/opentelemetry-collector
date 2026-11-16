@@ -33,9 +33,13 @@ receivers:
 extensions:
   memory_limiter:
     check_interval: 1s
-    limit_percentage: 1
-    spike_limit_percentage: 0.05
+    limit_percentage: 80
+    spike_limit_percentage: 15
 ```
+
+`limit_percentage` and `spike_limit_percentage` are whole-number percentages
+of the total memory, not fractions: `limit_percentage: 1` is one percent, and
+a `spike_limit_percentage` of `0` leaves the spike limit at 20% of the limit.
 
 otelcol_memorylimiter_refused_requests: Number of requests refused by the memory limiter extension (Attributes: transport="http" or transport="grpc").
 

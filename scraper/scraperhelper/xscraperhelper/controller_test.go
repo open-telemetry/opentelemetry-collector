@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
@@ -168,7 +169,9 @@ func TestProfilesScrapeController(t *testing.T) {
 				}
 
 				spans := tel.SpanRecorder.Ended()
+				assertProfilesReceiverSpan(t, spans)
 				testhelper.AssertScraperSpan(t, test.scrapeErr, spans, "scraper/scraper/ScrapeProfiles")
+				assertProfilesReceiverObsMetrics(t, tel, sink)
 				assertProfilesScraperObsMetrics(t, tel, receiverID, component.MustNewID("scraper"), test.scrapeErr, sink)
 			}
 
@@ -368,6 +371,31 @@ func TestProfilesScraperShutdownBeforeScrapeCanStart(t *testing.T) {
 		require.Fail(t, "shutdown should not wait for scraping")
 	case <-shutdown:
 	}
+}
+
+func assertProfilesReceiverSpan(t *testing.T, spans []sdktrace.ReadOnlySpan) {
+	receiverSpan := false
+	for _, span := range spans {
+		if span.Name() == "receiver/receiver/ProfilesReceived" {
+			receiverSpan = true
+			break
+		}
+	}
+	assert.True(t, receiverSpan)
+}
+
+func assertProfilesReceiverObsMetrics(t *testing.T, tel *componenttest.Telemetry, sink *consumertest.ProfilesSink) {
+	// The sink accepts every consumed profile, so the receiver reports all of
+	// them as accepted, whatever the scrapers returned.
+	m, err := tel.GetMetric("otelcol_receiver_accepted_profile_samples")
+	require.NoError(t, err)
+	sum, ok := m.Data.(metricdata.Sum[int64])
+	require.True(t, ok)
+	var accepted int64
+	for _, dp := range sum.DataPoints {
+		accepted += dp.Value
+	}
+	assert.Equal(t, int64(sink.SampleCount()), accepted)
 }
 
 func assertProfilesScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry, receiver, scraper component.ID, expectedErr error, sink *consumertest.ProfilesSink) {

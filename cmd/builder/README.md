@@ -154,7 +154,7 @@ Optionally, a list of `go mod` replace entries can be provided, in case custom o
 ```yaml
 dist:
     module: github.com/open-telemetry/opentelemetry-collector # the module name for the new distribution, following Go mod conventions. Optional, but recommended.
-    name: otelcol-custom # the binary name. Optional.
+    name: otelcol-custom # the binary name, a plain file name without path separators. Optional.
     description: "Custom OpenTelemetry Collector distribution" # a long name for the application. Optional.
     output_path: /tmp/otelcol-distributionNNN # the path to write the output (sources and binary). Optional.
     version: "1.0.0" # the version for your custom OpenTelemetry Collector. Optional.
