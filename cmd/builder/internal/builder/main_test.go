@@ -87,6 +87,7 @@ var replaceModules = []string{
 	"/extension/extensionmiddleware",
 	"/extension/extensionmiddleware/extensionmiddlewaretest",
 	"/extension/extensiontest",
+	"/extension/h2cextension",
 	"/extension/zpagesextension",
 	"/extension/xextension",
 	"/featuregate",
@@ -506,6 +507,9 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 	}, usedNames)
 	require.NoError(t, err)
 	cfg.Extensions, err = cfg.parseModules([]Module{
+		{
+			GoMod: "go.opentelemetry.io/collector/extension/h2cextension v1.9999.9999",
+		},
 		{
 			GoMod: "go.opentelemetry.io/collector/extension/zpagesextension v1.9999.9999",
 		},
