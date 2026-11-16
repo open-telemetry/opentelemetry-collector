@@ -2,6 +2,16 @@
 
 This RFC addresses issue [#14064](https://github.com/open-telemetry/opentelemetry-collector/issues/14064).
 
+**Contents**
+1. [Problem statement](#problem-statement)
+2. [Scope](#scope)
+   1. [What will be stable](#what-will-be-stable)
+   2. [Where will it be stable](#where-will-it-be-stable)
+3. [Proposed solution](#proposed-solution)
+   1. [OCB changes](#ocb-changes)
+   2. [Collector CLI changes](#collector-cli-changes)
+   3. [Policy changes](#policy-changes)
+
 ## Problem statement
 
 Feedback that the Collector SIG has received over the years,
@@ -29,9 +39,9 @@ in other words, provide a simple way to experiment with the future state of the 
 instead of enabling experimental features on a case-by-case basis,
 as is currently the case with feature gates.
 
-## Context
+## Scope
 
-### What
+### What will be stable
 
 We distinguish two broad scopes of Collector features:
 - Collector components;
@@ -68,7 +78,7 @@ New features within a component are often controlled by a [feature gate](../../f
 The life cycle of a component or feature gate usually goes through the levels in order,
 with the exception of "Deprecated" and "Unmaintained", which are separate from the rest of the stability ladder.
 
-### Where
+### Where will it be stable
 
 The mechanisms for controlling stability will be built into the Collector service,
 the Collector builder (OCB), and `mdatagen`.
@@ -80,7 +90,7 @@ Other distributions maintained by the Collector SIG may follow suit, but this is
 
 ## Proposed solution
 
-### OCB
+### OCB changes
 
 We propose that OCB introduce a new optional `dist::default_stability` section to its distribution manifest format,
 with the following default values:
@@ -142,7 +152,7 @@ OCB's generated code would pass this field to
 the `otelcol` runtime package via a new field in `otelcol.CollectorSettings`,
 where it would then be passed to the `featuregate` package ahead of command line argument parsing.
 
-### Collector CLI
+### Collector CLI changes
 
 We propose that the Collector binary take a new optional command-line flag,
 which allows relaxing or tightening the above defaults:
@@ -161,6 +171,9 @@ When the minimum feature gate stage is set to `stable`,
 whether that be through the distribution defaults or through the above flag,
 specifing `--feature-gates` will lead to an error on startup.
 
+[**Note:** This is probably the most controversial part of the proposal,
+so I welcome all feedback and alternative proposals.]
+
 This is to further incentivize the use of the "bundled" beta release channel,
 instead of cherry-picking Beta feature gates on top of a stable baseline.
 
@@ -168,3 +181,33 @@ When the release channel is set to beta or below however,
 enabling alpha feature gates (for further experimentation)
 and disabling beta feature gates (as a workaround if they cause issues)
 would still be available in the usual way.
+
+### Policy changes
+
+To make these changes useful, I propose the following changes to
+(or clarifications of) our coding guidelines and stability policy,
+which maintainers will need to enforce:
+
+- All changes in existing behavior after a component is Stable MUST be gated by an Alpha or Beta feature gate.
+  - While such feature gates can be migrated from Alpha to Beta at any time,
+    migration to Stable MUST take place during a major release
+    of the component.
+  - For Collector distributions maintained by the Collector SIG,
+    this must also correspond to a major release of the distribution.
+
+- Changes in behavior which are deemed to be bug fixes
+  MAY be released in a minor or patch release of the component without a feature gate.
+  - However, if it seems that a significant fraction of users may rely on the buggy behavior,
+    it is RECOMMENDED to place these bug fixes under a feature gate.
+  - In that case, migration to Stable SHOULD wait until a major release.
+
+- New features which must be explicitly enabled to take effect (e.g. a new configuration option)
+  MAY initially be released in a minor version of the component without a feature gate.
+  - However, in that case, their behavior in that release will immediately be considered stable.
+  - To preserve some flexibility after the initial implementation, it is thus RECOMMENDED
+    to place new features with some degree of complexity under a feature gate.
+  - Such feature gates MAY be migrated to Stable in a minor release.
+  - In particular, new keys may be added to a config struct in an experimental capacity;
+    See [the section on experimental fields in our coding guidelines](coding-guidelines.md#experimental-fields-on-stable-configuration-structs)
+    for more detail. 
+    
