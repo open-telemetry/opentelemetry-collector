@@ -6,6 +6,8 @@ package graph
 import (
 	"context"
 	"errors"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/pipeline"
@@ -52,6 +55,7 @@ const tagAttribute = "processors"
 type tagProcessor struct {
 	tag              string
 	nextTraces       consumer.Traces
+	nextMetrics      consumer.Metrics
 	nextLogs         consumer.Logs
 	started, stopped bool
 }
@@ -64,24 +68,31 @@ func (*tagProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
-func (p *tagProcessor) tagResource(attrs pcommon.Map) {
+func appendTag(attrs pcommon.Map, tag string) {
 	if v, ok := attrs.Get(tagAttribute); ok {
-		v.Slice().AppendEmpty().SetStr(p.tag)
+		v.Slice().AppendEmpty().SetStr(tag)
 		return
 	}
-	attrs.PutEmptySlice(tagAttribute).AppendEmpty().SetStr(p.tag)
+	attrs.PutEmptySlice(tagAttribute).AppendEmpty().SetStr(tag)
 }
 
 func (p *tagProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	for _, rs := range td.ResourceSpans().All() {
-		p.tagResource(rs.Resource().Attributes())
+		appendTag(rs.Resource().Attributes(), p.tag)
 	}
 	return p.nextTraces.ConsumeTraces(ctx, td)
 }
 
+func (p *tagProcessor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	for _, rm := range md.ResourceMetrics().All() {
+		appendTag(rm.Resource().Attributes(), p.tag)
+	}
+	return p.nextMetrics.ConsumeMetrics(ctx, md)
+}
+
 func (p *tagProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	for _, rl := range ld.ResourceLogs().All() {
-		p.tagResource(rl.Resource().Attributes())
+		appendTag(rl.Resource().Attributes(), p.tag)
 	}
 	return p.nextLogs.ConsumeLogs(ctx, ld)
 }
@@ -90,6 +101,9 @@ var tagProcessorFactory = processor.NewFactory(testcomponents.ExampleProcessorFa
 	func() component.Config { return &struct{ _ int }{} },
 	processor.WithTraces(func(_ context.Context, set processor.Settings, _ component.Config, next consumer.Traces) (processor.Traces, error) {
 		return &tagProcessor{tag: set.ID.Name(), nextTraces: next}, nil
+	}, component.StabilityLevelDevelopment),
+	processor.WithMetrics(func(_ context.Context, set processor.Settings, _ component.Config, next consumer.Metrics) (processor.Metrics, error) {
+		return &tagProcessor{tag: set.ID.Name(), nextMetrics: next}, nil
 	}, component.StabilityLevelDevelopment),
 	processor.WithLogs(func(_ context.Context, set processor.Settings, _ component.Config, next consumer.Logs) (processor.Logs, error) {
 		return &tagProcessor{tag: set.ID.Name(), nextLogs: next}, nil
@@ -158,6 +172,11 @@ func processorTestPipelines(traces, logs []component.ID) pipelines.Config {
 
 func buildProcessorTestGraph(t *testing.T, pipelineCfgs pipelines.Config, connCfgs map[component.ID]component.Config) (*Graph, *Host, Settings) {
 	t.Helper()
+	return buildProcessorTestGraphWith(t, pipelineCfgs, connCfgs, builders.NewProcessor(testProcessorCfgs(), testProcessorFactories))
+}
+
+func buildProcessorTestGraphWith(t *testing.T, pipelineCfgs pipelines.Config, connCfgs map[component.ID]component.Config, procBuilder *builders.ProcessorBuilder) (*Graph, *Host, Settings) {
+	t.Helper()
 	connFactories := map[component.Type]connector.Factory{}
 	if len(connCfgs) > 0 {
 		connFactories[testcomponents.ExampleConnectorFactory.Type()] = testcomponents.ExampleConnectorFactory
@@ -166,7 +185,7 @@ func buildProcessorTestGraph(t *testing.T, pipelineCfgs pipelines.Config, connCf
 		Telemetry:        componenttest.NewNopTelemetrySettings(),
 		BuildInfo:        component.NewDefaultBuildInfo(),
 		ReceiverBuilder:  builders.NewReceiver(testReceiverCfgs(), processorTestReceiverFactories),
-		ProcessorBuilder: builders.NewProcessor(testProcessorCfgs(), testProcessorFactories),
+		ProcessorBuilder: procBuilder,
 		ExporterBuilder: builders.NewExporter(
 			map[component.ID]component.Config{
 				component.MustNewID("exampleexporter"): testcomponents.ExampleExporterFactory.CreateDefaultConfig(),
@@ -697,4 +716,277 @@ func TestUpdate_ProcessorChangeRebuildsSharedReceiverForAllSignals(t *testing.T)
 	require.NoError(t, rebuilt.ConsumeTraces(context.Background(), testdata.GenerateTraces(1)))
 	require.NoError(t, rebuilt.ConsumeMetrics(context.Background(), testdata.GenerateMetrics(1)))
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+}
+
+// sharedProcessorConfig is the key under which the shared processor factory
+// keeps one backend for every pipeline, the way a processor built on
+// internal/sharedcomponent shares one backend between the pipelines that use it.
+type sharedProcessorConfig struct{ id string }
+
+// sharedProcessorBackend starts and stops once, however many pipeline
+// processors call Start and Shutdown, and is dropped from the registry when it
+// is stopped, like internal/sharedcomponent.
+type sharedProcessorBackend struct {
+	startOnce, stopOnce sync.Once
+	started, stopped    atomic.Bool
+	onShutdown          func()
+}
+
+func (b *sharedProcessorBackend) start() { b.startOnce.Do(func() { b.started.Store(true) }) }
+func (b *sharedProcessorBackend) stop() {
+	b.stopOnce.Do(func() {
+		b.stopped.Store(true)
+		b.onShutdown()
+	})
+}
+
+// sharedProcessor is the per-pipeline processor over a shared backend. It
+// rejects data once the backend is stopped.
+type sharedProcessor struct {
+	backend    *sharedProcessorBackend
+	nextTraces consumer.Traces
+	nextLogs   consumer.Logs
+}
+
+func (p *sharedProcessor) Start(context.Context, component.Host) error {
+	p.backend.start()
+	return nil
+}
+
+func (p *sharedProcessor) Shutdown(context.Context) error {
+	p.backend.stop()
+	return nil
+}
+
+func (*sharedProcessor) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: true}
+}
+
+func (p *sharedProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	if p.backend.stopped.Load() {
+		return errors.New("shared processor is stopped")
+	}
+	for _, rs := range td.ResourceSpans().All() {
+		appendTag(rs.Resource().Attributes(), sharedProcessorTag)
+	}
+	return p.nextTraces.ConsumeTraces(ctx, td)
+}
+
+func (p *sharedProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	if p.backend.stopped.Load() {
+		return errors.New("shared processor is stopped")
+	}
+	for _, rl := range ld.ResourceLogs().All() {
+		appendTag(rl.Resource().Attributes(), sharedProcessorTag)
+	}
+	return p.nextLogs.ConsumeLogs(ctx, ld)
+}
+
+const sharedProcessorTag = "shared"
+
+var sharedProcessorType = component.MustNewType("sharedprocessor")
+
+// newSharedProcessorFactory returns a processor factory that hands one backend
+// per config to every pipeline, and records every backend it created.
+func newSharedProcessorFactory(backends *[]*sharedProcessorBackend) processor.Factory {
+	registry := map[*sharedProcessorConfig]*sharedProcessorBackend{}
+	loadOrStore := func(cfg component.Config) *sharedProcessorBackend {
+		key := cfg.(*sharedProcessorConfig)
+		if b, ok := registry[key]; ok {
+			return b
+		}
+		b := &sharedProcessorBackend{onShutdown: func() { delete(registry, key) }}
+		registry[key] = b
+		*backends = append(*backends, b)
+		return b
+	}
+	return processor.NewFactory(sharedProcessorType,
+		func() component.Config { return &sharedProcessorConfig{} },
+		processor.WithTraces(func(_ context.Context, _ processor.Settings, cfg component.Config, next consumer.Traces) (processor.Traces, error) {
+			return &sharedProcessor{backend: loadOrStore(cfg), nextTraces: next}, nil
+		}, component.StabilityLevelDevelopment),
+		processor.WithLogs(func(_ context.Context, _ processor.Settings, cfg component.Config, next consumer.Logs) (processor.Logs, error) {
+			return &sharedProcessor{backend: loadOrStore(cfg), nextLogs: next}, nil
+		}, component.StabilityLevelDevelopment),
+	)
+}
+
+// logsProcessedBy is processedBy for logs.
+func logsProcessedBy(t *testing.T, pg *Graph) ([]string, error) {
+	t.Helper()
+	var exp *testcomponents.ExampleExporter
+	for _, e := range pg.GetExporters()[pipeline.SignalLogs] {
+		exp = e.(*testcomponents.ExampleExporter)
+	}
+	before := len(exp.Logs)
+	if err := receiverComponent(pg, logsID).logs.ConsumeLogs(context.Background(), testdata.GenerateLogs(1)); err != nil {
+		return nil, err
+	}
+	require.Len(t, exp.Logs, before+1)
+
+	v, ok := exp.Logs[before].ResourceLogs().At(0).Resource().Attributes().Get(tagAttribute)
+	if !ok {
+		return nil, nil
+	}
+	var names []string
+	for _, e := range v.Slice().All() {
+		names = append(names, e.Str())
+	}
+	return names, nil
+}
+
+// A processor can share one backend across pipelines of different signals.
+// Replacing it in one pipeline stops that backend for all of them, so the
+// other pipelines must replace it too.
+func TestUpdate_ProcessorSharingBackendAcrossSignals(t *testing.T) {
+	sharedID := component.MustNewID("sharedprocessor")
+	build := func(t *testing.T) (*Graph, *Host, Settings, *[]*sharedProcessorBackend, map[component.Type]processor.Factory) {
+		var backends []*sharedProcessorBackend
+		factories := map[component.Type]processor.Factory{
+			sharedProcessorType:        newSharedProcessorFactory(&backends),
+			tagProcessorFactory.Type(): tagProcessorFactory,
+		}
+		cfgs := testProcessorCfgs()
+		cfgs[sharedID] = &sharedProcessorConfig{id: "v1"}
+		cfg := pipelines.Config{
+			tracesID: {
+				Receivers:  []component.ID{testReceiverID},
+				Processors: []component.ID{sharedID, procB},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+			logsID: {
+				Receivers:  []component.ID{testReceiverID},
+				Processors: []component.ID{sharedID},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+		pg, host, set := buildProcessorTestGraphWith(t, cfg, nil, builders.NewProcessor(cfgs, factories))
+		require.Len(t, backends, 1, "one backend serves both pipelines")
+		return pg, host, set, &backends, factories
+	}
+	update := func(t *testing.T, pg *Graph, host *Host, set Settings, factories map[component.Type]processor.Factory, cfg pipelines.Config) {
+		t.Helper()
+		// A reload decodes fresh configs.
+		cfgs := testProcessorCfgs()
+		cfgs[sharedID] = &sharedProcessorConfig{id: "v2"}
+		set.PipelineConfigs = cfg
+		applied, err := pg.Update(context.Background(), set, UpdateRequest{
+			NewProcessorCfgs:   cfgs,
+			ProcessorFactories: factories,
+			NewReceiverCfgs:    testReceiverCfgs(),
+			ReceiverFactories:  processorTestReceiverFactories,
+		}, host)
+		require.NoError(t, err)
+		require.True(t, applied)
+	}
+	pipelinesWith := func(traces []component.ID) pipelines.Config {
+		return pipelines.Config{
+			tracesID: {
+				Receivers:  []component.ID{testReceiverID},
+				Processors: traces,
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+			logsID: {
+				Receivers:  []component.ID{testReceiverID},
+				Processors: []component.ID{sharedID},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+	}
+
+	t.Run("replaced_upstream_of_a_changed_processor", func(t *testing.T) {
+		pg, host, set, backends, factories := build(t)
+
+		// Only the last processor of traces changes, which replaces the shared
+		// processor upstream of it.
+		update(t, pg, host, set, factories, pipelinesWith([]component.ID{sharedID, procC}))
+
+		assert.True(t, (*backends)[0].stopped.Load())
+		require.Len(t, *backends, 2)
+		assert.False(t, (*backends)[1].stopped.Load())
+
+		assert.Equal(t, []string{sharedProcessorTag, "c"}, processedBy(t, pg, receiverComponent(pg, tracesID).traces))
+		logs, err := logsProcessedBy(t, pg)
+		require.NoError(t, err, "the logs pipeline must not keep the stopped backend")
+		assert.Equal(t, []string{sharedProcessorTag}, logs)
+	})
+
+	t.Run("removed_from_one_pipeline", func(t *testing.T) {
+		pg, host, set, backends, factories := build(t)
+
+		update(t, pg, host, set, factories, pipelinesWith([]component.ID{procB}))
+
+		assert.True(t, (*backends)[0].stopped.Load())
+		assert.Equal(t, []string{"b"}, processedBy(t, pg, receiverComponent(pg, tracesID).traces))
+		logs, err := logsProcessedBy(t, pg)
+		require.NoError(t, err, "the logs pipeline must not keep the stopped backend")
+		assert.Equal(t, []string{sharedProcessorTag}, logs)
+	})
+}
+
+// Processors with the same ID in other pipelines are replaced too, since the
+// graph cannot tell whether they share an instance, and so are the processors
+// upstream of them.
+func TestUpdate_ReplacesProcessorsWithSameIDInOtherPipelines(t *testing.T) {
+	pipelinesFor := func(traces, logs []component.ID) pipelines.Config {
+		return pipelines.Config{
+			tracesID: {
+				Receivers:  []component.ID{testReceiverID},
+				Processors: traces,
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+			logsID: {
+				Receivers:  []component.ID{testReceiverID},
+				Processors: logs,
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+	}
+
+	t.Run("same_id", func(t *testing.T) {
+		pg, host, set := buildProcessorTestGraph(t, pipelinesFor([]component.ID{procA}, []component.ID{procA}), nil)
+		oldLogs := processorComponents(pg, logsID)[0]
+
+		applied, err := updateProcessors(t, pg, host, set, pipelinesFor(nil, []component.ID{procA}))
+		require.NoError(t, err)
+		require.True(t, applied)
+
+		assert.True(t, oldLogs.Stopped())
+		assert.NotSame(t, oldLogs, processorComponents(pg, logsID)[0])
+		assert.True(t, processorComponents(pg, logsID)[0].Started())
+		logs, err := logsProcessedBy(t, pg)
+		require.NoError(t, err)
+		assert.Equal(t, processorNames(procA), logs)
+		assert.Empty(t, processedBy(t, pg, receiverComponent(pg, tracesID).traces))
+	})
+
+	t.Run("cascades_upstream_and_to_further_pipelines", func(t *testing.T) {
+		// Removing procA from traces replaces procA in logs, and procC upstream
+		// of it, which in turn replaces procC in traces/2.
+		traces2ID := pipeline.NewIDWithName(pipeline.SignalTraces, "2")
+		cfg := func(traces []component.ID) pipelines.Config {
+			c := pipelinesFor(traces, []component.ID{procC, procA})
+			c[traces2ID] = &pipelines.PipelineConfig{
+				Receivers:  []component.ID{testReceiverID},
+				Processors: []component.ID{procC},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			}
+			return c
+		}
+		pg, host, set := buildProcessorTestGraph(t, cfg([]component.ID{procA}), nil)
+		oldTraces2 := processorComponents(pg, traces2ID)[0]
+		oldLogs := processorComponents(pg, logsID)
+
+		applied, err := updateProcessors(t, pg, host, set, cfg(nil))
+		require.NoError(t, err)
+		require.True(t, applied)
+
+		for _, p := range oldLogs {
+			assert.True(t, p.Stopped())
+		}
+		assert.True(t, oldTraces2.Stopped())
+		logs, err := logsProcessedBy(t, pg)
+		require.NoError(t, err)
+		assert.Equal(t, processorNames(procC, procA), logs)
+	})
 }

@@ -53,7 +53,8 @@ type processorReload struct {
 // Restarted: receivers that were added, removed, or whose config or pipeline
 // membership changed, along with the nodes of other signals that share their
 // component ID; and, in each pipeline whose processors changed, the
-// changed processors, those upstream of them, and the pipeline's receivers.
+// changed processors, those upstream of them, and the pipeline's receivers,
+// along with the processors of other pipelines that share their component ID.
 // Unchanged trailing processors, exporters, connectors, and other pipelines
 // keep running.
 //
@@ -66,30 +67,12 @@ func (g *Graph) Update(ctx context.Context, set Settings, req UpdateRequest, hos
 		return false, errors.New("host cannot be nil")
 	}
 
-	// Find the pipelines with processor changes.
 	if len(set.PipelineConfigs) != len(g.pipelines) {
 		return false, nil
 	}
-	var reloads []*processorReload
-	affectedPipelines := make(map[pipeline.ID]bool)
-	for pipelineID, pipelineCfg := range set.PipelineConfigs {
-		pipe, ok := g.pipelines[pipelineID]
-		if !ok {
-			return false, nil
-		}
-		reload := g.identifyProcessorChanges(pipelineID, pipe, pipelineCfg.Processors, req.ChangedProcessors)
-		if reload == nil {
-			continue
-		}
-		// A connector keeps a reference to the pipeline's capabilities node,
-		// which cannot be swapped while the connector runs.
-		for _, node := range pipe.receivers {
-			if _, isConnector := node.(*connectorNode); isConnector {
-				return false, nil
-			}
-		}
-		reloads = append(reloads, reload)
-		affectedPipelines[pipelineID] = true
+	reloads, affectedPipelines, ok := g.identifyReloads(set, req.ChangedProcessors)
+	if !ok {
+		return false, nil
 	}
 
 	currentReceivers := make(map[int64]*receiverNode)
@@ -215,6 +198,55 @@ func (g *Graph) Update(ctx context.Context, set Settings, req UpdateRequest, hos
 
 	g.telemetry.Logger.Info("Partial reload completed successfully")
 	return true, nil
+}
+
+// identifyReloads finds the pipelines with processor changes and what to
+// replace in each. The graph cannot tell whether processors with the same
+// component ID share an instance across pipelines, and shutting down one stops
+// it for all of them. So a processor is also replaced in every other pipeline
+// that uses its ID, with the processors upstream of it, until nothing more is
+// added. It returns false if a pipeline is not in the graph, or if a pipeline
+// to reload is fed by a connector, which keeps a reference to the pipeline's
+// capabilities node that cannot be swapped while the connector runs.
+func (g *Graph) identifyReloads(set Settings, changedProcessors map[component.ID]bool) ([]*processorReload, map[pipeline.ID]bool, bool) {
+	changed := maps.Clone(changedProcessors)
+	if changed == nil {
+		changed = make(map[component.ID]bool)
+	}
+	for {
+		var reloads []*processorReload
+		affected := make(map[pipeline.ID]bool)
+		for pipelineID, pipelineCfg := range set.PipelineConfigs {
+			pipe, ok := g.pipelines[pipelineID]
+			if !ok {
+				return nil, nil, false
+			}
+			reload := g.identifyProcessorChanges(pipelineID, pipe, pipelineCfg.Processors, changed)
+			if reload == nil {
+				continue
+			}
+			for _, node := range pipe.receivers {
+				if _, isConnector := node.(*connectorNode); isConnector {
+					return nil, nil, false
+				}
+			}
+			reloads = append(reloads, reload)
+			affected[pipelineID] = true
+		}
+
+		grew := false
+		for _, reload := range reloads {
+			for _, pn := range reload.oldProcessors {
+				if !changed[pn.componentID] {
+					changed[pn.componentID] = true
+					grew = true
+				}
+			}
+		}
+		if !grew {
+			return reloads, affected, true
+		}
+	}
 }
 
 // feedsAffectedPipeline reports whether any pipeline in pipelines is affected.

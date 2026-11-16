@@ -94,6 +94,8 @@ All the receiver and processor changes are applied in one pass by `Graph.Update`
 - Receivers that were added or removed, whose config changed, or whose pipeline membership changed (as in the receiver phase), and the nodes of other signals that share their component ID.
 - For each pipeline whose processor list differs, or that uses a processor whose config changed: the changed processors, every processor upstream of them, and all of the pipeline's receivers. Every component stores the next consumer it was built with, so everything upstream of a replaced component must be recreated. The longest run of unchanged processors at the end of the pipeline keeps running, since those only reference the pipeline's fan-out node.
 
+A processor that is replaced is also replaced in every other pipeline that uses a processor with the same ID, along with the processors upstream of those, since some processors share one backend across pipelines and shutting down one instance stops it for all of them. The graph cannot tell which processors do, so it does this for all of them.
+
 Exporters, connectors, and pipelines that are not affected are not restarted. The pass runs in this order:
 
 1. **Identify** the affected pipelines and processors, then categorize receivers into add, remove, and rebuild (a receiver in an affected pipeline is rebuilt)
