@@ -6,6 +6,7 @@ package builder // import "go.opentelemetry.io/collector/cmd/builder/internal/bu
 import (
 	"errors"
 	"fmt"
+	"go/token"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,9 +14,11 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"unicode"
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"golang.org/x/mod/module"
 )
 
 const (
@@ -29,6 +32,26 @@ var errMissingGoMod = errors.New("missing gomod specification for module")
 // errUnknownResourceDetector indicates a detector name configured under
 // dist.resource.detection.detectors that is not in knownResourceDetectors.
 var errUnknownResourceDetector = errors.New("unknown resource detector")
+
+// errInvalidGoMod indicates a gomod field that is not a module path
+// optionally followed by a single version.
+var errInvalidGoMod = errors.New("invalid gomod specification for module")
+
+// errInvalidImport indicates an import field that is not a valid import path.
+var errInvalidImport = errors.New("invalid import path for module")
+
+// errInvalidName indicates a name field that is not a valid Go identifier.
+var errInvalidName = errors.New("invalid name for module")
+
+// errInvalidDistName indicates a dist.name that contains control characters.
+var errInvalidDistName = errors.New("invalid dist.name")
+
+// errInvalidDistModule indicates a dist.module that is not a valid module path.
+var errInvalidDistModule = errors.New("invalid dist.module")
+
+// errMultiLineValue indicates a value that is written as a single go.mod
+// directive but spans more than one line.
+var errMultiLineValue = errors.New("value must not span multiple lines")
 
 // Config holds the builder's configuration
 type Config struct {
@@ -247,6 +270,7 @@ func NewDefaultConfig() (*Config, error) {
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {
 	return multierr.Combine(
+		validateDistribution(c.Distribution),
 		validateModules("extension", c.Extensions),
 		validateModules("receiver", c.Receivers),
 		validateModules("exporter", c.Exporters),
@@ -255,6 +279,8 @@ func (c *Config) Validate() error {
 		validateModules("provider", c.ConfmapProviders),
 		validateModules("converter", c.ConfmapConverters),
 		validateTelemetry(c),
+		validateDirectives("replaces", c.Replaces),
+		validateDirectives("excludes", c.Excludes),
 		validateResourceDetectors(c.Distribution.Resource.Detection.Detectors),
 	)
 }
@@ -345,11 +371,70 @@ func (c *Config) allComponents() []Module {
 	return slices.Concat(c.Exporters, c.Receivers, c.Processors, c.Extensions, c.Connectors, []Module{c.Telemetry}, c.ConfmapProviders, c.ConfmapConverters)
 }
 
+// validateDistribution ensures the dist values that are not written as quoted
+// Go strings are safe: dist.name is also written to a comment above the package
+// clause, and dist.module is the go.mod module line.
+func validateDistribution(dist Distribution) error {
+	var errs error
+	if strings.ContainsFunc(dist.Name, unicode.IsControl) {
+		errs = multierr.Append(errs, fmt.Errorf("%w: %q", errInvalidDistName, dist.Name))
+	}
+	if dist.Module != "" {
+		if err := module.CheckImportPath(dist.Module); err != nil {
+			errs = multierr.Append(errs, fmt.Errorf("%w: %w", errInvalidDistModule, err))
+		}
+	}
+	return errs
+}
+
+// validateDirectives ensures every entry of a list that is written one per
+// line into go.mod stays a single directive.
+func validateDirectives(name string, directives []string) error {
+	for i, directive := range directives {
+		if strings.ContainsAny(directive, "\r\n") {
+			return fmt.Errorf("%s at index %v: %w", name, i, errMultiLineValue)
+		}
+	}
+	return nil
+}
+
 func validateModules(name string, mods []Module) error {
 	for i, mod := range mods {
-		if mod.GoMod == "" {
-			return fmt.Errorf("%s module at index %v: %w", name, i, errMissingGoMod)
+		if err := validateModule(mod); err != nil {
+			return fmt.Errorf("%s module at index %v: %w", name, i, err)
 		}
+	}
+	return nil
+}
+
+// validateModule ensures a module's values fit the positions the templates
+// write them to: gomod becomes a go.mod requirement, import an import path,
+// name the alias of that import and path the target of a replace directive.
+func validateModule(mod Module) error {
+	if mod.GoMod == "" {
+		return errMissingGoMod
+	}
+	// The version is not checked: Go resolves branches and commits too.
+	fields := strings.Fields(mod.GoMod)
+	if len(fields) > 2 {
+		return fmt.Errorf("%w: expected a module path and at most one version", errInvalidGoMod)
+	}
+	if err := module.CheckImportPath(fields[0]); err != nil {
+		return fmt.Errorf("%w: %w", errInvalidGoMod, err)
+	}
+	if len(fields) == 2 && strings.ContainsFunc(fields[1], func(r rune) bool { return r == '"' || r == '`' || unicode.IsControl(r) }) {
+		return fmt.Errorf("%w: invalid version %q", errInvalidGoMod, fields[1])
+	}
+	if mod.Import != "" {
+		if err := module.CheckImportPath(mod.Import); err != nil {
+			return fmt.Errorf("%w: %w", errInvalidImport, err)
+		}
+	}
+	if mod.Name != "" && !token.IsIdentifier(mod.Name) {
+		return fmt.Errorf("%w: %q", errInvalidName, mod.Name)
+	}
+	if strings.ContainsAny(mod.Path, "\r\n") {
+		return fmt.Errorf("path: %w", errMultiLineValue)
 	}
 	return nil
 }
@@ -366,8 +451,8 @@ func validateTelemetry(c *Config) error {
 			GoMod:  "go.opentelemetry.io/collector/service " + DefaultBetaOtelColVersion,
 			Import: "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry",
 		}
-	} else if c.Telemetry.GoMod == "" {
-		return fmt.Errorf("telemetry module: %w", errMissingGoMod)
+	} else if err := validateModule(c.Telemetry); err != nil {
+		return fmt.Errorf("telemetry module: %w", err)
 	}
 
 	return nil
