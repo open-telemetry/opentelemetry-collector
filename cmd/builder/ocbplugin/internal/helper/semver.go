@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package helper
+package helper // import "go.opentelemetry.io/collector/cmd/builder/ocbplugin/internal/helper"
 
 import (
 	"errors"
