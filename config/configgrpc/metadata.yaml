@@ -186,3 +186,10 @@ exported_configs:
         default:
           # We typically want to create a TCP server and listen over a network.
           transport: tcp
+
+feature_gates:
+  - id: pkg.configgrpc.PersistGzipCompressors
+    description: When enabled, persists up to GOMAXPROCS gRPC gzip writers across GC cycles to avoid repeated flate.Writer allocations.
+    stage: alpha
+    from_version: v0.166.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector/issues/16422
