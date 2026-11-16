@@ -208,6 +208,6 @@ which maintainers will need to enforce:
     to place new features with some degree of complexity under a feature gate.
   - Such feature gates MAY be migrated to Stable in a minor release.
   - In particular, new keys may be added to a config struct in an experimental capacity;
-    See [the section on experimental fields in our coding guidelines](coding-guidelines.md#experimental-fields-on-stable-configuration-structs)
+    See [the section on experimental fields in our coding guidelines](../coding-guidelines.md#experimental-fields-on-stable-configuration-structs)
     for more detail. 
     
