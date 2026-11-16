@@ -197,6 +197,74 @@ func TestGzipWriterLIFOAndRetentionAcrossGC(t *testing.T) {
 	require.NoError(t, gotFirst.Close())
 }
 
+func TestGzipOverflowPoolReuse(t *testing.T) {
+	setPersistGzipFeatureGateForTest(t, true)
+
+	t.Run("spillover_and_reuse", func(t *testing.T) {
+		comp := &gzipCompressor{
+			writers:     make([]*gzipWriter, 0, 2),
+			maxRetained: 2,
+		}
+		const total = 18
+		open := make([]io.WriteCloser, total)
+		for i := range total {
+			w, err := comp.Compress(io.Discard)
+			require.NoError(t, err)
+			open[i] = w
+		}
+		// Closing all 18 retains 2 in comp.writers and spills 16 into overflowPool.
+		for _, w := range open {
+			require.NoError(t, w.Close())
+		}
+		assert.Len(t, comp.writers, 2)
+
+		// Checking out 18 again drains comp.writers (2) and pops from overflowPool.
+		for i := range total {
+			w, err := comp.Compress(io.Discard)
+			require.NoError(t, err)
+			open[i] = w
+		}
+		for _, w := range open {
+			require.NoError(t, w.Close())
+		}
+	})
+
+	t.Run("deterministic_reset_from_overflow_pool", func(t *testing.T) {
+		comp := &gzipCompressor{
+			writers:     make([]*gzipWriter, 0, 1),
+			maxRetained: 1,
+		}
+		// Allocate one writer without closing it so comp.writers stays empty.
+		seed, err := comp.Compress(io.Discard)
+		require.NoError(t, err)
+		_, err = seed.Write([]byte("discarded-stream"))
+		require.NoError(t, err)
+		require.NoError(t, seed.(*gzipWriter).Writer.Close())
+
+		// Guarantee overflowPool.Get() returns non-nil even under -race (which randomly
+		// drops sync.Pool.Put items) or if a background GC runs mid-test.
+		comp.overflowPool.New = func() any { return seed }
+		t.Cleanup(func() { comp.overflowPool.New = nil })
+
+		payload := []byte("overflow-pool-reset-check")
+		var buf bytes.Buffer
+		got, err := comp.Compress(&buf)
+		require.NoError(t, err)
+		assert.Same(t, seed, got, "Compress should reuse writer from overflowPool when writers stack is empty")
+
+		_, err = got.Write(payload)
+		require.NoError(t, err)
+		require.NoError(t, got.Close())
+
+		r, err := comp.Decompress(&buf)
+		require.NoError(t, err)
+		decoded, err := io.ReadAll(r)
+		require.NoError(t, err)
+		require.NoError(t, r.(io.Closer).Close())
+		assert.Equal(t, payload, decoded)
+	})
+}
+
 func TestGzipConcurrentCompressDecompress(t *testing.T) {
 	setPersistGzipFeatureGateForTest(t, true)
 	comp := &gzipCompressor{
@@ -217,7 +285,8 @@ func TestGzipConcurrentCompressDecompress(t *testing.T) {
 				if !assert.NoError(t, err) {
 					return
 				}
-				if _, err := w.Write(payload); !assert.NoError(t, err) {
+				_, err = w.Write(payload)
+				if !assert.NoError(t, err) {
 					return
 				}
 				if !assert.NoError(t, w.Close()) {

@@ -56,14 +56,14 @@ func (c *gzipCompressor) Compress(w io.Writer) (io.WriteCloser, error) {
 		c.writers[n-1] = nil
 		c.writers = c.writers[:n-1]
 		c.mu.Unlock()
-		z.Writer.Reset(w)
+		z.Reset(w)
 		return z, nil
 	}
 	c.mu.Unlock()
 
 	if v := c.overflowPool.Get(); v != nil {
 		z := v.(*gzipWriter)
-		z.Writer.Reset(w)
+		z.Reset(w)
 		return z, nil
 	}
 	return &gzipWriter{

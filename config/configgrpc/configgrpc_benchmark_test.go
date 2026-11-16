@@ -277,14 +277,14 @@ func BenchmarkCompressors(b *testing.B) {
 					for _, persist := range []bool{false, true} {
 						b.Run(fmt.Sprintf("persist_gzip=%t", persist), func(b *testing.B) {
 							setPersistGzipFeatureGateIfRegistered(b, persist)
-							_, err := compress(compressor, messageBytes)
-							require.NoError(b, err, "compress(_) returned an error")
+							_, warmErr := compress(compressor, messageBytes)
+							require.NoError(b, warmErr, "compress(_) returned an error")
 							b.ReportAllocs()
 							b.ResetTimer()
 							for b.Loop() {
 								require.NoError(b, err, "marshal(_) returned an error")
-								_, err := compress(compressor, messageBytes)
-								require.NoError(b, err, "compress(_) returned an error")
+								_, compressErr := compress(compressor, messageBytes)
+								require.NoError(b, compressErr, "compress(_) returned an error")
 							}
 						})
 					}
