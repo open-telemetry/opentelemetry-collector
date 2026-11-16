@@ -10,7 +10,7 @@ component: exporter/otlp
 note: Limitting logging of the `error_message` of a partial success response to 1 KiB.
 
 # One or more tracking issues or pull requests related to the change
-issues: []
+issues: [16415]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
