@@ -151,12 +151,9 @@ func TestRetrieveContext(t *testing.T) {
 				t.Run(tt.name, func(t *testing.T) {
 					started := make(chan struct{})
 					release := make(chan struct{})
-					ts := httptest.NewUnstartedServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+					ts := httptest.NewUnstartedServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
 						close(started)
-						select {
-						case <-r.Context().Done():
-						case <-release:
-						}
+						<-release
 					}))
 					if scheme == HTTPSScheme {
 						ts.StartTLS()
