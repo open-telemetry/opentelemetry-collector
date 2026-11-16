@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/collector/pdata/xpdata v0.165.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
-	golang.org/x/sys v0.49.0
+	golang.org/x/sys v0.50.0
 )
 
 require (
@@ -46,6 +46,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/collector/client v1.71.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.71.0 // indirect
+	go.opentelemetry.io/collector/config/configstorage v0.165.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.165.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.165.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.165.0 // indirect
@@ -137,3 +138,5 @@ replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testut
 replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
 
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
+
+replace go.opentelemetry.io/collector/config/configstorage => ../../config/configstorage
