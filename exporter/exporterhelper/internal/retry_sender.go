@@ -110,7 +110,9 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 
 		throttleErr := throttleRetry{}
 		if errors.As(err, &throttleErr) {
-			backoffDelay = max(backoffDelay, throttleErr.delay)
+			// The delay is chosen by the backend, so keep it within the configured
+			// upper bound on backoff rather than sleeping for whatever it asks.
+			backoffDelay = max(backoffDelay, min(throttleErr.delay, rs.cfg.MaxInterval))
 		}
 
 		nextRetryTime := time.Now().Add(backoffDelay)

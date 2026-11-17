@@ -174,7 +174,7 @@ exported_configs:
           type: string
         description: |
           Configures the list of compression algorithms the server can accept. 
-          Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
+          Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4", "x-snappy-framed"]
       read_timeout:
         type: duration
         description: |
