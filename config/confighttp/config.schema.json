@@ -363,7 +363,7 @@
           "items": {
             "type": "string"
           },
-          "description": "Configures the list of compression algorithms the server can accept. \nDefault: [\"\", \"gzip\", \"zstd\", \"zlib\", \"snappy\", \"deflate\"]\n"
+          "description": "Configures the list of compression algorithms the server can accept. \nDefault: [\"\", \"gzip\", \"zstd\", \"zlib\", \"snappy\", \"deflate\", \"lz4\", \"x-snappy-framed\"]\n"
         },
         "cors": {
           "type": "object",
