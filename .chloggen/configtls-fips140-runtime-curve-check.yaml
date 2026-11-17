@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/configtls
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Remove the `requirefips` build tag and check `curve_preferences` against FIPS 140-3 mode at runtime instead.
+note: Check `curve_preferences` against FIPS 140-3 mode at runtime, without the `requirefips` build tag.
 
 # One or more tracking issues or pull requests related to the change
 issues: [16278]
@@ -19,7 +19,8 @@ subtext: |
   When the Collector runs with `GODEBUG=fips140=on` or `only`, a configuration that names `X25519` in
   `curve_preferences` now fails validation with a clear error. When `curve_preferences` is empty the
   `crypto/tls` defaults apply, which Go already filters in FIPS 140-3 mode. `SecP256r1MLKEM768` and
-  `SecP384r1MLKEM1024` are now accepted names. Builds no longer need `-tags requirefips`.
+  `SecP384r1MLKEM1024` are now accepted names. The `requirefips` build tag keeps its behavior: builds
+  with it accept only `P256`, `P384` and `P521`.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

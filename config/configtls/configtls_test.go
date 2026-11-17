@@ -892,9 +892,10 @@ func TestCurvePreferences(t *testing.T) {
 
 	tests := []testCase{
 		{
-			name:             "empty-uses-crypto-tls-defaults",
+			// nil in the default build, so crypto/tls applies its own defaults.
+			name:             "empty-uses-defaults",
 			preferences:      nil,
-			expectedCurveIDs: nil,
+			expectedCurveIDs: defaultCurvePreferences,
 		},
 		{
 			name:             "P521",
@@ -912,36 +913,43 @@ func TestCurvePreferences(t *testing.T) {
 			expectedCurveIDs: []tls.CurveID{tls.CurveP256, tls.CurveP521},
 		},
 		{
-			name:             "X25519MLKEM768",
-			preferences:      []string{"X25519MLKEM768"},
-			expectedCurveIDs: []tls.CurveID{tls.X25519MLKEM768},
-		},
-		{
-			name:             "SecP-MLKEM-hybrids",
-			preferences:      []string{"SecP256r1MLKEM768", "SecP384r1MLKEM1024"},
-			expectedCurveIDs: []tls.CurveID{tls.SecP256r1MLKEM768, tls.SecP384r1MLKEM1024},
-		},
-		{
 			name:        "invalid-curve",
 			preferences: []string{"P25223236"},
 			expectedErr: "invalid curve type: P25223236",
 		},
 	}
 
-	// X25519 is not available in FIPS 140-3 mode, so the expected outcome depends on
-	// whether the tests run with GODEBUG=fips140=on or only.
-	if fips140.Enabled() {
-		tests = append(tests, testCase{
-			name:        "X25519-rejected-in-fips-mode",
-			preferences: []string{"P256", "X25519"},
-			expectedErr: "curve type X25519 is not available in FIPS 140-3 mode",
-		})
-	} else {
-		tests = append(tests, testCase{
-			name:             "X25519",
-			preferences:      []string{"X25519"},
-			expectedCurveIDs: []tls.CurveID{tls.X25519},
-		})
+	// The requirefips build tag accepts only the NIST P curves. Its behavior is covered
+	// in curves_fips_test.go.
+	if !requireFIPSBuildTag() {
+		tests = append(tests,
+			testCase{
+				name:             "X25519MLKEM768",
+				preferences:      []string{"X25519MLKEM768"},
+				expectedCurveIDs: []tls.CurveID{tls.X25519MLKEM768},
+			},
+			testCase{
+				name:             "SecP-MLKEM-hybrids",
+				preferences:      []string{"SecP256r1MLKEM768", "SecP384r1MLKEM1024"},
+				expectedCurveIDs: []tls.CurveID{tls.SecP256r1MLKEM768, tls.SecP384r1MLKEM1024},
+			},
+		)
+
+		// X25519 is not available in FIPS 140-3 mode, so the expected outcome depends on
+		// whether the tests run with GODEBUG=fips140=on or only.
+		if fips140.Enabled() {
+			tests = append(tests, testCase{
+				name:        "X25519-rejected-in-fips-mode",
+				preferences: []string{"P256", "X25519"},
+				expectedErr: "curve type X25519 is not available in FIPS 140-3 mode",
+			})
+		} else {
+			tests = append(tests, testCase{
+				name:             "X25519",
+				preferences:      []string{"X25519"},
+				expectedCurveIDs: []tls.CurveID{tls.X25519},
+			})
+		}
 	}
 
 	for _, test := range tests {
@@ -965,7 +973,17 @@ func TestCurvePreferences(t *testing.T) {
 	}
 }
 
+// requireFIPSBuildTag reports whether the tests were built with the requirefips tag.
+func requireFIPSBuildTag() bool {
+	_, ok := tlsCurveTypes["X25519"]
+	return !ok
+}
+
 func TestConvertCurvePreferencesFIPS(t *testing.T) {
+	if requireFIPSBuildTag() {
+		t.Skip("the requirefips build tag does not accept X25519 curves")
+	}
+
 	// Both branches are exercised here regardless of the GODEBUG=fips140 setting the
 	// test binary runs with.
 	curves, err := convertCurvePreferences([]string{"P256", "X25519"}, false)

@@ -29,10 +29,25 @@ optional and requires additional configuration (see examples below).
   - P384
   - P521
 
-  When the Collector runs in FIPS 140-3 mode (`GODEBUG=fips140=on` or `only`),
+  When the Collector runs in FIPS 140-3 mode (`GODEBUG=fips140=on` or `GODEBUG=fips140=only`),
   `X25519` is not an approved curve and is rejected when the configuration is
   validated. The other curves are filtered by `crypto/tls` at runtime according
   to the FIPS 140-3 rules of the Go release in use.
+
+  There are two ways to turn FIPS 140-3 mode on:
+  - If you build your own distribution, set the `GOFIPS140` environment
+    variable at build time (for example `GOFIPS140=v1.0.0`). The binary then
+    runs in FIPS 140-3 mode by default. See
+    [the Go FIPS 140-3 blog post](https://go.dev/blog/fips140) for what this
+    build option does.
+  - If you use a pre-built distribution, set `GODEBUG=fips140=on` in the
+    environment of the Collector. See
+    [the `fips140` GODEBUG option](https://go.dev/doc/security/fips140#the-fips140-godebug-option).
+
+  The `requirefips` build tag is still supported. A Collector built with
+  `-tags requirefips` accepts only `P256`, `P384` and `P521`, and uses those
+  three curves when `curve_preferences` is empty, whether or not FIPS 140-3
+  mode is on. The tag is not needed for the runtime check above.
 
 The following certificate parameters can be configured:
 

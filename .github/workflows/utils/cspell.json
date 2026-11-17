@@ -39,6 +39,7 @@
     "GOBIN",
     "GOCMD",
     "GODEBUG",
+    "GOFIPS",
     "GOMEMLIMIT",
     "GOPATH",
     "GOPROXY",

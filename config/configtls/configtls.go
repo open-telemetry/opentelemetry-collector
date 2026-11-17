@@ -25,17 +25,6 @@ const defaultMinTLSVersion = tls.VersionTLS12
 // Uses the default MaxVersion from "crypto/tls" which is the maximum supported version
 const defaultMaxTLSVersion = 0
 
-// tlsCurveTypes maps the accepted curve_preferences names to crypto/tls curve IDs.
-var tlsCurveTypes = map[string]tls.CurveID{
-	"P256":               tls.CurveP256,
-	"P384":               tls.CurveP384,
-	"P521":               tls.CurveP521,
-	"X25519":             tls.X25519,
-	"X25519MLKEM768":     tls.X25519MLKEM768,
-	"SecP256r1MLKEM768":  tls.SecP256r1MLKEM768,
-	"SecP384r1MLKEM1024": tls.SecP384r1MLKEM1024,
-}
-
 var systemCertPool = x509.SystemCertPool
 
 // certReloader is a wrapper object for certificate reloading
@@ -184,13 +173,18 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 }
 
 // convertCurvePreferences maps the configured curve names to crypto/tls curve IDs.
-// An empty list returns nil so that crypto/tls applies its own defaults. crypto/tls
-// already filters the curves at runtime when the collector runs in FIPS 140-3 mode
-// (GODEBUG=fips140=on or only). X25519 is the only accepted name that FIPS mode never
-// allows, so it is rejected here with a clear error instead of being dropped silently
-// during the handshake.
+// An empty list returns defaultCurvePreferences. In the default build that is nil, so
+// crypto/tls applies its own defaults. crypto/tls already filters the curves at
+// runtime when the collector runs in FIPS 140-3 mode (GODEBUG=fips140=on or only).
+// X25519 is the only accepted name that FIPS mode never allows, so it is rejected
+// here with a clear error instead of being dropped silently during the handshake.
+// The requirefips build tag narrows tlsCurveTypes and defaultCurvePreferences at
+// build time (see curves_fips.go).
 func convertCurvePreferences(names []string, fipsEnabled bool) ([]tls.CurveID, error) {
-	var curves []tls.CurveID
+	if len(names) == 0 {
+		return slices.Clone(defaultCurvePreferences), nil
+	}
+	curves := make([]tls.CurveID, 0, len(names))
 	for _, name := range names {
 		curveID, ok := tlsCurveTypes[name]
 		if !ok {
