@@ -8,14 +8,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 	"slices"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"golang.org/x/net/http2"
-	"golang.org/x/net/publicsuffix"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -217,7 +215,7 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 
 	var jar http.CookieJar
 	if cc.Cookies.HasValue() {
-		jar, err = cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
+		jar, err = newBoundedCookieJar()
 		if err != nil {
 			return nil, err
 		}
