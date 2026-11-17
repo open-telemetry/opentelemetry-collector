@@ -17,6 +17,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configstorage"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
@@ -62,7 +63,7 @@ func TestPersistentQueueConnectorForwardsToSecondPipeline(t *testing.T) {
 		connector.WithLogsToLogs(
 			func(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Logs) (connector.Logs, error) {
 				queueCfg := exporterhelper.NewDefaultQueueConfig()
-				queueCfg.StorageID = &storageID
+				queueCfg.StorageID = configoptional.Some(configstorage.ID(storageID))
 				queueCfg.NumConsumers = 1
 				queueCfg.Batch = configoptional.None[exporterhelper.BatchConfig]()
 

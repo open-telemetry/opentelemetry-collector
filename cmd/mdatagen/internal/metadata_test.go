@@ -30,6 +30,22 @@ func TestValidate(t *testing.T) {
 			wantErr: "missing status",
 		},
 		{
+			name:    "testdata/invalid_generated_package_name_traversal.yaml",
+			wantErr: `invalid generated_package_name "../../outside": must be a valid Go identifier`,
+		},
+		{
+			name:    "testdata/invalid_generated_package_name_comment.yaml",
+			wantErr: "invalid generated_package_name",
+		},
+		{
+			name:    "testdata/invalid_generated_package_name_newline.yaml",
+			wantErr: "invalid generated_package_name",
+		},
+		{
+			name:    "testdata/invalid_generated_package_name_keyword.yaml",
+			wantErr: `invalid generated_package_name "func"`,
+		},
+		{
 			name:    "testdata/no_class.yaml",
 			wantErr: "missing class",
 		},
@@ -197,6 +213,10 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			name:    "testdata/no_stability_noncomponent.yaml",
+			wantErr: "",
+		},
+		{
+			name:    "testdata/internal_class_no_stability.yaml",
 			wantErr: "",
 		},
 		{

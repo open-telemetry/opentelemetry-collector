@@ -117,12 +117,6 @@ vulncheck:
 generate:
 	$(GOCMD) generate $(shell $(GOCMD) list ./... | grep -v '/internal/metadata')
 
-.PHONY: impi
-impi:
-	$(GO_TOOL) impi \
-		--local go.opentelemetry.io/collector \
-		--scheme stdThirdPartyLocal ./...
-
 .PHONY: moddownload
 moddownload:
 	$(GOCMD) mod download
