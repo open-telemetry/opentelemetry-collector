@@ -8,7 +8,7 @@ import (
 	"path"
 	"path/filepath"
 
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 	"golang.org/x/tools/go/packages"
 )
 

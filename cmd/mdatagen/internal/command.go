@@ -21,7 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"go.uber.org/multierr"
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 

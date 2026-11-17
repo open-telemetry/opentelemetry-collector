@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"go.yaml.in/yaml/v3"
+	"go.yaml.in/yaml/v4"
 
 	"go.opentelemetry.io/collector/config/configopaque"
 )

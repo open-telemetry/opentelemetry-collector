@@ -20,6 +20,8 @@ require (
 	google.golang.org/grpc v1.85.0
 )
 
+require go.yaml.in/yaml/v4 v4.0.0 // indirect
+
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/ebitengine/purego v0.11.2 // indirect
