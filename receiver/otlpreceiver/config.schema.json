@@ -192,7 +192,7 @@
                       "description": "Trusted platform module configuration"
                     }
                   },
-                  "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn''t anything specific to a server connection. Components with server connections should use Config.\n",
+                  "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn't anything specific to a server connection. Components with server connections should use Config.\n",
                   "default": {}
                 }
               ]
@@ -487,7 +487,7 @@
                           "description": "Trusted platform module configuration"
                         }
                       },
-                      "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn''t anything specific to a server connection. Components with server connections should use Config.\n",
+                      "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn't anything specific to a server connection. Components with server connections should use Config.\n",
                       "default": {}
                     }
                   ]
@@ -773,7 +773,7 @@
                       "description": "Trusted platform module configuration"
                     }
                   },
-                  "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn''t anything specific to a server connection. Components with server connections should use Config.\n",
+                  "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn't anything specific to a server connection. Components with server connections should use Config.\n",
                   "default": {}
                 }
               ]
