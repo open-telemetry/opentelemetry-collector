@@ -28,7 +28,6 @@ type gzipCompressor struct {
 	writers      []*gzipWriter
 	maxRetained  int
 	overflowPool sync.Pool
-	readerPool   sync.Pool
 }
 
 func newGzipCompressor(fallback encoding.Compressor) *gzipCompressor {
@@ -46,7 +45,7 @@ type gzipWriter struct {
 }
 
 func (c *gzipCompressor) Compress(w io.Writer) (io.WriteCloser, error) {
-	if !metadata.PkgConfiggrpcPersistGzipCompressorsFeatureGate.IsEnabled() && c.fallback != nil {
+	if !metadata.PkgConfiggrpcPersistGzipCompressorsFeatureGate.IsEnabled() {
 		return c.fallback.Compress(w)
 	}
 
@@ -74,51 +73,19 @@ func (c *gzipCompressor) Compress(w io.Writer) (io.WriteCloser, error) {
 
 func (z *gzipWriter) Close() error {
 	err := z.Writer.Close()
-	z.c.Put(z)
+	z.c.mu.Lock()
+	if len(z.c.writers) < z.c.maxRetained {
+		z.c.writers = append(z.c.writers, z)
+		z.c.mu.Unlock()
+		return err
+	}
+	z.c.mu.Unlock()
+	z.c.overflowPool.Put(z)
 	return err
 }
 
-func (c *gzipCompressor) Put(z *gzipWriter) {
-	c.mu.Lock()
-	if len(c.writers) < c.maxRetained {
-		c.writers = append(c.writers, z)
-		c.mu.Unlock()
-		return
-	}
-	c.mu.Unlock()
-	c.overflowPool.Put(z)
-}
-
-var _ io.Closer = (*gzipReader)(nil)
-
-type gzipReader struct {
-	*gzip.Reader
-	pool *sync.Pool
-}
-
 func (c *gzipCompressor) Decompress(r io.Reader) (io.Reader, error) {
-	if !metadata.PkgConfiggrpcPersistGzipCompressorsFeatureGate.IsEnabled() && c.fallback != nil {
-		return c.fallback.Decompress(r)
-	}
-
-	z, inPool := c.readerPool.Get().(*gzipReader)
-	if !inPool {
-		newZ, err := gzip.NewReader(r)
-		if err != nil {
-			return nil, err
-		}
-		return &gzipReader{Reader: newZ, pool: &c.readerPool}, nil
-	}
-	if err := z.Reset(r); err != nil {
-		c.readerPool.Put(z)
-		return nil, err
-	}
-	return z, nil
-}
-
-func (r *gzipReader) Close() error {
-	defer r.pool.Put(r)
-	return r.Reader.Close()
+	return c.fallback.Decompress(r)
 }
 
 func (*gzipCompressor) Name() string {

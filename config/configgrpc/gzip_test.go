@@ -29,6 +29,10 @@ func setPersistGzipFeatureGateForTest(tb testing.TB, enabled bool) {
 	})
 }
 
+func fallbackGzipCompressor() encoding.Compressor {
+	return encoding.GetCompressor(grpcgzip.Name).(*gzipCompressor).fallback
+}
+
 func (c *gzipCompressor) clearRetainedWriters() {
 	c.mu.Lock()
 	clear(c.writers)
@@ -49,8 +53,7 @@ func TestGzipInitRegistration(t *testing.T) {
 func TestGzipFeatureGateDisabledDelegatesToFallback(t *testing.T) {
 	setPersistGzipFeatureGateForTest(t, false)
 
-	registered := encoding.GetCompressor(grpcgzip.Name).(*gzipCompressor)
-	comp := newGzipCompressor(registered.fallback)
+	comp := newGzipCompressor(fallbackGzipCompressor())
 
 	payload := []byte("fallback delegation payload")
 	var buf bytes.Buffer
@@ -65,8 +68,6 @@ func TestGzipFeatureGateDisabledDelegatesToFallback(t *testing.T) {
 
 	r, err := comp.Decompress(bytes.NewReader(buf.Bytes()))
 	require.NoError(t, err)
-	_, isPersistedReader := r.(*gzipReader)
-	assert.False(t, isPersistedReader, "disabled feature gate should return fallback reader")
 	got, err := io.ReadAll(r)
 	require.NoError(t, err)
 	if closer, ok := r.(io.Closer); ok {
@@ -89,7 +90,7 @@ func TestGzipFeatureGateDisabledDelegatesToFallback(t *testing.T) {
 
 func TestGzipRoundTrip(t *testing.T) {
 	setPersistGzipFeatureGateForTest(t, true)
-	comp := newGzipCompressor(nil)
+	comp := newGzipCompressor(fallbackGzipCompressor())
 	for _, tt := range []struct {
 		name    string
 		payload []byte
@@ -124,44 +125,18 @@ func TestGzipRoundTrip(t *testing.T) {
 	}
 }
 
-func TestGzipDecompressErrors(t *testing.T) {
+func TestGzipDecompressError(t *testing.T) {
 	setPersistGzipFeatureGateForTest(t, true)
-	comp := newGzipCompressor(nil)
+	comp := newGzipCompressor(fallbackGzipCompressor())
 
-	// Cold Decompress error when readerPool is empty (gzip.NewReader fails).
 	_, err := comp.Decompress(bytes.NewReader([]byte("not-gzip")))
 	require.Error(t, err)
-
-	// Populate readerPool with one valid reader.
-	var valid bytes.Buffer
-	w, err := comp.Compress(&valid)
-	require.NoError(t, err)
-	_, err = w.Write([]byte("seed"))
-	require.NoError(t, err)
-	require.NoError(t, w.Close())
-
-	r, err := comp.Decompress(bytes.NewReader(valid.Bytes()))
-	require.NoError(t, err)
-	_, err = io.ReadAll(r)
-	require.NoError(t, err)
-	require.NoError(t, r.(io.Closer).Close())
-
-	// Warm Decompress error when z.Reset fails; reader should be returned to pool.
-	_, err = comp.Decompress(bytes.NewReader([]byte("corrupt-header")))
-	require.Error(t, err)
-
-	// Subsequent valid Decompress still succeeds.
-	r2, err := comp.Decompress(bytes.NewReader(valid.Bytes()))
-	require.NoError(t, err)
-	got, err := io.ReadAll(r2)
-	require.NoError(t, err)
-	require.NoError(t, r2.(io.Closer).Close())
-	assert.Equal(t, []byte("seed"), got)
 }
 
 func TestGzipWriterLIFOAndRetentionAcrossGC(t *testing.T) {
 	setPersistGzipFeatureGateForTest(t, true)
 	comp := &gzipCompressor{
+		fallback:    fallbackGzipCompressor(),
 		writers:     make([]*gzipWriter, 0, 2),
 		maxRetained: 2,
 	}
@@ -202,6 +177,7 @@ func TestGzipOverflowPoolReuse(t *testing.T) {
 
 	t.Run("spillover_and_reuse", func(t *testing.T) {
 		comp := &gzipCompressor{
+			fallback:    fallbackGzipCompressor(),
 			writers:     make([]*gzipWriter, 0, 2),
 			maxRetained: 2,
 		}
@@ -231,6 +207,7 @@ func TestGzipOverflowPoolReuse(t *testing.T) {
 
 	t.Run("deterministic_reset_from_overflow_pool", func(t *testing.T) {
 		comp := &gzipCompressor{
+			fallback:    fallbackGzipCompressor(),
 			writers:     make([]*gzipWriter, 0, 1),
 			maxRetained: 1,
 		}
@@ -268,6 +245,7 @@ func TestGzipOverflowPoolReuse(t *testing.T) {
 func TestGzipConcurrentCompressDecompress(t *testing.T) {
 	setPersistGzipFeatureGateForTest(t, true)
 	comp := &gzipCompressor{
+		fallback:    fallbackGzipCompressor(),
 		writers:     make([]*gzipWriter, 0, 4),
 		maxRetained: 4,
 	}
