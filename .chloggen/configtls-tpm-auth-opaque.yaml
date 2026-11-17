@@ -4,7 +4,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
-component: config/configtls
+component: pkg/configtls
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Update `tpm::auth` and `tpm::owner_auth` fields as opaque so they are redacted like `key_pem`.
