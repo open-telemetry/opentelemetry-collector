@@ -24,7 +24,7 @@ type ClientConfig struct {
 	ServerName string `mapstructure:"server_name_override,omitempty"`
 
 	// Exposes the common client and server TLS configurations.
-	// Note: Since there isn''t anything specific to a server connection. Components with server connections should use Config.
+	// Note: Since there isn't anything specific to a server connection. Components with server connections should use Config.
 	Config `mapstructure:",squash"`
 
 	// prevent unkeyed literal initialization
@@ -40,7 +40,7 @@ func NewDefaultClientConfig() ClientConfig {
 }
 
 // Config exposes the common client and server TLS configurations.
-// Note: Since there isn”t anything specific to a server connection. Components with server connections should use Config.
+// Note: Since there isn't anything specific to a server connection. Components with server connections should use Config.
 type Config struct {
 	// CAFile path to the CA cert. For a client this verifies the server certificate.
 	// For a server this verifies client certificates. If empty uses system root CA. (optional)
@@ -112,7 +112,7 @@ type ServerConfig struct {
 	ReloadClientCAFile bool `mapstructure:"client_ca_file_reload,omitempty"`
 
 	// Exposes the common client and server TLS configurations.
-	// Note: Since there isn''t anything specific to a server connection. Components with server connections should use Config.
+	// Note: Since there isn't anything specific to a server connection. Components with server connections should use Config.
 	Config `mapstructure:",squash"`
 
 	// prevent unkeyed literal initialization
