@@ -131,3 +131,12 @@ func countScopeProfiles(sp pprofile.ScopeProfiles) int {
 func (ms ExportRequest) Profiles() pprofile.Profiles {
 	return pprofile.Profiles(internal.NewProfilesWrapper(ms.orig, ms.state))
 }
+
+// SanitizeUTF8 replaces every run of invalid UTF-8 bytes in the string fields of the request with the
+// Unicode replacement character U+FFFD, so the request only contains valid UTF-8 strings afterwards.
+// Attribute keys and values, nested map and slice values, names, descriptions and other string fields
+// are all covered. Bytes values and binary identifiers (trace, span and profile IDs, and the original profile payload) are not modified.
+func (ms ExportRequest) SanitizeUTF8() {
+	ms.state.AssertMutable()
+	internal.SanitizeUTF8ExportProfilesServiceRequest(ms.orig)
+}
