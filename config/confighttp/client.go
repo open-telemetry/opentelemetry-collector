@@ -95,6 +95,10 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 		return nil, err
 	}
 	transport := http.DefaultTransport.(*http.Transport).Clone()
+	// The net/http client default of 10 MiB lets a server make the client build
+	// a header map of well over 100 MiB per request in flight. Apply the same
+	// 1MB limit that http.Server applies to request headers.
+	transport.MaxResponseHeaderBytes = http.DefaultMaxHeaderBytes
 	if cc.DialerMiddleware.HasValue() {
 		fn, rerr := cc.DialerMiddleware.Get().GetDialer(ctx, extensions)
 		if rerr != nil {
