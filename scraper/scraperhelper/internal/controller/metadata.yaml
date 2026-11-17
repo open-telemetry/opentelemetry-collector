@@ -1,4 +1,4 @@
-type: scraperhelper/controller
+type: controller
 github_project: open-telemetry/opentelemetry-collector
 parent: scraperhelper
 

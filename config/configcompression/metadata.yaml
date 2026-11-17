@@ -1,4 +1,4 @@
-type: config/configcompression
+type: configcompression
 parent: config
 github_project: open-telemetry/opentelemetry-collector
 

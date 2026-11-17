@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -554,6 +555,28 @@ func TestHTTPClientHostHeader(t *testing.T) {
 	})
 }
 
+func TestHTTPClientResponseHeaderLimit(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		size := http.DefaultMaxHeaderBytes / 2
+		if r.URL.Path == "/large" {
+			size = 2 * http.DefaultMaxHeaderBytes
+		}
+		w.Header().Set("X-Filler", strings.Repeat("a", size))
+	}))
+	defer server.Close()
+
+	clientConfig := NewDefaultClientConfig()
+	client, err := clientConfig.ToClient(t.Context(), nil, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	resp, err := client.Get(server.URL + "/small")
+	require.NoError(t, err)
+	require.NoError(t, resp.Body.Close())
+
+	_, err = client.Get(server.URL + "/large") //nolint:bodyclose // no response is returned
+	require.ErrorContains(t, err, "server response headers exceeded")
+}
+
 func TestHTTPTransportOptions(t *testing.T) {
 	settings := componenttest.NewNopTelemetrySettings()
 	// Disable OTel instrumentation so the *http.Transport object is directly accessible
@@ -591,6 +614,7 @@ func TestHTTPTransportOptions(t *testing.T) {
 	require.Equal(t, time.Duration(0), transport.IdleConnTimeout)
 	require.Equal(t, 0, transport.MaxConnsPerHost)
 	require.Equal(t, 0, transport.MaxIdleConnsPerHost)
+	require.Equal(t, int64(http.DefaultMaxHeaderBytes), transport.MaxResponseHeaderBytes)
 }
 
 func TestContextWithClient(t *testing.T) {

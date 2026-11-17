@@ -128,6 +128,11 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 	return be, nil
 }
 
+// ExporterHelperBatchingEnabled reports whether this exporter batches requests.
+func (be *BaseExporter) ExporterHelperBatchingEnabled() bool {
+	return be.queueCfg.HasValue() && be.queueCfg.Get().Batch.HasValue()
+}
+
 // Send sends the request using the first sender in the chain.
 func (be *BaseExporter) Send(ctx context.Context, req request.Request) error {
 	// Have to read the number of items before sending the request since the request can
@@ -244,7 +249,7 @@ func WithQueueBatch(cfg configoptional.Optional[queuebatch.Config], set queuebat
 			o.ExportFailureMessage += " Try enabling sending_queue to survive temporary failures."
 			return nil
 		}
-		if cfg.Get().StorageID != nil && set.Encoding == nil {
+		if cfg.Get().StorageID.HasValue() && set.Encoding == nil {
 			return errors.New("`Settings.Encoding` must not be nil when persistent queue is enabled")
 		}
 		// Automatically configure partitioner if MetadataKeys is set

@@ -1,4 +1,4 @@
-type: extensionmiddleware/extensionmiddlewaretest
+type: extensionmiddlewaretest
 parent: extensionmiddleware
 github_project: open-telemetry/opentelemetry-collector
 

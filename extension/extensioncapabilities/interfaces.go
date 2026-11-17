@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 )
@@ -91,4 +92,15 @@ type ConfigSnapshotWatcher interface {
 	// configuration. The provided ConfigSnapshot returns configuration instances
 	// owned by the extension.
 	NotifyConfigSnapshot(ctx context.Context, configSnapshot ConfigSnapshot) error
+}
+
+// ComponentStatusWatcher is an extra interface for Extension hosted by the OpenTelemetry
+// Collector that is to be implemented by extensions interested in changes to component
+// status.
+type ComponentStatusWatcher interface {
+	// Changed notifies about a change in the source component status.
+	// Extensions that implement this interface must be ready that Changed
+	// may be called before, after or concurrently with calls to Component.Start() and Component.Shutdown().
+	// The function may be called concurrently with itself.
+	Changed(source *componentstatus.InstanceID, event *componentstatus.Event)
 }

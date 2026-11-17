@@ -66,6 +66,16 @@
         "cookies": {
           "description": "Configures the cookie management of the HTTP client."
         },
+        "dialer_middleware": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Specifies the name of the extension to use."
+            }
+          },
+          "description": "Dialer middleware is a handler customizing how the client will dial connections over TCP."
+        },
         "endpoint": {
           "type": "string",
           "description": "Is the target URL to send data to (e.g.: http://some.url:9411/v1/traces)."
@@ -353,7 +363,7 @@
           "items": {
             "type": "string"
           },
-          "description": "Configures the list of compression algorithms the server can accept. \nDefault: [\"\", \"gzip\", \"zstd\", \"zlib\", \"snappy\", \"deflate\"]\n"
+          "description": "Configures the list of compression algorithms the server can accept. \nDefault: [\"\", \"gzip\", \"zstd\", \"zlib\", \"snappy\", \"deflate\", \"lz4\", \"x-snappy-framed\"]\n"
         },
         "cors": {
           "type": "object",
