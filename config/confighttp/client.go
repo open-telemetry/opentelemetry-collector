@@ -8,17 +8,16 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 	"slices"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"golang.org/x/net/http2"
-	"golang.org/x/net/publicsuffix"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 )
@@ -66,6 +65,9 @@ func (cc *ClientConfig) Validate() error {
 			return err
 		}
 	}
+	if cc.DialerMiddleware.HasValue() && !configmiddleware.IsCustomTCPRoutingEnabled() {
+		return errors.New("use of the dialer_middleware feature requires to enable the feature gate 'pkg.configmiddleware.CustomTCPRouting'")
+	}
 	return nil
 }
 
@@ -91,6 +93,17 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 		return nil, err
 	}
 	transport := http.DefaultTransport.(*http.Transport).Clone()
+	// The net/http client default of 10 MiB lets a server make the client build
+	// a header map of well over 100 MiB per request in flight. Apply the same
+	// 1MB limit that http.Server applies to request headers.
+	transport.MaxResponseHeaderBytes = http.DefaultMaxHeaderBytes
+	if cc.DialerMiddleware.HasValue() {
+		fn, rerr := cc.DialerMiddleware.Get().GetDialer(ctx, extensions)
+		if rerr != nil {
+			return nil, rerr
+		}
+		transport.DialContext = fn
+	}
 	if tlsCfg != nil {
 		transport.TLSClientConfig = tlsCfg
 	}
@@ -202,7 +215,7 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 
 	var jar http.CookieJar
 	if cc.Cookies.HasValue() {
-		jar, err = cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
+		jar, err = newBoundedCookieJar()
 		if err != nil {
 			return nil, err
 		}

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"unicode/utf8"
 
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -31,6 +32,17 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
+
+// maxResponseHeaderListSize bounds the headers and trailers accepted from the backend, which carry
+// the error message and the status details of a failed export. It matches the limit that the
+// otlphttpexporter puts on an error response body (maxHTTPResponseReadBytes).
+const maxResponseHeaderListSize = 64 * 1024
+
+// maxPartialSuccessMessageLen bounds how many bytes of the error_message of a partial
+// success response are logged. The message is chosen by the backend and the only limit
+// applied to it is the gRPC receive limit (4 MiB by default, after decompression), and
+// encoding a log entry costs many times the size of its fields.
+const maxPartialSuccessMessageLen = 1024
 
 type baseExporter struct {
 	// Input configuration.
@@ -64,7 +76,8 @@ func newExporter(cfg component.Config, set exporter.Settings) *baseExporter {
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *baseExporter) start(ctx context.Context, host component.Host) (err error) {
 	agentOpt := configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))
-	if e.clientConn, err = e.config.ClientConfig.ToClientConn(ctx, host.GetExtensions(), e.settings, agentOpt); err != nil {
+	headerOpt := configgrpc.WithGrpcDialOption(grpc.WithMaxHeaderListSize(maxResponseHeaderListSize))
+	if e.clientConn, err = e.config.ClientConfig.ToClientConn(ctx, host.GetExtensions(), e.settings, agentOpt, headerOpt); err != nil {
 		return err
 	}
 	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
@@ -103,7 +116,7 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	partialSuccess := resp.PartialSuccess()
 	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedSpans() != 0 {
 		e.settings.Logger.Warn("Partial success response",
-			zap.String("message", resp.PartialSuccess().ErrorMessage()),
+			zap.String("message", truncateMessage(resp.PartialSuccess().ErrorMessage())),
 			zap.Int64("dropped_spans", resp.PartialSuccess().RejectedSpans()),
 		)
 	}
@@ -123,7 +136,7 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 	partialSuccess := resp.PartialSuccess()
 	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedDataPoints() != 0 {
 		e.settings.Logger.Warn("Partial success response",
-			zap.String("message", resp.PartialSuccess().ErrorMessage()),
+			zap.String("message", truncateMessage(resp.PartialSuccess().ErrorMessage())),
 			zap.Int64("dropped_data_points", resp.PartialSuccess().RejectedDataPoints()),
 		)
 	}
@@ -143,7 +156,7 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	partialSuccess := resp.PartialSuccess()
 	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedLogRecords() != 0 {
 		e.settings.Logger.Warn("Partial success response",
-			zap.String("message", resp.PartialSuccess().ErrorMessage()),
+			zap.String("message", truncateMessage(resp.PartialSuccess().ErrorMessage())),
 			zap.Int64("dropped_log_records", resp.PartialSuccess().RejectedLogRecords()),
 		)
 	}
@@ -163,11 +176,24 @@ func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) e
 	partialSuccess := resp.PartialSuccess()
 	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedProfiles() != 0 {
 		e.settings.Logger.Warn("Partial success response",
-			zap.String("message", resp.PartialSuccess().ErrorMessage()),
+			zap.String("message", truncateMessage(resp.PartialSuccess().ErrorMessage())),
 			zap.Int64("dropped_profiles", resp.PartialSuccess().RejectedProfiles()),
 		)
 	}
 	return nil
+}
+
+// truncateMessage returns at most maxPartialSuccessMessageLen bytes of msg, cut at a
+// character boundary, and marks the result as truncated when anything was dropped.
+func truncateMessage(msg string) string {
+	if len(msg) <= maxPartialSuccessMessageLen {
+		return msg
+	}
+	cut := maxPartialSuccessMessageLen
+	for cut > 0 && !utf8.RuneStart(msg[cut]) {
+		cut--
+	}
+	return msg[:cut] + "... (truncated)"
 }
 
 func processError(err error) error {

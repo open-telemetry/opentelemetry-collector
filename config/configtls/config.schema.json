@@ -313,5 +313,5 @@
       "description": "Defines trusted platform module configuration for storing TLS keys."
     }
   },
-  "title": "pkg/config/configtls"
+  "title": "pkg/configtls"
 }

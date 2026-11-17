@@ -9,6 +9,8 @@ status:
   stability:
     beta: [metrics, logs]
   distributions: []
+  codeowners:
+    active: [braydonk, dmathieu]
 
 config:
   type: object

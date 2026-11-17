@@ -114,9 +114,9 @@ import (
 
 {{- if $hasConfig }}
     {{- if .Metadata.Config.Description }}
-        // {{ .Metadata.Config.Description }}
+        {{ .Metadata.Config.Description | goComment }}
     {{- else }}
-        // Config defines the configuration for {{ .Metadata.DisplayName }} component.
+        {{ printf "Config defines the configuration for %s component." .Metadata.DisplayName | goComment }}
     {{- end }}
     {{- if .Metadata.Config.Deprecated }}
         {{ printf "Deprecated: [%s] %s" .Metadata.Config.Deprecated.Since .Metadata.Config.Deprecated.Note | goComment }}

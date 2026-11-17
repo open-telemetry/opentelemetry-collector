@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/config/configstorage"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -53,6 +54,37 @@ func TestBaseExporterWithOptions(t *testing.T) {
 	require.Equal(t, want, be.Shutdown(context.Background()))
 }
 
+func TestBaseExporterBatchingEnabled(t *testing.T) {
+	qCfg := NewDefaultQueueConfig()
+	qCfg.Batch = configoptional.None[queuebatch.BatchConfig]()
+	set := exportertest.NewNopSettings(exportertest.NopType)
+
+	be, err := NewBaseExporter(set, pipeline.SignalMetrics, noopExport)
+	require.NoError(t, err)
+	require.False(t, be.ExporterHelperBatchingEnabled())
+
+	be, err = NewBaseExporter(
+		set,
+		pipeline.SignalMetrics,
+		noopExport,
+		WithQueueBatchSettings(newFakeQueueBatch()),
+		WithQueueBatch(configoptional.Some(qCfg), newFakeQueueBatch()),
+	)
+	require.NoError(t, err)
+	require.False(t, be.ExporterHelperBatchingEnabled())
+
+	qCfg.Batch = configoptional.Some(queuebatch.BatchConfig{})
+	be, err = NewBaseExporter(
+		set,
+		pipeline.SignalMetrics,
+		noopExport,
+		WithQueueBatchSettings(newFakeQueueBatch()),
+		WithQueueBatch(configoptional.Some(qCfg), newFakeQueueBatch()),
+	)
+	require.NoError(t, err)
+	require.True(t, be.ExporterHelperBatchingEnabled())
+}
+
 func TestBaseExporterWithTracer(t *testing.T) {
 	telemetry := componenttest.NewTelemetry()
 	t.Cleanup(func() {
@@ -83,8 +115,8 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	require.Error(t, err)
 
 	qCfg := NewDefaultQueueConfig()
-	storageID := component.NewID(component.MustNewType("test"))
-	qCfg.StorageID = &storageID
+	storageID := configstorage.ID(component.NewID(component.MustNewType("test")))
+	qCfg.StorageID = configoptional.Some(storageID)
 	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
 		WithQueueBatchSettings(newFakeQueueBatch()),
 		WithRetry(configretry.NewDefaultBackOffConfig()),

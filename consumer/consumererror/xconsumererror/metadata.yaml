@@ -1,4 +1,4 @@
-type: consumererror/xconsumererror
+type: xconsumererror
 parent: consumererror
 github_project: open-telemetry/opentelemetry-collector
 

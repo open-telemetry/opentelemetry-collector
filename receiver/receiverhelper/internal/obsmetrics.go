@@ -13,6 +13,9 @@ const (
 	TransportKey = "transport"
 	// FormatKey used to identify the format of the data received.
 	FormatKey = "format"
+	// SampleTypeKey used to identify the sample type, formatted as "type:unit",
+	// of the profile samples received.
+	SampleTypeKey = "sample_type"
 
 	// AcceptedSpansKey used to identify spans accepted by the Collector.
 	AcceptedSpansKey = "accepted_spans"

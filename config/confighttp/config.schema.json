@@ -66,6 +66,16 @@
         "cookies": {
           "description": "Configures the cookie management of the HTTP client."
         },
+        "dialer_middleware": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Specifies the name of the extension to use."
+            }
+          },
+          "description": "Dialer middleware is a handler customizing how the client will dial connections over TCP."
+        },
         "endpoint": {
           "type": "string",
           "description": "Is the target URL to send data to (e.g.: http://some.url:9411/v1/traces)."

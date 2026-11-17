@@ -1,4 +1,4 @@
-type: exporter/exportertest
+type: exportertest
 parent: exporter
 github_project: open-telemetry/opentelemetry-collector
 

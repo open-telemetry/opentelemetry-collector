@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -742,6 +743,59 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return rcv.requestCount.Load() > 1
 	}, 10*time.Second, 5*time.Millisecond, "Should retry if RetryInfo is included into status details by the server.")
+}
+
+func TestSendTracesOnOversizedStatusDetails(t *testing.T) {
+	ln, err := net.Listen("tcp", "localhost:")
+	require.NoError(t, err)
+	rcv, _ := otlpTracesReceiverOnGRPCServer(ln, false)
+	defer rcv.srv.GracefulStop()
+
+	// A status whose details are larger than the exporter accepts in response headers
+	// and trailers. It must not be decoded by the exporter and must not be retried.
+	st := status.New(codes.Unavailable, "unavailable")
+	st, err = st.WithDetails(&errdetails.DebugInfo{Detail: strings.Repeat("x", 2*maxResponseHeaderListSize)})
+	require.NoError(t, err)
+	rcv.setExportError(st.Err())
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.QueueConfig = configoptional.None[exporterhelper.QueueBatchConfig]()
+	cfg.RetryConfig.Enabled = false
+	cfg.ClientConfig = configgrpc.ClientConfig{
+		Endpoint: ln.Addr().String(),
+		TLS: configtls.ClientConfig{
+			Insecure: true,
+		},
+	}
+	set := exportertest.NewNopSettings(factory.Type())
+	exp, err := factory.CreateTraces(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exp)
+
+	defer func() {
+		assert.NoError(t, exp.Shutdown(context.Background()))
+	}()
+
+	host := componenttest.NewNopHost()
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	td := ptrace.NewTraces()
+	err = exp.ConsumeTraces(context.Background(), td)
+	require.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err), "an export whose response exceeds the header limit must fail permanently: %v", err)
+	assert.EqualValues(t, 1, rcv.requestCount.Load())
+}
+
+func TestTruncateMessage(t *testing.T) {
+	assert.Equal(t, "Some spans were not ingested", truncateMessage("Some spans were not ingested"))
+
+	atLimit := strings.Repeat("a", maxPartialSuccessMessageLen)
+	assert.Equal(t, atLimit, truncateMessage(atLimit))
+	assert.Equal(t, atLimit+"... (truncated)", truncateMessage(atLimit+"a"))
+
+	// The cut falls inside the last two-byte character, which is dropped as a whole.
+	assert.Equal(t, atLimit[1:]+"... (truncated)", truncateMessage(atLimit[1:]+"éé"))
 }
 
 func startServerAndMakeRequest(t *testing.T, exp exporter.Traces, td ptrace.Traces, ln net.Listener) {
