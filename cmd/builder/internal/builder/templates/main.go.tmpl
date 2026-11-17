@@ -9,10 +9,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	{{- range .ConfmapConverters}}
-	{{.Name}} "{{.Import}}"
+	{{.Name}} {{ printf "%q" .Import }}
 	{{- end}}
 	{{- range .ConfmapProviders}}
-	{{.Name}} "{{.Import}}"
+	{{.Name}} {{ printf "%q" .Import }}
 	{{- end}}
 	"go.opentelemetry.io/collector/otelcol"
 )
@@ -32,9 +32,9 @@ func runMain(runFn func(otelcol.CollectorSettings) error, exitFn func(int)) {
 
 func newDefaultCollectorSettings() otelcol.CollectorSettings {
 	info := component.BuildInfo{
-		Command:     "{{ .Distribution.Name }}",
-		Description: "{{ .Distribution.Description }}",
-		Version:     "{{ .Distribution.Version }}",
+		Command:     {{ printf "%q" .Distribution.Name }},
+		Description: {{ printf "%q" .Distribution.Description }},
+		Version:     {{ printf "%q" .Distribution.Version }},
 	}
 
 	return otelcol.CollectorSettings{
@@ -56,18 +56,18 @@ func newDefaultCollectorSettings() otelcol.CollectorSettings {
 				},
 				{{- end }}
 				{{- if .ConfResolver.DefaultURIScheme }}
-				DefaultScheme: "{{ .ConfResolver.DefaultURIScheme }}",
+				DefaultScheme: {{ printf "%q" .ConfResolver.DefaultURIScheme }},
 				{{- end }}
 			},
 		},
 		ProviderModules: map[string]string{
 			{{- range .ConfmapProviders}}
-			{{.Name}}.NewFactory().Create(confmap.ProviderSettings{}).Scheme(): "{{.GoMod}}",
+			{{.Name}}.NewFactory().Create(confmap.ProviderSettings{}).Scheme(): {{ printf "%q" .GoMod }},
 			{{- end}}
 		},
 		ConverterModules: []string{
 			{{- range .ConfmapConverters}}
-			"{{.GoMod}}",
+			{{ printf "%q" .GoMod }},
 			{{- end}}
 		},
 	}

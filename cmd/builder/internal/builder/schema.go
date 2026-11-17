@@ -43,7 +43,15 @@ type componentSchemaMetadata struct {
 }
 
 func writeEmbeddedSchemaSourceFile(cfg *Config, schema []byte) error {
-	return processAndWrite(cfg, schemaTemplate, schemaTemplate.Name(), embeddedSchemaTemplateParams{Schema: string(schema)})
+	// Write through an os.Root so that an entry already present in the output path
+	// (for example a symlink named schema.go) cannot redirect the write outside of it.
+	root, err := os.OpenRoot(cfg.Distribution.OutputPath)
+	if err != nil {
+		return fmt.Errorf("failed to open output path: %w", err)
+	}
+	defer root.Close()
+
+	return processAndWrite(root, schemaTemplate, schemaTemplate.Name(), embeddedSchemaTemplateParams{Schema: string(schema)})
 }
 
 func generateEmbeddedSchemaWithDeps(cfg *Config, deps builderDeps) error {

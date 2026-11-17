@@ -24,6 +24,15 @@ export CGO_ENABLED=0
 
 echo "Using ${GOBIN} to compile the distributions."
 
+# Replaces ${GOBIN} and ${WORKSPACE_DIR} references read from stdin.
+subst_vars() {
+    local content
+    content=$(cat)
+    content=${content//"\${GOBIN}"/${GOBIN}}
+    content=${content//"\${WORKSPACE_DIR}"/${WORKSPACE_DIR}}
+    printf '%s\n' "${content}"
+}
+
 test_build_config() {
     local test="$1"
     local build_config="$2"
@@ -37,8 +46,7 @@ test_build_config() {
     echo "Starting test '${test}' at $(date)" >> "${out}/test.log"
 
     final_build_config=$(basename "${build_config}")
-    go tool -modfile "${WORKSPACE_DIR}/internal/tools/go.mod" envsubst \
-       -o "${out}/${final_build_config}" -i <(cat "$build_config" "$replaces")
+    cat "$build_config" "$replaces" | subst_vars > "${out}/${final_build_config}"
     if ! go run . --config "${out}/${final_build_config}" --output-path "${out}" > "${out}/builder.log" 2>&1; then
         echo "❌ FAIL ${test}. Failed to compile the test ${test}. Build logs:"
         cat "${out}/builder.log"
@@ -128,8 +136,8 @@ test_init() {
       return
   fi
 
-  go tool -modfile "${WORKSPACE_DIR}/internal/tools/go.mod" envsubst \
-     -o "${out}/manifest.yaml" -i <(cat "${out}/manifest.yaml" "$replaces")
+  cat "${out}/manifest.yaml" "$replaces" | subst_vars > "${out}/manifest.yaml.tmp"
+  mv "${out}/manifest.yaml.tmp" "${out}/manifest.yaml"
 
   cd "${out}" || exit 1
   make run > "${out}/otelcol.log" 2>&1 &
