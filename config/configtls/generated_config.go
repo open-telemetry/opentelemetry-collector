@@ -129,11 +129,13 @@ func NewDefaultServerConfig() ServerConfig {
 
 // TPMConfig defines trusted platform module configuration for storing TLS keys.
 type TPMConfig struct {
-	Auth string `mapstructure:"auth,omitempty"`
+	// Auth the authorization value of the TLS key stored in the TPM. (optional)
+	Auth configopaque.String `mapstructure:"auth,omitempty"`
 
 	Enabled bool `mapstructure:"enabled,omitempty"`
 
-	OwnerAuth string `mapstructure:"owner_auth,omitempty"`
+	// OwnerAuth the owner authorization value of the TPM. (optional)
+	OwnerAuth configopaque.String `mapstructure:"owner_auth,omitempty"`
 
 	// Path the path to the TPM device or Unix domain socket. For instance /dev/tpm0 or /dev/tpmrm0.
 	Path string `mapstructure:"path,omitempty"`
