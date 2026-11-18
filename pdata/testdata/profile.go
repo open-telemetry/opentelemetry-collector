@@ -56,6 +56,41 @@ func GenerateProfiles(profilesCount int) pprofile.Profiles {
 	return td
 }
 
+// GenerateProfilesWithSamples generates dummy profiling data with the given
+// number of samples in every profile. GenerateProfiles emits one sample per
+// profile, which makes profile and sample counts indistinguishable.
+func GenerateProfilesWithSamples(profilesCount, samplesPerProfile int) pprofile.Profiles {
+	pd := pprofile.NewProfiles()
+
+	dic := pd.Dictionary()
+	// By convention, the first element is empty in all dictionary tables.
+	dic.StringTable().Append("")
+	dic.StringTable().Append("key")
+	dic.AttributeTable().AppendEmpty()
+	dic.MappingTable().AppendEmpty()
+	dic.LocationTable().AppendEmpty()
+	dic.FunctionTable().AppendEmpty()
+	dic.LinkTable().AppendEmpty()
+	dic.StackTable().AppendEmpty()
+
+	initResource(pd.ResourceProfiles().AppendEmpty().Resource())
+	ss := pd.ResourceProfiles().At(0).ScopeProfiles().AppendEmpty().Profiles()
+	ss.EnsureCapacity(profilesCount)
+	for i := range profilesCount {
+		p := ss.AppendEmpty()
+		p.SetProfileID([16]byte{byte(i + 1)})
+		p.SetTime(profileStartTimestamp)
+		p.SetDurationNano(uint64(time.Second.Nanoseconds()))
+		p.Samples().EnsureCapacity(samplesPerProfile)
+		for j := range samplesPerProfile {
+			s := p.Samples().AppendEmpty()
+			s.Values().Append(int64(j))
+		}
+	}
+
+	return pd
+}
+
 func fillProfileOne(dic pprofile.ProfilesDictionary, profile pprofile.Profile) {
 	profile.SetProfileID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
 	profile.SetTime(profileStartTimestamp)
