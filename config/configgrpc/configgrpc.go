@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
@@ -25,6 +26,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/stats"
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/client"
@@ -346,11 +348,40 @@ func (sc *ServerConfig) ToServer(
 	settings component.TelemetrySettings,
 	extraOpts ...ToServerOption,
 ) (*grpc.Server, error) {
-	grpcOpts, err := sc.getGrpcServerOptions(ctx, extensions, settings, extraOpts)
+	var srv *grpc.Server
+	grpcOpts, err := sc.getGrpcServerOptions(ctx, extensions, settings, extraOpts, registeredMethodsFilter(func() *grpc.Server { return srv }))
 	if err != nil {
 		return nil, err
 	}
-	return grpc.NewServer(grpcOpts...), nil
+	srv = grpc.NewServer(grpcOpts...)
+	return srv, nil
+}
+
+// registeredMethodsFilter returns an [otelgrpc.Filter] that only instruments
+// calls to methods registered on the server that getServer returns. The server
+// is created from the options that include this filter, so it is looked up lazily.
+//
+// grpc-go tags an incoming RPC with the stats handler, which starts the server
+// span, before it looks the method up. A call to a service or method that is
+// not registered is answered with Unimplemented without running the
+// interceptors (so without authentication) and without a stats.End event, so
+// its span would never be ended and the peer-chosen method name would be
+// recorded as a span name and a metric attribute. Services can only be
+// registered before Serve, so the set of methods is built on the first RPC.
+func registeredMethodsFilter(getServer func() *grpc.Server) otelgrpc.Filter {
+	registeredMethods := sync.OnceValue(func() map[string]struct{} {
+		methods := make(map[string]struct{})
+		for service, info := range getServer().GetServiceInfo() {
+			for _, method := range info.Methods {
+				methods["/"+service+"/"+method.Name] = struct{}{}
+			}
+		}
+		return methods
+	})
+	return func(info *stats.RPCTagInfo) bool {
+		_, ok := registeredMethods()[info.FullMethodName]
+		return ok
+	}
 }
 
 func (sc *ServerConfig) getGrpcServerOptions(
@@ -358,6 +389,7 @@ func (sc *ServerConfig) getGrpcServerOptions(
 	extensions map[component.ID]component.Component,
 	settings component.TelemetrySettings,
 	extraOpts []ToServerOption,
+	filter otelgrpc.Filter,
 ) ([]grpc.ServerOption, error) {
 	var opts []grpc.ServerOption
 
@@ -439,6 +471,7 @@ func (sc *ServerConfig) getGrpcServerOptions(
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
 		otelgrpc.WithMeterProvider(settings.MeterProvider),
+		otelgrpc.WithFilter(filter),
 	}
 
 	// Enable OpenTelemetry observability plugin.
