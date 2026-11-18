@@ -254,7 +254,7 @@
                   "description": "Trusted platform module configuration"
                 }
               },
-              "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn''t anything specific to a server connection. Components with server connections should use Config.\n",
+              "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn't anything specific to a server connection. Components with server connections should use Config.\n",
               "default": {}
             }
           ]
@@ -363,7 +363,7 @@
           "items": {
             "type": "string"
           },
-          "description": "Configures the list of compression algorithms the server can accept. \nDefault: [\"\", \"gzip\", \"zstd\", \"zlib\", \"snappy\", \"deflate\"]\n"
+          "description": "Configures the list of compression algorithms the server can accept. \nDefault: [\"\", \"gzip\", \"zstd\", \"zlib\", \"snappy\", \"deflate\", \"lz4\", \"x-snappy-framed\"]\n"
         },
         "cors": {
           "type": "object",
@@ -545,7 +545,7 @@
                   "description": "Trusted platform module configuration"
                 }
               },
-              "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn''t anything specific to a server connection. Components with server connections should use Config.\n",
+              "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn't anything specific to a server connection. Components with server connections should use Config.\n",
               "default": {}
             }
           ]

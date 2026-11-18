@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: cmd/mdatagen
+note: Fix telemetry metric stability schema and missing stability error message
+issues: [16363]

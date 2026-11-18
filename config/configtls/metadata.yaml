@@ -36,7 +36,7 @@ exported_configs:
   config:
     description: | 
       Exposes the common client and server TLS configurations. 
-      Note: Since there isn''t anything specific to a server connection. Components with server connections should use Config.
+      Note: Since there isn't anything specific to a server connection. Components with server connections should use Config.
     properties:
       ca_file:
         description: |
