@@ -238,13 +238,15 @@
                   "type": "object",
                   "properties": {
                     "auth": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The authorization value of the TLS key stored in the TPM. (optional)"
                     },
                     "enabled": {
                       "type": "boolean"
                     },
                     "owner_auth": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The owner authorization value of the TPM. (optional)"
                     },
                     "path": {
                       "type": "string",
@@ -529,13 +531,15 @@
                   "type": "object",
                   "properties": {
                     "auth": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The authorization value of the TLS key stored in the TPM. (optional)"
                     },
                     "enabled": {
                       "type": "boolean"
                     },
                     "owner_auth": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The owner authorization value of the TPM. (optional)"
                     },
                     "path": {
                       "type": "string",
