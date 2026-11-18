@@ -201,3 +201,55 @@ func TestRejectInvalidUTF8(t *testing.T) {
 		assert.Equal(t, 0, ld.ResourceLogs().Len())
 	})
 }
+
+func BenchmarkRejectInvalidUTF8(b *testing.B) {
+	const records = 10_000
+	newRequest := func(invalidEvery int) ExportRequest {
+		req := NewExportRequest()
+		rl := req.Logs().ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("service.name", "svc")
+		sl := rl.ScopeLogs().AppendEmpty()
+		sl.Scope().SetName("scope")
+		lrs := sl.LogRecords()
+		lrs.EnsureCapacity(records)
+		for i := range records {
+			lr := lrs.AppendEmpty()
+			lr.SetSeverityText("INFO")
+			lr.Body().SetStr("log body with some text in it")
+			lr.Attributes().PutStr("http.method", "GET")
+			// The invalid string is the last one of the record, so the whole record is checked.
+			route := "/api/v1/resource"
+			if invalidEvery > 0 && i%invalidEvery == 0 {
+				route = "/api/\xff/resource"
+			}
+			lr.Attributes().PutStr("http.route", route)
+		}
+		return req
+	}
+
+	for _, bc := range []struct {
+		name         string
+		invalidEvery int
+		want         int
+	}{
+		{name: "AllValid", invalidEvery: 0, want: 0},
+		{name: "OneInvalid", invalidEvery: records, want: 1},
+		{name: "AllInvalid", invalidEvery: 1, want: records},
+	} {
+		b.Run(bc.name, func(b *testing.B) {
+			req := newRequest(bc.invalidEvery)
+			b.ReportAllocs()
+			for b.Loop() {
+				if got := req.RejectInvalidUTF8(); got != bc.want {
+					b.Fatalf("rejected %d, want %d", got, bc.want)
+				}
+				if bc.invalidEvery > 0 {
+					// Rejection removed the invalid items, so build the request again.
+					b.StopTimer()
+					req = newRequest(bc.invalidEvery)
+					b.StartTimer()
+				}
+			}
+		})
+	}
+}
