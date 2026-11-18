@@ -80,8 +80,8 @@ and processed accordingly. Note the serialization format needs to be [OTLP JSON]
 The HTTP/JSON configuration also provides `traces_url_path`,
 `metrics_url_path`, and `logs_url_path` configurations to allow the URL paths
 for trace, metric, and log data to be modified. These default to `/v1/traces`,
-`/v1/metrics`, and `/v1/logs` respectively. Profiles are served at the fixed
-path `/v1development/profiles`.
+`/v1/metrics`, and `/v1/logs` respectively. While the profiles signal is in
+development, the receiver serves it at the fixed path `/v1development/profiles`.
 
 To write data with HTTP/JSON, `POST` to `[address]/[traces_url_path]` for
 traces, to `[address]/[metrics_url_path]` for metrics, to
