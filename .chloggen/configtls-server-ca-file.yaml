@@ -10,7 +10,7 @@ component: pkg/configtls
 note: Reject server TLS configurations that set `ca_file`/`ca_pem` without `client_ca_file`, and document that servers do not use `ca_file`.
 
 # One or more tracking issues or pull requests related to the change
-issues: []
+issues: [16445]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
