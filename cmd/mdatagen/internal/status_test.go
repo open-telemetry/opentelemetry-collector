@@ -90,3 +90,27 @@ func TestSortedDistributions(t *testing.T) {
 		})
 	}
 }
+
+func TestStatusClassValidation(t *testing.T) {
+	tests := []struct {
+		name    string
+		class   string
+		wantErr string
+	}{
+		{name: "internal", class: "internal"},
+		{name: "receiver", class: "receiver"},
+		{name: "missing class", wantErr: "missing class"},
+		{name: "invalid class", class: "unknown", wantErr: "invalid class: unknown"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := (&Status{Class: tt.class}).validateClass()
+			if tt.wantErr != "" {
+				assert.EqualError(t, err, tt.wantErr)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}

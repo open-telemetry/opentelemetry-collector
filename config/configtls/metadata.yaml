@@ -36,7 +36,7 @@ exported_configs:
   config:
     description: | 
       Exposes the common client and server TLS configurations. 
-      Note: Since there isn''t anything specific to a server connection. Components with server connections should use Config.
+      Note: Since there isn't anything specific to a server connection. Components with server connections should use Config.
     properties:
       ca_file:
         description: |
@@ -122,11 +122,13 @@ exported_configs:
     description: Defines trusted platform module configuration for storing TLS keys.
     properties:
       auth:
-        type: string
+        description: The authorization value of the TLS key stored in the TPM. (optional)
+        type: opaque_string
       enabled:
         type: bool
       owner_auth:
-        type: string
+        description: The owner authorization value of the TPM. (optional)
+        type: opaque_string
       path:
         description: The path to the TPM device or Unix domain socket. For instance /dev/tpm0 or /dev/tpmrm0.
         type: string

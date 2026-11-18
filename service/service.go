@@ -7,6 +7,7 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
+	"crypto/fips140"
 	"errors"
 	"fmt"
 	"runtime"
@@ -236,6 +237,7 @@ func (srv *Service) Start(ctx context.Context) error {
 	srv.telemetrySettings.Logger.Info("Starting "+srv.buildInfo.Command+"...",
 		zap.String("Version", srv.buildInfo.Version),
 		zap.Int("NumCPU", runtime.NumCPU()),
+		zap.Bool("FIPS140", fips140.Enabled()),
 	)
 
 	if err := srv.host.ServiceExtensions.Start(ctx, srv.host); err != nil {

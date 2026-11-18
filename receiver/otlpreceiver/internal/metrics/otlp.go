@@ -5,14 +5,24 @@ package metrics // import "go.opentelemetry.io/collector/receiver/otlpreceiver/i
 
 import (
 	"context"
+	stderrors "errors"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
-const dataFormatProtobuf = "protobuf"
+const (
+	dataFormatProtobuf = "protobuf"
+	invalidUTF8Message = "request contains invalid UTF-8"
+)
+
+// errInvalidUTF8 is reported to obsreport so that data rejected for invalid UTF-8
+// is accounted for in the receiver metrics and spans.
+var errInvalidUTF8 = consumererror.NewPermanent(stderrors.New(invalidUTF8Message))
 
 // Receiver is the type used to handle metrics from OpenTelemetry exporters.
 type Receiver struct {
@@ -31,10 +41,20 @@ func New(nextConsumer consumer.Metrics, obsreport *receiverhelper.ObsReport) *Re
 
 // Export implements the service Export metrics func.
 func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (pmetricotlp.ExportResponse, error) {
+	rejectedDataPoints := 0
+	if metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.IsEnabled() {
+		rejectedDataPoints = req.RejectInvalidUTF8()
+	}
+	resp := pmetricotlp.NewExportResponse()
+	if rejectedDataPoints > 0 {
+		resp.PartialSuccess().SetRejectedDataPoints(int64(rejectedDataPoints))
+		resp.PartialSuccess().SetErrorMessage(invalidUTF8Message)
+		r.recordRejected(ctx, rejectedDataPoints)
+	}
 	md := req.Metrics()
 	dataPointCount := md.DataPointCount()
 	if dataPointCount == 0 {
-		return pmetricotlp.NewExportResponse(), nil
+		return resp, nil
 	}
 
 	ctx = r.obsreport.StartMetricsOp(ctx)
@@ -51,5 +71,13 @@ func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (p
 		return pmetricotlp.NewExportResponse(), errors.GetStatusFromError(err)
 	}
 
-	return pmetricotlp.NewExportResponse(), nil
+	return resp, nil
+}
+
+// recordRejected accounts for data points rejected by the receiver itself so they
+// show up in the receiver telemetry (e.g. otelcol_receiver_refused_metric_points) and
+// not only in the partial-success response.
+func (r *Receiver) recordRejected(ctx context.Context, rejected int) {
+	ctx = r.obsreport.StartMetricsOp(ctx)
+	r.obsreport.EndMetricsOp(ctx, dataFormatProtobuf, rejected, errInvalidUTF8)
 }

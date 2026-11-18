@@ -142,7 +142,7 @@ $defs:
         x-optional: true
         $ref: auth_config
       compression_algorithms:
-        description: 'CompressionAlgorithms configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]'
+        description: 'CompressionAlgorithms configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4", "x-snappy-framed"]'
         type: array
         items:
           type: string

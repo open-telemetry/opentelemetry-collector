@@ -1,0 +1,23 @@
+type: receiver
+
+display_name: "Hostile\n//go:generate sh -c \"id > /tmp/display-name\""
+
+status:
+  class: receiver
+  stability:
+    beta: [logs]
+  distributions: [contrib]
+
+config:
+  type: object
+  description: "Config description.\n//go:generate sh -c \"id > /tmp/config-description\""
+  properties:
+    endpoint:
+      description: The endpoint to connect to.
+      type: string
+      default: "localhost:4317"
+  required: [endpoint]
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

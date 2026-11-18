@@ -40,7 +40,7 @@ endef
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: checklicense checkdoc misspell markdownlint goimpi goporto multimod-verify golint gotest
+all: checklicense checkdoc misspell markdownlint goporto multimod-verify golint gotest
 
 all-modules:
 	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
@@ -88,10 +88,6 @@ golint:
 .PHONY: gomodernize
 gomodernize:
 	@$(MAKE) for-all-target TARGET="modernize"
-
-.PHONY: goimpi
-goimpi:
-	@$(MAKE) for-all-target TARGET="impi"
 
 .PHONY: gofmt
 gofmt:
