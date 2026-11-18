@@ -166,3 +166,40 @@ func TestCollectorFatalErrorDuringShutdown(t *testing.T) {
 	}
 	assert.Equal(t, StateClosed, col.GetState())
 }
+
+// A collector failing reload must not hang.
+
+func TestCollectorReloadSetupFailsAfterStaleFatalError(t *testing.T) {
+	var generation atomic.Int32
+	col := newFatalTestCollector(t, func() fatalTestExt {
+		gen := generation.Add(1) // to tell apart generations after reloading
+		var host component.Host
+		return fatalTestExt{
+			StartFunc: func(_ context.Context, h component.Host) error {
+				if gen == 2 {
+					return errors.New("new configuration fails to start") // fire new error in the new config.
+				}
+				host = h
+				return nil
+			},
+			ShutdownFunc: func(context.Context) error {
+				if gen == 1 {
+					componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errors.New("stale"))) // report error on retired old config.
+				}
+				return nil
+			},
+		}
+	})
+
+	done := make(chan error, 1)
+	go func() { done <- col.Run(context.Background()) }()
+	require.Eventually(t, func() bool { return col.GetState() == StateRunning }, 2*time.Second, 10*time.Millisecond)
+
+	col.signalsChannel <- SIGHUP
+	select {
+	case err := <-done:
+		require.ErrorContains(t, err, "failed to setup configuration components")
+	case <-time.After(5 * time.Second):
+		t.Fatal("collector hung on a failed reload")
+	}
+}
