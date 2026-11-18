@@ -4,6 +4,7 @@
 package otlphttpexporter
 
 import (
+	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -31,6 +32,8 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 }
 
 func TestUnmarshalConfig(t *testing.T) {
+	defaultMaxConnsPerHost := http.DefaultTransport.(*http.Transport).MaxConnsPerHost
+
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
@@ -76,6 +79,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				WriteBufferSize:   345,
 				Timeout:           time.Second * 10,
 				Compression:       "gzip",
+				MaxConnsPerHost:   defaultMaxConnsPerHost,
 				ForceAttemptHTTP2: true,
 			},
 			ProfilesEndpoint: "https://custom.profiles.endpoint:8080/v1development/profiles",

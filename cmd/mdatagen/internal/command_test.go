@@ -10,6 +10,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -30,6 +31,24 @@ func TestNewCommand(t *testing.T) {
 	assert.IsType(t, &cobra.Command{}, cmd)
 	assert.Equal(t, "mdatagen", cmd.Use)
 	assert.True(t, cmd.SilenceUsage)
+}
+
+func TestIsComponent(t *testing.T) {
+	tests := []struct {
+		name   string
+		status *Status
+		want   bool
+	}{
+		{name: "component class", status: &Status{Class: "receiver"}, want: true},
+		{name: "internal class", status: &Status{Class: "internal"}, want: false},
+		{name: "nil status", status: nil, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, isComponent(tt.status))
+		})
+	}
 }
 
 func TestCommandNoArgs(t *testing.T) {
@@ -123,6 +142,8 @@ func TestRunContents(t *testing.T) {
 		wantStatusGenerated               bool
 		wantSendingQueueFunctionGenerated bool
 		wantComponentTestGenerated        bool
+		wantBuildTag                      string
+		wantReadmePlatform                string
 		wantGoleakIgnore                  bool
 		wantGoleakSkip                    bool
 		wantGoleakSetup                   bool
@@ -348,6 +369,22 @@ func TestRunContents(t *testing.T) {
 			wantMetricsGenerated:       true,
 			wantConfigGenerated:        true,
 		},
+		{
+			yml:                        "supported_platforms.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
+			wantBuildTag:               "//go:build linux || windows",
+			wantReadmePlatform:         "| Supported Platforms | linux, windows |",
+		},
+		{
+			yml:                        "unsupported_platforms.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
+			wantBuildTag:               "//go:build !freebsd && !illumos",
+			wantReadmePlatform:         "| Unsupported Platforms | freebsd, illumos |",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.yml, func(t *testing.T) {
@@ -497,6 +534,10 @@ foo
 				require.Contains(t, string(contents), "foo")
 			}
 
+			if tt.wantReadmePlatform != "" {
+				require.Contains(t, string(contents), tt.wantReadmePlatform)
+			}
+
 			if tt.wantComponentTestGenerated {
 				require.FileExists(t, filepath.Join(tmpdir, "generated_component_test.go"))
 				contents, err = os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "generated_component_test.go")))
@@ -505,6 +546,10 @@ foo
 				require.NotContains(t, string(contents), `"go.opentelemetry.io/collector/internal/testutil"`)
 				_, err = parser.ParseFile(token.NewFileSet(), "", contents, parser.DeclarationErrors)
 				require.NoError(t, err)
+
+				if tt.wantBuildTag != "" {
+					require.Contains(t, string(contents), tt.wantBuildTag)
+				}
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, "generated_component_test.go"))
 			}
@@ -1143,10 +1188,10 @@ func TestGenerateConfigGoStruct_InternalResolvedRefGeneratesLocalType(t *testing
 	generated := string(content)
 	require.Contains(t, generated, `"time"`)
 	require.Contains(t, generated, "type PlainConfig struct")
-	require.Contains(t, generated, "func NewDefaultPlainConfig() PlainConfig")
+	require.Contains(t, generated, "func newDefaultPlainConfig() PlainConfig")
 	require.Contains(t, generated, "Timeout: 30 * time.Second,")
 	require.Contains(t, generated, "Config PlainConfig `mapstructure:\"config\"`")
-	require.Contains(t, generated, "config := NewDefaultPlainConfig()")
+	require.Contains(t, generated, "config := newDefaultPlainConfig()")
 	require.Contains(t, generated, "config.Timeout = 30 * time.Second")
 	require.Contains(t, generated, "Config: config,")
 }
@@ -2049,11 +2094,10 @@ func TestGenerateConfigGoStruct_TestFileContainsValidateTestWhenValidatorsPresen
 	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config_test.go")) // #nosec G304
 	require.NoError(t, err)
 	require.Contains(t, string(content), "func TestCreateDefaultConfig(")
-	require.Contains(t, string(content), "func TestConfigValidate_DefaultValid(")
 	require.Contains(t, string(content), "func TestPortValidate_MinimumPort(")
 }
 
-func TestGenerateConfigGoStruct_TestFileNoValidateTestWhenNoValidators(t *testing.T) {
+func TestGenerateConfigGoStruct_RequiredObjectFieldOmitsEmptyValidate(t *testing.T) {
 	root := t.TempDir()
 	outputDir := filepath.Join(root, "shortname")
 	require.NoError(t, os.MkdirAll(outputDir, 0o700))
@@ -2065,11 +2109,15 @@ func TestGenerateConfigGoStruct_TestFileNoValidateTestWhenNoValidators(t *testin
 		Status:      &Status{Class: "receiver"},
 		ConfigsMetadata: &cfggen.ConfigsMetadata{
 			Config: &cfggen.ConfigMetadata{
-				Type: "object",
+				Type:     "object",
+				Required: []string{"protocols"},
 				Properties: map[string]*cfggen.ConfigMetadata{
-					"timeout": {
-						Type:     "string",
-						GoStruct: cfggen.GoStructConfig{FieldName: "timeout", Type: "time.Duration"},
+					"protocols": {
+						Type:     cfggen.ObjectType,
+						GoStruct: cfggen.GoStructConfig{FieldName: "Protocols"},
+						Properties: map[string]*cfggen.ConfigMetadata{
+							"grpc": {Type: "string", GoStruct: cfggen.GoStructConfig{FieldName: "GRPC"}},
+						},
 					},
 				},
 			},
@@ -2078,10 +2126,12 @@ func TestGenerateConfigGoStruct_TestFileNoValidateTestWhenNoValidators(t *testin
 
 	require.NoError(t, generateConfigGoStruct(md, outputDir))
 
-	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config_test.go")) // #nosec G304
+	content, err := os.ReadFile(filepath.Join(outputDir, "generated_config.go")) // #nosec G304
 	require.NoError(t, err)
-	require.Contains(t, string(content), "func TestCreateDefaultConfig(")
-	require.NotContains(t, string(content), "func TestConfigValidate_DefaultValid(")
+	// "protocols" is a required, non-pointer object field: the generated
+	// required-check has no rendering branch for that type, so no validator
+	// actually emits any code and the wrapper Validate() must not be generated.
+	require.NotContains(t, string(content), "func (c *Config) Validate()")
 }
 
 func TestGenerateConfigGoStruct_DefsOnlyConfigGeneratesLibraryTypes(t *testing.T) {
@@ -2141,7 +2191,6 @@ func TestGenerateConfigGoStruct_DefsOnlyConfigGeneratesLibraryTypes(t *testing.T
 
 	"github.com/stretchr/testify/require"
 )`)
-	require.Contains(t, generatedTest, "func TestSampleConfigValidate_DefaultValid(")
 	require.Contains(t, generatedTest, "func TestConfigValidate_RequiredHostName(")
 	require.Contains(t, generatedTest, "func TestConfigValidate_RequiredPort(")
 	require.NotContains(t, generatedTest, "func TestCreateDefaultConfig(")
@@ -2199,4 +2248,183 @@ func TestGenerateConfigSchema_LocalizesSameRootRefs(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, string(actual), "$ref: /filter.config")
 	require.NotContains(t, string(actual), "$ref: go.opentelemetry.io/collector/filter.config")
+}
+
+func TestGenerateConfigFiles_ReadmeIncludesExportedConfigs(t *testing.T) {
+	tests := []struct {
+		name       string
+		withConfig bool
+	}{
+		{name: "exported_configs only", withConfig: false},
+		{name: "config and exported_configs", withConfig: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root := t.TempDir()
+			tmpdir := filepath.Join(root, "shortname")
+			require.NoError(t, os.MkdirAll(tmpdir, 0o700))
+			require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+			readmePath := filepath.Join(tmpdir, "README.md")
+			readmeContent := "<!-- config autogenerated section -->\n<!-- end config autogenerated section -->\n"
+			require.NoError(t, os.WriteFile(readmePath, []byte(readmeContent), 0o600))
+
+			cfgsMd := &cfggen.ConfigsMetadata{
+				ExportedConfigs: map[string]*cfggen.ConfigMetadata{
+					"sample_def": {
+						Type: "object",
+						Properties: map[string]*cfggen.ConfigMetadata{
+							"host_name": {Type: "string", Description: "The host name."},
+						},
+					},
+				},
+			}
+			if tt.withConfig {
+				cfgsMd.Config = &cfggen.ConfigMetadata{
+					Type: "object",
+					Properties: map[string]*cfggen.ConfigMetadata{
+						"endpoint": {Type: "string", Description: "The endpoint."},
+					},
+				}
+			}
+
+			md := Metadata{
+				Type:            "test",
+				PackageName:     "shortname",
+				Status:          &Status{Class: "receiver"},
+				ConfigsMetadata: cfgsMd,
+			}
+			require.NoError(t, generateConfigFiles(md, tmpdir, "testmodule"))
+
+			contents, err := os.ReadFile(filepath.Clean(readmePath))
+			require.NoError(t, err)
+			require.Contains(t, string(contents), "### <a id=\"exported_configs.sample_def\"></a>exported_configs.sample_def")
+			require.Contains(t, string(contents), "| `host_name` | string |  | no | The host name. |")
+			if tt.withConfig {
+				require.Contains(t, string(contents), "| `endpoint` | string |  | no | The endpoint. |")
+			}
+		})
+	}
+}
+
+func TestGenerateConfigFiles_ReadmeLinksObjectRefToExportedSection(t *testing.T) {
+	root := t.TempDir()
+	tmpdir := filepath.Join(root, "shortname")
+	require.NoError(t, os.MkdirAll(tmpdir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+
+	readmePath := filepath.Join(tmpdir, "README.md")
+	readmeContent := "<!-- config autogenerated section -->\n<!-- end config autogenerated section -->\n"
+	require.NoError(t, os.WriteFile(readmePath, []byte(readmeContent), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "shortname",
+		Status:      &Status{Class: "receiver"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			ExportedConfigs: map[string]*cfggen.ConfigMetadata{
+				"inner": {
+					Type: "object",
+					Properties: map[string]*cfggen.ConfigMetadata{
+						"host": {Type: "string", Description: "The host."},
+					},
+				},
+				"outer": {
+					Type: "object",
+					Properties: map[string]*cfggen.ConfigMetadata{
+						"child": {Ref: "inner"},
+					},
+				},
+			},
+		},
+	}
+	require.NoError(t, generateConfigFiles(md, tmpdir, "testmodule"))
+
+	contents, err := os.ReadFile(filepath.Clean(readmePath))
+	require.NoError(t, err)
+	readme := string(contents)
+	// the referenced definition has its own section ...
+	require.Contains(t, readme, "### <a id=\"exported_configs.inner\"></a>exported_configs.inner")
+	// ... and the referencing property links to it instead of expanding it again
+	require.Contains(t, readme, "| `child` | object (see [exported_configs.inner](#exported_configs.inner)) |")
+	require.NotContains(t, readme, "exported_configs.outer.child")
+}
+
+// TestRunQuotedDescriptions verifies that descriptions coming from metadata.yaml are rendered as
+// properly escaped Go string literals, so that a description cannot close the literal and inject
+// code or a //go:generate directive into the generated files.
+func TestRunQuotedDescriptions(t *testing.T) {
+	const (
+		metricDescription = "Number of requests.\" + `\n//go:generate sh -c \"id > /tmp/metric-description\"\n`[:0] + \""
+		gateDescription   = "Gate \" + `\n//go:generate sh -c \"id > /tmp/gate-description\"\n`[:0] + \""
+	)
+
+	tmpdir := filepath.Join(t.TempDir(), "shortname")
+	require.NoError(t, os.MkdirAll(tmpdir, 0o750))
+	ymlContent, err := os.ReadFile(filepath.Join("testdata", "quoted_descriptions.yaml"))
+	require.NoError(t, err)
+	metadataFile := filepath.Join(tmpdir, "metadata.yaml")
+	require.NoError(t, os.WriteFile(metadataFile, ymlContent, 0o600)) // #nosec G703
+	require.NoError(t, os.WriteFile(filepath.Join(tmpdir, "empty.go"), []byte("package shortname"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpdir, "go.mod"), []byte("module shortname"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpdir, "README.md"), []byte("<!-- status autogenerated section -->\nfoo\n<!-- end autogenerated section -->"), 0o600))
+
+	require.NoError(t, run(metadataFile))
+
+	generatedDir := filepath.Join(tmpdir, "internal", "metadata")
+	metrics, err := os.ReadFile(filepath.Clean(filepath.Join(generatedDir, "generated_metrics.go")))
+	require.NoError(t, err)
+	metricsTest, err := os.ReadFile(filepath.Clean(filepath.Join(generatedDir, "generated_metrics_test.go")))
+	require.NoError(t, err)
+	gates, err := os.ReadFile(filepath.Clean(filepath.Join(generatedDir, "generated_feature_gates.go")))
+	require.NoError(t, err)
+
+	assert.Contains(t, string(metrics), "m.data.SetDescription("+strconv.Quote(metricDescription)+")")
+	assert.Contains(t, string(metricsTest), strconv.Quote(metricDescription))
+	assert.Contains(t, string(gates), "featuregate.WithRegisterDescription("+strconv.Quote(gateDescription)+")")
+
+	// No generated file may contain a go:generate directive at the start of a line.
+	files, err := os.ReadDir(generatedDir)
+	require.NoError(t, err)
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+		content, err := os.ReadFile(filepath.Clean(filepath.Join(generatedDir, f.Name())))
+		require.NoError(t, err)
+		assert.NotRegexp(t, `(?m)^//go:generate`, string(content), f.Name())
+	}
+}
+
+// TestRunConfigCommentsDoNotInjectDirectives checks that multi-line values written into
+// the comment above the generated Config struct stay inside that comment.
+func TestRunConfigCommentsDoNotInjectDirectives(t *testing.T) {
+	tmpdir := filepath.Join(t.TempDir(), "shortname")
+	require.NoError(t, os.MkdirAll(tmpdir, 0o750))
+	ymlContent, readErr := os.ReadFile(filepath.Join("testdata", "hostile_config_comments.yaml"))
+	require.NoError(t, readErr)
+	metadataFile := filepath.Join(tmpdir, "metadata.yaml")
+	require.NoError(t, os.WriteFile(metadataFile, ymlContent, 0o600)) // #nosec G703
+	require.NoError(t, os.WriteFile(filepath.Join(tmpdir, "empty.go"), []byte("package shortname"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpdir, "go.mod"), []byte("module shortname"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpdir, "README.md"), []byte("<!-- status autogenerated section -->\nfoo\n<!-- end autogenerated section -->"), 0o600))
+
+	require.NoError(t, run(metadataFile))
+
+	// The Config struct is generated next to metadata.yaml.
+	for _, dir := range []string{tmpdir, filepath.Join(tmpdir, "internal", "metadata")} {
+		files, err := os.ReadDir(dir)
+		require.NoError(t, err)
+		for _, f := range files {
+			if f.IsDir() || filepath.Ext(f.Name()) != ".go" {
+				continue
+			}
+			content, err := os.ReadFile(filepath.Clean(filepath.Join(dir, f.Name())))
+			require.NoError(t, err)
+			assert.NotRegexp(t, `(?m)^//go:generate`, string(content), f.Name())
+		}
+	}
+	cfg, readErr := os.ReadFile(filepath.Clean(filepath.Join(tmpdir, "generated_config.go")))
+	require.NoError(t, readErr)
+	assert.Contains(t, string(cfg), "// //go:generate sh -c \"id > /tmp/config-description\"")
 }

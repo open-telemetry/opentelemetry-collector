@@ -90,7 +90,7 @@ func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 			"only one of the following has to be specified: sum, gauge, histogram"))
 	}
 	if m.Stability == component.StabilityLevelUndefined {
-		errs = errors.Join(errs, errors.New("missing required field: `stability.level`"))
+		errs = errors.Join(errs, errors.New("missing required field: `stability`"))
 	}
 	if m.Description == "" {
 		errs = errors.Join(errs, errors.New(`missing metric description`))
@@ -343,17 +343,6 @@ func (d *Sum) Unmarshal(parser *confmap.Conf) error {
 	}
 	return parser.Unmarshal(d, confmap.WithIgnoreUnused())
 }
-
-// TODO: Currently, this func will not be called because of https://github.com/open-telemetry/opentelemetry-collector/issues/6671. Uncomment function and
-// add a test case to Test_LoadMetadata for file no_monotonic.yaml once the issue is solved.
-//
-// Unmarshal is a custom unmarshaler for Mono.
-// func (m *Mono) Unmarshal(parser *confmap.Conf) error {
-// 	if !parser.IsSet("monotonic") {
-// 		return errors.New("missing required field: `monotonic`")
-// 	}
-// 	return parser.Unmarshal(m)
-// }
 
 func (d *Sum) Type() string {
 	return "Sum"

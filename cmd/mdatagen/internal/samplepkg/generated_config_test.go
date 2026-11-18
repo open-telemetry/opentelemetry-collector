@@ -20,12 +20,6 @@ func TestPortNumberValidate_MaximumPortNumber(t *testing.T) {
 	require.ErrorContains(t, cfg.Validate(), "port_number value must be less than or equal to 65535")
 }
 
-func TestSampleConfigValidate_DefaultValid(t *testing.T) {
-	cfg := NewDefaultSampleConfig()
-
-	require.NoError(t, cfg.Validate())
-}
-
 func TestConfigValidate_RequiredHostName(t *testing.T) {
 	cfg := NewDefaultSampleConfig()
 	cfg.HostName = ""

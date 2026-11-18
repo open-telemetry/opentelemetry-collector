@@ -191,6 +191,11 @@ func writeError(w http.ResponseWriter, encoder encoder, err error, statusCode in
 	s, ok := status.FromError(err)
 	if ok {
 		statusCode = errors.GetHTTPStatusCodeFromStatus(s)
+		// The details of a status returned by the pipeline can originate from the backend of an
+		// exporter, so they are not trusted: protojson expands nested google.protobuf.Any details
+		// recursively, so encoding a crafted status for a JSON client can exhaust the memory of
+		// the collector. Details beyond the limits are reduced to their type.
+		s = statusutil.BoundDetails(s)
 	} else {
 		s = statusutil.NewStatusFromMsgAndHTTPCode(err.Error(), statusCode)
 	}

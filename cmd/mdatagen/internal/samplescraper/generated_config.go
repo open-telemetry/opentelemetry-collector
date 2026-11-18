@@ -18,9 +18,7 @@ import (
 
 type SamplePkg = samplepkg.SampleConfig
 
-// NewDefaultSamplePkg returns a new SamplePkg with its default values applied.
-// Prefer this over an empty struct literal so default changes stay in sync automatically.
-func NewDefaultSamplePkg() SamplePkg {
+func newDefaultSamplePkg() SamplePkg {
 	return samplepkg.NewDefaultSampleConfig()
 }
 
@@ -74,9 +72,7 @@ func (c *TargetsItem) Validate() error {
 	return err
 }
 
-// NewDefaultTargetsItem returns a new TargetsItem with its default values applied.
-// Prefer this over an empty struct literal so default changes stay in sync automatically.
-func NewDefaultTargetsItem() TargetsItem {
+func newDefaultTargetsItem() TargetsItem {
 	endpoint := confignet.NewDefaultAddrConfig()
 	endpoint.Transport = "ip4"
 	return TargetsItem{
@@ -159,7 +155,7 @@ func createDefaultConfig() component.Config {
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 		MetricsBuilderConfig: metadata.NewDefaultMetricsBuilderConfig(),
 		JobName:              "test_job",
-		Targets:              &[]TargetsItem{NewDefaultTargetsItem()},
+		Targets:              &[]TargetsItem{newDefaultTargetsItem()},
 		LogLevel:             "info",
 		Protocol:             samplepkg.NewDefaultProtocol(),
 	}

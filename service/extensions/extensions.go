@@ -135,8 +135,8 @@ func (bes *Extensions) NotifyConfigSnapshot(ctx context.Context, configSnapshot 
 func (bes *Extensions) NotifyComponentStatusChange(source *componentstatus.InstanceID, event *componentstatus.Event) {
 	for _, extID := range bes.extensionIDs {
 		ext := bes.extMap[extID]
-		if sw, ok := ext.(componentstatus.Watcher); ok {
-			sw.ComponentStatusChanged(source, event)
+		if sw, ok := ext.(extensioncapabilities.ComponentStatusWatcher); ok {
+			sw.Changed(source, event)
 		}
 	}
 }

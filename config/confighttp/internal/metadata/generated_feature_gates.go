@@ -8,8 +8,9 @@ import (
 
 var PkgConfighttpPrioritizeNewKeepaliveFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"pkg.confighttp.PrioritizeNewKeepalive",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, the Keepalive configuration is prioritized over the deprecated configuration fields."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/9380"),
 	featuregate.WithRegisterFromVersion("v0.162.0"),
+	featuregate.WithRegisterToVersion("v0.166.0"),
 )

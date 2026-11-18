@@ -8,6 +8,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `pkg.confighttp.PrioritizeNewKeepalive` | beta | When enabled, the Keepalive configuration is prioritized over the deprecated configuration fields. | v0.162.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/9380) |
+| `pkg.confighttp.PrioritizeNewKeepalive` | stable | When enabled, the Keepalive configuration is prioritized over the deprecated configuration fields. | v0.162.0 | v0.166.0 | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/9380) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

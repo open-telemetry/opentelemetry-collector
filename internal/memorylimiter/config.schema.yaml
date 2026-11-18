@@ -8,6 +8,10 @@ $defs:
         type: string
         x-customType: time.Duration
         format: duration
+      garbage_collector:
+        description: 'GarbageCollector configuration section. Use enabled: false to disable the memory limiter''s forced garbage collection.'
+        x-optional: true
+        $ref: garbage_collector_config
       limit_mib:
         description: MemoryLimitMiB is the maximum amount of memory, in MiB, targeted to be allocated by the process.
         type: integer

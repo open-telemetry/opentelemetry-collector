@@ -78,6 +78,7 @@ func TestValidateID(t *testing.T) {
 		{name: "alphanumeric segment", id: "foo123", shouldErr: false},
 		{name: "namespaced", id: "foo.bar", shouldErr: false},
 		{name: "multiple namespaces", id: "foo.bar.baz", shouldErr: false},
+		{name: "underscore", id: "receiver.foo_bar.baz", shouldErr: false},
 		{name: "leading dot", id: ".foo", shouldErr: true},
 		{name: "trailing dot", id: "foo.", shouldErr: true},
 		{name: "consecutive dots", id: "foo..bar", shouldErr: true},

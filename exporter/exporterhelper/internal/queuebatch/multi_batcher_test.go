@@ -12,9 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/embedded"
-	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
@@ -22,9 +19,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	queuebatchtelemetry "go.opentelemetry.io/collector/internal/telemetry/queuebatch"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -46,9 +45,8 @@ func TestMultiBatcher_NoTimeout(t *testing.T) {
 			partitioner: NewPartitioner(func(ctx context.Context, _ request.Request) string {
 				return ctx.Value(partitionKey{}).(string)
 			}),
-			next:      sink.Export,
-			telemetry: componenttest.NewNopTelemetrySettings(),
-			logger:    zap.NewNop(),
+			next:   sink.Export,
+			logger: zap.NewNop(),
 		},
 	)
 
@@ -104,9 +102,8 @@ func TestMultiBatcher_Timeout(t *testing.T) {
 			partitioner: NewPartitioner(func(ctx context.Context, _ request.Request) string {
 				return ctx.Value(partitionKey{}).(string)
 			}),
-			next:      sink.Export,
-			telemetry: componenttest.NewNopTelemetrySettings(),
-			logger:    zap.NewNop(),
+			next:   sink.Export,
+			logger: zap.NewNop(),
 		},
 	)
 
@@ -154,9 +151,8 @@ func TestMultiBatcher_PartitionRemovedAfterIdleTimeout(t *testing.T) {
 			partitioner: NewPartitioner(func(ctx context.Context, _ request.Request) string {
 				return ctx.Value(partitionKey{}).(string)
 			}),
-			next:      sink.Export,
-			telemetry: componenttest.NewNopTelemetrySettings(),
-			logger:    zap.NewNop(),
+			next:   sink.Export,
+			logger: zap.NewNop(),
 		},
 	)
 
@@ -201,9 +197,8 @@ func TestMultiBatcher_CacheSizeEviction(t *testing.T) {
 			partitioner: NewPartitioner(func(ctx context.Context, _ request.Request) string {
 				return ctx.Value(partitionKey{}).(string)
 			}),
-			next:      sink.Export,
-			telemetry: componenttest.NewNopTelemetrySettings(),
-			logger:    zap.NewNop(),
+			next:   sink.Export,
+			logger: zap.NewNop(),
 		},
 	)
 	require.NoError(t, err)
@@ -236,6 +231,14 @@ func TestMultiBatcher_PartitionCacheMetrics(t *testing.T) {
 		Partition:    PartitionConfig{CacheSize: 5, IdleTimeout: time.Minute},
 	}
 	sink := requesttest.NewSink()
+	obsMetrics, err := queue.NewExporterObsMetrics(
+		tt.NewTelemetrySettings(),
+		exporterID,
+		pipeline.SignalLogs,
+		nil,
+	)
+	require.NoError(t, err)
+	t.Cleanup(obsMetrics.Shutdown)
 
 	ba, err := newMultiBatcher(cfg,
 		request.NewItemsSizer(),
@@ -244,11 +247,9 @@ func TestMultiBatcher_PartitionCacheMetrics(t *testing.T) {
 			partitioner: NewPartitioner(func(ctx context.Context, _ request.Request) string {
 				return ctx.Value(partitionKey{}).(string)
 			}),
-			next:      sink.Export,
-			id:        exporterID,
-			signal:    pipeline.SignalLogs,
-			telemetry: tt.NewTelemetrySettings(),
-			logger:    zap.NewNop(),
+			next:       sink.Export,
+			obsMetrics: obsMetrics,
+			logger:     zap.NewNop(),
 		},
 	)
 	require.NoError(t, err)
@@ -262,8 +263,8 @@ func TestMultiBatcher_PartitionCacheMetrics(t *testing.T) {
 	ba.Consume(context.WithValue(context.Background(), partitionKey{}, "p2"), &requesttest.FakeRequest{Items: 5}, done)
 
 	attrs := attribute.NewSet(
-		attribute.String(exporterKey, exporterID.String()),
-		attribute.String(dataTypeKey, pipeline.SignalLogs.String()),
+		attribute.String("exporter", exporterID.String()),
+		attribute.String("data_type", pipeline.SignalLogs.String()),
 	)
 	metadatatest.AssertEqualExporterQueueBatchPartitionCacheSize(t, tt,
 		[]metricdata.DataPoint[int64]{
@@ -277,31 +278,21 @@ func TestMultiBatcher_PartitionCacheMetrics(t *testing.T) {
 
 func TestMultiBatcher_NewError(t *testing.T) {
 	tests := []struct {
-		name      string
-		cacheSize int
-		telemetry func() component.TelemetrySettings
+		name       string
+		cacheSize  int
+		obsMetrics queuebatchtelemetry.ObsMetrics
 	}{
 		{
 			name:      "non_positive_cache_size",
 			cacheSize: 0,
-			telemetry: componenttest.NewNopTelemetrySettings,
-		},
-		{
-			name:      "instrument_creation_failure",
-			cacheSize: 5,
-			telemetry: func() component.TelemetrySettings {
-				set := componenttest.NewNopTelemetrySettings()
-				set.MeterProvider = errMeterProvider{meter: errInstrumentMeter{}}
-				return set
-			},
 		},
 		{
 			name:      "callback_registration_failure",
 			cacheSize: 5,
-			telemetry: func() component.TelemetrySettings {
-				set := componenttest.NewNopTelemetrySettings()
-				set.MeterProvider = errMeterProvider{meter: errRegisterCallbackMeter{}}
-				return set
+			obsMetrics: queuebatchtelemetry.ObsMetrics{
+				RegisterIntFunc: func(queuebatchtelemetry.Metric, func() int64) error {
+					return errors.New("failed to register callback")
+				},
 			},
 		},
 	}
@@ -320,38 +311,12 @@ func TestMultiBatcher_NewError(t *testing.T) {
 					partitioner: NewPartitioner(func(_ context.Context, _ request.Request) string {
 						return "p1"
 					}),
-					next:      requesttest.NewSink().Export,
-					telemetry: tt.telemetry(),
-					logger:    zap.NewNop(),
+					next:       requesttest.NewSink().Export,
+					obsMetrics: tt.obsMetrics,
+					logger:     zap.NewNop(),
 				},
 			)
 			require.Error(t, err)
 		})
 	}
-}
-
-// errMeterProvider hands out a meter that fails, to exercise the telemetry error paths.
-type errMeterProvider struct {
-	embedded.MeterProvider
-	meter metric.Meter
-}
-
-func (p errMeterProvider) Meter(string, ...metric.MeterOption) metric.Meter {
-	return p.meter
-}
-
-type errInstrumentMeter struct {
-	noopmetric.Meter
-}
-
-func (errInstrumentMeter) Int64ObservableGauge(string, ...metric.Int64ObservableGaugeOption) (metric.Int64ObservableGauge, error) {
-	return nil, errors.New("failed to create instrument")
-}
-
-type errRegisterCallbackMeter struct {
-	noopmetric.Meter
-}
-
-func (errRegisterCallbackMeter) RegisterCallback(metric.Callback, ...metric.Observable) (metric.Registration, error) {
-	return nil, errors.New("failed to register callback")
 }

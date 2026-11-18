@@ -1,0 +1,8 @@
+type: test
+
+status:
+  class: pkg
+  supported_platforms:
+    - linux
+  unsupported_platforms:
+    - windows
