@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/component/xcomponentdiscovery"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
@@ -40,7 +41,6 @@ func TestNewFactory(t *testing.T) {
 }
 
 func TestNewFactoryWithOptions(t *testing.T) {
-	testType := component.MustNewType("test")
 	defaultCfg := struct{}{}
 	f := NewFactory(
 		testType,
@@ -87,4 +87,19 @@ func newTestScrapeMetricsFunc(retError error) scraper.ScrapeMetricsFunc {
 	return func(_ context.Context) (pmetric.Metrics, error) {
 		return pmetric.NewMetrics(), retError
 	}
+}
+
+func TestNewFactoryWithDiscoveryRule(t *testing.T) {
+	defaultCfg := struct{}{}
+	f := NewFactory(testType, func() component.Config { return &defaultCfg })
+	assert.True(t, f.DiscoveryRule().IsEmpty())
+
+	rule := xcomponentdiscovery.Rule{
+		DefaultConfig: map[string]any{"endpoint": "`endpoint`"},
+		Endpoints: map[xcomponentdiscovery.EndpointType]xcomponentdiscovery.EndpointRule{
+			"port": {Rule: "port == 6379"},
+		},
+	}
+	f = NewFactory(testType, func() component.Config { return &defaultCfg }, WithDiscoveryRule(rule))
+	assert.Equal(t, rule, f.DiscoveryRule())
 }

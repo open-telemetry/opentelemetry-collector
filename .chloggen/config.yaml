@@ -76,6 +76,7 @@ components:
     - pkg/service
     - pkg/storage
     - pkg/telemetrytest
+    - pkg/xcomponentdiscovery
     - pkg/xconfighttp
     - pkg/xconfmap
     - pkg/xconnector

@@ -6,6 +6,9 @@ package {{ .Package }}
 
 import (
 	"go.opentelemetry.io/collector/component"
+	{{- if .Discovery }}
+	"go.opentelemetry.io/collector/component/xcomponentdiscovery"
+	{{- end }}
 	{{- if and isExporter (not .SendingQueue.IsOmitted) }}
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -27,6 +30,20 @@ const (
 	{{- end }}
 	{{- end }}
 )
+
+{{ if .Discovery -}}
+// DiscoveryRule returns the default discovery rule declared in metadata.yaml.
+func DiscoveryRule() xcomponentdiscovery.Rule {
+	return xcomponentdiscovery.Rule{
+		DefaultConfig: {{ .Discovery.DefaultConfigLiteral }},
+		Endpoints: map[xcomponentdiscovery.EndpointType]xcomponentdiscovery.EndpointRule{
+			{{- range $typ, $e := .Discovery.Endpoints }}
+			{{ printf "%q" $typ }}: {Rule: {{ printf "%q" $e.Rule }}},
+			{{- end }}
+		},
+	}
+}
+{{ end -}}
 
 {{ if and isExporter (not .SendingQueue.IsOmitted) -}}
 // NewDefaultSendingQueueConfig returns the sending queue default declared in metadata.yaml.
