@@ -482,3 +482,47 @@ func TestCombineCollectorSchema_NoIDAndTitle(t *testing.T) {
 	require.NotContains(t, got, "$id")
 	require.NotContains(t, got, "title")
 }
+
+func TestCombineCollectorSchema_InvalidID(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		id      string
+		wantErr string
+	}{
+		{name: "relative reference", id: "collector.schema.json", wantErr: "must be an absolute IRI"},
+		{name: "absolute path", id: "/schemas/collector.schema.json", wantErr: "must be an absolute IRI"},
+		{name: "fragment", id: "https://example.com/collector.schema.json#/$defs/foo", wantErr: "must not contain a fragment"},
+		{name: "empty fragment", id: "https://example.com/collector.schema.json#", wantErr: "must not contain a fragment"},
+		{name: "unparsable", id: "https://example.com/%zz", wantErr: "invalid URL escape"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			schema, err := CombineCollectorSchema(CollectorSchemaParts{ID: tt.id})
+			require.ErrorContains(t, err, tt.wantErr)
+			require.ErrorContains(t, err, "invalid schema $id")
+			require.Nil(t, schema)
+		})
+	}
+}
+
+func TestCombineCollectorSchema_ValidID(t *testing.T) {
+	t.Parallel()
+
+	for _, id := range []string{
+		"https://example.com/collector.schema.json",
+		"urn:example:collector-schema",
+	} {
+		t.Run(id, func(t *testing.T) {
+			t.Parallel()
+
+			schema, err := CombineCollectorSchema(CollectorSchemaParts{ID: id})
+			require.NoError(t, err)
+			require.Equal(t, id, schema.ID)
+		})
+	}
+}
