@@ -78,15 +78,15 @@ gRPC. The HTTP/JSON address is the same as gRPC as the protocol is recognized
 and processed accordingly. Note the serialization format needs to be [OTLP JSON](https://opentelemetry.io/docs/specs/otlp/#json-protobuf-encoding).
 
 The HTTP/JSON configuration also provides `traces_url_path`,
-`metrics_url_path`, `logs_url_path`, and `profiles_url_path` configurations to
-allow the URL paths that signal data needs to be sent to be modified per signal
-type.  These default to `/v1/traces`, `/v1/metrics`, `/v1/logs`, and
-`/v1/profiles` respectively.
+`metrics_url_path`, and `logs_url_path` configurations to allow the URL paths
+for trace, metric, and log data to be modified. These default to `/v1/traces`,
+`/v1/metrics`, and `/v1/logs` respectively. While the profiles signal is in
+development, the receiver serves it at the fixed path `/v1development/profiles`.
 
-To write traces with HTTP/JSON, `POST` to `[address]/[traces_url_path]` for
+To write data with HTTP/JSON, `POST` to `[address]/[traces_url_path]` for
 traces, to `[address]/[metrics_url_path]` for metrics, to
-`[address]/[logs_url_path]` for logs, and to `[address]/[profiles_url_path]` for
-profiles.
+`[address]/[logs_url_path]` for logs, and to
+`[address]/v1development/profiles` for profiles.
 The default port is `4318`.  When using the `otlphttpexporter` peer to
 communicate with this component, use the `traces_endpoint`,
 `metrics_endpoint`, `logs_endpoint`, and `profiles_endpoint` settings in the
