@@ -18,9 +18,7 @@ type ExpvarConfig struct {
 	_ struct{}
 }
 
-// NewDefaultExpvarConfig returns a new ExpvarConfig with its default values applied.
-// Prefer this over an empty struct literal so default changes stay in sync automatically.
-func NewDefaultExpvarConfig() ExpvarConfig {
+func newDefaultExpvarConfig() ExpvarConfig {
 	return ExpvarConfig{
 		Enabled: false,
 	}
@@ -54,6 +52,6 @@ func createDefaultConfig() component.Config {
 	serverConfig.NetAddr.Endpoint = "localhost:55679"
 	return &Config{
 		ServerConfig: serverConfig,
-		Expvar:       NewDefaultExpvarConfig(),
+		Expvar:       newDefaultExpvarConfig(),
 	}
 }
