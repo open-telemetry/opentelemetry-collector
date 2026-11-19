@@ -115,6 +115,12 @@ func TestValidateSupportBundleArchiveName(t *testing.T) {
 		{archiveName: "a/b", valid: false},
 		{archiveName: `a\b`, valid: false},
 		{archiveName: "/abs", valid: false},
+		{archiveName: "my_bundle.v1", valid: true},
+		{archiveName: `a"b`, valid: false},
+		{archiveName: "a b", valid: false},
+		{archiveName: "a;b", valid: false},
+		{archiveName: "a\nb", valid: false},
+		{archiveName: "café", valid: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.archiveName, func(t *testing.T) {
@@ -123,7 +129,7 @@ func TestValidateSupportBundleArchiveName(t *testing.T) {
 			if tt.valid {
 				assert.NoError(t, confmap.Validate(cfg))
 			} else {
-				assert.ErrorContains(t, confmap.Validate(cfg), `"archive_name" must be a valid file name with no path separators`)
+				assert.ErrorContains(t, confmap.Validate(cfg), `"archive_name" must contain only letters, digits, ".", "_" and "-"`)
 			}
 		})
 	}

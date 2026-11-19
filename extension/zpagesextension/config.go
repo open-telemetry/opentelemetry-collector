@@ -6,7 +6,6 @@ package zpagesextension // import "go.opentelemetry.io/collector/extension/zpage
 import (
 	"errors"
 	"fmt"
-	"io/fs"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
@@ -42,7 +41,9 @@ type SupportBundleConfig struct {
 	// ArchiveName names the archive. The download file name starts with it, and
 	// it is the name of the top directory in the archive. If it is empty, the
 	// extension uses "<command>-support-bundle", where <command> is the
-	// collector command name, or "otel" if the command name is not set.
+	// collector command name, or "otel" if the command name is not set or is
+	// not a valid archive name. The name can contain only letters, digits,
+	// ".", "_" and "-".
 	// (default = "")
 	ArchiveName string `mapstructure:"archive_name"`
 	// Gatherers enables or disables each gatherer. A request can select only
@@ -73,16 +74,19 @@ var _ component.Config = (*Config)(nil)
 // Validate checks if the support bundle configuration is valid.
 func (cfg *SupportBundleConfig) Validate() error {
 	if cfg.ArchiveName != "" && !validFileName(cfg.ArchiveName) {
-		return fmt.Errorf("\"archive_name\" must be a valid file name with no path separators, got %q", cfg.ArchiveName)
+		return fmt.Errorf("\"archive_name\" must contain only letters, digits, \".\", \"_\" and \"-\", got %q", cfg.ArchiveName)
 	}
 	return nil
 }
 
 // validFileName reports whether name is safe as the one top directory of the
-// archive.
+// archive and in the download file name. The small character set keeps the
+// name the same on all operating systems and in HTTP headers.
 func validFileName(name string) bool {
-	return fs.ValidPath(name) && name != "." && !strings.ContainsAny(name, `/\`)
+	return name != "" && name != "." && name != ".." && strings.Trim(name, fileNameChars) == ""
 }
+
+const fileNameChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {

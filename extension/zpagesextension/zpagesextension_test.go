@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"mime"
 	"net"
 	"net/http"
 	"runtime"
@@ -232,7 +233,9 @@ func TestZPagesSupportBundle(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 	require.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Contains(t, resp.Header.Get("Content-Disposition"), `filename="my-bundle-`)
+	_, params, err := mime.ParseMediaType(resp.Header.Get("Content-Disposition"))
+	require.NoError(t, err)
+	assert.Regexp(t, `^my-bundle-\d{8}T\d{6}Z\.zip$`, params["filename"])
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
@@ -283,6 +286,7 @@ func TestArchiveName(t *testing.T) {
 		{name: "from command", command: "otelcontribcol", want: "otelcontribcol-support-bundle"},
 		{name: "no command", want: "otel-support-bundle"},
 		{name: "unsafe command", command: "../bad", want: "otel-support-bundle"},
+		{name: "command with space", command: "otel col", want: "otel-support-bundle"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

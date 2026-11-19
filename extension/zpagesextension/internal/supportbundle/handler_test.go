@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand/v2"
+	"mime"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -109,7 +110,10 @@ func TestServeAllEnabled(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
 	assert.Equal(t, "application/zip", rec.Header().Get("Content-Type"))
 	assert.Equal(t, "no-store", rec.Header().Get("Cache-Control"))
-	assert.Contains(t, rec.Header().Get("Content-Disposition"), `filename="test-bundle-`)
+	disposition, params, err := mime.ParseMediaType(rec.Header().Get("Content-Disposition"))
+	require.NoError(t, err)
+	assert.Equal(t, "attachment", disposition)
+	assert.Regexp(t, `^test-bundle-\d{8}T\d{6}Z\.zip$`, params["filename"])
 
 	got := readBundle(t, rec.Body.Bytes())
 	m := got.manifest

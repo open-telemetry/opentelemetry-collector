@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"path"
 	"strings"
@@ -88,7 +89,8 @@ func (b *Bundler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	filename := fmt.Sprintf("%s-%s.zip", b.set.ArchiveName, m.Capture.Start.Format(filenameTimeFmt))
 	w.Header().Set("Content-Type", "application/zip")
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
+	// FormatMediaType quotes and encodes the name as HTTP requires.
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment", map[string]string{"filename": filename}))
 	// The bundle can hold sensitive data, so no cache may keep a copy.
 	w.Header().Set("Cache-Control", "no-store")
 	if _, err := w.Write(body.Bytes()); err != nil {

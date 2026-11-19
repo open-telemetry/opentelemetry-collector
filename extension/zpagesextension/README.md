@@ -36,8 +36,9 @@ The following settings can be optionally configured:
   - `archive_name` (default = `<command>-support-bundle`): The name of the archive.
     The download file name starts with it, and it is the name of the top
     directory in the archive. `<command>` is the command name of the collector
-    build, for example `otelcol-contrib`. If the build sets no command name,
-    the default is `otel-support-bundle`.
+    build, for example `otelcol-contrib`. The name can contain only letters,
+    digits, `.`, `_` and `-`. If the command name is not set or has other
+    characters, the default is `otel-support-bundle`.
   - `gatherers`: Enable or disable each gatherer.
     - `pprof`
       - `enabled` (default = true): Collect heap and goroutine profiles.
