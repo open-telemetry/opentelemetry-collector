@@ -2330,3 +2330,60 @@ func TestGenerateConfigFiles_ReadmeLinksObjectRefToExportedSection(t *testing.T)
 	require.Contains(t, readme, "| `child` | object (see [exported_configs.inner](#exported_configs.inner)) |")
 	require.NotContains(t, readme, "exported_configs.outer.child")
 }
+
+func TestUniqueMigrationGates(t *testing.T) {
+	migration := func(disableOld, enableNew FeatureGateID) Metric {
+		return Metric{
+			Migration: &MetricMigration{
+				ThroughGates: MigrationGates{DisableOld: disableOld, EnableNew: enableNew},
+			},
+		}
+	}
+	tests := []struct {
+		name           string
+		metrics        map[MetricName]Metric
+		wantDisableOld []FeatureGateID
+		wantEnableNew  []FeatureGateID
+	}{
+		{
+			name:    "no migration metrics",
+			metrics: map[MetricName]Metric{"metric.plain": {}},
+		},
+		{
+			name:           "single migration",
+			metrics:        map[MetricName]Metric{"metric.one": migration("disable.a", "enable.a")},
+			wantDisableOld: []FeatureGateID{"disable.a"},
+			wantEnableNew:  []FeatureGateID{"enable.a"},
+		},
+		{
+			name: "shared gate pair is deduplicated",
+			metrics: map[MetricName]Metric{
+				"metric.one": migration("disable.a", "enable.a"),
+				"metric.two": migration("disable.a", "enable.a"),
+			},
+			wantDisableOld: []FeatureGateID{"disable.a"},
+			wantEnableNew:  []FeatureGateID{"enable.a"},
+		},
+		{
+			name: "distinct pairs ordered by metric name",
+			metrics: map[MetricName]Metric{
+				"metric.two": migration("disable.b", "enable.b"),
+				"metric.one": migration("disable.a", "enable.a"),
+			},
+			wantDisableOld: []FeatureGateID{"disable.a", "disable.b"},
+			wantEnableNew:  []FeatureGateID{"enable.a", "enable.b"},
+		},
+		{
+			name:          "empty gate ids are skipped",
+			metrics:       map[MetricName]Metric{"metric.one": migration("", "enable.a")},
+			wantEnableNew: []FeatureGateID{"enable.a"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			md := Metadata{Metrics: tt.metrics}
+			assert.Equal(t, tt.wantDisableOld, uniqueMigrationGates(md, func(g MigrationGates) FeatureGateID { return g.DisableOld }))
+			assert.Equal(t, tt.wantEnableNew, uniqueMigrationGates(md, func(g MigrationGates) FeatureGateID { return g.EnableNew }))
+		})
+	}
+}
