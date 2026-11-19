@@ -20,8 +20,9 @@ defines stability guarantees and provides guidelines for metric updates.
 
 ## Configuring scraping interval
 
-For new scraping metrics receivers that may execute queries against a database to collect metrics, the default scraping
-interval should be set to 60 seconds. This applies to both generic and built-in scraping metrics receivers.
+New scraping metrics receivers SHOULD use the default `collection_interval` provided by
+`scraperhelper` (60 seconds). A receiver MAY override it when there is a clear reason, such as
+the upstream source updating less frequently or high-resolution data being cheap and valuable.
 
 ## Defining emitted metrics
 
