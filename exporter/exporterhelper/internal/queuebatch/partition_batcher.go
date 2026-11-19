@@ -308,9 +308,14 @@ func (qb *partitionBatcher) flushCurrentBatchOrRemovePartition() {
 }
 
 // flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
+//
+// If shutdown starts while the flush is still waiting for a worker, the export
+// runs inline on the calling goroutine instead: the goroutine running the
+// shutdown may be holding the pool's last worker while it waits on stopWG for
+// this very flush, so blocking on the pool at that point would deadlock both.
 func (qb *partitionBatcher) flush(ctx context.Context, req request.Request, done queue.Done) {
 	qb.stopWG.Add(1)
-	qb.wp.execute(func() {
+	qb.wp.executeOrInline(qb.shutdownCh, func() {
 		defer qb.stopWG.Done()
 		done.OnDone(qb.consumeFunc(ctx, req))
 	})
@@ -336,6 +341,24 @@ func (wp *workerPool) execute(f func()) {
 		}()
 		f()
 	}()
+}
+
+// executeOrInline is like execute, but runs f inline on the calling goroutine
+// if abort is closed before a worker becomes available. It is used by shutdown
+// paths where the goroutine waiting for a worker may itself be waited on by
+// the pool's last busy worker, so blocking on the pool would deadlock.
+func (wp *workerPool) executeOrInline(abort <-chan struct{}, f func()) {
+	select {
+	case <-wp.workers:
+		go func() {
+			defer func() {
+				wp.workers <- struct{}{}
+			}()
+			f()
+		}()
+	case <-abort:
+		f()
+	}
 }
 
 type multiDone []queue.Done

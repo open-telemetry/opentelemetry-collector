@@ -350,6 +350,66 @@ func TestPartitionBatcher_Shutdown(t *testing.T) {
 	assert.EqualValues(t, 2, done.success.Load())
 }
 
+// Regression test for a deadlock where a partition flush that is waiting for a
+// worker races the shutdown of the same partition running on the pool's only
+// worker: the shutdown waits on stopWG for the flush, the flush waits for the
+// worker, and neither can proceed. The flush must fall back to exporting
+// inline once shutdown has started.
+func TestPartitionBatcher_ShutdownRaceTimeoutFlushSingleWorker(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: time.Hour, // the timer path is triggered manually below
+		Sizer:        request.SizerTypeItems,
+		MinSize:      10,
+	}
+
+	sink := requesttest.NewSink()
+	wp := newWorkerPool(1)
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, wp, sink.Export, zap.NewNop(), nil)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+
+	done := newFakeDone()
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 5, Bytes: 5}, done)
+	assert.Equal(t, 0, sink.RequestsCount())
+
+	// Hold the pool's only worker, the same way workerPool.execute holds it
+	// for the whole duration of the eviction shutdown.
+	<-wp.workers
+
+	// Fire what the flush timer would on a non-empty partition: the pending
+	// batch is taken and the flush parks waiting for a worker.
+	flushReturned := make(chan struct{})
+	go func() {
+		defer close(flushReturned)
+		ba.flushCurrentBatchOrRemovePartition()
+	}()
+	assert.Eventually(t, func() bool {
+		ba.currentBatchMu.Lock()
+		defer ba.currentBatchMu.Unlock()
+		return ba.currentBatch == nil
+	}, time.Second, time.Millisecond)
+
+	// Run the shutdown the way the eviction path does: on the goroutine that
+	// holds the only worker, returned to the pool only once shutdown finishes.
+	shutdownReturned := make(chan struct{})
+	go func() {
+		defer close(shutdownReturned)
+		ba.shutdownInternal(true)
+		wp.workers <- struct{}{}
+	}()
+
+	select {
+	case <-shutdownReturned:
+	case <-time.After(5 * time.Second):
+		t.Fatal("shutdownInternal deadlocked against a timeout flush waiting for the pool's only worker")
+	}
+	<-flushReturned
+
+	// The pending batch must have been exported exactly once.
+	assert.Equal(t, 1, sink.RequestsCount())
+	assert.Equal(t, 5, sink.ItemsCount())
+	assert.EqualValues(t, 1, done.success.Load())
+}
+
 func TestPartitionBatcher_MergeError(t *testing.T) {
 	cfg := BatchConfig{
 		FlushTimeout: 200 * time.Second,
