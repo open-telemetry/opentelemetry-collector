@@ -308,7 +308,11 @@ func (m *maxBytesReadCloser) Close() error { return m.rc.Close() }
 
 // MaxResponseBodySizeError is returned when reading a response body exceeds max_response_body_size.
 type MaxResponseBodySizeError struct {
+	// Limit is the configured maximum size in bytes.
 	Limit int64
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (e *MaxResponseBodySizeError) Error() string {
