@@ -485,6 +485,21 @@ func TestValidateResourceDetectors(t *testing.T) {
 	}
 }
 
+func TestValidateDistName(t *testing.T) {
+	for _, name := range []string{"otelcol-custom", "otelcol.exe", ""} {
+		t.Run("valid "+name, func(t *testing.T) {
+			cfg := Config{Logger: zap.NewNop(), Distribution: Distribution{Name: name}}
+			assert.NoError(t, cfg.Validate())
+		})
+	}
+	for _, name := range []string{".", "..", "../otelcol", "bin/otelcol", "/tmp/otelcol", `..\otelcol`, `C:\otelcol.exe`} {
+		t.Run("invalid "+name, func(t *testing.T) {
+			cfg := Config{Logger: zap.NewNop(), Distribution: Distribution{Name: name}}
+			assert.ErrorIs(t, cfg.Validate(), errInvalidDistName)
+		})
+	}
+}
+
 func TestResourceDetectorsUnmarshal(t *testing.T) {
 	cfgFile := filepath.Join(t.TempDir(), "builder-config.yaml")
 	require.NoError(t, os.WriteFile(cfgFile, []byte(`

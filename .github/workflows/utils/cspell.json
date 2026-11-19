@@ -38,6 +38,7 @@
     "GOARM",
     "GOBIN",
     "GOCMD",
+    "GODEBUG",
     "GOMEMLIMIT",
     "GOMODCACHE",
     "GOPATH",
