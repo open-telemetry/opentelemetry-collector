@@ -86,13 +86,15 @@
               "type": "object",
               "properties": {
                 "auth": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "The authorization value of the TLS key stored in the TPM. (optional)"
                 },
                 "enabled": {
                   "type": "boolean"
                 },
                 "owner_auth": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "The owner authorization value of the TPM. (optional)"
                 },
                 "path": {
                   "type": "string",
@@ -102,7 +104,7 @@
               "description": "Trusted platform module configuration"
             }
           },
-          "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn''t anything specific to a server connection. Components with server connections should use Config.\n",
+          "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn't anything specific to a server connection. Components with server connections should use Config.\n",
           "default": {}
         }
       ]
@@ -173,13 +175,15 @@
           "type": "object",
           "properties": {
             "auth": {
-              "type": "string"
+              "type": "string",
+              "description": "The authorization value of the TLS key stored in the TPM. (optional)"
             },
             "enabled": {
               "type": "boolean"
             },
             "owner_auth": {
-              "type": "string"
+              "type": "string",
+              "description": "The owner authorization value of the TPM. (optional)"
             },
             "path": {
               "type": "string",
@@ -189,7 +193,7 @@
           "description": "Trusted platform module configuration"
         }
       },
-      "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn''t anything specific to a server connection. Components with server connections should use Config.\n",
+      "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn't anything specific to a server connection. Components with server connections should use Config.\n",
       "default": {}
     },
     "server_config": {
@@ -272,13 +276,15 @@
               "type": "object",
               "properties": {
                 "auth": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "The authorization value of the TLS key stored in the TPM. (optional)"
                 },
                 "enabled": {
                   "type": "boolean"
                 },
                 "owner_auth": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "The owner authorization value of the TPM. (optional)"
                 },
                 "path": {
                   "type": "string",
@@ -288,7 +294,7 @@
               "description": "Trusted platform module configuration"
             }
           },
-          "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn''t anything specific to a server connection. Components with server connections should use Config.\n",
+          "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn't anything specific to a server connection. Components with server connections should use Config.\n",
           "default": {}
         }
       ]
@@ -297,13 +303,15 @@
       "type": "object",
       "properties": {
         "auth": {
-          "type": "string"
+          "type": "string",
+          "description": "The authorization value of the TLS key stored in the TPM. (optional)"
         },
         "enabled": {
           "type": "boolean"
         },
         "owner_auth": {
-          "type": "string"
+          "type": "string",
+          "description": "The owner authorization value of the TPM. (optional)"
         },
         "path": {
           "type": "string",

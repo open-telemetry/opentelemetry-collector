@@ -221,6 +221,11 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 				return method
 			}),
 			otelhttp.WithMeterProvider(settings.MeterProvider),
+			// Take server.address and server.port from the configuration. Without
+			// a server name otelhttp uses the request's Host header, which is chosen
+			// by the peer, can be up to 1 MiB long and is recorded even for requests
+			// that authentication rejects. The metric SDK keeps every distinct value.
+			otelhttp.WithServerName(sc.NetAddr.Endpoint),
 		},
 		serverOpts.OtelhttpOpts...,
 	)
