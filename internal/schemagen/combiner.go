@@ -46,6 +46,11 @@ type CollectorSchemaParts struct {
 	Exporters  []CollectorComponentSchema
 	Connectors []CollectorComponentSchema
 	Extensions []CollectorComponentSchema
+
+	// ID is the optional $id of the combined schema. It is omitted when empty.
+	ID string
+	// Title is the optional title of the combined schema. It is omitted when empty.
+	Title string
 }
 
 func CombineCollectorSchema(parts CollectorSchemaParts) (*JSONSchema, error) {
@@ -72,6 +77,8 @@ func CombineCollectorSchema(parts CollectorSchemaParts) (*JSONSchema, error) {
 
 	return &JSONSchema{
 		Schema:     schemaVersion,
+		ID:         parts.ID,
+		Title:      parts.Title,
 		Type:       "object",
 		Properties: properties,
 	}, nil
