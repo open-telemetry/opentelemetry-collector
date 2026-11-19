@@ -89,6 +89,10 @@ $defs:
       max_conns_per_host:
         description: MaxConnsPerHost limits the total number of connections per host, including connections in the dialing, active, and idle states. Default is 0 (unlimited).
         type: integer
+      max_response_body_size:
+        description: MaxResponseBodySize sets the maximum response body size in bytes that the client will read. Reading past the limit returns an error instead of truncating the body. Default is 0 (unlimited).
+        type: integer
+        x-customType: int64
       middlewares:
         description: Middlewares are used to add custom functionality to the HTTP client. Middleware handlers are called in the order they appear in this list, with the first middleware becoming the outermost handler.
         type: array

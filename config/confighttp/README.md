@@ -52,6 +52,7 @@ README](../configtls/README.md).
     - `x-snappy-framed`
       No compression levels supported yet
 - [`max_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
+- `max_response_body_size`: maximum response body size in bytes the client will read; reading more returns an error. Default: `0` (unlimited)
 - `keepalive`: Keepalive settings for the HTTP client.
   - `enabled`: Set to `false` to disable keep-alives. Default: `true`
   - [`idle_conn_timeout`](https://golang.org/pkg/net/http/#Transport): Default: `90s`

@@ -6,6 +6,7 @@ package confighttp
 import (
 	"context"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -755,4 +756,74 @@ func TestClientMiddlewaresFieldCompatibility(t *testing.T) {
 	assert.Equal(t, "http://localhost:4318", clientConfig.Endpoint)
 	assert.Len(t, clientConfig.Middlewares, 1)
 	assert.Equal(t, component.MustNewID("test_middleware"), clientConfig.Middlewares[0].ID)
+}
+
+func TestClientMaxResponseBodySize(t *testing.T) {
+	const limit = 16
+	tests := []struct {
+		name    string
+		body    string
+		chunked bool
+		wantErr bool
+	}{
+		{name: "under limit", body: strings.Repeat("a", limit-1)},
+		{name: "at limit", body: strings.Repeat("a", limit)},
+		{name: "over limit", body: strings.Repeat("a", limit+1), wantErr: true},
+		{name: "over limit chunked", body: strings.Repeat("a", 4*limit), chunked: true, wantErr: true},
+		{name: "empty"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				if tt.chunked {
+					w.(http.Flusher).Flush()
+				}
+				_, _ = w.Write([]byte(tt.body))
+			}))
+			defer srv.Close()
+
+			cc := NewDefaultClientConfig()
+			cc.Endpoint = srv.URL
+			cc.MaxResponseBodySize = limit
+			client, err := cc.ToClient(context.Background(), nil, componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+
+			resp, err := client.Get(srv.URL)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+			got, err := io.ReadAll(resp.Body)
+			if tt.wantErr {
+				var sizeErr *MaxResponseBodySizeError
+				require.ErrorAs(t, err, &sizeErr)
+				assert.Equal(t, int64(limit), sizeErr.Limit)
+				assert.LessOrEqual(t, len(got), limit)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.body, string(got))
+		})
+	}
+}
+
+func TestClientMaxResponseBodySizeDefault(t *testing.T) {
+	assert.Equal(t, int64(0), NewDefaultClientConfig().MaxResponseBodySize)
+}
+
+func TestClientMaxResponseBodySizeUnlimitedByDefault(t *testing.T) {
+	body := strings.Repeat("a", 1<<20)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(body))
+	}))
+	defer srv.Close()
+
+	cc := NewDefaultClientConfig()
+	cc.Endpoint = srv.URL
+	client, err := cc.ToClient(context.Background(), nil, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	resp, err := client.Get(srv.URL)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	got, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Len(t, got, len(body))
 }

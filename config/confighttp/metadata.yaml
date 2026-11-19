@@ -61,6 +61,12 @@ exported_configs:
         description: |
           Limits the total number of connections per host, including connections in the dialing,
           active, and idle states. Default is 0 (unlimited).
+      max_response_body_size:
+        type: int64
+        description: |
+          Sets the maximum response body size in bytes that the client will read.
+          Reading past the limit returns an error instead of truncating the body.
+          Default is 0 (unlimited).
       http2_read_idle_timeout:
         type: duration
         description: |
