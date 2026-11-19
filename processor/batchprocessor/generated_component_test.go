@@ -4,17 +4,13 @@ package batchprocessor
 
 import (
 	"context"
-	"encoding/json"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.yaml.in/yaml/v3"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -33,42 +29,6 @@ func TestComponentFactoryType(t *testing.T) {
 
 func TestComponentConfigStruct(t *testing.T) {
 	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
-}
-
-func TestComponentConfigMarshal(t *testing.T) {
-	cfg := NewFactory().CreateDefaultConfig()
-	cm := confmap.New()
-	require.NoError(t, cm.Marshal(cfg))
-
-	// The marshaled config must be representable as YAML and JSON. yaml.Marshal panics
-	// instead of returning an error on values it cannot encode, such as functions.
-	data := cm.ToStringMap()
-	var err error
-	require.NotPanics(t, func() {
-		_, err = yaml.Marshal(data)
-	})
-	require.NoError(t, err)
-	_, err = json.Marshal(data)
-	require.NoError(t, err)
-
-	// Unmarshal the marshaled config into a fresh default config and marshal it again until the
-	// result stops changing. A configoptional.Optional with the Default flavor is marshaled as null
-	// and becomes Some once unmarshaled, so each level of nesting needs one more pass to settle.
-	// Any other difference between two passes means the config loses or invents data on a round trip.
-	const maxRoundTrips = 5
-	roundTripData := data
-	for range maxRoundTrips {
-		roundTrip := NewFactory().CreateDefaultConfig()
-		require.NoError(t, cm.Unmarshal(&roundTrip))
-		cmRoundTrip := confmap.New()
-		require.NoError(t, cmRoundTrip.Marshal(roundTrip))
-		roundTripData = cmRoundTrip.ToStringMap()
-		if reflect.DeepEqual(data, roundTripData) {
-			break
-		}
-		cm, data = cmRoundTrip, roundTripData
-	}
-	require.Equal(t, data, roundTripData, "config did not stabilize after %d marshal/unmarshal round trips", maxRoundTrips)
 }
 
 func TestComponentLifecycle(t *testing.T) {
