@@ -33,8 +33,7 @@ type GarbageCollectorConfig struct{}
 // Config defines configuration for memory memoryLimiter processor.
 type Config struct {
 	// CheckInterval is the time between measurements of memory usage for the
-	// purposes of avoiding going over the limits. Defaults to zero, so no
-	// checks will be performed.
+	// purposes of avoiding going over the limits. Must be greater than zero.
 	CheckInterval time.Duration `mapstructure:"check_interval"`
 
 	// MinGCIntervalWhenSoftLimited minimum interval between forced GC when in soft (=limit_mib - spike_limit_mib) limited mode.
