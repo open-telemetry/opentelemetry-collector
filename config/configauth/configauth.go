@@ -37,7 +37,7 @@ func (a Config) GetServerAuthenticator(_ context.Context, extensions map[compone
 	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", a.AuthenticatorID, errAuthenticatorNotFound)
 }
 
-// GetHTTPClientAuthenticator attempts to select the appropriate extensionauth.Client from the list of extensions,
+// GetHTTPClientAuthenticator attempts to select the appropriate extensionauth.HTTPClient from the list of extensions,
 // based on the component id of the extension. If an authenticator is not found, an error is returned.
 // This should be only used by HTTP clients.
 func (a Config) GetHTTPClientAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (extensionauth.HTTPClient, error) {
@@ -50,7 +50,7 @@ func (a Config) GetHTTPClientAuthenticator(_ context.Context, extensions map[com
 	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", a.AuthenticatorID, errAuthenticatorNotFound)
 }
 
-// GetGRPCClientAuthenticator attempts to select the appropriate extensionauth.Client from the list of extensions,
+// GetGRPCClientAuthenticator attempts to select the appropriate extensionauth.GRPCClient from the list of extensions,
 // based on the component id of the extension. If an authenticator is not found, an error is returned.
 // This should be only used by gRPC clients.
 func (a Config) GetGRPCClientAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (extensionauth.GRPCClient, error) {
