@@ -1,0 +1,37 @@
+{
+  "type": "object",
+  "properties": {
+    "metadata_cardinality_limit": {
+      "type": "integer",
+      "description": "Indicates the maximum number of batcher instances that will be created through a distinct combination of MetadataKeys.",
+      "default": 1000
+    },
+    "metadata_keys": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Is a list of client.Metadata keys that will be used to form distinct batchers. If this setting is empty, a single batcher instance will be used. When this setting is not empty, one batcher will be used per distinct combination of values for the listed metadata keys. Empty value and unset metadata are treated as distinct cases. Entries are case-insensitive. Duplicated entries will trigger a validation error."
+    },
+    "send_batch_max_size": {
+      "type": "integer",
+      "description": "Is the maximum size of a batch. It must be larger than SendBatchSize. Larger batches are split into smaller units. Default value is 0, that means no maximum size.",
+      "default": 0
+    },
+    "send_batch_size": {
+      "type": "integer",
+      "description": "Is the size of a batch which after hit, will trigger it to be sent. When this is set to zero, the batch size is ignored and data will be sent immediately subject to only send_batch_max_size.",
+      "default": 8192
+    },
+    "timeout": {
+      "type": "string",
+      "description": "Sets the time after which a batch will be sent regardless of size. When this is set to zero, batched data will be sent immediately.",
+      "default": "200ms",
+      "pattern": "^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+    }
+  },
+  "$id": "go.opentelemetry.io/collector/processor/batchprocessor",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "processor/batch",
+  "description": "Config defines configuration for batch processor."
+}
