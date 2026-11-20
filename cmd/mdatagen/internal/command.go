@@ -460,8 +460,8 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 		"userLinks": func(elems []string) []string {
 			result := make([]string, len(elems))
 			for i, elem := range elems {
-				if elem == "open-telemetry/collector-approvers" {
-					result[i] = "[@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)"
+				if org, team, ok := strings.Cut(elem, "/"); ok {
+					result[i] = fmt.Sprintf("[@%s](https://github.com/orgs/%s/teams/%s)", elem, org, team)
 				} else {
 					result[i] = fmt.Sprintf("[@%s](https://www.github.com/%s)", elem, elem)
 				}
