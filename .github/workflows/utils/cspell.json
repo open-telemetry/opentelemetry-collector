@@ -472,6 +472,7 @@
     "resourceprocessor",
     "resourcetolabel",
     "retryable",
+    "reuseport",
     "riscv",
     "rpcz",
     "rrschulze",
