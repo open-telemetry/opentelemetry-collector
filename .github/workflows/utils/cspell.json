@@ -380,6 +380,7 @@
     "obsreport",
     "obsreporttest",
     "ocbplugin",
+    "ocbplugintest",
     "oidcauthextension",
     "okey",
     "oldstable",
