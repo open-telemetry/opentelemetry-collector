@@ -9,6 +9,7 @@ import (
 	"encoding"
 	"errors"
 	"fmt"
+	"io"
 	"reflect"
 	"strings"
 
@@ -37,6 +38,26 @@ type Optional[T any] struct {
 	// flavor indicates the flavor of the Optional.
 	// The zero value of flavor is noneFlavor.
 	flavor flavor
+}
+
+var _ fmt.Formatter = Optional[any]{}
+
+// Format implements [fmt.Formatter]. This is required because the fmt package
+// does not call String, GoString or Format on values reached through the
+// private fields of [Optional], so the value would otherwise be printed by raw
+// reflection, revealing e.g. opaque fields that are normally masked. The value
+// is handed back to fmt as an argument so that its own methods are honored.
+// This method isn't meant to be called directly, and should generally only be
+// called by the fmt package.
+func (o Optional[T]) Format(s fmt.State, verb rune) {
+	switch o.flavor {
+	case someFlavor:
+		fmt.Fprintf(s, "Some("+fmt.FormatString(s, verb)+")", o.value)
+	case defaultFlavor:
+		fmt.Fprintf(s, "Default("+fmt.FormatString(s, verb)+")", o.value)
+	default:
+		_, _ = io.WriteString(s, "None")
+	}
 }
 
 // deref a reflect.Type to its underlying type.
