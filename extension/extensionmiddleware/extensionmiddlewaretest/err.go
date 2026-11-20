@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/tap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -14,11 +15,12 @@ import (
 )
 
 var (
-	_ extension.Extension            = (*baseExtension)(nil)
-	_ extensionmiddleware.HTTPClient = (*baseExtension)(nil)
-	_ extensionmiddleware.GRPCClient = (*baseExtension)(nil)
-	_ extensionmiddleware.HTTPServer = (*baseExtension)(nil)
-	_ extensionmiddleware.GRPCServer = (*baseExtension)(nil)
+	_ extension.Extension                 = (*baseExtension)(nil)
+	_ extensionmiddleware.HTTPClient      = (*baseExtension)(nil)
+	_ extensionmiddleware.GRPCClient      = (*baseExtension)(nil)
+	_ extensionmiddleware.HTTPServer      = (*baseExtension)(nil)
+	_ extensionmiddleware.GRPCServer      = (*baseExtension)(nil)
+	_ extensionmiddleware.GRPCServerInTap = (*baseExtension)(nil)
 )
 
 type baseExtension struct {
@@ -26,6 +28,7 @@ type baseExtension struct {
 	component.ShutdownFunc
 	extensionmiddleware.GetHTTPHandlerFunc
 	extensionmiddleware.GetGRPCServerOptionsFunc
+	extensionmiddleware.GetGRPCServerInTapHandleFunc
 	extensionmiddleware.GetHTTPRoundTripperFunc
 	extensionmiddleware.GetGRPCClientOptionsFunc
 }
@@ -44,6 +47,9 @@ func NewErr(err error) extension.Extension {
 			return nil, err
 		},
 		GetGRPCServerOptionsFunc: func(context.Context) ([]grpc.ServerOption, error) {
+			return nil, err
+		},
+		GetGRPCServerInTapHandleFunc: func(context.Context) (tap.ServerInHandle, error) {
 			return nil, err
 		},
 	}

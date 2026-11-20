@@ -12,6 +12,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/tap"
 )
 
 func TestGetHTTPHandlerFunc(t *testing.T) {
@@ -120,5 +123,50 @@ func TestGetGRPCServerOptionsFunc(t *testing.T) {
 		opts, err := f.GetGRPCServerOptions(testctx)
 		require.Equal(t, expectedErr, err)
 		require.Nil(t, opts)
+	})
+}
+
+func TestGetGRPCServerInTapHandleFunc(t *testing.T) {
+	type testCtx struct{}
+	var (
+		key   = testCtx{}
+		value = "testval"
+	)
+	testctx := context.WithValue(context.Background(), key, value)
+
+	t.Run("nil_function", func(t *testing.T) {
+		var f GetGRPCServerInTapHandleFunc
+		handle, err := f.GetGRPCServerInTapHandle(testctx)
+		require.NoError(t, err)
+		require.Nil(t, handle)
+	})
+
+	t.Run("returns_tap_handle", func(t *testing.T) {
+		expectedErr := status.Error(codes.ResourceExhausted, "test")
+		f := GetGRPCServerInTapHandleFunc(func(ctx context.Context) (tap.ServerInHandle, error) {
+			require.Equal(t, ctx.Value(key), value)
+			return func(ctx context.Context, _ *tap.Info) (context.Context, error) {
+				return ctx, expectedErr
+			}, nil
+		})
+
+		handle, err := f.GetGRPCServerInTapHandle(testctx)
+		require.NoError(t, err)
+		require.NotNil(t, handle)
+
+		_, err = handle(testctx, &tap.Info{})
+		require.Equal(t, expectedErr, err)
+	})
+
+	t.Run("returns_error", func(t *testing.T) {
+		expectedErr := errors.New("test error")
+		f := GetGRPCServerInTapHandleFunc(func(ctx context.Context) (tap.ServerInHandle, error) {
+			require.Equal(t, ctx.Value(key), value)
+			return nil, expectedErr
+		})
+
+		handle, err := f.GetGRPCServerInTapHandle(testctx)
+		require.Equal(t, expectedErr, err)
+		require.Nil(t, handle)
 	})
 }

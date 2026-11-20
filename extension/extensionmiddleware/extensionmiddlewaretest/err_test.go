@@ -40,4 +40,9 @@ func TestErrServer(t *testing.T) {
 	require.True(t, ok)
 	_, err = grpcServer.GetGRPCServerOptions(context.Background())
 	require.Error(t, err)
+
+	grpcServerInTap, ok := server.(extensionmiddleware.GRPCServerInTap)
+	require.True(t, ok)
+	_, err = grpcServerInTap.GetGRPCServerInTapHandle(context.Background())
+	require.Error(t, err)
 }

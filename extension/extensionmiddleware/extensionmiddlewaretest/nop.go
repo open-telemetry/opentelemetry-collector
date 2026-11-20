@@ -12,7 +12,7 @@ import (
 // NewNop returns a new [extension.Extension] that implements
 // the all the extensionmiddleware interfaces.  For HTTP requests it
 // returns the base RoundTripper and for gRPC requests it returns an
-// empty slice of options.
+// empty slice of options and a nil tap handle.
 func NewNop() extension.Extension {
 	return &baseExtension{}
 }

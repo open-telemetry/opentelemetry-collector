@@ -1,0 +1,10 @@
+change_type: enhancement
+component: pkg/extensionmiddleware
+note: Add the optional `GRPCServerInTap` interface for gRPC server middleware that checks requests before the server reads the request message.
+issues: [16184]
+subtext: |
+  A gRPC server accepts only one tap handle, so middlewares must implement this interface
+  instead of returning `grpc.InTapHandle` from `GetGRPCServerOptions`.
+  The interface returns `tap.ServerInHandle` from `google.golang.org/grpc/tap`, which grpc-go marks as experimental,
+  so the interface may change if that package does.
+change_logs: [api]

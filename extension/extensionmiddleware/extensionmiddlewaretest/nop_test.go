@@ -51,6 +51,12 @@ func TestNopServer(t *testing.T) {
 	grpcOpts, err := grpcServer.GetGRPCServerOptions(context.Background())
 	require.NoError(t, err)
 	require.Nil(t, grpcOpts)
+
+	grpcServerInTap, ok := client.(extensionmiddleware.GRPCServerInTap)
+	require.True(t, ok)
+	inTapHandle, err := grpcServerInTap.GetGRPCServerInTapHandle(context.Background())
+	require.NoError(t, err)
+	require.Nil(t, inTapHandle)
 }
 
 func TestRoundTripperFunc(t *testing.T) {
