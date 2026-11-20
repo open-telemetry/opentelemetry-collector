@@ -1,0 +1,9 @@
+type: object
+properties:
+  named:
+    type: string
+  any: {}
+  inline: {}
+  list:
+    type: array
+    items: {}

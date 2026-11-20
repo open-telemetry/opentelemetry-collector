@@ -1,0 +1,15 @@
+$defs:
+  headers:
+    description: Headers is a named map of strings.
+    type: object
+    additionalProperties:
+      type: string
+  console:
+    type: object
+    additionalProperties: {}
+type: object
+properties:
+  headers:
+    $ref: headers
+  console:
+    $ref: console

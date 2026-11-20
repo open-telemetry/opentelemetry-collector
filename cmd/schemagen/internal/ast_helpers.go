@@ -73,6 +73,7 @@ type TagInfo struct {
 	Name      string
 	OmitEmpty bool
 	Squash    bool
+	Remain    bool
 }
 
 func ParseTag(tag *ast.BasicLit) (*TagInfo, bool) {
@@ -106,6 +107,9 @@ func ParseTag(tag *ast.BasicLit) (*TagInfo, bool) {
 		}
 		if part == "squash" {
 			info.Squash = true
+		}
+		if part == "remain" {
+			info.Remain = true
 		}
 	}
 	return info, true

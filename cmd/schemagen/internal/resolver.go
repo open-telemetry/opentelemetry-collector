@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"reflect"
 	"strings"
 )
 
@@ -51,7 +52,65 @@ func NewRefResolver(cfg *Config) *RefResolver {
 }
 
 func (r *RefResolver) Resolve(schema *Schema) (*Schema, error) {
-	return r.resolveSchema(schema, r.rootCfg, r.rootCfg.Pattern)
+	resolved, err := r.resolveSchema(schema, r.rootCfg, r.rootCfg.Pattern)
+	if err != nil {
+		return nil, err
+	}
+	root := breakCycles(&resolved.ObjectSchemaElement, map[uintptr]bool{}).(*ObjectSchemaElement)
+	resolved.ObjectSchemaElement = *root
+	return resolved, nil
+}
+
+// breakCycles returns a copy of element in which a recursive type is cut at
+// the point where it would contain itself. Inlined schemas cannot express
+// recursion, so the nested occurrence accepts any value.
+func breakCycles(element SchemaElement, path map[uintptr]bool) SchemaElement {
+	switch e := element.(type) {
+	case *ArraySchemaElement:
+		self := reflect.ValueOf(e).Pointer()
+		if path[self] {
+			return CreateSimpleField(SchemaTypeAny, e.Description)
+		}
+		path[self] = true
+		defer delete(path, self)
+		c := *e
+		if e.Items != nil {
+			c.Items = breakCycles(e.Items, path)
+		}
+		return &c
+	case *ObjectSchemaElement:
+		self := reflect.ValueOf(e).Pointer()
+		if path[self] {
+			return CreateSimpleField(SchemaTypeAny, e.Description)
+		}
+		path[self] = true
+		defer delete(path, self)
+		c := *e
+		var id uintptr
+		if e.Properties != nil {
+			id = reflect.ValueOf(e.Properties).Pointer()
+			if path[id] {
+				return CreateSimpleField(SchemaTypeAny, e.Description)
+			}
+			path[id] = true
+			defer delete(path, id)
+			c.Properties = make(map[string]SchemaElement, len(e.Properties))
+			for name, prop := range e.Properties {
+				c.Properties[name] = breakCycles(prop, path)
+			}
+		}
+		if e.AdditionalProperties != nil {
+			c.AdditionalProperties = breakCycles(e.AdditionalProperties, path)
+		}
+		if e.AllOf != nil {
+			c.AllOf = make([]SchemaElement, len(e.AllOf))
+			for i, a := range e.AllOf {
+				c.AllOf[i] = breakCycles(a, path)
+			}
+		}
+		return &c
+	}
+	return element
 }
 
 func (r *RefResolver) resolveSchema(schema *Schema, cfg *Config, pkgName string) (*Schema, error) {
