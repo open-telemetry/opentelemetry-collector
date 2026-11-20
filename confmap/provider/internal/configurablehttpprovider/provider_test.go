@@ -11,6 +11,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -122,6 +123,89 @@ func TestFunctionalityDownloadFileHTTP(t *testing.T) {
 	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
 	assert.NoError(t, err)
 	assert.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func TestRetrieveContext(t *testing.T) {
+	t.Parallel()
+
+	for _, scheme := range []SchemeType{HTTPScheme, HTTPSScheme} {
+		t.Run(string(scheme), func(t *testing.T) {
+			for _, tt := range []struct {
+				name       string
+				newContext func(context.Context) (context.Context, context.CancelFunc)
+				wantErr    error
+			}{
+				{
+					name: "deadline",
+					newContext: func(ctx context.Context) (context.Context, context.CancelFunc) {
+						return context.WithTimeout(ctx, time.Second)
+					},
+					wantErr: context.DeadlineExceeded,
+				},
+				{
+					name:       "canceled",
+					newContext: context.WithCancel,
+					wantErr:    context.Canceled,
+				},
+			} {
+				t.Run(tt.name, func(t *testing.T) {
+					started := make(chan struct{})
+					release := make(chan struct{})
+					ts := httptest.NewUnstartedServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+						close(started)
+						<-release
+					}))
+					if scheme == HTTPSScheme {
+						ts.StartTLS()
+					} else {
+						ts.Start()
+					}
+					fp := newConfigurableHTTPProvider(scheme, confmaptest.NewNopProviderSettings())
+					fp.insecureSkipVerify = scheme == HTTPSScheme
+					ctx, cancel := tt.newContext(t.Context())
+					defer cancel()
+
+					type result struct {
+						retrieved *confmap.Retrieved
+						err       error
+					}
+					results := make(chan result, 1)
+					done := make(chan struct{})
+					go func() {
+						defer close(done)
+						retrieved, err := fp.Retrieve(ctx, ts.URL, nil)
+						results <- result{retrieved: retrieved, err: err}
+					}()
+					t.Cleanup(func() {
+						close(release)
+						ts.Close()
+						<-done
+					})
+
+					select {
+					case <-started:
+					case got := <-results:
+						require.ErrorIs(t, got.err, tt.wantErr)
+						require.Nil(t, got.retrieved)
+						return
+					case <-time.After(5 * time.Second):
+						t.Fatal("server did not receive the request")
+					}
+					if errors.Is(tt.wantErr, context.Canceled) {
+						cancel()
+					}
+
+					select {
+					case got := <-results:
+						require.ErrorIs(t, got.err, tt.wantErr)
+						require.Nil(t, got.retrieved)
+					case <-time.After(5 * time.Second):
+						t.Fatal("Retrieve did not return after its context ended")
+					}
+				})
+			}
+		})
+	}
 }
 
 func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
@@ -263,6 +347,36 @@ func TestNonExistent(t *testing.T) {
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
 
+func TestRetrieveErrorsRedactPassword(t *testing.T) {
+	const password = "secret-password"
+	fp := New(HTTPScheme, confmaptest.NewNopProviderSettings())
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer ts.Close()
+	u, err := url.Parse(ts.URL)
+	require.NoError(t, err)
+	u.User = url.UserPassword("user", password)
+
+	// status code other than 200
+	_, err = fp.Retrieve(context.Background(), u.String(), nil)
+	require.ErrorContains(t, err, "user:xxxxx@")
+	assert.NotContains(t, err.Error(), password)
+
+	// transport error
+	ts.Close()
+	_, err = fp.Retrieve(context.Background(), u.String(), nil)
+	require.ErrorContains(t, err, "user:xxxxx@")
+	assert.NotContains(t, err.Error(), password)
+
+	// uri that does not parse
+	_, err = fp.Retrieve(context.Background(), "http://user:"+password+"@{}/", nil)
+	require.ErrorContains(t, err, "invalid uri")
+	assert.NotContains(t, err.Error(), password)
+
+	require.NoError(t, fp.Shutdown(context.Background()))
+}
+
 func TestInvalidYAML(t *testing.T) {
 	fp := New(HTTPScheme, confmaptest.NewNopProviderSettings())
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -309,6 +423,10 @@ func TestInvalidURI(t *testing.T) {
 		{
 			uri: "http://{}",
 			err: "invalid character \"{\" in host name",
+		},
+		{
+			uri: "http://localhost/?q=#%zz",
+			err: "unable to create HTTP GET request",
 		},
 	}
 

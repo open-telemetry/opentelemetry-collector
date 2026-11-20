@@ -72,6 +72,43 @@ func TestNewFactoryWithOptions(t *testing.T) {
 	require.EqualError(t, err, wrongIDErrStr)
 }
 
+func TestSettingsPipelineID(t *testing.T) {
+	defaultCfg := struct{}{}
+	var gotTracesPipelineID, gotMetricsPipelineID, gotLogsPipelineID pipeline.ID
+
+	f := NewFactory(
+		testType,
+		func() component.Config { return &defaultCfg },
+		WithTraces(func(_ context.Context, set Settings, _ component.Config, _ consumer.Traces) (Traces, error) {
+			gotTracesPipelineID = set.PipelineID
+			return nopInstance, nil
+		}, component.StabilityLevelAlpha),
+		WithMetrics(func(_ context.Context, set Settings, _ component.Config, _ consumer.Metrics) (Metrics, error) {
+			gotMetricsPipelineID = set.PipelineID
+			return nopInstance, nil
+		}, component.StabilityLevelBeta),
+		WithLogs(func(_ context.Context, set Settings, _ component.Config, _ consumer.Logs) (Logs, error) {
+			gotLogsPipelineID = set.PipelineID
+			return nopInstance, nil
+		}, component.StabilityLevelStable),
+	)
+
+	tracesPipelineID := pipeline.NewIDWithName(pipeline.SignalTraces, "p1")
+	_, err := f.CreateTraces(context.Background(), Settings{ID: testID, PipelineID: tracesPipelineID}, &defaultCfg, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.Equal(t, tracesPipelineID, gotTracesPipelineID)
+
+	metricsPipelineID := pipeline.NewIDWithName(pipeline.SignalMetrics, "p2")
+	_, err = f.CreateMetrics(context.Background(), Settings{ID: testID, PipelineID: metricsPipelineID}, &defaultCfg, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.Equal(t, metricsPipelineID, gotMetricsPipelineID)
+
+	logsPipelineID := pipeline.NewIDWithName(pipeline.SignalLogs, "p3")
+	_, err = f.CreateLogs(context.Background(), Settings{ID: testID, PipelineID: logsPipelineID}, &defaultCfg, consumertest.NewNop())
+	require.NoError(t, err)
+	assert.Equal(t, logsPipelineID, gotLogsPipelineID)
+}
+
 var nopInstance = &nopProcessor{
 	Consumer: consumertest.NewNop(),
 }
