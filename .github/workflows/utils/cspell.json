@@ -392,6 +392,7 @@
     "opencensus",
     "opencensusexporter",
     "opencensusreceiver",
+    "osullivandonal",
     "otelbot",
     "otelcol",
     "otelcoltest",
