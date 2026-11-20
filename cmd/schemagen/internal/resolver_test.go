@@ -383,3 +383,93 @@ func TestResolveArrayRef(t *testing.T) {
 	require.True(t, ok)
 	assert.Contains(t, itemObj.Properties, "name")
 }
+
+func isAny(e SchemaElement) bool {
+	f, ok := e.(*FieldSchemaElement)
+	return ok && f.ElementType == SchemaTypeAny
+}
+
+func localCfg() *Config {
+	return &Config{Mode: Component, Namespace: "example.com/mod", AllowedRefs: []string{"example.com/mod"}, ResolveRefs: true}
+}
+
+func TestResolveBreaksDirectCycle(t *testing.T) {
+	root := CreateSchema()
+	node := CreateObjectField("")
+	node.AddProperty("name", CreateSimpleField(SchemaTypeString, ""))
+	node.AddProperty("child", CreateRefField("node", ""))
+	root.Defs["node"] = node
+	root.AddProperty("tree", CreateRefField("node", ""))
+
+	got, err := resolverWithStub(localCfg(), nil).Resolve(root)
+	require.NoError(t, err)
+
+	_, err = got.ToJSON()
+	require.NoError(t, err)
+
+	tree, ok := got.Properties["tree"].(*ObjectSchemaElement)
+	require.True(t, ok)
+	assert.Contains(t, tree.Properties, "name")
+	assert.True(t, isAny(tree.Properties["child"]), "nested occurrence should be any, got %T", tree.Properties["child"])
+}
+
+func TestResolveBreaksCycleThroughSlice(t *testing.T) {
+	root := CreateSchema()
+	node := CreateObjectField("")
+	node.AddProperty("children", CreateArrayField(CreateRefField("node", ""), ""))
+	root.Defs["node"] = node
+	root.AddProperty("tree", CreateRefField("node", ""))
+
+	got, err := resolverWithStub(localCfg(), nil).Resolve(root)
+	require.NoError(t, err)
+
+	_, err = got.ToJSON()
+	require.NoError(t, err)
+
+	tree := got.Properties["tree"].(*ObjectSchemaElement)
+	children, ok := tree.Properties["children"].(*ArraySchemaElement)
+	require.True(t, ok)
+	assert.True(t, isAny(children.Items), "nested occurrence should be any, got %T", children.Items)
+}
+
+func TestResolveBreaksCycleThroughMap(t *testing.T) {
+	root := CreateSchema()
+	node := CreateObjectField("")
+	node.AddProperty("children", CreateMapField(CreateRefField("node", ""), ""))
+	root.Defs["node"] = node
+	root.AddProperty("tree", CreateRefField("node", ""))
+
+	got, err := resolverWithStub(localCfg(), nil).Resolve(root)
+	require.NoError(t, err)
+
+	_, err = got.ToJSON()
+	require.NoError(t, err)
+
+	tree := got.Properties["tree"].(*ObjectSchemaElement)
+	children, ok := tree.Properties["children"].(*ObjectSchemaElement)
+	require.True(t, ok)
+	assert.True(t, isAny(children.AdditionalProperties), "nested occurrence should be any, got %T", children.AdditionalProperties)
+}
+
+func TestResolveBreaksCycleThroughNestedStruct(t *testing.T) {
+	root := CreateSchema()
+	a := CreateObjectField("")
+	a.AddProperty("b", CreateRefField("b", ""))
+	b := CreateObjectField("")
+	b.AddProperty("name", CreateSimpleField(SchemaTypeString, ""))
+	b.AddProperty("a", CreateRefField("a", ""))
+	root.Defs["a"] = a
+	root.Defs["b"] = b
+	root.AddProperty("a", CreateRefField("a", ""))
+
+	got, err := resolverWithStub(localCfg(), nil).Resolve(root)
+	require.NoError(t, err)
+
+	_, err = got.ToJSON()
+	require.NoError(t, err)
+
+	resolvedA := got.Properties["a"].(*ObjectSchemaElement)
+	resolvedB := resolvedA.Properties["b"].(*ObjectSchemaElement)
+	assert.Contains(t, resolvedB.Properties, "name")
+	assert.True(t, isAny(resolvedB.Properties["a"]), "nested occurrence should be any, got %T", resolvedB.Properties["a"])
+}

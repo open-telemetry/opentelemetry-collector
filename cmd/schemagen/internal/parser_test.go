@@ -98,6 +98,36 @@ func TestComponentParser(t *testing.T) {
 			expectedSchemaFile: "testdata/test11/external_refs_config.schema.yaml",
 			rootType:           "ExternalRefsConfig",
 		},
+		{
+			title:              "Test interface fields Parsing",
+			inputFile:          "testdata/test12/InterfaceFieldConfig.go",
+			expectedSchemaFile: "testdata/test12/interface_field_config.schema.yaml",
+			rootType:           "InterfaceFieldConfig",
+		},
+		{
+			title:              "Test named map types Parsing",
+			inputFile:          "testdata/test13/NamedMapConfig.go",
+			expectedSchemaFile: "testdata/test13/named_map_config.schema.yaml",
+			rootType:           "NamedMapConfig",
+		},
+		{
+			title:              "Test remain field with map type Parsing",
+			inputFile:          "testdata/test14/RemainMapConfig.go",
+			expectedSchemaFile: "testdata/test14/remain_map_config.schema.yaml",
+			rootType:           "RemainMapConfig",
+		},
+		{
+			title:              "Test remain field with non-map type Parsing",
+			inputFile:          "testdata/test15/RemainAnyConfig.go",
+			expectedSchemaFile: "testdata/test15/remain_any_config.schema.yaml",
+			rootType:           "RemainAnyConfig",
+		},
+		{
+			title:              "Test UnmarshalText types Parsing",
+			inputFile:          "testdata/test16/TextUnmarshalerConfig.go",
+			expectedSchemaFile: "testdata/test16/text_unmarshaler_config.schema.yaml",
+			rootType:           "TextUnmarshalerConfig",
+		},
 	}
 
 	for _, tc := range testCases {

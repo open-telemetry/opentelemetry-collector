@@ -1,0 +1,17 @@
+$defs:
+  level:
+    description: Level is parsed from text.
+    type: string
+  mode:
+    type: string
+  plain:
+    type: integer
+    x-customType: int32
+type: object
+properties:
+  level:
+    $ref: level
+  mode:
+    $ref: mode
+  plain:
+    $ref: plain
