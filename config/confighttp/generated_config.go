@@ -70,6 +70,16 @@ type ClientConfig struct {
 	// active, and idle states. Default is 0 (unlimited).
 	MaxConnsPerHost int `mapstructure:"max_conns_per_host,omitempty"`
 
+	// MaxResponseBodySize sets the maximum response body size in bytes that the client will read.
+	// By default, the rest of a larger body is ignored and the reader sees a
+	// shorter body without an error. Set error_on_max_response_body_size to
+	// return an error instead. Default is 0 (unlimited).
+	MaxResponseBodySize int64 `mapstructure:"max_response_body_size,omitempty"`
+
+	// ErrorOnMaxResponseBodySize makes reading a response body that exceeds max_response_body_size return
+	// an error instead of truncating the body. Default is false.
+	ErrorOnMaxResponseBodySize bool `mapstructure:"error_on_max_response_body_size,omitempty"`
+
 	// HTTP2ReadIdleTimeout is the duration after which, if the connection has been idle, a ping frame is sent for a health check.
 	// 0s means no health check will be performed.
 	// This is needed in case you run into

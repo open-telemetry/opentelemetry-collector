@@ -6,6 +6,7 @@ package confighttp
 import (
 	"context"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -755,4 +756,82 @@ func TestClientMiddlewaresFieldCompatibility(t *testing.T) {
 	assert.Equal(t, "http://localhost:4318", clientConfig.Endpoint)
 	assert.Len(t, clientConfig.Middlewares, 1)
 	assert.Equal(t, component.MustNewID("test_middleware"), clientConfig.Middlewares[0].ID)
+}
+
+func TestClientMaxResponseBodySize(t *testing.T) {
+	const limit = 16
+	full := strings.Repeat("a", limit)
+	tests := []struct {
+		name        string
+		body        string
+		chunked     bool
+		errOnExceed bool
+		wantBody    string
+		wantErr     bool
+	}{
+		{name: "under limit", body: full[:limit-1], wantBody: full[:limit-1]},
+		{name: "at limit", body: full, wantBody: full},
+		{name: "over limit truncates", body: full + "a", wantBody: full},
+		{name: "over limit truncates chunked", body: strings.Repeat("a", 4*limit), chunked: true, wantBody: full},
+		{name: "empty"},
+		{name: "error mode under limit", body: full[:limit-1], errOnExceed: true, wantBody: full[:limit-1]},
+		{name: "error mode at limit", body: full, errOnExceed: true, wantBody: full},
+		{name: "error mode over limit", body: full + "a", errOnExceed: true, wantErr: true},
+		{name: "error mode over limit chunked", body: strings.Repeat("a", 4*limit), chunked: true, errOnExceed: true, wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				if tt.chunked {
+					w.(http.Flusher).Flush()
+				}
+				_, _ = w.Write([]byte(tt.body))
+			}))
+			defer srv.Close()
+
+			cc := NewDefaultClientConfig()
+			cc.Endpoint = srv.URL
+			cc.MaxResponseBodySize = limit
+			cc.ErrorOnMaxResponseBodySize = tt.errOnExceed
+			client, err := cc.ToClient(context.Background(), nil, componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+
+			resp, err := client.Get(srv.URL)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+			got, err := io.ReadAll(resp.Body)
+			if tt.wantErr {
+				var sizeErr *MaxResponseBodySizeError
+				require.ErrorAs(t, err, &sizeErr)
+				assert.Equal(t, int64(limit), sizeErr.Limit)
+				assert.LessOrEqual(t, len(got), limit)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantBody, string(got))
+		})
+	}
+}
+
+func TestClientMaxResponseBodySizeDefault(t *testing.T) {
+	assert.Equal(t, int64(0), NewDefaultClientConfig().MaxResponseBodySize)
+}
+
+func TestClientMaxResponseBodySizeUnlimitedByDefault(t *testing.T) {
+	body := strings.Repeat("a", 1<<20)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(body))
+	}))
+	defer srv.Close()
+
+	cc := NewDefaultClientConfig()
+	cc.Endpoint = srv.URL
+	client, err := cc.ToClient(context.Background(), nil, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	resp, err := client.Get(srv.URL)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	got, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Len(t, got, len(body))
 }
