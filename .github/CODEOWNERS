@@ -56,23 +56,23 @@ confmap/xconfmap/                                      @open-telemetry/collector
 connector/                                             @open-telemetry/collector-approvers
 connector/connectortest/                               @open-telemetry/collector-approvers
 connector/forwardconnector/                            @open-telemetry/collector-approvers
-connector/xconnector/                                  @open-telemetry/collector-approvers @mx-psi @dmathieu
+connector/xconnector/                                  @open-telemetry/collector-approvers @mx-psi @dmathieu @florianl
 consumer/                                              @open-telemetry/collector-approvers
 consumer/consumererror/                                @open-telemetry/collector-approvers
 consumer/consumererror/xconsumererror/                 @open-telemetry/collector-approvers
 consumer/consumertest/                                 @open-telemetry/collector-approvers
-consumer/xconsumer/                                    @open-telemetry/collector-approvers @mx-psi @dmathieu
+consumer/xconsumer/                                    @open-telemetry/collector-approvers @mx-psi @dmathieu @florianl
 docs/rfcs/                                             @open-telemetry/collector-approvers @open-telemetry/collector-maintainers
 exporter/                                              @open-telemetry/collector-approvers
 exporter/debugexporter/                                @open-telemetry/collector-approvers @andrzej-stencel
 exporter/exporterhelper/                               @open-telemetry/collector-approvers @bogdandrutu @dmitryax
 exporter/exporterhelper/internal/queuebatch/           @open-telemetry/collector-approvers
-exporter/exporterhelper/xexporterhelper/               @open-telemetry/collector-approvers @mx-psi @dmathieu
+exporter/exporterhelper/xexporterhelper/               @open-telemetry/collector-approvers @mx-psi @dmathieu @florianl
 exporter/exportertest/                                 @open-telemetry/collector-approvers
 exporter/nopexporter/                                  @open-telemetry/collector-approvers @evan-bradley
 exporter/otlpexporter/                                 @open-telemetry/collector-approvers
 exporter/otlphttpexporter/                             @open-telemetry/collector-approvers
-exporter/xexporter/                                    @open-telemetry/collector-approvers @mx-psi @dmathieu
+exporter/xexporter/                                    @open-telemetry/collector-approvers @mx-psi @dmathieu @florianl
 extension/                                             @open-telemetry/collector-approvers
 extension/extensionauth/                               @open-telemetry/collector-approvers
 extension/extensionauth/extensionauthtest/             @open-telemetry/collector-approvers
@@ -89,7 +89,7 @@ filter/                                                @open-telemetry/collector
 otelcol/                                               @open-telemetry/collector-approvers
 otelcol/otelcoltest/                                   @open-telemetry/collector-approvers
 pdata/                                                 @open-telemetry/collector-approvers @bogdandrutu @dmitryax
-pdata/pprofile/                                        @open-telemetry/collector-approvers @mx-psi @dmathieu
+pdata/pprofile/                                        @open-telemetry/collector-approvers @mx-psi @dmathieu @florianl
 pdata/xpdata/                                          @open-telemetry/collector-approvers
 pipeline/                                              @open-telemetry/collector-approvers
 pipeline/xpipeline/                                    @open-telemetry/collector-approvers
@@ -100,14 +100,14 @@ processor/processorhelper/                             @open-telemetry/collector
 processor/processorhelper/xprocessorhelper/            @open-telemetry/collector-approvers
 processor/processortest/                               @open-telemetry/collector-approvers
 processor/queuebatchprocessor/                         @open-telemetry/collector-approvers @jmacd @iblancasa
-processor/xprocessor/                                  @open-telemetry/collector-approvers @mx-psi @dmathieu
+processor/xprocessor/                                  @open-telemetry/collector-approvers @mx-psi @dmathieu @florianl
 receiver/                                              @open-telemetry/collector-approvers
 receiver/nopreceiver/                                  @open-telemetry/collector-approvers @evan-bradley
 receiver/otlpreceiver/                                 @open-telemetry/collector-approvers
 receiver/receiverhelper/                               @open-telemetry/collector-approvers
 receiver/receiverhelper/xreceiverhelper/               @open-telemetry/collector-approvers @dmathieu @florianl
 receiver/receivertest/                                 @open-telemetry/collector-approvers
-receiver/xreceiver/                                    @open-telemetry/collector-approvers @mx-psi @dmathieu
+receiver/xreceiver/                                    @open-telemetry/collector-approvers @mx-psi @dmathieu @florianl
 scraper/                                               @open-telemetry/collector-approvers
 scraper/scraperhelper/                                 @open-telemetry/collector-approvers
 scraper/scraperhelper/internal/controller/             @open-telemetry/collector-approvers
