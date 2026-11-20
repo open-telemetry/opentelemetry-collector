@@ -10,3 +10,29 @@ status:
   distributions: [core, contrib, k8s]
   warnings:
     - The zPages extension is incompatible with `service::telemetry::traces::level` set to `none`
+
+config:
+  description: Config has the configuration for the extension enabling the zPages extension.
+  go_struct:
+    custom_validator:
+      name: validateConfig
+  properties:
+    server_config:
+      $ref: /config/confighttp.server_config
+      embed: true
+      default:
+        net_addr:
+          endpoint: localhost:55679
+    expvar:
+      $ref: expvar_config
+      description: Has the configuration for the expvar service.
+
+exported_configs:
+  expvar_config:
+    description: Has the configuration for the expvar service.
+    type: object
+    properties:
+      enabled:
+        type: bool
+        description: Indicates whether to enable expvar service. (default = false)
+        default: false

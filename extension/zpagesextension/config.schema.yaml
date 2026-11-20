@@ -10,6 +10,7 @@ description: Config has the configuration for the extension enabling the zPages 
 type: object
 properties:
   expvar:
+    description: Expvar has the configuration for the expvar service.
     $ref: expvar_config
 allOf:
   - $ref: /config/confighttp.server_config
