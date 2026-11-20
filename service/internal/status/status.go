@@ -149,10 +149,10 @@ func (r *reporter) ReportStatus(
 		r.onInvalidTransition(err)
 		return
 	}
-	switch {
-	case !known:
+	if !known {
 		r.fsmMap[id] = fsm
-	case ev.Status() == componentstatus.StatusStopped:
+	}
+	if ev.Status() == componentstatus.StatusStopped {
 		delete(r.fsmMap, id)
 	}
 }

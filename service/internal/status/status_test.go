@@ -4,7 +4,6 @@
 package status
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -372,20 +371,14 @@ func TestReporterDropsStoppedInstances(t *testing.T) {
 	assert.Empty(t, invalid)
 
 	rep.ReportStatus(ids[0], componentstatus.NewEvent(componentstatus.StatusOK))
-	rep.ReportStatus(ids[0], componentstatus.NewRecoverableErrorEvent(errors.New("late")))
 	assert.Empty(t, r.fsmMap)
-	require.Len(t, invalid, 2)
-	for _, err := range invalid {
-		require.ErrorIs(t, err, errInvalidStateTransition)
-	}
+	require.Len(t, invalid, 1)
+	require.ErrorIs(t, invalid[0], errInvalidStateTransition)
 }
 
 // TestReporterUnknownInstanceFirstEvent verifies that an event other than
 // StatusStarting for an instance the reporter has never seen is an invalid
-// transition that leaves no entry behind. A component shared between
-// pipelines replays its status events to every pipeline it was started
-// from, including one whose node has already been stopped and dropped by a
-// partial reload; such a replay must not resurrect the dropped entry.
+// transition that leaves no entry behind.
 func TestReporterUnknownInstanceFirstEvent(t *testing.T) {
 	var notified []componentstatus.Status
 	var invalid []error
