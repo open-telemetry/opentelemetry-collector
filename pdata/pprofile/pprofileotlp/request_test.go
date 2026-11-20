@@ -279,3 +279,61 @@ func TestRejectInvalidUTF8(t *testing.T) {
 		assert.Equal(t, 0, pd.ResourceProfiles().Len())
 	})
 }
+
+func BenchmarkRejectInvalidUTF8(b *testing.B) {
+	const (
+		profiles          = 10_000
+		dictionaryStrings = 1_000
+	)
+	newRequest := func(invalidEvery int) ExportRequest {
+		req := NewExportRequest()
+		pd := req.Profiles()
+		st := pd.Dictionary().StringTable()
+		st.EnsureCapacity(dictionaryStrings)
+		for range dictionaryStrings {
+			st.Append("github.com/example/service/internal/handler.(*Server).ServeHTTP")
+		}
+		rp := pd.ResourceProfiles().AppendEmpty()
+		rp.Resource().Attributes().PutStr("service.name", "svc")
+		sp := rp.ScopeProfiles().AppendEmpty()
+		sp.Scope().SetName("scope")
+		ps := sp.Profiles()
+		ps.EnsureCapacity(profiles)
+		for i := range profiles {
+			profile := ps.AppendEmpty()
+			format := "pprof"
+			if invalidEvery > 0 && i%invalidEvery == 0 {
+				format = "pprof\xff"
+			}
+			profile.SetOriginalPayloadFormat(format)
+			profile.Samples().AppendEmpty().Values().Append(1, 2, 3)
+		}
+		return req
+	}
+
+	for _, bc := range []struct {
+		name         string
+		invalidEvery int
+		want         int
+	}{
+		{name: "AllValid", invalidEvery: 0, want: 0},
+		{name: "OneInvalid", invalidEvery: profiles, want: 1},
+		{name: "AllInvalid", invalidEvery: 1, want: profiles},
+	} {
+		b.Run(bc.name, func(b *testing.B) {
+			req := newRequest(bc.invalidEvery)
+			b.ReportAllocs()
+			for b.Loop() {
+				if got := req.RejectInvalidUTF8(); got != bc.want {
+					b.Fatalf("rejected %d, want %d", got, bc.want)
+				}
+				if bc.invalidEvery > 0 {
+					// Rejection removed the invalid items, so build the request again.
+					b.StopTimer()
+					req = newRequest(bc.invalidEvery)
+					b.StartTimer()
+				}
+			}
+		})
+	}
+}

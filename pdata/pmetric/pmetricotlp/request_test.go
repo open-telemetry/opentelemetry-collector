@@ -269,3 +269,66 @@ func TestRejectInvalidUTF8(t *testing.T) {
 		assert.Equal(t, 1, md.ResourceMetrics().At(1).ScopeMetrics().Len())
 	})
 }
+
+func BenchmarkRejectInvalidUTF8(b *testing.B) {
+	const (
+		metrics         = 100
+		pointsPerMetric = 100
+		dataPoints      = metrics * pointsPerMetric
+	)
+	newRequest := func(invalidEvery int) ExportRequest {
+		req := NewExportRequest()
+		rm := req.Metrics().ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("service.name", "svc")
+		sm := rm.ScopeMetrics().AppendEmpty()
+		sm.Scope().SetName("scope")
+		ms := sm.Metrics()
+		ms.EnsureCapacity(metrics)
+		for m := range metrics {
+			metric := ms.AppendEmpty()
+			metric.SetName("http.server.request.duration")
+			metric.SetDescription("Duration of HTTP server requests")
+			metric.SetUnit("s")
+			dps := metric.SetEmptyGauge().DataPoints()
+			dps.EnsureCapacity(pointsPerMetric)
+			for p := range pointsPerMetric {
+				dp := dps.AppendEmpty()
+				dp.SetDoubleValue(1)
+				dp.Attributes().PutStr("http.method", "GET")
+				// The invalid string is the last one of the data point, so the whole data point is checked.
+				route := "/api/v1/resource"
+				if i := m*pointsPerMetric + p; invalidEvery > 0 && i%invalidEvery == 0 {
+					route = "/api/\xff/resource"
+				}
+				dp.Attributes().PutStr("http.route", route)
+			}
+		}
+		return req
+	}
+
+	for _, bc := range []struct {
+		name         string
+		invalidEvery int
+		want         int
+	}{
+		{name: "AllValid", invalidEvery: 0, want: 0},
+		{name: "OneInvalid", invalidEvery: dataPoints, want: 1},
+		{name: "AllInvalid", invalidEvery: 1, want: dataPoints},
+	} {
+		b.Run(bc.name, func(b *testing.B) {
+			req := newRequest(bc.invalidEvery)
+			b.ReportAllocs()
+			for b.Loop() {
+				if got := req.RejectInvalidUTF8(); got != bc.want {
+					b.Fatalf("rejected %d, want %d", got, bc.want)
+				}
+				if bc.invalidEvery > 0 {
+					// Rejection removed the invalid items, so build the request again.
+					b.StopTimer()
+					req = newRequest(bc.invalidEvery)
+					b.StartTimer()
+				}
+			}
+		})
+	}
+}

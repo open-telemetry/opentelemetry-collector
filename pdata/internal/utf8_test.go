@@ -436,59 +436,142 @@ func utf8CollectInvalidStrings(v reflect.Value, path string, invalid *[]string) 
 	}
 }
 
-func TestValidateUTF8(t *testing.T) {
-	t.Run("nil", func(t *testing.T) {
-		assert.True(t, ValidateUTF8(nil))
-	})
+const invalidUTF8 = "\xff"
 
-	t.Run("nil pointer and nil interface field", func(t *testing.T) {
-		type sample struct {
-			P *string
-			V any
+func TestValidUTF8AnyValue(t *testing.T) {
+	str := func(s string) AnyValue { return AnyValue{Value: &AnyValue_StringValue{StringValue: s}} }
+
+	assert.True(t, validUTF8AnyValue(&AnyValue{}))
+	assert.True(t, validUTF8AnyValue(&AnyValue{Value: &AnyValue_BytesValue{BytesValue: []byte(invalidUTF8)}}))
+	assert.True(t, validUTF8AnyValue(&AnyValue{Value: &AnyValue_IntValue{IntValue: 1}}))
+	assert.True(t, validUTF8AnyValue(&AnyValue{Value: &AnyValue_ArrayValue{}}))
+	assert.True(t, validUTF8AnyValue(&AnyValue{Value: &AnyValue_KvlistValue{}}))
+	assert.True(t, validUTF8AnyValue(&AnyValue{Value: &AnyValue_ArrayValue{ArrayValue: &ArrayValue{
+		Values: []AnyValue{str("ok"), {Value: &AnyValue_BytesValue{BytesValue: []byte(invalidUTF8)}}},
+	}}}))
+
+	assert.False(t, validUTF8AnyValue(&AnyValue{Value: &AnyValue_StringValue{StringValue: invalidUTF8}}))
+
+	nestedArray := AnyValue{Value: &AnyValue_ArrayValue{ArrayValue: &ArrayValue{
+		Values: []AnyValue{str("ok"), {Value: &AnyValue_ArrayValue{ArrayValue: &ArrayValue{Values: []AnyValue{str(invalidUTF8)}}}}},
+	}}}
+	assert.False(t, validUTF8AnyValue(&nestedArray))
+
+	kvKey := AnyValue{Value: &AnyValue_KvlistValue{KvlistValue: &KeyValueList{
+		Values: []KeyValue{{Key: invalidUTF8, Value: str("ok")}},
+	}}}
+	assert.False(t, validUTF8AnyValue(&kvKey))
+
+	kvValue := AnyValue{Value: &AnyValue_KvlistValue{KvlistValue: &KeyValueList{
+		Values: []KeyValue{{Key: "k", Value: AnyValue{Value: &AnyValue_ArrayValue{ArrayValue: &ArrayValue{
+			Values: []AnyValue{str(invalidUTF8)},
+		}}}}},
+	}}}
+	assert.False(t, validUTF8AnyValue(&kvValue))
+}
+
+// settableStrings returns every settable string reachable from v, through pointers, structs, slices and interfaces.
+func settableStrings(v reflect.Value) []reflect.Value {
+	switch v.Kind() {
+	case reflect.Pointer, reflect.Interface:
+		if v.IsNil() {
+			return nil
 		}
-		assert.True(t, ValidateUTF8((*sample)(nil)))
-		assert.True(t, ValidateUTF8(sample{}))
-	})
-
-	t.Run("valid composite", func(t *testing.T) {
-		type sample struct {
-			S string
-			A []string
+		return settableStrings(v.Elem())
+	case reflect.String:
+		if v.CanSet() {
+			return []reflect.Value{v}
 		}
-		assert.True(t, ValidateUTF8(&sample{S: "ok", A: []string{"a", "b"}}))
-	})
-
-	t.Run("invalid string", func(t *testing.T) {
-		assert.False(t, ValidateUTF8(string([]byte{0xff})))
-	})
-
-	t.Run("invalid nested composite", func(t *testing.T) {
-		type sample struct {
-			A [1]string
+	case reflect.Struct:
+		var out []reflect.Value
+		for _, f := range v.Fields() {
+			out = append(out, settableStrings(f)...)
 		}
-		assert.False(t, ValidateUTF8(sample{A: [1]string{string([]byte{0xff})}}))
-	})
-
-	t.Run("invalid behind interface", func(t *testing.T) {
-		type sample struct {
-			V any
+		return out
+	case reflect.Slice, reflect.Array:
+		var out []reflect.Value
+		for i := range v.Len() {
+			out = append(out, settableStrings(v.Index(i))...)
 		}
-		assert.False(t, ValidateUTF8(sample{V: &AnyValue{Value: &AnyValue_StringValue{StringValue: string([]byte{0xff})}}}))
-	})
+		return out
+	}
+	return nil
+}
 
-	t.Run("scalar collections are ignored", func(t *testing.T) {
-		type sample struct {
-			ID    [16]byte
-			Bytes []byte
-			Ints  []int64
-		}
-		assert.True(t, ValidateUTF8(sample{ID: [16]byte{0xff}, Bytes: []byte{0xff}, Ints: []int64{1}}))
-	})
+// testUTF8Coverage fails when a string field of the request type is not checked by the typed
+// validation code, for example because a new field was added to the proto.
+func testUTF8Coverage[T any](
+	t *testing.T,
+	gen func() *T,
+	clearDeprecated func(*T),
+	validate func(*T) bool,
+	reject func(*T) int,
+	validateAfterReject func(*T) bool,
+) {
+	total := len(settableStrings(reflect.ValueOf(gen())))
+	require.Positive(t, total)
+	require.True(t, validate(gen()))
 
-	t.Run("pdata requests", func(t *testing.T) {
-		assert.True(t, ValidateUTF8(GenTestTracesWrapper().orig))
-		assert.True(t, ValidateUTF8(GenTestLogsWrapper().orig))
-		assert.True(t, ValidateUTF8(GenTestMetricsWrapper().orig))
-		assert.True(t, ValidateUTF8(GenTestProfilesWrapper().orig))
+	for i := range total {
+		req := gen()
+		s := settableStrings(reflect.ValueOf(req))[i]
+		old := s.String()
+		s.SetString(invalidUTF8)
+		assert.Falsef(t, validate(req), "string #%d (was %q) is not validated", i, old)
+		s.SetString(old)
+		assert.True(t, validate(req))
+	}
+
+	// Reject only looks at the non-deprecated scopes, so use a request without the deprecated ones.
+	cleared := gen()
+	clearDeprecated(cleared)
+	for i := range len(settableStrings(reflect.ValueOf(cleared))) {
+		req := gen()
+		clearDeprecated(req)
+		settableStrings(reflect.ValueOf(req))[i].SetString(invalidUTF8)
+		reject(req)
+		assert.Truef(t, validateAfterReject(req), "string #%d is still invalid after rejection", i)
+	}
+}
+
+func TestValidateUTF8Coverage(t *testing.T) {
+	t.Run("logs", func(t *testing.T) {
+		testUTF8Coverage(t, GenTestExportLogsServiceRequest,
+			func(r *ExportLogsServiceRequest) {
+				for _, rl := range r.ResourceLogs {
+					rl.DeprecatedScopeLogs = nil
+				}
+			},
+			ValidateUTF8ExportLogsServiceRequest, RejectInvalidUTF8ExportLogsServiceRequest,
+			ValidateUTF8ExportLogsServiceRequest)
+	})
+	t.Run("traces", func(t *testing.T) {
+		testUTF8Coverage(t, GenTestExportTraceServiceRequest,
+			func(r *ExportTraceServiceRequest) {
+				for _, rs := range r.ResourceSpans {
+					rs.DeprecatedScopeSpans = nil
+				}
+			},
+			ValidateUTF8ExportTraceServiceRequest, RejectInvalidUTF8ExportTraceServiceRequest,
+			ValidateUTF8ExportTraceServiceRequest)
+	})
+	t.Run("metrics", func(t *testing.T) {
+		testUTF8Coverage(t, GenTestExportMetricsServiceRequest,
+			func(r *ExportMetricsServiceRequest) {
+				for _, rm := range r.ResourceMetrics {
+					rm.DeprecatedScopeMetrics = nil
+				}
+			},
+			ValidateUTF8ExportMetricsServiceRequest, RejectInvalidUTF8ExportMetricsServiceRequest,
+			ValidateUTF8ExportMetricsServiceRequest)
+	})
+	t.Run("profiles", func(t *testing.T) {
+		testUTF8Coverage(t, GenTestExportProfilesServiceRequest, func(*ExportProfilesServiceRequest) {},
+			ValidateUTF8ExportProfilesServiceRequest, RejectInvalidUTF8ExportProfilesServiceRequest,
+			func(r *ExportProfilesServiceRequest) bool {
+				// Rejection drops the profiles but leaves an invalid shared dictionary in place.
+				r.Dictionary = ProfilesDictionary{}
+				return ValidateUTF8ExportProfilesServiceRequest(r)
+			})
 	})
 }

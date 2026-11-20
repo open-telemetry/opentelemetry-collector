@@ -202,3 +202,57 @@ func TestRejectInvalidUTF8(t *testing.T) {
 		assert.Equal(t, 0, td.ResourceSpans().Len())
 	})
 }
+
+func BenchmarkRejectInvalidUTF8(b *testing.B) {
+	const spans = 10_000
+	newRequest := func(invalidEvery int) ExportRequest {
+		req := NewExportRequest()
+		rs := req.Traces().ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("service.name", "svc")
+		ss := rs.ScopeSpans().AppendEmpty()
+		ss.Scope().SetName("scope")
+		sps := ss.Spans()
+		sps.EnsureCapacity(spans)
+		for i := range spans {
+			span := sps.AppendEmpty()
+			span.SetName("GET /api/v1/resource")
+			span.Attributes().PutStr("http.method", "GET")
+			span.Attributes().PutStr("http.route", "/api/v1/resource")
+			event := span.Events().AppendEmpty()
+			event.SetName("exception")
+			// The invalid string is the last one of the span, so the whole span is checked.
+			exception := "timeout"
+			if invalidEvery > 0 && i%invalidEvery == 0 {
+				exception = "time\xffout"
+			}
+			event.Attributes().PutStr("exception.type", exception)
+		}
+		return req
+	}
+
+	for _, bc := range []struct {
+		name         string
+		invalidEvery int
+		want         int
+	}{
+		{name: "AllValid", invalidEvery: 0, want: 0},
+		{name: "OneInvalid", invalidEvery: spans, want: 1},
+		{name: "AllInvalid", invalidEvery: 1, want: spans},
+	} {
+		b.Run(bc.name, func(b *testing.B) {
+			req := newRequest(bc.invalidEvery)
+			b.ReportAllocs()
+			for b.Loop() {
+				if got := req.RejectInvalidUTF8(); got != bc.want {
+					b.Fatalf("rejected %d, want %d", got, bc.want)
+				}
+				if bc.invalidEvery > 0 {
+					// Rejection removed the invalid items, so build the request again.
+					b.StopTimer()
+					req = newRequest(bc.invalidEvery)
+					b.StartTimer()
+				}
+			}
+		})
+	}
+}
