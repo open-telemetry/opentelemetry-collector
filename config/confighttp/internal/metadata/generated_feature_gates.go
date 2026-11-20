@@ -6,6 +6,14 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+var PkgConfighttpAllowH2CFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"pkg.confighttp.AllowH2C",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Allows prior-knowledge HTTP/2 cleartext (h2c) connections to HTTP servers."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/10952"),
+	featuregate.WithRegisterFromVersion("v0.165.0"),
+)
+
 var PkgConfighttpPrioritizeNewKeepaliveFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"pkg.confighttp.PrioritizeNewKeepalive",
 	featuregate.StageStable,
