@@ -35,8 +35,13 @@ func (ms Profiles) SampleCount() int {
 // switchDictionary updates the Profiles, switching its indices from one
 // dictionary to another.
 func (ms Profiles) switchDictionary(src, dst ProfilesDictionary) error {
-	mi := newMergeIndex(dst)
+	return ms.switchDictionaryWithIndex(src, dst, newMergeIndex(dst))
+}
 
+// switchDictionaryWithIndex behaves like switchDictionary but dedups through
+// the caller-provided index instead of building one over dst, so repeated
+// merges into the same destination can keep reusing it.
+func (ms Profiles) switchDictionaryWithIndex(src, dst ProfilesDictionary, mi *mergeIndex) error {
 	for i, v := range ms.Dictionary().AttributeTable().All() {
 		if err := v.switchDictionary(src, dst, mi); err != nil {
 			return fmt.Errorf("couldn't switch attribute %d: %w", i, err)
