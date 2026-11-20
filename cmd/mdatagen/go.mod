@@ -48,7 +48,7 @@ require (
 	go.uber.org/zap v1.28.0
 	go.yaml.in/yaml/v3 v3.0.6
 	golang.org/x/text v0.44.0
-	golang.org/x/tools v0.52.0
+	golang.org/x/tools v0.53.0
 )
 
 require (

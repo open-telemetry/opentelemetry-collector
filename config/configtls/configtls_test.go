@@ -1246,3 +1246,23 @@ func TestInsecureCipherSuites(t *testing.T) {
 		})
 	}
 }
+
+func TestMarshalRedactsSecrets(t *testing.T) {
+	cfg := Config{
+		KeyPem: "key-pem",
+		TPMConfig: TPMConfig{
+			Enabled:   true,
+			Auth:      "tpm-auth",
+			OwnerAuth: "tpm-owner-auth",
+			Path:      "/dev/tpmrm0",
+		},
+	}
+
+	conf := confmap.New()
+	require.NoError(t, conf.Marshal(cfg))
+
+	assert.Equal(t, "[REDACTED]", conf.Get("key_pem"))
+	assert.Equal(t, "[REDACTED]", conf.Get("tpm::auth"))
+	assert.Equal(t, "[REDACTED]", conf.Get("tpm::owner_auth"))
+	assert.Equal(t, "/dev/tpmrm0", conf.Get("tpm::path"))
+}
