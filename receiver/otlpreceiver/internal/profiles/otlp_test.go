@@ -8,6 +8,7 @@ import (
 	"errors"
 	"net"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -75,6 +76,56 @@ func TestExport_InvalidUTF8(t *testing.T) {
 
 	// The response counts rejected profiles, the receiver telemetry counts rejected samples.
 	assertReceiverSum(t, tt, "otelcol_receiver_refused_profile_samples", int64(sampleCount))
+}
+
+func TestExport_SanitizeInvalidUTF8(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpSanitizeInvalidUTF8FeatureGate.ID(), true)
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.ID(), false)
+
+	td := testdata.GenerateProfiles(2)
+	profileCount := td.ProfileCount()
+	sampleCount := td.SampleCount()
+	td.Dictionary().StringTable().Append("bad\xffvalue")
+	badIdx := td.Dictionary().StringTable().Len() - 1
+	req := pprofileotlp.NewExportRequestFromProfiles(td)
+
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	profileSink := new(consumertest.ProfilesSink)
+	profileClient := makeProfileServiceClientWithTelemetry(t, profileSink, tt)
+	resp, err := profileClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Zero(t, resp.PartialSuccess().RejectedProfiles())
+	assert.Empty(t, resp.PartialSuccess().ErrorMessage())
+
+	pds := profileSink.AllProfiles()
+	require.Len(t, pds, 1)
+	assert.Equal(t, profileCount, pds[0].ProfileCount())
+
+	got := pds[0].Dictionary().StringTable().At(badIdx)
+	assert.Equal(t, "bad\uFFFDvalue", got)
+	assert.True(t, utf8.ValidString(got))
+
+	assertReceiverSum(t, tt, "otelcol_receiver_accepted_profile_samples", int64(sampleCount))
+}
+
+func TestExport_SanitizeInvalidUTF8RejectTakesPrecedence(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpSanitizeInvalidUTF8FeatureGate.ID(), true)
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.ID(), true)
+
+	td := testdata.GenerateProfiles(2)
+	profileCount := td.ProfileCount()
+	td.Dictionary().StringTable().Append("bad\xffvalue")
+	req := pprofileotlp.NewExportRequestFromProfiles(td)
+
+	profileSink := new(consumertest.ProfilesSink)
+	profileClient := makeProfileServiceClient(t, profileSink)
+	resp, err := profileClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, int64(profileCount), resp.PartialSuccess().RejectedProfiles())
+	assert.Equal(t, invalidUTF8Message, resp.PartialSuccess().ErrorMessage())
+	assert.Empty(t, profileSink.AllProfiles())
 }
 
 func TestExport_NonPermanentErrorConsumer(t *testing.T) {
