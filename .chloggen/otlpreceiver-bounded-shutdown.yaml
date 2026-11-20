@@ -10,7 +10,7 @@ component: receiver/otlp
 note: Bound the time `Shutdown` waits for in-flight requests so that a peer holding an incomplete request open cannot block collector shutdown or config reload indefinitely.
 
 # One or more tracking issues or pull requests related to the change
-issues: []
+issues: [16462]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
