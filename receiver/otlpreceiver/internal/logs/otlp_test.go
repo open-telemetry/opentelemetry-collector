@@ -8,6 +8,7 @@ import (
 	"errors"
 	"net"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -97,6 +98,56 @@ func TestExport_InvalidUTF8FeatureGateDisabled(t *testing.T) {
 	lds := logSink.AllLogs()
 	require.Len(t, lds, 1)
 	assert.Equal(t, 2, lds[0].LogRecordCount())
+}
+
+func TestExport_SanitizeInvalidUTF8(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpSanitizeInvalidUTF8FeatureGate.ID(), true)
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.ID(), false)
+
+	ld := testdata.GenerateLogs(2)
+	ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("bad", "bad\xffvalue")
+	req := plogotlp.NewExportRequestFromLogs(ld)
+
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	logSink := new(consumertest.LogsSink)
+	logClient := makeLogsServiceClientWithTelemetry(t, logSink, tt)
+	resp, err := logClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Zero(t, resp.PartialSuccess().RejectedLogRecords())
+	assert.Empty(t, resp.PartialSuccess().ErrorMessage())
+
+	lds := logSink.AllLogs()
+	require.Len(t, lds, 1)
+	assert.Equal(t, 2, lds[0].LogRecordCount())
+
+	got, ok := lds[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("bad")
+	require.True(t, ok)
+	assert.Equal(t, "bad\uFFFDvalue", got.Str())
+	assert.True(t, utf8.ValidString(got.Str()))
+
+	assertReceiverSum(t, tt, "otelcol_receiver_accepted_log_records", int64(2))
+}
+
+func TestExport_SanitizeInvalidUTF8RejectTakesPrecedence(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpSanitizeInvalidUTF8FeatureGate.ID(), true)
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.ID(), true)
+
+	ld := testdata.GenerateLogs(2)
+	ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("bad", "bad\xffvalue")
+	req := plogotlp.NewExportRequestFromLogs(ld)
+
+	logSink := new(consumertest.LogsSink)
+	logClient := makeLogsServiceClient(t, logSink)
+	resp, err := logClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), resp.PartialSuccess().RejectedLogRecords())
+	assert.Equal(t, invalidUTF8Message, resp.PartialSuccess().ErrorMessage())
+
+	lds := logSink.AllLogs()
+	require.Len(t, lds, 1)
+	assert.Equal(t, 1, lds[0].LogRecordCount())
 }
 
 func TestExport_NonPermanentErrorConsumer(t *testing.T) {

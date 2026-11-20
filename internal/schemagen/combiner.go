@@ -4,7 +4,9 @@
 package schemagen // import "go.opentelemetry.io/collector/internal/schemagen"
 
 import (
+	"errors"
 	"fmt"
+	"net/url"
 	"reflect"
 	"regexp"
 	"slices"
@@ -46,9 +48,19 @@ type CollectorSchemaParts struct {
 	Exporters  []CollectorComponentSchema
 	Connectors []CollectorComponentSchema
 	Extensions []CollectorComponentSchema
+
+	// ID is the optional $id of the combined schema. It is omitted when empty.
+	// When set it must be an absolute IRI without a fragment.
+	ID string
+	// Title is the optional title of the combined schema. It is omitted when empty.
+	Title string
 }
 
 func CombineCollectorSchema(parts CollectorSchemaParts) (*JSONSchema, error) {
+	if err := validateSchemaID(parts.ID); err != nil {
+		return nil, fmt.Errorf("invalid schema $id %q: %w", parts.ID, err)
+	}
+
 	properties := newCollectorProperties(parts)
 
 	sections := []struct {
@@ -72,9 +84,28 @@ func CombineCollectorSchema(parts CollectorSchemaParts) (*JSONSchema, error) {
 
 	return &JSONSchema{
 		Schema:     schemaVersion,
+		ID:         parts.ID,
+		Title:      parts.Title,
 		Type:       "object",
 		Properties: properties,
 	}, nil
+}
+
+func validateSchemaID(id string) error {
+	if id == "" {
+		return nil
+	}
+	if strings.Contains(id, "#") {
+		return errors.New("must not contain a fragment")
+	}
+	u, err := url.Parse(id)
+	if err != nil {
+		return err
+	}
+	if !u.IsAbs() {
+		return errors.New("must be an absolute IRI")
+	}
+	return nil
 }
 
 func combineCollectorComponentSection(section CollectorSection, components []CollectorComponentSchema) (*JSONSchema, error) {
