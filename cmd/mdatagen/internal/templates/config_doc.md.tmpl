@@ -6,7 +6,7 @@
 {{- if $sec.Scalar -}}
 | Type | Default | Constraints | Description |
 | ---- | ------- | ----------- | ----------- |
-| {{ cfgDocType $sec.Schema }} | {{ cfgDocDefault $sec.Schema }} | {{ cfgDocConstraints $sec.Schema }} | {{ $sec.Schema.Description }} |
+| {{ cfgDocType $sec.Schema }} | {{ cfgDocDefault $sec.Schema }} | {{ cfgDocConstraints $sec.Schema }} | {{ cfgDocCell $sec.Schema.Description }} |
 {{- else -}}
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
