@@ -5,9 +5,12 @@ package zpagesextension // import "go.opentelemetry.io/collector/extension/zpage
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 )
 
 // Config has the configuration for the extension enabling the zPages extension.
@@ -15,6 +18,11 @@ type Config struct {
 	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
 
 	Expvar ExpvarConfig `mapstructure:"expvar"`
+
+	// SupportBundle configures the support bundle endpoint at
+	// /debug/v1/supportbundle. The extension serves the endpoint only when
+	// this section is set.
+	SupportBundle configoptional.Optional[SupportBundleConfig] `mapstructure:"support_bundle"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -28,7 +36,57 @@ type ExpvarConfig struct {
 	_ struct{}
 }
 
+// SupportBundleConfig has the configuration for the support bundle endpoint.
+type SupportBundleConfig struct {
+	// ArchiveName names the archive. The download file name starts with it, and
+	// it is the name of the top directory in the archive. If it is empty, the
+	// extension uses "<command>-support-bundle", where <command> is the
+	// collector command name, or "otel" if the command name is not set or is
+	// not a valid archive name. The name can contain only letters, digits,
+	// ".", "_" and "-".
+	// (default = "")
+	ArchiveName string `mapstructure:"archive_name"`
+	// Gatherers enables or disables each gatherer. A request can select only
+	// enabled gatherers.
+	Gatherers GatherersConfig `mapstructure:"gatherers"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// GatherersConfig has the configuration for each support bundle gatherer. Set
+// "enabled: false" on a gatherer to disable it.
+type GatherersConfig struct {
+	// PProf collects point-in-time heap and goroutine profiles.
+	// (default = enabled)
+	PProf configoptional.Optional[PProfConfig] `mapstructure:"pprof"`
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+// PProfConfig has the configuration for the pprof gatherer.
+type PProfConfig struct {
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
 var _ component.Config = (*Config)(nil)
+
+// Validate checks if the support bundle configuration is valid.
+func (cfg *SupportBundleConfig) Validate() error {
+	if cfg.ArchiveName != "" && !validFileName(cfg.ArchiveName) {
+		return fmt.Errorf("\"archive_name\" must contain only letters, digits, \".\", \"_\" and \"-\", got %q", cfg.ArchiveName)
+	}
+	return nil
+}
+
+// validFileName reports whether name is safe as the one top directory of the
+// archive and in the download file name. The small character set keeps the
+// name the same on all operating systems and in HTTP headers.
+func validFileName(name string) bool {
+	return name != "" && name != "." && name != ".." && strings.Trim(name, fileNameChars) == ""
+}
+
+const fileNameChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
