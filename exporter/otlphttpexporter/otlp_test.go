@@ -237,7 +237,7 @@ func TestErrorResponses(t *testing.T) {
 		{
 			name:           "Bad response payload",
 			responseStatus: http.StatusServiceUnavailable,
-			responseBody:   status.New(codes.InvalidArgument, strings.Repeat("a", maxHTTPResponseReadBytes+1)),
+			responseBody:   status.New(codes.InvalidArgument, strings.Repeat("a", defaultMaxResponseBodySize+1)),
 			checkErr: func(t *testing.T, err error, srv *httptest.Server) {
 				require.EqualError(t, err, status.New(codes.Unavailable, errMsgPrefix(srv)+"503").String())
 			},
@@ -263,6 +263,7 @@ func TestErrorResponses(t *testing.T) {
 			cfg := &Config{
 				Encoding:       EncodingProto,
 				TracesEndpoint: srv.URL + "/v1/traces",
+				ClientConfig:   confighttp.ClientConfig{MaxResponseBodySize: defaultMaxResponseBodySize},
 				// Create without QueueConfig and RetryConfig so that ConsumeTraces
 				// returns the errors that we want to check immediately.
 			}
@@ -1251,6 +1252,7 @@ func TestPartialSuccess_responseBodyTooLarge(t *testing.T) {
 	cfg := &Config{
 		Encoding:        EncodingProto,
 		MetricsEndpoint: srv.URL + "/v1/metrics",
+		ClientConfig:    confighttp.ClientConfig{MaxResponseBodySize: defaultMaxResponseBodySize},
 	}
 	exp, err := createMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)

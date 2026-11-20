@@ -35,7 +35,7 @@ import (
 
 // maxResponseHeaderListSize bounds the headers and trailers accepted from the backend, which carry
 // the error message and the status details of a failed export. It matches the limit that the
-// otlphttpexporter puts on an error response body (maxHTTPResponseReadBytes).
+// otlphttpexporter puts on an error response body (max_response_body_size).
 const maxResponseHeaderListSize = 64 * 1024
 
 // maxPartialSuccessMessageLen bounds how many bytes of the error_message of a partial

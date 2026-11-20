@@ -27,6 +27,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 )
 
+// defaultMaxResponseBodySize is the default for max_response_body_size.
+const defaultMaxResponseBodySize = 64 * 1024 // 64KiB
+
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() exporter.Factory {
 	return xexporter.NewFactory(
@@ -47,6 +50,8 @@ func createDefaultConfig() component.Config {
 	clientConfig.Compression = configcompression.TypeGzip
 	// We almost read 0 bytes, so no need to tune ReadBufferSize.
 	clientConfig.WriteBufferSize = 512 * 1024
+	// Responses are small, so cap how much of them is read.
+	clientConfig.MaxResponseBodySize = defaultMaxResponseBodySize
 
 	return &Config{
 		RetryConfig:  configretry.NewDefaultBackOffConfig(),

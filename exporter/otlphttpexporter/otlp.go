@@ -53,8 +53,7 @@ type baseExporter struct {
 }
 
 const (
-	headerRetryAfter         = "Retry-After"
-	maxHTTPResponseReadBytes = 64 * 1024
+	headerRetryAfter = "Retry-After"
 
 	jsonContentType     = "application/json"
 	protobufContentType = "application/x-protobuf"
@@ -205,7 +204,7 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 
 	defer func() {
 		// Discard any remaining response body when we are done reading.
-		_, _ = io.CopyN(io.Discard, resp.Body, maxHTTPResponseReadBytes)
+		_, _ = io.Copy(io.Discard, resp.Body)
 		_ = resp.Body.Close()
 	}()
 
@@ -309,37 +308,23 @@ func isRetryableStatusCode(code int) bool {
 	}
 }
 
+// readResponseBody reads the whole response body. Its size is bounded by the
+// client's max_response_body_size, which truncates larger bodies.
 func readResponseBody(resp *http.Response) ([]byte, error) {
-	if resp.ContentLength == 0 {
-		return nil, nil
+	var r io.Reader = resp.Body
+	// Never read past a declared Content-Length, even if the body holds more.
+	if resp.ContentLength > 0 {
+		r = io.LimitReader(r, resp.ContentLength)
 	}
-
-	maxRead := resp.ContentLength
-
-	// if maxRead == -1, the ContentLength header has not been sent, so read up to
-	// the maximum permitted body size. If it is larger than the permitted body
-	// size, still try to read from the body in case the value is an error. If the
-	// body is larger than the maximum size, proto unmarshaling will likely fail.
-	if maxRead == -1 || maxRead > maxHTTPResponseReadBytes {
-		maxRead = maxHTTPResponseReadBytes
-	}
-	protoBytes := make([]byte, maxRead)
-	n, err := io.ReadFull(resp.Body, protoBytes)
-
-	// No bytes read and an EOF error indicates there is no body to read.
-	if n == 0 && (err == nil || errors.Is(err, io.EOF)) {
-		return nil, nil
-	}
-
-	// io.ReadFull will return io.ErrorUnexpectedEOF if the Content-Length header
-	// wasn't set, since we will try to read past the length of the body. If this
-	// is the case, the body will still have the full message in it, so we want to
-	// ignore the error and parse the message.
+	body, err := io.ReadAll(r)
+	// A body shorter than its Content-Length is still worth parsing.
 	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
 		return nil, err
 	}
-
-	return protoBytes[:n], nil
+	if len(body) == 0 {
+		return nil, nil
+	}
+	return body, nil
 }
 
 // Read the response and decode the status.Status from the body.
