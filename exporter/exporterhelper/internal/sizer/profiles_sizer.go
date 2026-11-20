@@ -35,17 +35,21 @@ func (s *ProfilesCountSizer) ProfilesSize(pd pprofile.Profiles) int {
 func (s *ProfilesCountSizer) ResourceProfilesSize(rp pprofile.ResourceProfiles) int {
 	count := 0
 	for k := 0; k < rp.ScopeProfiles().Len(); k++ {
-		count += rp.ScopeProfiles().At(k).Profiles().Len()
+		count += s.ScopeProfilesSize(rp.ScopeProfiles().At(k))
 	}
 	return count
 }
 
 func (s *ProfilesCountSizer) ScopeProfilesSize(sp pprofile.ScopeProfiles) int {
-	return sp.Profiles().Len()
+	count := 0
+	for k := 0; k < sp.Profiles().Len(); k++ {
+		count += s.ProfileSize(sp.Profiles().At(k))
+	}
+	return count
 }
 
-func (s *ProfilesCountSizer) ProfileSize(_ pprofile.Profile) int {
-	return 1
+func (s *ProfilesCountSizer) ProfileSize(profile pprofile.Profile) int {
+	return profile.Samples().Len()
 }
 
 func (s *ProfilesCountSizer) DeltaSize(newItemSize int) int {
