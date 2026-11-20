@@ -1383,7 +1383,11 @@ func TestServerInstrumentsOnlyRegisteredMethods(t *testing.T) {
 	_, err = ptraceotlp.NewGRPCClient(conn).Export(ctx, ptraceotlp.NewExportRequest(), grpc.WaitForReady(true))
 	require.NoError(t, err)
 	require.Len(t, telemetry.SpanRecorder.Started(), 1)
-	require.Len(t, telemetry.SpanRecorder.Ended(), 1)
+	// grpc-go ends the span in a deferred function that runs after the response
+	// is sent, so the client can return before the server has ended the span.
+	require.Eventually(t, func() bool {
+		return len(telemetry.SpanRecorder.Ended()) == 1
+	}, 5*time.Second, 10*time.Millisecond)
 	assert.Equal(t, "opentelemetry.proto.collector.trace.v1.TraceService/Export", telemetry.SpanRecorder.Ended()[0].Name())
 
 	// grpc-go answers an unknown service or method without ever ending the
