@@ -102,6 +102,14 @@ Fixed capacity of the retry queue (in batches).
 | ---- | ----------- | ---------- | --------- |
 | {batch} | Gauge | Int | Alpha |
 
+### otelcol_exporter_queue_dropped_requests
+
+Number of requests dropped by the persistent queue because they could not be read from storage or decoded during dispatch.
+
+| Unit | Metric Type | Value Type | Monotonic | Stability |
+| ---- | ----------- | ---------- | --------- | --------- |
+| {request} | Sum | Int | true | Development |
+
 ### otelcol_exporter_queue_size
 
 Current size of the retry queue (in batches).

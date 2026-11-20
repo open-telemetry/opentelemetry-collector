@@ -40,6 +40,7 @@ type TelemetryBuilder struct {
 	ExporterQueueBatchSendSize               metric.Int64Histogram
 	ExporterQueueBatchSendSizeBytes          metric.Int64Histogram
 	ExporterQueueCapacity                    metric.Int64ObservableGauge
+	ExporterQueueDroppedRequests             metric.Int64Counter
 	ExporterQueueSize                        metric.Int64ObservableGauge
 	ExporterSendFailedLogRecords             metric.Int64Counter
 	ExporterSendFailedMetricPoints           metric.Int64Counter
@@ -224,6 +225,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_exporter_queue_capacity",
 		metric.WithDescription("Fixed capacity of the retry queue (in batches). [Alpha]"),
 		metric.WithUnit("{batch}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterQueueDroppedRequests, err = builder.meter.Int64Counter(
+		"otelcol_exporter_queue_dropped_requests",
+		metric.WithDescription("Number of requests dropped by the persistent queue because they could not be read from storage or decoded during dispatch. [Development]"),
+		metric.WithUnit("{request}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterQueueSize, err = builder.meter.Int64ObservableGauge(

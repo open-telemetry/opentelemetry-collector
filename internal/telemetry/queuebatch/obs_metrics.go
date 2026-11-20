@@ -20,6 +20,7 @@ const (
 	MetricEnqueueSizeBytes       Metric = "enqueue_size_bytes"
 	MetricQueueSize              Metric = "queue_size"
 	MetricQueueCapacity          Metric = "queue_capacity"
+	MetricQueueDropped           Metric = "queue_dropped"
 	MetricPartitionCacheSize     Metric = "partition_cache_size"
 	MetricPartitionCacheCapacity Metric = "partition_cache_capacity"
 	MetricBatchSendSize          Metric = "batch_send_size"

@@ -113,6 +113,7 @@ func TestExporterObsMetricsUnsupportedMetric(t *testing.T) {
 		queuebatchtelemetry.MetricBatchSendSize,
 		queuebatchtelemetry.MetricBatchSendSizeBytes,
 		queuebatchtelemetry.MetricInFlight,
+		queuebatchtelemetry.MetricQueueDropped,
 		queuebatchtelemetry.MetricSent,
 		queuebatchtelemetry.MetricSendFailure,
 	} {
