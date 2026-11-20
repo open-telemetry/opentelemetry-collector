@@ -50,6 +50,8 @@ func (r *Receiver) Export(ctx context.Context, req pprofileotlp.ExportRequest) (
 		samplesBefore := td.SampleCount()
 		rejectedProfiles = req.RejectInvalidUTF8()
 		rejectedSamples = samplesBefore - td.SampleCount()
+	} else if metadata.ReceiverOtlpSanitizeInvalidUTF8FeatureGate.IsEnabled() {
+		req.SanitizeUTF8()
 	}
 	resp := pprofileotlp.NewExportResponse()
 	if rejectedProfiles > 0 {
