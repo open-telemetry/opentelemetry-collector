@@ -12,7 +12,8 @@ status:
   stability:
     development: [metrics]
   codeowners:
-    active: [dmitryax]
+    active: [braydonk, dmathieu]
+    emeritus: [dmitryax]
 
 resource_attributes:
   k8s.namespace.name:

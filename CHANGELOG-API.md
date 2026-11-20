@@ -7,6 +7,30 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.71.0/v0.165.0
+
+### 🚩 Deprecations 🚩
+
+- `pkg/componentstatus`: Deprecate componentstatus.Watcher in favour of extensioncapabilities.ComponentStatusWatcher (#16304)
+
+### 🚀 New components 🚀
+
+- `pkg/xreceiverhelper`: Add xreceiverhelper with an `ObsReport` that reports profile sample metrics per sample type. (#16251)
+  `ObsReport.EndProfilesOpBySampleType` records the
+  `otelcol_receiver_{accepted,refused,failed}_profile_samples` metrics with an additional
+  `sample_type` attribute, formatted as "type:unit", as a single payload can hold multiple profiles
+  with different sample types. Use `ProfileSampleCountsByType` to compute the sample counts before
+  the profiles are passed to the next consumer, as the data may be mutated downstream.
+  The OTLP receiver now uses `EndProfilesOpBySampleType`.
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/confighttp`: Mark confighttp as stable (#9380)
+- `receiver/otlp`: Migrate the OTLP receiver configuration to metadata.yaml and generate its config schema from the metadata. (#16212)
+
+<!-- previous-version -->
+
 ## v1.70.0/v0.164.0
 
 ### 💡 Enhancements 💡

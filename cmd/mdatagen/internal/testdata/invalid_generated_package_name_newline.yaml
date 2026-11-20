@@ -1,0 +1,10 @@
+type: custom
+
+generated_package_name: "metadata\n//go:generate id\n//x"
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]

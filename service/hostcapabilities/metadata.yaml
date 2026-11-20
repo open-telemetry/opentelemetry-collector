@@ -1,4 +1,4 @@
-type: service/hostcapabilities
+type: hostcapabilities
 parent: service
 github_project: open-telemetry/opentelemetry-collector
 

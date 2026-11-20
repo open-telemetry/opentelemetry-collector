@@ -67,5 +67,5 @@
       "description": "Represents a type of network transport protocol"
     }
   },
-  "title": "pkg/config/confignet"
+  "title": "pkg/confignet"
 }

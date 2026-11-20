@@ -7,4 +7,5 @@ status:
   stability:
     alpha: [metrics]
   codeowners:
-    active: [dmitryax]
+    active: [braydonk, dmathieu]
+    emeritus: [dmitryax]

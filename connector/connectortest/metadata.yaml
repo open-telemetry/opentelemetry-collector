@@ -1,4 +1,4 @@
-type: connector/connectortest
+type: connectortest
 parent: connector
 github_project: open-telemetry/opentelemetry-collector
 
