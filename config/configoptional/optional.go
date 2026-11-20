@@ -103,7 +103,7 @@ func None[T any]() Optional[T] {
 	if err := assertNoEnabledField[T](); err != nil {
 		panic(err)
 	}
-	return Optional[T]{}
+	return Optional[T]{flavor: noneFlavor}
 }
 
 // HasValue checks if the Optional has a value.
@@ -159,11 +159,6 @@ var (
 //   - Some[T](val): equivalent to unmarshaling into a field of type T with value val.
 //   - Default[T](val), equivalent to unmarshaling into a field of type T with base value val,
 //     using val without overrides from the configuration if the configuration is nil.
-//
-// (Under the `configoptional.AddEnabledField` feature gate)
-// If the configuration contains an 'enabled' field:
-//   - if enabled is true: the Optional becomes Some after unmarshaling.
-//   - if enabled is false: the Optional becomes None regardless of other configuration values.
 //
 // T must be dereferenceable to a type with struct kind and not have an 'enabled' field.
 // Scalar values are not supported, and will be handled by [UnmarshalScalar] instead.

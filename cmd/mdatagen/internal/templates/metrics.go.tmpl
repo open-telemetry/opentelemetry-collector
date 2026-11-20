@@ -49,8 +49,8 @@ const (
 func dataPointKey(dp pmetric.NumberDataPoint) uint64 {
 	return xhash.Hash64(
 		xhash.WithMap(dp.Attributes()),
-		xhash.WithValue(pcommon.NewValueInt(int64(dp.StartTimestamp()))),
-		xhash.WithValue(pcommon.NewValueInt(int64(dp.Timestamp()))),
+		xhash.WithUint64(uint64(dp.StartTimestamp())),
+		xhash.WithUint64(uint64(dp.Timestamp())),
 	)
 }
 {{- end }}
@@ -156,7 +156,7 @@ type metric{{ $name.Render }} struct {
 // init fills {{ $name }} metric with initial data.
 func (m *metric{{ $name.Render }}) init() {
 	m.data.SetName("{{ $name.EmittedName }}")
-	m.data.SetDescription("{{ trimRight $metric.Description "\n" }}")
+	m.data.SetDescription({{ trimRight $metric.Description "\n" | printf "%q" }})
 	m.data.SetUnit("{{ $metric.Unit }}")
 	m.data.SetEmpty{{ $metric.Data.Type }}()
 	{{- if $metric.Data.HasMonotonic }}

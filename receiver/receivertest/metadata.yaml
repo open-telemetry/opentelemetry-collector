@@ -1,4 +1,4 @@
-type: receiver/receivertest
+type: receivertest
 parent: receiver
 github_project: open-telemetry/opentelemetry-collector
 

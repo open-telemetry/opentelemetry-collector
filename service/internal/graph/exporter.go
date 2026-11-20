@@ -23,6 +23,10 @@ import (
 
 var _ consumerNode = (*exporterNode)(nil)
 
+type exporterHelperBatcher interface {
+	ExporterHelperBatchingEnabled() bool
+}
+
 // An exporter instance can be shared by multiple pipelines of the same type.
 // Therefore, nodeID is derived from "pipeline type" and "component ID".
 type exporterNode struct {
@@ -30,7 +34,8 @@ type exporterNode struct {
 	componentID  component.ID
 	pipelineType pipeline.Signal
 	component.Component
-	consumer baseConsumer
+	consumer                      baseConsumer
+	exporterHelperBatchingEnabled bool
 }
 
 func newExporterNode(pipelineType pipeline.Signal, exprID component.ID) *exporterNode {
@@ -99,6 +104,9 @@ func (n *exporterNode) buildComponent(
 		n.consumer = refconsumer.NewProfiles(n.consumer.(xconsumer.Profiles))
 	default:
 		return fmt.Errorf("error creating exporter %q for data type %q is not supported", set.ID, n.pipelineType)
+	}
+	if helper, ok := n.Component.(exporterHelperBatcher); ok {
+		n.exporterHelperBatchingEnabled = helper.ExporterHelperBatchingEnabled()
 	}
 	return nil
 }

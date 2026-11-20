@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configstorage"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
@@ -34,9 +34,7 @@ type Config struct {
 
 	// StorageID if not empty, enables the persistent storage and uses the component specified
 	// as a storage extension for the persistent queue.
-	// TODO: This will be changed to Optional when available.
-	// See https://github.com/open-telemetry/opentelemetry-collector/issues/13822
-	StorageID *component.ID `mapstructure:"storage"`
+	StorageID configoptional.Optional[configstorage.ID] `mapstructure:"storage"`
 
 	// NumConsumers is the maximum number of concurrent consumers from the queue.
 	// This applies across all different optional configurations from above (e.g. wait_for_result, block_on_overflow, storage, etc.).
@@ -44,6 +42,9 @@ type Config struct {
 
 	// BatchConfig it configures how the requests are consumed from the queue and batch together during consumption.
 	Batch configoptional.Optional[BatchConfig] `mapstructure:"batch"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
@@ -74,7 +75,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	// Only support request sizer for persistent queue at this moment.
-	if cfg.StorageID != nil && cfg.WaitForResult {
+	if cfg.StorageID.HasValue() && cfg.WaitForResult {
 		return errors.New("`wait_for_result` is not supported with a persistent queue configured with `storage`")
 	}
 
@@ -106,6 +107,9 @@ type BatchConfig struct {
 
 	// Partition defines the partitioning of the batches configuration.
 	Partition PartitionConfig `mapstructure:"partition"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultBatchConfig returns the default BatchConfig.
@@ -139,6 +143,9 @@ type PartitionConfig struct {
 	// Keep it above the data arrival interval to avoid churning partitions. Default is 90s.
 	// Must be positive.
 	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultPartitionConfig returns the default PartitionConfig.

@@ -124,6 +124,39 @@ func DefaultViews(level configtelemetry.Level) []config.View {
 		)
 	}
 
+	if level < configtelemetry.LevelDetailed {
+		scope := new("go.opentelemetry.io/collector/processor/queuebatchprocessor")
+		views = append(views,
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: new("otelcol_processor_queuebatch_batch_send_size_bytes"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: new("otelcol_processor_queuebatch_batch_send_size"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: new("otelcol_processor_queuebatch_enqueue_size_bytes"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName:      scope,
+				InstrumentName: new("otelcol_processor_queuebatch_enqueue_size"),
+			}),
+			config.View{
+				Selector: &config.ViewSelector{
+					MeterName:      scope,
+					InstrumentName: new("otelcol_processor_queuebatch_send_failed_*"),
+				},
+				Stream: &config.ViewStream{
+					AttributeKeys: &config.IncludeExclude{
+						Excluded: []string{"error.type", "error.permanent"},
+					},
+				},
+			},
+		)
+	}
+
 	// Batch processor metrics
 	scope := new("go.opentelemetry.io/collector/processor/batchprocessor")
 	if level < configtelemetry.LevelNormal {

@@ -290,28 +290,41 @@ These are loosely dependent,
    config omits `queue_sender` or sets it to a non-standard value.
    Exporters that legitimately need different defaults (e.g., pull-based
    exporters) must declare the opt-out in their `metadata.yaml`.
+   [#15964](https://github.com/open-telemetry/opentelemetry-collector/pull/15964)
 2. Introduce the `pkg.exporterhelper.queueBatchEnabled` feature
    gate at Alpha stability. [#15690](https://github.com/open-telemetry/opentelemetry-collector/pull/15690)
 3. Support a configurable metrics prefix to distinguish processor
    batching from exporter batching
    ([#14038](https://github.com/open-telemetry/opentelemetry-collector/issues/14038)).
+   [#15962](https://github.com/open-telemetry/opentelemetry-collector/pull/15962)
 4. Implement `queuebatchprocessor`. [#15500](https://github.com/open-telemetry/opentelemetry-collector/pull/15500)
 5. Detect pipelines that combine `batchprocessor` with an
    exporterhelper that has batching enabled, and emit a startup warning
    identifying the affected pipeline and exporter. This protects users
    from silently paying for double batching during Phase 2 and
    continues to protect custom-build users who keep `batchprocessor`
-   through Phase 3 and beyond.
+   through Phase 3 and beyond. The check catches most cases; notify
+   affected Collector Contrib code owners that wrapped exporters can
+   opt in by exposing exporterhelper's batching capability.
+   [#15966](https://github.com/open-telemetry/opentelemetry-collector/pull/15966)
 6. Update documentation explaining `batchprocessor` deprecation with
    instructions to adopt explicit exporterhelper `queue_sender`
    settings or the new `queuebatchprocessor`. Issue release notes and
    advisories to distros to remove `batchprocessor` from
    documentation. Create a blog post about what's happening to
    `batchprocessor`, get it approved.
+   [open-telemetry/opentelemetry.io#12073](https://github.com/open-telemetry/opentelemetry.io/pull/12073)
 
 #### Exit criteria for Phase 1
 
-All of the above must be completed.
+All of the above must be completed. Additionally, in
+[#15966](https://github.com/open-telemetry/opentelemetry-collector/pull/15966):
+
+- Integration tests verify immediate pass-through of right-sized requests
+  across queuebatchprocessor and exporterhelper stages, without flush
+  delays or unnecessary merging, splitting, or copying.
+- Benchmarks measure multistage batching overhead for `min_size` alone
+  and `min_size` with `max_size`, compared with queue-only operation.
 
 ### Phase 2
 
@@ -392,6 +405,7 @@ accomplished during Phase 1:
 - Reject `wait_for_result: true` combined with a configured storage
   extension at configuration validation time (see "Recommendation: no
   error propagation by default" above).
+  [#12660](https://github.com/open-telemetry/opentelemetry-collector/pull/12660)
 
 ## Conclusion
 

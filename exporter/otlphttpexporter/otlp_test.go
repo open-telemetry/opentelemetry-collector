@@ -21,9 +21,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
+	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -32,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter/internal/metadata"
+	"go.opentelemetry.io/collector/internal/statusutil"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -1259,4 +1264,167 @@ func TestPartialSuccess_responseBodyTooLarge(t *testing.T) {
 	require.Error(t, err)
 	assert.True(t, consumererror.IsPermanent(err))
 	assert.Contains(t, err.Error(), "error parsing protobuf response:")
+}
+
+func TestExport_StatusErrorShowsResolvedURL(t *testing.T) {
+	configuredURL := "http://endpoint.invalid/v1/logs"
+
+	// A routing middleware that follows the RoundTripper contract clones the
+	// request instead of mutating it, so only the response carries the
+	// rewritten URL.
+	cloneWithURL := func(rawURL string) func(*http.Request) *http.Request {
+		return func(req *http.Request) *http.Request {
+			resolved := req.Clone(req.Context())
+			var err error
+			resolved.URL, err = url.Parse(rawURL)
+			require.NoError(t, err)
+			return resolved
+		}
+	}
+
+	// Built at runtime so gosec does not see a credential in a URL literal.
+	withUserinfo, err := url.Parse("https://actual-destination.example.com/v1/logs")
+	require.NoError(t, err)
+	withUserinfo.User = url.UserPassword("user", "secret")
+
+	tests := []struct {
+		name         string
+		respRequest  func(*http.Request) *http.Request
+		wantContains string
+		wantAbsent   []string
+	}{
+		{
+			name:         "rewritten URL taken from the response request",
+			respRequest:  cloneWithURL("https://actual-destination.example.com/v1/logs"),
+			wantContains: "https://actual-destination.example.com/v1/logs",
+			wantAbsent:   []string{configuredURL},
+		},
+		{
+			name:         "userinfo in the rewritten URL is redacted",
+			respRequest:  cloneWithURL(withUserinfo.String()),
+			wantContains: withUserinfo.Redacted(),
+			wantAbsent:   []string{"secret", configuredURL},
+		},
+		{
+			name:         "response without request falls back to the configured URL",
+			respRequest:  func(*http.Request) *http.Request { return nil },
+			wantContains: configuredURL,
+		},
+		{
+			name:         "response request without URL falls back to the configured URL",
+			respRequest:  func(*http.Request) *http.Request { return &http.Request{} },
+			wantContains: configuredURL,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			transport := &mockTransport{
+				roundTripFunc: func(req *http.Request) (*http.Response, error) {
+					return &http.Response{
+						StatusCode: http.StatusNotFound,
+						Header:     make(http.Header),
+						Body:       http.NoBody,
+						Request:    tt.respRequest(req),
+					}, nil
+				},
+			}
+
+			logger, _ := observer.New(zap.DebugLevel)
+			exp := &baseExporter{
+				client: &http.Client{Transport: transport},
+				logger: zap.New(logger),
+				config: &Config{
+					Encoding: EncodingProto,
+				},
+			}
+
+			err := exp.export(context.Background(), configuredURL, []byte("test data"), nil)
+
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.wantContains)
+			for _, absent := range tt.wantAbsent {
+				assert.NotContains(t, err.Error(), absent)
+			}
+		})
+	}
+}
+
+func TestFormatStatusDetails(t *testing.T) {
+	errorInfo, err := anypb.New(&errdetails.ErrorInfo{Reason: "my reason", Metadata: map[string]string{"k": "v"}})
+	require.NoError(t, err)
+	retryInfo, err := anypb.New(&errdetails.RetryInfo{})
+	require.NoError(t, err)
+
+	t.Run("same as %v for ordinary details", func(t *testing.T) {
+		details := []*anypb.Any{errorInfo, retryInfo}
+		assert.Equal(t, fmt.Sprintf("%v", details), formatStatusDetails(details))
+		assert.Equal(t, "[]", formatStatusDetails(nil))
+	})
+
+	t.Run("nested Any is cut at the depth limit", func(t *testing.T) {
+		detail := errorInfo
+		for range 100 {
+			value, err := proto.Marshal(detail)
+			require.NoError(t, err)
+			detail = &anypb.Any{TypeUrl: "type.googleapis.com/google.rpc.Status", Value: value}
+		}
+		formatted := formatStatusDetails([]*anypb.Any{detail})
+		assert.LessOrEqual(t, strings.Count(formatted, "[type.googleapis.com/google.rpc.Status]"), statusutil.MaxDetailDepth)
+		assert.NotContains(t, formatted, `reason:"my reason"`)
+	})
+
+	t.Run("unknown fields omitted", func(t *testing.T) {
+		detail := &anypb.Any{}
+		var unknown []byte
+		for range 100 {
+			unknown = protowire.AppendTag(unknown, 5, protowire.StartGroupType)
+		}
+		for range 100 {
+			unknown = protowire.AppendTag(unknown, 5, protowire.EndGroupType)
+		}
+		detail.ProtoReflect().SetUnknown(unknown)
+		assert.Equal(t, "[]", formatStatusDetails([]*anypb.Any{detail}))
+	})
+}
+
+func BenchmarkFormatStatusDetails(b *testing.B) {
+	retryInfo, err := anypb.New(&errdetails.RetryInfo{RetryDelay: nil})
+	require.NoError(b, err)
+	errorInfo, err := anypb.New(&errdetails.ErrorInfo{Reason: "my reason", Domain: "example.com", Metadata: map[string]string{"k": "v"}})
+	require.NoError(b, err)
+	nested := func(levels int) *anypb.Any {
+		n := &spb.Status{Code: int32(codes.InvalidArgument), Message: "innermost"}
+		for range levels {
+			a, err := anypb.New(n)
+			require.NoError(b, err)
+			n = &spb.Status{Code: int32(codes.InvalidArgument), Details: []*anypb.Any{a}}
+		}
+		a, err := anypb.New(n)
+		require.NoError(b, err)
+		return a
+	}
+	cases := []struct {
+		name    string
+		details []*anypb.Any
+	}{
+		{"ordinary", []*anypb.Any{errorInfo, retryInfo}},
+		{"nested_3", []*anypb.Any{nested(3), retryInfo}},
+		// The deepest nesting that fits in the 64 KiB the exporter reads from a response.
+		{"nested_max", []*anypb.Any{nested(2600), retryInfo}},
+	}
+	for _, tt := range cases {
+		b.Run("old_%v/"+tt.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				_ = fmt.Sprintf("%v", tt.details)
+			}
+		})
+		b.Run("new/"+tt.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				_ = formatStatusDetails(tt.details)
+			}
+		})
+	}
 }

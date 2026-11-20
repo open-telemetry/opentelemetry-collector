@@ -15,7 +15,7 @@ import (
 )
 
 type AuthConfig struct {
-	// Defines the auth settings for the receiver.
+	// Config defines the auth settings for the receiver.
 	Config configauth.Config `mapstructure:",squash"`
 
 	// RequestParameters is a list of parameters that should be extracted from the request and added to the context.
@@ -28,6 +28,9 @@ type AuthConfig struct {
 
 // ClientConfig defines settings for creating an HTTP client.
 type ClientConfig struct {
+	// DialerMiddleware dialer middleware is a handler customizing how the client will dial connections over TCP.
+	DialerMiddleware configoptional.Optional[configmiddleware.Config] `mapstructure:"dialer_middleware,omitempty"`
+
 	// Endpoint is the target URL to send data to (e.g.: http://some.url:9411/v1/traces).
 	Endpoint string `mapstructure:"endpoint,omitempty"`
 
@@ -97,18 +100,6 @@ type ClientConfig struct {
 	// therefore set programmatically after unmarshaling (or the config was
 	// never unmarshaled) and takes precedence over the deprecated fields.
 	Keepalive configoptional.Optional[KeepaliveClientConfig] `mapstructure:"keepalive,omitempty"`
-
-	// Deprecated: [v0.160.0] Use Keepalive.IdleConnTimeout instead.
-	IdleConnTimeout time.Duration `mapstructure:"idle_conn_timeout,omitempty"`
-
-	// Deprecated: [v0.160.0] Use Keepalive.MaxIdleConns instead.
-	MaxIdleConns int `mapstructure:"max_idle_conns,omitempty"`
-
-	// Deprecated: [v0.160.0] Use Keepalive.MaxIdleConnsPerHost instead.
-	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host,omitempty"`
-
-	// Deprecated: [v0.160.0] Set 'keepalive::enabled' to false to disable keep-alives.
-	DisableKeepAlives bool `mapstructure:"disable_keep_alives,omitempty"`
 
 	// placeholder for the private fields
 	privateClientConfigFields
@@ -191,7 +182,7 @@ func NewDefaultKeepaliveServerConfig() KeepaliveServerConfig {
 
 // ServerConfig defines settings for creating an HTTP server.
 type ServerConfig struct {
-	// Holds configuration for the network listener.
+	// NetAddr holds configuration for the network listener.
 	// Transport defaults to "tcp" if unspecified, and only
 	// "tcp", "tcp4", "tcp6", and "unix" are valid options.
 	NetAddr confignet.AddrConfig `mapstructure:",squash"`
@@ -206,6 +197,9 @@ type ServerConfig struct {
 	Auth configoptional.Optional[AuthConfig] `mapstructure:"auth,omitempty"`
 
 	// MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.
+	// The limit is enforced on the bytes received and, when the request has a
+	// supported Content-Encoding (for example gzip), again on the decompressed
+	// body. Set it to the maximum expected decompressed payload size.
 	MaxRequestBodySize int64 `mapstructure:"max_request_body_size,omitempty"`
 
 	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers.
@@ -216,7 +210,7 @@ type ServerConfig struct {
 	ResponseHeaders configopaque.MapList `mapstructure:"response_headers,omitempty"`
 
 	// CompressionAlgorithms configures the list of compression algorithms the server can accept.
-	// Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
+	// Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4", "x-snappy-framed"]
 	CompressionAlgorithms []string `mapstructure:"compression_algorithms,omitempty"`
 
 	// ReadTimeout is the maximum duration for reading the entire
@@ -257,12 +251,6 @@ type ServerConfig struct {
 	// programmatically after unmarshaling (or the config was never unmarshaled)
 	// and takes precedence over the deprecated fields.
 	Keepalive configoptional.Optional[KeepaliveServerConfig] `mapstructure:"keepalive,omitempty"`
-
-	// Deprecated: [v0.160.0] Use Keepalive.IdleTimeout instead.
-	IdleTimeout time.Duration `mapstructure:"idle_timeout,omitempty"`
-
-	// Deprecated: [v0.160.0] Set 'keepalive::enabled' to false to disable keep-alives.
-	KeepAlivesEnabled bool `mapstructure:"keep_alives_enabled,omitempty"`
 
 	// placeholder for the private fields
 	privateServerConfigFields

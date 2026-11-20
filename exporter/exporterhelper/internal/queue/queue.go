@@ -8,15 +8,20 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configstorage"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	queuebatchtelemetry "go.opentelemetry.io/collector/internal/telemetry/queuebatch"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
 // ReferenceCounter is an optional interface that can be implemented to provide a way for the request data
 // to manage internal locally allocated memory and re-use across multiple requests, etc.
 //
-// The queue will only call Ref and Unref when requests are executed asynchronously, otherwise these
-// funcs are not called.
+// Ref and Unref are only called when requests are consumed asynchronously, by the in-memory queue,
+// which holds the reference from the moment a request is offered until it is reported as done.
+// Nothing else takes a reference: the persistent queue serializes the request while the caller still
+// holds it, and with WaitForResult the caller stays blocked until the request is done.
 type ReferenceCounter[T any] interface {
 	Ref(T)
 	Unref(T)
@@ -71,16 +76,17 @@ type Settings[T request.Request] struct {
 	WaitForResult    bool
 	BlockOnOverflow  bool
 	Signal           pipeline.Signal
-	StorageID        *component.ID
+	StorageID        configoptional.Optional[configstorage.ID]
 	ReferenceCounter ReferenceCounter[T]
 	Encoding         Encoding[T]
 	ID               component.ID
 	Telemetry        component.TelemetrySettings
+	ObsMetrics       queuebatchtelemetry.ObsMetrics
 }
 
 func NewQueue[T request.Request](set Settings[T], next ConsumeFunc[T]) (Queue[T], error) {
 	q := newBaseQueue(set)
-	oq, err := newObsQueue(set, newAsyncQueue(q, set.NumConsumers, next, set.ReferenceCounter))
+	oq, err := newObsQueue(set, set.ObsMetrics, newAsyncQueue(q, set.NumConsumers, next))
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +96,7 @@ func NewQueue[T request.Request](set Settings[T], next ConsumeFunc[T]) (Queue[T]
 
 func newBaseQueue[T request.Request](set Settings[T]) readableQueue[T] {
 	// Configure memory queue or persistent based on the config.
-	if set.StorageID == nil {
+	if !set.StorageID.HasValue() {
 		return newMemoryQueue[T](set)
 	}
 

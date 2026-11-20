@@ -20,7 +20,7 @@ func TestRootModuleDir(t *testing.T) {
 
 		require.NoError(t, os.WriteFile(filepath.Join(tmp, "go.mod"), []byte("module example.com/root\n"), 0o600))
 
-		dir, err := rootModuleDir(subDir)
+		dir, err := RootModuleDir(subDir)
 		require.NoError(t, err)
 		assert.Equal(t, tmp, dir)
 	})
@@ -34,7 +34,7 @@ func TestRootModuleDir(t *testing.T) {
 		// No go.mod at tmp root; go.mod is in project/ subdirectory
 		require.NoError(t, os.WriteFile(filepath.Join(projectDir, "go.mod"), []byte("module example.com/project\n"), 0o600))
 
-		dir, err := rootModuleDir(componentDir)
+		dir, err := RootModuleDir(componentDir)
 		require.NoError(t, err)
 		assert.Equal(t, projectDir, dir)
 	})
@@ -48,7 +48,7 @@ func TestRootModuleDir(t *testing.T) {
 		require.NoError(t, os.WriteFile(filepath.Join(tmp, "go.mod"), []byte("module example.com/root\n"), 0o600))
 		require.NoError(t, os.WriteFile(filepath.Join(tmp, "project", "go.mod"), []byte("module example.com/project\n"), 0o600))
 
-		dir, err := rootModuleDir(componentDir)
+		dir, err := RootModuleDir(componentDir)
 		require.NoError(t, err)
 		assert.Equal(t, tmp, dir)
 	})
@@ -58,7 +58,7 @@ func TestRootModuleDir(t *testing.T) {
 		subDir := filepath.Join(tmp, "sub")
 		require.NoError(t, os.MkdirAll(subDir, 0o700))
 
-		_, err := rootModuleDir(subDir)
+		_, err := RootModuleDir(subDir)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "no go.mod found")
 	})

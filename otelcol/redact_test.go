@@ -61,6 +61,111 @@ func TestRedactWithPreExpansion(t *testing.T) {
 			},
 		},
 		{
+			name: "redact provider reference that embeds a literal default",
+			pre: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{ // #nosec G101
+						"token": "${env:NAME:-literal}",
+					},
+				},
+			},
+			redacted: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"token": redactedMask,
+					},
+				},
+			},
+			want: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"token": redactedMask,
+					},
+				},
+			},
+		},
+		{
+			name: "preserve provider reference with an empty default",
+			pre: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{ // #nosec G101
+						"token": "${env:NAME:-}",
+					},
+				},
+			},
+			redacted: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"token": redactedMask,
+					},
+				},
+			},
+			want: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{ // #nosec G101
+						"token": "${env:NAME:-}",
+					},
+				},
+			},
+		},
+		{
+			name: "preserve non-env provider reference that contains the default marker",
+			pre: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{ // #nosec G101
+						"token": "${file:c:/dir/name:-backup}",
+					},
+				},
+			},
+			redacted: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"token": redactedMask,
+					},
+				},
+			},
+			want: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{ // #nosec G101
+						"token": "${file:c:/dir/name:-backup}",
+					},
+				},
+			},
+		},
+		{
+			name: "redact and preserve values in a map-style list",
+			pre: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"headers": []any{
+							map[string]any{"name": "Authorization", "value": "${env:TOKEN:-literal}"},
+							map[string]any{"name": "X-Other", "value": "${env:OTHER}"},
+						},
+					},
+				},
+			},
+			redacted: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"headers": []any{
+							map[string]any{"name": "Authorization", "value": redactedMask},
+							map[string]any{"name": "X-Other", "value": redactedMask},
+						},
+					},
+				},
+			},
+			want: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"headers": []any{
+							map[string]any{"name": "Authorization", "value": redactedMask},
+							map[string]any{"name": "X-Other", "value": "${env:OTHER}"},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "preserve provider reference at opaque leaf",
 			pre: map[string]any{
 				"exporters": map[string]any{

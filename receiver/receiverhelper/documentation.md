@@ -30,6 +30,12 @@ Number of profile samples successfully pushed into the pipeline.
 | ---- | ----------- | ---------- | --------- | --------- |
 | {sample} | Sum | Int | true | Alpha |
 
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| sample_type | The sample type of the profile samples, formatted as "type:unit". Only set by receivers that report profile samples per sample type. | Any Str | - |
+
 ### otelcol_receiver_accepted_spans
 
 Number of spans successfully pushed into the pipeline.
@@ -62,6 +68,12 @@ The number of profile samples that failed to be processed by the receiver due to
 | ---- | ----------- | ---------- | --------- | --------- |
 | {sample} | Sum | Int | true | Alpha |
 
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| sample_type | The sample type of the profile samples, formatted as "type:unit". Only set by receivers that report profile samples per sample type. | Any Str | - |
+
 ### otelcol_receiver_failed_spans
 
 The number of spans that failed to be processed by the receiver due to internal errors.
@@ -93,6 +105,12 @@ Number of profile samples that could not be pushed into the pipeline.
 | Unit | Metric Type | Value Type | Monotonic | Stability |
 | ---- | ----------- | ---------- | --------- | --------- |
 | {sample} | Sum | Int | true | Alpha |
+
+#### Attributes
+
+| Name | Description | Values | Semantic Convention |
+| ---- | ----------- | ------ | ------------------- |
+| sample_type | The sample type of the profile samples, formatted as "type:unit". Only set by receivers that report profile samples per sample type. | Any Str | - |
 
 ### otelcol_receiver_refused_spans
 

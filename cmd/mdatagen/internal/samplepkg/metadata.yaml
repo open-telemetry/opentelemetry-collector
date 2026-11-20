@@ -5,6 +5,8 @@ description: This package is used for testing purposes to check the output of md
 status:
   disable_codecov_badge: true
   class: pkg
+  codeowners:
+    active: [braydonk, dmathieu]
 
 exported_configs:
   protocol:

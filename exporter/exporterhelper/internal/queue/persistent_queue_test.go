@@ -20,6 +20,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configstorage"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -44,21 +46,18 @@ func (i intRequest) BytesSize() int {
 	return int(i) * 10
 }
 
-type int64Encoding struct {
-	rc ReferenceCounter[intRequest]
-}
+type int64Encoding struct{}
 
 func (int64Encoding) Marshal(_ context.Context, val intRequest) ([]byte, error) {
 	str := strconv.FormatInt(int64(val), 10)
 	return []byte(str), nil
 }
 
-func (ie int64Encoding) Unmarshal(bytes []byte) (context.Context, intRequest, error) {
+func (int64Encoding) Unmarshal(bytes []byte) (context.Context, intRequest, error) {
 	val, err := strconv.ParseInt(string(bytes), 10, 64)
 	if err != nil {
 		return context.Background(), 0, err
 	}
-	ie.rc.Ref(intRequest(val))
 	return context.Background(), intRequest(val), nil
 }
 
@@ -240,14 +239,19 @@ func (f *fakeReferenceCounter) Unref(intRequest) {
 	}
 }
 
+func (f *fakeReferenceCounter) count() int64 {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.ref
+}
+
 func newSettings(sizerType request.SizerType, capacity int64) Settings[intRequest] {
-	rc := &fakeReferenceCounter{}
 	return Settings[intRequest]{
-		ReferenceCounter: rc,
+		ReferenceCounter: &fakeReferenceCounter{},
 		SizerType:        sizerType,
 		Capacity:         capacity,
 		Signal:           pipeline.SignalTraces,
-		Encoding:         int64Encoding{rc},
+		Encoding:         int64Encoding{},
 		ID:               component.NewID(exportertest.NopType),
 		Telemetry:        componenttest.NewNopTelemetrySettings(),
 	}
@@ -255,8 +259,8 @@ func newSettings(sizerType request.SizerType, capacity int64) Settings[intReques
 
 func newSettingsWithStorage(sizerType request.SizerType, capacity int64) Settings[intRequest] {
 	set := newSettings(sizerType, capacity)
-	storageID := component.ID{}
-	set.StorageID = &storageID
+	storageID := configstorage.ID(component.ID{})
+	set.StorageID = configoptional.Some(storageID)
 	return set
 }
 
@@ -380,7 +384,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 			aq := newAsyncQueue[intRequest](pq, c.numConsumers, func(_ context.Context, _ intRequest, done Done) {
 				consumed.Add(int64(1))
 				done.OnDone(nil)
-			}, nil)
+			})
 			require.NoError(t, aq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{
 				{}: storagetest.NewMockStorageExtension(nil),
 			},
@@ -424,7 +428,7 @@ func TestPersistentBlockingQueue(t *testing.T) {
 			ac := newAsyncQueue(pq, 10, func(_ context.Context, _ intRequest, done Done) {
 				consumed.Add(1)
 				done.OnDone(nil)
-			}, set.ReferenceCounter)
+			})
 			require.NoError(t, ac.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{
 				{}: storagetest.NewMockStorageExtension(nil),
 			})))
@@ -468,13 +472,13 @@ func TestToStorageClient(t *testing.T) {
 			name:          "fail on not existing storage extension",
 			numStorages:   2,
 			storageIndex:  100,
-			expectedError: errNoStorageClient,
+			expectedError: errors.New("no storage client extension found"),
 		},
 		{
 			name:          "invalid extension type",
 			numStorages:   2,
 			storageIndex:  100,
-			expectedError: errNoStorageClient,
+			expectedError: errors.New("no storage client extension found"),
 		},
 		{
 			name:           "fail on error getting storage client from extension",
@@ -487,7 +491,7 @@ func TestToStorageClient(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			storageID := component.MustNewIDWithName("file_storage", strconv.Itoa(tt.storageIndex))
+			storageID := configstorage.ID(component.MustNewIDWithName("file_storage", strconv.Itoa(tt.storageIndex)))
 
 			extensions := map[component.ID]component.Component{}
 			for i := 0; i < tt.numStorages; i++ {
@@ -501,7 +505,7 @@ func TestToStorageClient(t *testing.T) {
 
 			// verify
 			if tt.expectedError != nil {
-				require.ErrorIs(t, err, tt.expectedError)
+				require.ErrorContains(t, err, tt.expectedError.Error())
 				assert.Nil(t, client)
 			} else {
 				require.NoError(t, err)
@@ -527,16 +531,17 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 	ownerID := component.MustNewID("foo_exporter")
 
 	// execute
-	client, err := toStorageClient(context.Background(), storageID, host, ownerID, pipeline.SignalTraces)
+	storeID := configstorage.ID(storageID)
+	client, err := toStorageClient(context.Background(), storeID, host, ownerID, pipeline.SignalTraces)
 
 	// we should get an error about the extension type
-	require.ErrorIs(t, err, errWrongExtensionType)
+	require.ErrorContains(t, err, "requested extension is not a storage extension")
 	assert.Nil(t, client)
 }
 
 func TestPersistentQueue_StopAfterBadStart(t *testing.T) {
-	storageID := component.ID{}
-	pq := newPersistentQueue[intRequest](Settings[intRequest]{StorageID: &storageID})
+	storageID := configstorage.ID(component.ID{})
+	pq := newPersistentQueue[intRequest](Settings[intRequest]{StorageID: configoptional.Some(storageID)})
 	// verify that stopping a un-start/started w/error queue does not panic
 	assert.NoError(t, pq.Shutdown(context.Background()))
 }

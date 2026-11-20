@@ -28,8 +28,8 @@ const (
 func dataPointKey(dp pmetric.NumberDataPoint) uint64 {
 	return xhash.Hash64(
 		xhash.WithMap(dp.Attributes()),
-		xhash.WithValue(pcommon.NewValueInt(int64(dp.StartTimestamp()))),
-		xhash.WithValue(pcommon.NewValueInt(int64(dp.Timestamp()))),
+		xhash.WithUint64(uint64(dp.StartTimestamp())),
+		xhash.WithUint64(uint64(dp.Timestamp())),
 	)
 }
 func mustParseInt64(s string) int64 {

@@ -6,6 +6,7 @@ package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 import (
 	"errors"
 	"fmt"
+	"go/token"
 	"regexp"
 	"slices"
 	"strconv"
@@ -64,6 +65,8 @@ type Metadata struct {
 	ScopeName string `mapstructure:"scope_name"`
 	// ShortFolderName is the shortened folder name of the component, removing class if present
 	ShortFolderName string `mapstructure:"-"`
+	// GithubLabel is the GitHub label used for the component's issues
+	GithubLabel string `mapstructure:"-"`
 	// Tests is the set of tests generated with the component
 	Tests Tests `mapstructure:"tests"`
 	// SendingQueue declares the exporter queue/batch sender defaults.
@@ -112,6 +115,10 @@ func (md *Metadata) Validate() error {
 		errs = errors.Join(errs, err)
 	}
 
+	if err := md.validateGeneratedPackageName(); err != nil {
+		errs = errors.Join(errs, err)
+	}
+
 	// status is optional for subcomponents but required for components.
 	if md.Parent == "" || md.Status != nil {
 		errs = errors.Join(errs, md.Status.Validate())
@@ -150,6 +157,19 @@ func (md *Metadata) Validate() error {
 	}
 
 	return errs
+}
+
+// validateGeneratedPackageName ensures generated_package_name is a plain Go identifier. The value is used
+// both as a directory name below internal/ and as the package clause of the generated files, so anything
+// else (path separators, "..", quotes, line breaks, "//") could write outside the component or inject code.
+func (md *Metadata) validateGeneratedPackageName() error {
+	if md.GeneratedPackageName == "" {
+		return nil
+	}
+	if !token.IsIdentifier(md.GeneratedPackageName) {
+		return fmt.Errorf("invalid generated_package_name %q: must be a valid Go identifier", md.GeneratedPackageName)
+	}
+	return nil
 }
 
 func (md *Metadata) validateSendingQueue() error {
@@ -751,7 +771,7 @@ func (a Attribute) Name() AttributeName {
 }
 
 func (a Attribute) TestValue() string {
-	if a.Enum != nil {
+	if len(a.Enum) > 0 {
 		return fmt.Sprintf(`%q`, a.Enum[0])
 	}
 	switch a.Type.ValueType {
@@ -776,8 +796,11 @@ func (a Attribute) TestValue() string {
 }
 
 func (a Attribute) TestValueTwo() string {
-	if a.Enum != nil {
+	if len(a.Enum) > 1 {
 		return fmt.Sprintf(`%q`, a.Enum[1])
+	}
+	if len(a.Enum) == 1 {
+		return fmt.Sprintf(`%q`, a.Enum[0])
 	}
 	switch a.Type.ValueType {
 	case pcommon.ValueTypeEmpty:

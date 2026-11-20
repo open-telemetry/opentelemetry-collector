@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configstorage"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
@@ -36,6 +37,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	queuebatchtelemetry "go.opentelemetry.io/collector/internal/telemetry/queuebatch"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -79,6 +81,24 @@ func TestTraces_Default(t *testing.T) {
 	assert.NoError(t, te.Shutdown(context.Background()))
 }
 
+func TestTraces_WithObsMetrics(t *testing.T) {
+	shutdowns := 0
+	te, err := NewTraces(
+		context.Background(),
+		exportertest.NewNopSettings(exportertest.NopType),
+		&fakeTracesConfig,
+		newTraceDataPusher(nil),
+		WithObsMetrics(queuebatchtelemetry.ObsMetrics{
+			ShutdownFunc: func() { shutdowns++ },
+		}),
+	)
+	require.NoError(t, err)
+
+	require.NoError(t, te.Shutdown(context.Background()))
+	require.NoError(t, te.Shutdown(context.Background()))
+	require.Equal(t, 1, shutdowns)
+}
+
 func TestTraces_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
 	te, err := NewTraces(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeTracesConfig, newTraceDataPusher(nil), WithCapabilities(capabilities))
@@ -102,7 +122,8 @@ func TestTraces_Default_ReturnError(t *testing.T) {
 func TestTraces_WithPersistentQueue(t *testing.T) {
 	qCfg := NewDefaultQueueConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
-	qCfg.StorageID = &storageID
+	storeID := configstorage.ID(storageID)
+	qCfg.StorageID = configoptional.Some(storeID)
 	set := exportertest.NewNopSettings(exportertest.NopType)
 	set.ID = component.MustNewIDWithName("test_logs", "with_persistent_queue")
 	host := hosttest.NewHost(map[component.ID]component.Component{
@@ -263,6 +284,22 @@ func TestTracesRequest_WithSpan(t *testing.T) {
 	require.NotNil(t, te)
 
 	checkWrapSpanForTraces(t, sr, set.TracerProvider.Tracer("test"), te, nil)
+}
+
+func TestTraces_WithTracer(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+
+	tracer := tt.NewTelemetrySettings().TracerProvider.Tracer("test")
+
+	te, err := NewTraces(
+		context.Background(),
+		exportertest.NewNopSettings(exportertest.NopType),
+		&fakeTracesConfig,
+		newTraceDataPusher(nil),
+		WithTracer(tracer),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, te)
 }
 
 func TestTraces_WithSpan_ReturnError(t *testing.T) {

@@ -240,6 +240,38 @@ func TestMetadataKeysPartitioner_MergeCtx(t *testing.T) {
 	})
 }
 
+func TestMetadataKeysPartitioner_Collisions(t *testing.T) {
+	p := NewMetadataKeysPartitioner([]string{"x-shard", "x-tenant"})
+	key := func(metadata map[string][]string) string {
+		ctx := client.NewContext(context.Background(), client.Info{Metadata: client.NewMetadata(metadata)})
+		return p.GetKey(ctx, nil)
+	}
+	for _, tc := range []struct {
+		name          string
+		first, second map[string][]string
+	}{
+		{
+			name:   "key boundaries",
+			first:  map[string][]string{"x-shard": {"s", "x-tenant", "tenant-victim"}},
+			second: map[string][]string{"x-shard": {"s"}, "x-tenant": {"tenant-victim"}},
+		},
+		{
+			name:   "value boundaries",
+			first:  map[string][]string{"x-shard": {"a\x00b"}},
+			second: map[string][]string{"x-shard": {"a", "b"}},
+		},
+		{
+			name:   "missing and empty string",
+			first:  map[string][]string{"x-tenant": {"value"}},
+			second: map[string][]string{"x-shard": {""}, "x-tenant": {"value"}},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.NotEqual(t, key(tc.first), key(tc.second))
+		})
+	}
+}
+
 func TestMetadataKeysPartitioner_GetKey(t *testing.T) {
 	t.Run("single key with single value", func(t *testing.T) {
 		partitioner := NewMetadataKeysPartitioner([]string{"key1"})
@@ -254,7 +286,7 @@ func TestMetadataKeysPartitioner_GetKey(t *testing.T) {
 		)
 
 		key := partitioner.GetKey(ctx, &requesttest.FakeRequest{})
-		expected := "key1\x00value1"
+		expected := "\x01\x06value1"
 		assert.Equal(t, expected, key)
 	})
 
@@ -271,8 +303,7 @@ func TestMetadataKeysPartitioner_GetKey(t *testing.T) {
 		)
 
 		key := partitioner.GetKey(ctx, &requesttest.FakeRequest{})
-		// Format: key1\0value1\0value2\0value3
-		expected := "key1\x00value1\x00value2\x00value3"
+		expected := "\x03\x06value1\x06value2\x06value3"
 		assert.Equal(t, expected, key)
 	})
 
@@ -290,8 +321,7 @@ func TestMetadataKeysPartitioner_GetKey(t *testing.T) {
 		)
 
 		key := partitioner.GetKey(ctx, &requesttest.FakeRequest{})
-		// Format: key1\0value1\0key2\0value2 (separator between keys)
-		expected := "key1\x00value1\x00key2\x00value2"
+		expected := "\x01\x06value1\x01\x06value2"
 		assert.Equal(t, expected, key)
 	})
 
@@ -309,12 +339,11 @@ func TestMetadataKeysPartitioner_GetKey(t *testing.T) {
 		)
 
 		key := partitioner.GetKey(ctx, &requesttest.FakeRequest{})
-		// Format: key1\0value1\0value1b\0key2\0value2\0value2b
-		expected := "key1\x00value1\x00value1b\x00key2\x00value2\x00value2b"
+		expected := "\x02\x06value1\x07value1b\x02\x06value2\x07value2b"
 		assert.Equal(t, expected, key)
 	})
 
-	t.Run("keys that don't exist in metadata are skipped", func(t *testing.T) {
+	t.Run("keys that don't exist in metadata have zero value counts", func(t *testing.T) {
 		partitioner := NewMetadataKeysPartitioner([]string{"key1", "key2", "key3"})
 
 		ctx := client.NewContext(
@@ -329,12 +358,11 @@ func TestMetadataKeysPartitioner_GetKey(t *testing.T) {
 		)
 
 		key := partitioner.GetKey(ctx, &requesttest.FakeRequest{})
-		// Format: key1\0value1\0key3\0value3 (key2 is skipped)
-		expected := "key1\x00value1\x00key3\x00value3"
+		expected := "\x01\x06value1\x00\x01\x06value3"
 		assert.Equal(t, expected, key)
 	})
 
-	t.Run("empty metadata returns empty string", func(t *testing.T) {
+	t.Run("empty metadata has zero value counts", func(t *testing.T) {
 		partitioner := NewMetadataKeysPartitioner([]string{"key1", "key2"})
 
 		ctx := client.NewContext(
@@ -345,10 +373,10 @@ func TestMetadataKeysPartitioner_GetKey(t *testing.T) {
 		)
 
 		key := partitioner.GetKey(ctx, &requesttest.FakeRequest{})
-		assert.Empty(t, key)
+		assert.Equal(t, "\x00\x00", key)
 	})
 
-	t.Run("keys with empty values are skipped", func(t *testing.T) {
+	t.Run("keys with empty value slices have zero value counts", func(t *testing.T) {
 		partitioner := NewMetadataKeysPartitioner([]string{"key1", "key2", "key3"})
 
 		ctx := client.NewContext(
@@ -363,8 +391,7 @@ func TestMetadataKeysPartitioner_GetKey(t *testing.T) {
 		)
 
 		key := partitioner.GetKey(ctx, &requesttest.FakeRequest{})
-		// Format: key1\0value1\0key3\0value3 (key2 is skipped)
-		expected := "key1\x00value1\x00key3\x00value3"
+		expected := "\x01\x06value1\x00\x01\x06value3"
 		assert.Equal(t, expected, key)
 	})
 
@@ -383,8 +410,7 @@ func TestMetadataKeysPartitioner_GetKey(t *testing.T) {
 		)
 
 		key := partitioner.GetKey(ctx, &requesttest.FakeRequest{})
-		// Format should follow partitioner order: key3\0value3\0key1\0value1\0key2\0value2
-		expected := "key3\x00value3\x00key1\x00value1\x00key2\x00value2"
+		expected := "\x01\x06value3\x01\x06value1\x01\x06value2"
 		assert.Equal(t, expected, key)
 	})
 
@@ -403,8 +429,7 @@ func TestMetadataKeysPartitioner_GetKey(t *testing.T) {
 		)
 
 		key := partitioner.GetKey(ctx, &requesttest.FakeRequest{})
-		// Format: key1\0value1 (other keys are ignored)
-		expected := "key1\x00value1"
+		expected := "\x01\x06value1"
 		assert.Equal(t, expected, key)
 	})
 

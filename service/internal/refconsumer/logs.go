@@ -21,7 +21,8 @@ type refLogs struct {
 	consumer consumer.Logs
 }
 
-// ConsumeLogs measures telemetry before calling ConsumeLogs because the data may be mutated downstream
+// ConsumeLogs takes pipeline ownership of the data and releases it once the downstream consumer
+// returns. It is a no-op if the data is already owned by the pipeline.
 func (c refLogs) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	if pref.MarkPipelineOwnedLogs(ld) {
 		defer pref.UnrefLogs(ld)
