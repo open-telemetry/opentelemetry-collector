@@ -18,6 +18,12 @@ receivers:
 This document covers built-in scraping metrics receivers. It defines which metrics these receivers can emit,
 defines stability guarantees and provides guidelines for metric updates.
 
+## Configuring scraping interval
+
+New scraping metrics receivers SHOULD use the default `collection_interval` provided by
+`scraperhelper` (60 seconds). A receiver MAY override it when there is a clear reason, such as
+the upstream source updating less frequently or high-resolution data being cheap and valuable.
+
 ## Defining emitted metrics
 
 Each built-in scraping metrics receiver has a `metadata.yaml` file that MUST define all the metrics emitted by the
