@@ -191,7 +191,7 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	}
 
 	var hln net.Listener
-	if hln, err = httpCfg.ServerConfig.ToListener(ctx, host.GetExtensions()); err != nil {
+	if hln, err = httpCfg.ServerConfig.ToListener(ctx); err != nil {
 		return err
 	}
 	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", hln.Addr().String()))
