@@ -26,7 +26,6 @@ config:
     expvar:
       $ref: expvar_config
       description: Has the configuration for the expvar service.
-      default: {}
 
 exported_configs:
   expvar_config:

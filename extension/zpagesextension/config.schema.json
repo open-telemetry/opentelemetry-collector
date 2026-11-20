@@ -10,8 +10,7 @@
           "default": false
         }
       },
-      "description": "Has the configuration for the expvar service.",
-      "default": {}
+      "description": "Has the configuration for the expvar service."
     }
   },
   "$id": "go.opentelemetry.io/collector/extension/zpagesextension",
