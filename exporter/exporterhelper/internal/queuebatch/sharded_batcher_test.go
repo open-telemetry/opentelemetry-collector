@@ -6,6 +6,7 @@ package queuebatch
 import (
 	"context"
 	"runtime"
+	"sync"
 	"testing"
 	"time"
 
@@ -280,4 +281,49 @@ func TestShardedBatcherReleasesQueueCapacityWhenQueueIsFull(t *testing.T) {
 	require.NoError(t, sb.Shutdown(context.Background()))
 	assert.Equal(t, 8, sink.ItemsCount())
 	require.Zero(t, q.Size())
+}
+
+// OnFull fires after the consumer read the request but before it reaches a shard.
+func TestShardedBatcherOnQueueFullBeforeConsume(t *testing.T) {
+	sb, err := newShardedBatcher(BatchConfig{
+		FlushTimeout: time.Minute,
+		Sizer:        request.SizerTypeItems,
+		MinSize:      100,
+	}, request.NewItemsSizer(), nil, newWorkerPool(2), requesttest.NewSink().Export, zap.NewNop(), 2)
+	require.NoError(t, err)
+
+	fired := make(chan struct{})
+	var once sync.Once
+	release := make(chan struct{})
+	q, err := queue.NewQueue(queue.Settings[request.Request]{
+		OnFull: func() {
+			sb.flushPartialBatches()
+			once.Do(func() { close(fired) })
+		},
+		SizerType:       request.SizerTypeItems,
+		Capacity:        1,
+		NumConsumers:    1,
+		BlockOnOverflow: true,
+		Telemetry:       componenttest.NewNopTelemetrySettings(),
+	}, func(ctx context.Context, req request.Request, done queue.Done) {
+		<-release
+		sb.Consume(ctx, req, done)
+	})
+	require.NoError(t, err)
+	require.NoError(t, sb.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, q.Shutdown(context.Background()))
+		require.NoError(t, sb.Shutdown(context.Background()))
+	}()
+
+	require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 1}))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	offered := make(chan error, 1)
+	go func() { offered <- q.Offer(ctx, &requesttest.FakeRequest{Items: 1}) }()
+
+	<-fired
+	close(release)
+	require.NoError(t, <-offered, "producer stayed blocked although OnFull fired")
 }

@@ -39,6 +39,7 @@ type shardedBatcher struct {
 
 	// flushCh has a buffer of one so repeated flush requests collapse into one.
 	flushCh      chan struct{}
+	flushPending atomic.Bool
 	shutdownCh   chan struct{}
 	shutdownOnce sync.Once
 	stopWG       sync.WaitGroup
@@ -110,14 +111,26 @@ func (sb *shardedBatcher) requestFlush() {
 }
 
 func (sb *shardedBatcher) flushPartialBatches() {
+	// Set before reading the shards so a concurrent Consume is not missed.
+	sb.flushPending.Store(true)
+	flushed := false
 	for _, shard := range sb.shards {
-		shard.flushCurrentBatchOrRemovePartition()
+		if shard.flushCurrentBatchOrRemovePartition() {
+			flushed = true
+		}
+	}
+	if flushed {
+		sb.flushPending.Store(false)
 	}
 }
 
 func (sb *shardedBatcher) Consume(ctx context.Context, req request.Request, done queue.Done) {
 	idx := sb.next.Add(1) - 1
-	sb.shards[idx%uint64(len(sb.shards))].Consume(ctx, req, done)
+	shard := sb.shards[idx%uint64(len(sb.shards))]
+	shard.Consume(ctx, req, done)
+	if sb.flushPending.CompareAndSwap(true, false) {
+		shard.flushCurrentBatchOrRemovePartition()
+	}
 }
 
 func (sb *shardedBatcher) Shutdown(ctx context.Context) error {
