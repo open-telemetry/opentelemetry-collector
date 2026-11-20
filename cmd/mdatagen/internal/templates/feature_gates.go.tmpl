@@ -11,11 +11,11 @@ import (
 var {{ printf "%s" $gate.ID | publicVar }}FeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"{{ $gate.ID }}",
 	featuregate.Stage{{ printf "%s" $gate.Stage | casesTitle }},
-	featuregate.WithRegisterDescription("{{ $gate.Description }}"),
-	featuregate.WithRegisterReferenceURL("{{ $gate.ReferenceURL }}"),
-	featuregate.WithRegisterFromVersion("{{ $gate.FromVersion }}"),
+	featuregate.WithRegisterDescription({{ printf "%q" $gate.Description }}),
+	featuregate.WithRegisterReferenceURL({{ printf "%q" $gate.ReferenceURL }}),
+	featuregate.WithRegisterFromVersion({{ printf "%q" $gate.FromVersion }}),
 	{{- if $gate.ToVersion }}
-	featuregate.WithRegisterToVersion("{{ $gate.ToVersion }}"),
+	featuregate.WithRegisterToVersion({{ printf "%q" $gate.ToVersion }}),
 	{{- end }}
 )
 {{- end }}

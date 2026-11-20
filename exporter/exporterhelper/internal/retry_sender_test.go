@@ -93,6 +93,24 @@ func TestRetrySenderThrottleError(t *testing.T) {
 	require.NoError(t, rs.Shutdown(context.Background()))
 }
 
+func TestRetrySenderThrottleErrorAboveMaxInterval(t *testing.T) {
+	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg.InitialInterval = 10 * time.Millisecond
+	rCfg.MaxInterval = 100 * time.Millisecond
+	rCfg.MaxElapsedTime = 0
+	sink := requesttest.NewSink()
+	rs := newRetrySender(rCfg, exportertest.NewNopSettings(exportertest.NopType), sender.NewSender(sink.Export))
+	require.NoError(t, rs.Start(context.Background(), componenttest.NewNopHost()))
+	start := time.Now()
+	sink.SetExportErr(NewThrottleRetry(errors.New("throttle error"), time.Hour))
+	require.NoError(t, rs.Send(context.Background(), &requesttest.FakeRequest{Items: 5}))
+	// The throttle delay is capped at the max interval.
+	assert.LessOrEqual(t, 100*time.Millisecond, time.Since(start))
+	assert.Greater(t, time.Minute, time.Since(start))
+	assert.Equal(t, 1, sink.RequestsCount())
+	require.NoError(t, rs.Shutdown(context.Background()))
+}
+
 func TestRetrySenderWithContextTimeout(t *testing.T) {
 	const testTimeout = 10 * time.Second
 	rCfg := configretry.NewDefaultBackOffConfig()
