@@ -70,10 +70,10 @@ func (sc *ServerConfig) ToListener(ctx context.Context, extensions ...map[compon
 	var listener net.Listener
 	var err error
 	if sc.ListenerMiddleware.HasValue() {
-		var available map[component.ID]component.Component
-		if len(extensions) > 0 {
-			available = extensions[0]
+		if extensions == nil {
+			return nil, errors.New("listen_middleware is configured but this component or its host does not support extensions")
 		}
+		available := extensions[0]
 		var listen extensionmiddleware.ListenContextFunc
 		listen, err = sc.ListenerMiddleware.Get().GetListener(ctx, available)
 		if err != nil {
