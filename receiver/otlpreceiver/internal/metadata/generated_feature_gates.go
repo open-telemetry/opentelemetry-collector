@@ -13,3 +13,11 @@ var ReceiverOtlpRejectInvalidUTF8FeatureGate = featuregate.GlobalRegistry().Must
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/11449"),
 	featuregate.WithRegisterFromVersion("v0.166.0"),
 )
+
+var ReceiverOtlpSanitizeInvalidUTF8FeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.otlp.sanitizeInvalidUTF8",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Controls whether the OTLP receiver replaces invalid UTF-8 in string fields with the Unicode replacement character U+FFFD."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/11449"),
+	featuregate.WithRegisterFromVersion("v0.166.0"),
+)

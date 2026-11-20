@@ -12,7 +12,7 @@ status:
   stability:
     development: [metrics]
   codeowners:
-    active: [braydonk, dmathieu]
+    active: [braydonk, dmathieu, osullivandonal]
     emeritus: [dmitryax]
 
 resource_attributes:

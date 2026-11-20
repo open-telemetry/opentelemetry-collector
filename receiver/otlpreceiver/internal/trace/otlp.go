@@ -44,6 +44,8 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 	rejectedSpans := 0
 	if metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.IsEnabled() {
 		rejectedSpans = req.RejectInvalidUTF8()
+	} else if metadata.ReceiverOtlpSanitizeInvalidUTF8FeatureGate.IsEnabled() {
+		req.SanitizeUTF8()
 	}
 	resp := ptraceotlp.NewExportResponse()
 	if rejectedSpans > 0 {
