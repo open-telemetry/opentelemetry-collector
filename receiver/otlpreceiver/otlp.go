@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -220,16 +221,66 @@ func (r *otlpReceiver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
+// shutdownGracePeriod bounds how long Shutdown waits for in-flight requests to
+// complete when the caller's context carries no deadline. A request is in flight
+// from the moment its headers arrive, before it has been authenticated, so without
+// a bound a peer that opens a request and never completes it would block the
+// collector's shutdown or reload for as long as it keeps the connection open.
+//
+// It is added on top of the longest time the server itself allows a request to
+// take (for HTTP, the configured read and write timeouts), so that raising those
+// limits does not cause legitimate requests to be cut off during shutdown.
+const shutdownGracePeriod = 30 * time.Second
+
+// shutdownContext returns ctx unchanged when it already carries a deadline,
+// otherwise a context that expires after limit plus shutdownGracePeriod.
+func shutdownContext(ctx context.Context, limit time.Duration) (context.Context, context.CancelFunc) {
+	if _, ok := ctx.Deadline(); ok {
+		return ctx, func() {}
+	}
+	return context.WithTimeout(ctx, limit+shutdownGracePeriod)
+}
+
 // Shutdown is a method to turn off receiving.
 func (r *otlpReceiver) Shutdown(ctx context.Context) error {
 	var err error
 
 	if r.serverHTTP != nil {
-		err = r.serverHTTP.Shutdown(ctx)
+		// A request can legitimately last up to the larger of the read and write
+		// timeouts (zero means no limit, which leaves just the grace period).
+		var limit time.Duration
+		if httpCfg := r.cfg.Protocols.HTTP.Get(); httpCfg != nil {
+			limit = max(httpCfg.ServerConfig.WriteTimeout, httpCfg.ServerConfig.ReadTimeout)
+		}
+		httpCtx, cancel := shutdownContext(ctx, limit)
+		defer cancel()
+		err = r.serverHTTP.Shutdown(httpCtx)
+		if httpCtx.Err() != nil {
+			// Shutdown returned without draining every connection; close the
+			// remaining ones instead of leaving the collector waiting on them.
+			r.settings.Logger.Warn("HTTP server did not drain in time, closing open connections")
+			err = r.serverHTTP.Close()
+		}
 	}
 
 	if r.serverGRPC != nil {
-		r.serverGRPC.GracefulStop()
+		// gRPC has no per-request server-side timeout, so only the grace period applies.
+		grpcCtx, cancel := shutdownContext(ctx, 0)
+		defer cancel()
+		stopped := make(chan struct{})
+		go func() {
+			defer close(stopped)
+			r.serverGRPC.GracefulStop()
+		}()
+		select {
+		case <-stopped:
+		case <-grpcCtx.Done():
+			// Stop is the documented way to abort a GracefulStop that is taking
+			// too long: it closes the remaining connections and cancels their RPCs.
+			r.settings.Logger.Warn("gRPC server did not drain in time, closing open connections")
+			r.serverGRPC.Stop()
+			<-stopped
+		}
 	}
 
 	r.shutdownWG.Wait()
