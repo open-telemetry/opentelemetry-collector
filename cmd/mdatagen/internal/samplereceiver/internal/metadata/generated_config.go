@@ -899,6 +899,33 @@ func (rac *StringResourceDisabledAttrToBeRemovedResourceAttributeConfig) Unmarsh
 	return nil
 }
 
+// TemplateResourceAttributeConfig provides config for a template resource attribute.
+// A template resource attribute is recorded as "<name>.<key>" for each configured key.
+type TemplateResourceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+	// Keys defines the keys to record. Only "<name>.<key>" attributes with a listed key are emitted.
+	Keys []string `mapstructure:"keys"`
+
+	enabledSetByUser bool
+}
+
+func (rac *TemplateResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// KeyEnabled returns true if the attribute is enabled and the key is configured to be recorded.
+func (rac TemplateResourceAttributeConfig) KeyEnabled(key string) bool {
+	return rac.Enabled && slices.Contains(rac.Keys, key)
+}
+
 // ResourceAttributesConfig provides config for sample resource attributes.
 type ResourceAttributesConfig struct {
 	HostArch                              HostArchResourceAttributeConfig                              `mapstructure:"host.arch"`
@@ -911,6 +938,7 @@ type ResourceAttributesConfig struct {
 	StringResourceAttrRemoveWarning       StringResourceAttrRemoveWarningResourceAttributeConfig       `mapstructure:"string.resource.attr_remove_warning"`
 	StringResourceAttrToBeRemoved         StringResourceAttrToBeRemovedResourceAttributeConfig         `mapstructure:"string.resource.attr_to_be_removed"`
 	StringResourceDisabledAttrToBeRemoved StringResourceDisabledAttrToBeRemovedResourceAttributeConfig `mapstructure:"string.resource.disabled_attr_to_be_removed"`
+	TemplateResourceAttr                  TemplateResourceAttributeConfig                              `mapstructure:"template.resource.attr"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -944,6 +972,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		StringResourceDisabledAttrToBeRemoved: StringResourceDisabledAttrToBeRemovedResourceAttributeConfig{
 			Enabled: false,
+		},
+		TemplateResourceAttr: TemplateResourceAttributeConfig{
+			Enabled: true,
 		},
 	}
 }

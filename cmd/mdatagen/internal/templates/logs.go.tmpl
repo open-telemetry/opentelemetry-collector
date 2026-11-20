@@ -145,7 +145,11 @@ func NewLogsBuilder({{ if .Events }}lbc LogsBuilderConfig, {{ end }}settings {{ 
 	}
 	{{- end }}
 	{{- if $attr.Warnings.IfConfigured }}
+	{{- if $attr.Type.Template }}
+	if lbc.ResourceAttributes.{{ $name.Render }}.enabledSetByUser || lbc.ResourceAttributes.{{ $name.Render }}.Keys != nil {
+	{{- else }}
 	if lbc.ResourceAttributes.{{ $name.Render }}.enabledSetByUser || lbc.ResourceAttributes.{{ $name.Render }}.EventsInclude != nil || lbc.ResourceAttributes.{{ $name.Render }}.EventsExclude != nil {
+	{{- end }}
 		settings.Logger.Warn("[WARNING] `{{ $name }}` should not be configured: {{ $attr.Warnings.IfConfigured }}")
 	}
 	{{- end }}
@@ -168,12 +172,14 @@ func NewLogsBuilder({{ if .Events }}lbc LogsBuilderConfig, {{ end }}settings {{ 
 	}
 	{{- if .Events }}
 	{{- range $name, $attr := .ResourceAttributes }}
+	{{- if not $attr.Type.Template }}
 	if lbc.ResourceAttributes.{{ $name.Render }}.EventsInclude != nil {
 		lb.resourceAttributeIncludeFilter["{{ $name }}"] = filter.CreateFilter(lbc.ResourceAttributes.{{ $name.Render }}.EventsInclude)
 	}
 	if lbc.ResourceAttributes.{{ $name.Render }}.EventsExclude != nil {
 		lb.resourceAttributeExcludeFilter["{{ $name }}"] = filter.CreateFilter(lbc.ResourceAttributes.{{ $name.Render }}.EventsExclude)
 	}
+	{{- end }}
 	{{- end }}
 	{{- end }}
 
