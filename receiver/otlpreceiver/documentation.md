@@ -9,5 +9,6 @@ This component has the following feature gates:
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
 | `receiver.otlp.rejectInvalidUTF8` | alpha | Controls whether the OTLP receiver rejects telemetry items containing invalid UTF-8 and reports them through OTLP partial success. | v0.166.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/11449) |
+| `receiver.otlp.sanitizeInvalidUTF8` | alpha | Controls whether the OTLP receiver replaces invalid UTF-8 in string fields with the Unicode replacement character U+FFFD. | v0.166.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/11449) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
