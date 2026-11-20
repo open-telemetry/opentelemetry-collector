@@ -10,7 +10,7 @@ component: exporter/otlp_http
 note: Do not read the body of a `HTTP 101` response, which blocked the export forever.
 
 # One or more tracking issues or pull requests related to the change
-issues: []
+issues: [16460]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
