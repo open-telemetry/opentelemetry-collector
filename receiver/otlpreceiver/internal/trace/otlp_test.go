@@ -8,6 +8,7 @@ import (
 	"errors"
 	"net"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -76,6 +77,56 @@ func TestExport_InvalidUTF8(t *testing.T) {
 	// Rejected spans must be visible in the receiver telemetry, not only in the response.
 	assertReceiverSum(t, tt, "otelcol_receiver_refused_spans", 1)
 	assertReceiverSum(t, tt, "otelcol_receiver_accepted_spans", 1)
+}
+
+func TestExport_SanitizeInvalidUTF8(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpSanitizeInvalidUTF8FeatureGate.ID(), true)
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.ID(), false)
+
+	td := testdata.GenerateTraces(2)
+	td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("bad", "bad\xffvalue")
+	req := ptraceotlp.NewExportRequestFromTraces(td)
+
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	traceSink := new(consumertest.TracesSink)
+	traceClient := makeTraceServiceClientWithTelemetry(t, traceSink, tt)
+	resp, err := traceClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Zero(t, resp.PartialSuccess().RejectedSpans())
+	assert.Empty(t, resp.PartialSuccess().ErrorMessage())
+
+	tds := traceSink.AllTraces()
+	require.Len(t, tds, 1)
+	assert.Equal(t, 2, tds[0].SpanCount())
+
+	got, ok := tds[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Get("bad")
+	require.True(t, ok)
+	assert.Equal(t, "bad\uFFFDvalue", got.Str())
+	assert.True(t, utf8.ValidString(got.Str()))
+
+	assertReceiverSum(t, tt, "otelcol_receiver_accepted_spans", int64(2))
+}
+
+func TestExport_SanitizeInvalidUTF8RejectTakesPrecedence(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpSanitizeInvalidUTF8FeatureGate.ID(), true)
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.ID(), true)
+
+	td := testdata.GenerateTraces(2)
+	td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("bad", "bad\xffvalue")
+	req := ptraceotlp.NewExportRequestFromTraces(td)
+
+	traceSink := new(consumertest.TracesSink)
+	traceClient := makeTraceServiceClient(t, traceSink)
+	resp, err := traceClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), resp.PartialSuccess().RejectedSpans())
+	assert.Equal(t, invalidUTF8Message, resp.PartialSuccess().ErrorMessage())
+
+	tds := traceSink.AllTraces()
+	require.Len(t, tds, 1)
+	assert.Equal(t, 1, tds[0].SpanCount())
 }
 
 func TestExport_NonPermanentErrorConsumer(t *testing.T) {
