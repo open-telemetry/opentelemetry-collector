@@ -13,7 +13,9 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/pdata/xpdata/pref"
 )
 
 func TestMetricsNotMultiplexing(t *testing.T) {
@@ -83,13 +85,13 @@ func TestMetricsMultiplexingMutating(t *testing.T) {
 
 	assert.NotSame(t, &md, &p1.AllMetrics()[0])
 	assert.NotSame(t, &md, &p1.AllMetrics()[1])
-	assert.Equal(t, md, p1.AllMetrics()[0])
-	assert.Equal(t, md, p1.AllMetrics()[1])
+	assert.True(t, pref.EqualMetrics(md, p1.AllMetrics()[0]))
+	assert.True(t, pref.EqualMetrics(md, p1.AllMetrics()[1]))
 
 	assert.NotSame(t, &md, &p2.AllMetrics()[0])
 	assert.NotSame(t, &md, &p2.AllMetrics()[1])
-	assert.Equal(t, md, p2.AllMetrics()[0])
-	assert.Equal(t, md, p2.AllMetrics()[1])
+	assert.True(t, pref.EqualMetrics(md, p2.AllMetrics()[0]))
+	assert.True(t, pref.EqualMetrics(md, p2.AllMetrics()[1]))
 
 	// For this consumer, will receive the initial data.
 	assert.Equal(t, md, p3.AllMetrics()[0])
@@ -157,8 +159,8 @@ func TestMetricsMultiplexingMixLastMutating(t *testing.T) {
 
 	assert.NotSame(t, &md, &p1.AllMetrics()[0])
 	assert.NotSame(t, &md, &p1.AllMetrics()[1])
-	assert.Equal(t, md, p1.AllMetrics()[0])
-	assert.Equal(t, md, p1.AllMetrics()[1])
+	assert.True(t, pref.EqualMetrics(md, p1.AllMetrics()[0]))
+	assert.True(t, pref.EqualMetrics(md, p1.AllMetrics()[1]))
 
 	// For this consumer, will receive the initial data.
 	assert.Equal(t, md, p2.AllMetrics()[0])
@@ -169,8 +171,8 @@ func TestMetricsMultiplexingMixLastMutating(t *testing.T) {
 	// For this consumer, will clone the initial data.
 	assert.NotSame(t, &md, &p3.AllMetrics()[0])
 	assert.NotSame(t, &md, &p3.AllMetrics()[1])
-	assert.Equal(t, md, p3.AllMetrics()[0])
-	assert.Equal(t, md, p3.AllMetrics()[1])
+	assert.True(t, pref.EqualMetrics(md, p3.AllMetrics()[0]))
+	assert.True(t, pref.EqualMetrics(md, p3.AllMetrics()[1]))
 
 	// The data should not be marked as read only.
 	assert.False(t, md.IsReadOnly())
@@ -195,13 +197,13 @@ func TestMetricsMultiplexingMixLastNonMutating(t *testing.T) {
 
 	assert.NotSame(t, &md, &p1.AllMetrics()[0])
 	assert.NotSame(t, &md, &p1.AllMetrics()[1])
-	assert.Equal(t, md, p1.AllMetrics()[0])
-	assert.Equal(t, md, p1.AllMetrics()[1])
+	assert.True(t, pref.EqualMetrics(md, p1.AllMetrics()[0]))
+	assert.True(t, pref.EqualMetrics(md, p1.AllMetrics()[1]))
 
 	assert.NotSame(t, &md, &p2.AllMetrics()[0])
 	assert.NotSame(t, &md, &p2.AllMetrics()[1])
-	assert.Equal(t, md, p2.AllMetrics()[0])
-	assert.Equal(t, md, p2.AllMetrics()[1])
+	assert.True(t, pref.EqualMetrics(md, p2.AllMetrics()[0]))
+	assert.True(t, pref.EqualMetrics(md, p2.AllMetrics()[1]))
 
 	// For this consumer, will receive the initial data.
 	assert.Equal(t, md, p3.AllMetrics()[0])
@@ -211,6 +213,46 @@ func TestMetricsMultiplexingMixLastNonMutating(t *testing.T) {
 
 	// The data should not be marked as read only.
 	assert.False(t, md.IsReadOnly())
+}
+
+func TestMetricsMultiplexingRefCount(t *testing.T) {
+	enableProtoPoolingForTest(t)
+
+	// Each consumer acts like a pipeline: it takes ownership of the data if no one did yet and
+	// releases it when it returns.
+	var counts []int
+	newConsumer := func() consumer.Metrics {
+		c, err := consumer.NewMetrics(func(_ context.Context, md pmetric.Metrics) error {
+			if pref.MarkPipelineOwnedMetrics(md) {
+				defer pref.UnrefMetrics(md)
+			}
+			counts = append(counts, md.MetricCount())
+			return nil
+		})
+		require.NoError(t, err)
+		return c
+	}
+	fc := NewMetrics([]consumer.Metrics{newConsumer(), newConsumer()})
+
+	t.Run("not_owned", func(t *testing.T) {
+		counts = nil
+		md := testdata.GenerateMetrics(2)
+		require.NoError(t, fc.ConsumeMetrics(context.Background(), md))
+		assert.Equal(t, []int{2, 2}, counts)
+		// The fanout consumer owned the data and released it after all consumers received it.
+		assert.Equal(t, 0, md.MetricCount())
+	})
+
+	t.Run("owned_upstream", func(t *testing.T) {
+		counts = nil
+		md := testdata.GenerateMetrics(2)
+		require.True(t, pref.MarkPipelineOwnedMetrics(md))
+		require.NoError(t, fc.ConsumeMetrics(context.Background(), md))
+		assert.Equal(t, []int{2, 2}, counts)
+		// Releasing the data is left to the upstream owner.
+		assert.Equal(t, 2, md.MetricCount())
+		pref.UnrefMetrics(md)
+	})
 }
 
 func TestMetricsWhenErrors(t *testing.T) {

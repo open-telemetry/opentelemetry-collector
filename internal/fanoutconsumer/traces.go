@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/xpdata/pref"
 )
 
 // NewTraces wraps multiple trace consumers in a single one.
@@ -45,6 +46,13 @@ func (tsc *tracesConsumer) Capabilities() consumer.Capabilities {
 
 // ConsumeTraces exports the ptrace.Traces to all consumers wrapped by the current one.
 func (tsc *tracesConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	// Own the data until all consumers received it, unless it is already owned upstream.
+	// Otherwise, the first consumer that takes ownership releases the data when it returns,
+	// before the other consumers receive it.
+	if pref.MarkPipelineOwnedTraces(td) {
+		defer pref.UnrefTraces(td)
+	}
+
 	var errs error
 
 	if len(tsc.mutable) > 0 {
