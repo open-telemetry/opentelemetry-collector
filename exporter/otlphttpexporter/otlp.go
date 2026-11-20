@@ -205,7 +205,12 @@ func (e *baseExporter) export(ctx context.Context, requestURL string, request []
 
 	defer func() {
 		// Discard any remaining response body when we are done reading.
-		_, _ = io.CopyN(io.Discard, resp.Body, maxHTTPResponseReadBytes)
+		// The body of a 101 response is the raw connection handed over by net/http,
+		// so neither the client timeout nor the request context can interrupt a
+		// read from it. There is nothing to drain for reuse; just close it.
+		if resp.StatusCode != http.StatusSwitchingProtocols {
+			_, _ = io.CopyN(io.Discard, resp.Body, maxHTTPResponseReadBytes)
+		}
 		_ = resp.Body.Close()
 	}()
 

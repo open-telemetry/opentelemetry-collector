@@ -66,20 +66,12 @@ func TestMetricsBuilder(t *testing.T) {
 			migrationGatesPinned := true
 			migrationGatesPinned = setFeatureGateForTest(t, ScraperSamplemigrationDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
 			migrationGatesPinned = setFeatureGateForTest(t, ScraperSamplemigrationEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ScraperSamplemigrationDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ScraperSamplemigrationEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ScraperSamplemigrationDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ScraperSamplemigrationEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["system.cpu.utilization"] = mb.metricSystemCPUUtilization.config.AggregationStrategy
 			aggMap["system.cpu.utilization@v1"] = mb.metricSystemCPUUtilizationV1.config.AggregationStrategy
 
 			expectedWarnings := 0
-			if tt.metricsSet == testDataSetAll || tt.metricsSet == testDataSetNone {
-				assert.Equal(t, "[WARNING] `system.memory.limit.utilization` should not be configured: This metric is in development.", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
 			if tt.name == "all_set" {
 				expectedWarnings++ // type differs
 				expectedWarnings++ // attributes differ
