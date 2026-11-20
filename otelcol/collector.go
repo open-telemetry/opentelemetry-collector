@@ -148,8 +148,9 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 		shutdownChan:   make(chan struct{}),
 		// Per signal.Notify documentation, a size of the channel equaled with
 		// the number of signals getting notified on is recommended.
-		signalsChannel:             make(chan os.Signal, 3),
-		asyncErrorChannel:          make(chan error),
+		signalsChannel: make(chan os.Signal, 3),
+		// A buffered channel so a fatal error is retained instead of blocked upon by the reporter.
+		asyncErrorChannel:          make(chan error, 1),
 		configProvider:             configProvider,
 		bc:                         bc,
 		updateConfigProviderLogger: cc.SetCore,
@@ -314,8 +315,24 @@ func (col *Collector) reloadConfiguration(ctx context.Context) error {
 		return fmt.Errorf("failed to shutdown the retiring config: %w", err)
 	}
 
+	// An old fatal error before reloading configuration should not
+	// terminate its successor
+	prevLogger := col.service.Logger()
+	var staleErr error
+	select {
+	case staleErr = <-col.asyncErrorChannel:
+	default:
+	}
+
 	if err := col.setupConfigurationComponents(ctx); err != nil {
+		if staleErr != nil {
+			prevLogger.Warn("Fatal error from previous configuration was discarded before reload", zap.Error(staleErr))
+		}
 		return fmt.Errorf("failed to setup configuration components: %w", err)
+	}
+
+	if staleErr != nil {
+		col.service.Logger().Warn("Fatal error from previous configuration was discarded before reload", zap.Error(staleErr))
 	}
 
 	return nil
