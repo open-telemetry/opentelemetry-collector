@@ -18,7 +18,7 @@ issues: [16441]
 subtext: |
   `ConfigSnapshot.Unexpanded()` learns which leaves are opaque from the marshaled configuration.
   A section disabled with `enabled: false` and an `omitempty` field set to its zero value are not
-  marshaled, so inline secrets below them such as were reported verbatim.
+  marshaled, so inline secrets below them were reported verbatim.
   Every leaf without a counterpart in the marshaled configuration is now masked; nulls, booleans
   and plain `${...}` provider references stay visible.
 
