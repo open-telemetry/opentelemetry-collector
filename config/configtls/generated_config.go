@@ -43,7 +43,8 @@ func NewDefaultClientConfig() ClientConfig {
 // Note: Since there isn't anything specific to a server connection. Components with server connections should use Config.
 type Config struct {
 	// CAFile path to the CA cert. For a client this verifies the server certificate.
-	// For a server this verifies client certificates. If empty uses system root CA. (optional)
+	// If empty uses system root CA. Not used by servers: to verify client certificates
+	// a server must set client_ca_file instead. (optional)
 	CAFile string `mapstructure:"ca_file,omitempty"`
 
 	// CAPem in memory PEM encoded cert. (optional)

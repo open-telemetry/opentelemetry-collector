@@ -115,6 +115,11 @@ func (c ServerConfig) Validate() error {
 	if !c.hasCert() && !c.hasKey() {
 		return errors.New("TLS configuration must include both certificate and key for server connections")
 	}
+	// ca_file/ca_pem only populate RootCAs, which a TLS server never consults. Fail fast
+	// instead of silently serving a listener that does not verify client certificates.
+	if c.hasCA() && c.ClientCAFile == "" {
+		return errors.New("ca_file/ca_pem are not used by server connections; set client_ca_file to verify client certificates")
+	}
 	return nil
 }
 
