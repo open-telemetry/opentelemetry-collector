@@ -190,6 +190,7 @@ the role of the [release manager](./docs/release.md#release-managers).
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
 - [Braydon Kains](https://github.com/braydonk), Google
 - [Israel Blancas](https://github.com/iblancasa), Coralogix
+- [Vibhanshu Singh](https://github.com/singhvibhanshu)
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
 - Actively seeking contributors to triage issues
 
