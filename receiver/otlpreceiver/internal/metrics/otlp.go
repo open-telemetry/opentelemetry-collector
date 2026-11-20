@@ -44,6 +44,8 @@ func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (p
 	rejectedDataPoints := 0
 	if metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.IsEnabled() {
 		rejectedDataPoints = req.RejectInvalidUTF8()
+	} else if metadata.ReceiverOtlpSanitizeInvalidUTF8FeatureGate.IsEnabled() {
+		req.SanitizeUTF8()
 	}
 	resp := pmetricotlp.NewExportResponse()
 	if rejectedDataPoints > 0 {
