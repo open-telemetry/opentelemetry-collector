@@ -24,6 +24,7 @@ var (
 	errNotHTTPClient      = errors.New("requested extension is not an HTTP client middleware")
 	errNotGRPCClient      = errors.New("requested extension is not a gRPC client middleware")
 	errNotDialer          = errors.New("requested extension is not a dialer middleware")
+	errNotListener        = errors.New("requested extension is not a listener middleware")
 )
 
 // GetHTTPClientRoundTripper attempts to select the appropriate
@@ -99,6 +100,24 @@ func (m Config) GetDialer(ctx context.Context, extensions map[component.ID]compo
 			return dialer.GetDialContext(ctx)
 		}
 		return nil, errNotDialer
+	}
+
+	return nil, fmt.Errorf("failed to resolve middleware %q: %w", m.ID, errMiddlewareNotFound)
+}
+
+// GetListener attempts to select the appropriate
+// extensionmiddleware.Listener from the map of extensions, and
+// returns the Listen function. If a middleware is not found, an
+// error is returned. This should only be used by HTTP and gRPC clients.
+func (m Config) GetListener(ctx context.Context, extensions map[component.ID]component.Component) (extensionmiddleware.ListenContextFunc, error) {
+	if !metadata.PkgConfigmiddlewareCustomTCPRoutingFeatureGate.IsEnabled() {
+		return nil, errors.New("use of the listener_middleware feature requires to enable the feature gate 'pkg.configmiddleware.CustomTCPRouting'")
+	}
+	if ext, found := extensions[m.ID]; found {
+		if listener, ok := ext.(extensionmiddleware.Listener); ok {
+			return listener.GetListenContext(ctx)
+		}
+		return nil, errNotListener
 	}
 
 	return nil, fmt.Errorf("failed to resolve middleware %q: %w", m.ID, errMiddlewareNotFound)

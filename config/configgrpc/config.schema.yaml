@@ -126,6 +126,13 @@ $defs:
         description: Keepalive anchor for all the settings related to keepalive.
         x-optional: true
         $ref: keepalive_server_config
+      listener_middleware:
+        description: Listener middleware is a handler customizing how the server will listen for connections over TCP.
+        type: object
+        properties:
+          id:
+            type: string
+            description: Specifies the name of the extension to use.
       max_concurrent_streams:
         description: MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport. It has effect only for streaming RPCs.
         type: integer
