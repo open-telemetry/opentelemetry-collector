@@ -5,15 +5,31 @@
 
 package configtls // import "go.opentelemetry.io/collector/config/configtls"
 
-import "crypto/tls"
+import (
+	"crypto/tls"
+	"maps"
+	"slices"
+)
 
+// This mirrors allowedCurvePreferencesFIPS in crypto/tls/defaults_fips140.go,
+// the filter crypto/tls applies when FIPS-approved settings are required. The
+// hybrid key exchanges are approved there, so only bare X25519 is missing
+// relative to the non-FIPS map.
+// See https://cs.opensource.google/go/go/+/refs/tags/go1.26.0:src/crypto/tls/defaults_fips140.go
 var tlsCurveTypes = map[string]tls.CurveID{
-	"P256": tls.CurveP256,
-	"P384": tls.CurveP384,
-	"P521": tls.CurveP521,
+	"P256":               tls.CurveP256,
+	"P384":               tls.CurveP384,
+	"P521":               tls.CurveP521,
+	"X25519MLKEM768":     tls.X25519MLKEM768,
+	"SecP256r1MLKEM768":  tls.SecP256r1MLKEM768,
+	"SecP384r1MLKEM1024": tls.SecP384r1MLKEM1024,
+}
 
-	// The following X25519 curves are not available in FIPS mode, so we remove them from the map.
-	// See also https://cs.opensource.google/go/go/+/refs/tags/go1.24.6:src/crypto/ecdh/x25519.go
-	//"X25519": tls.X25519,
-	//"X25519MLKEM768": tls.X25519MLKEM768,
+const requireFIPSBuild = true
+
+// defaultCurvePreferences returns the FIPS-approved curves to use when the
+// configuration does not set curve_preferences. The build tag does not enforce
+// runtime FIPS mode, so this cannot be left to the crypto/tls defaults.
+func defaultCurvePreferences() []tls.CurveID {
+	return slices.Collect(maps.Values(tlsCurveTypes))
 }
