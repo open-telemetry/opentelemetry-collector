@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
@@ -32,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/metricviews"
 	"go.opentelemetry.io/collector/service/internal/moduleinfo"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
+	"go.opentelemetry.io/collector/service/internal/reclaim"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
@@ -104,6 +106,13 @@ type Service struct {
 	tracerProvider     telemetry.TracerProvider
 	graphSettings      graph.Settings
 }
+
+var reclaimColdBinaryPagesGate = featuregate.GlobalRegistry().MustRegister(
+	"pkg.service.reclaimColdBinaryPages",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Reclaim cold startup binary file pages on Linux after Collector pipelines are ready."),
+	featuregate.WithRegisterFromVersion("v0.166.0"),
+)
 
 // New creates a new Service, its telemetry, and Components.
 func New(ctx context.Context, set Settings, cfg Config) (_ *Service, resultErr error) {
@@ -253,6 +262,10 @@ func (srv *Service) Start(ctx context.Context) error {
 
 	if err := srv.host.ServiceExtensions.NotifyPipelineReady(); err != nil {
 		return err
+	}
+
+	if reclaimColdBinaryPagesGate.IsEnabled() {
+		reclaimColdBinaryPages(srv.telemetrySettings.Logger, reclaim.ColdBinaryPages)
 	}
 
 	srv.telemetrySettings.Logger.Info("Everything is ready. Begin running and processing data.")
@@ -411,4 +424,20 @@ func registerProcessMetrics(
 		)
 	}
 	return nil
+}
+
+func reclaimColdBinaryPages(logger *zap.Logger, fn func() (reclaim.Result, error)) {
+	res, err := fn()
+	if err != nil {
+		logger.Warn("Failed to reclaim cold startup binary pages", zap.Error(err))
+		return
+	}
+	if res.SkippedReason != "" {
+		logger.Debug("Skipped cold startup binary page reclaim", zap.String("reason", res.SkippedReason))
+		return
+	}
+	logger.Info("Reclaimed cold startup binary pages",
+		zap.Int("ranges_advised", res.RangesAdvised),
+		zap.Uint64("bytes_advised", res.BytesAdvised),
+	)
 }

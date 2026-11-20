@@ -39,6 +39,7 @@ import (
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
+	"go.opentelemetry.io/collector/service/internal/reclaim"
 	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 	"go.opentelemetry.io/collector/service/telemetry/telemetrytest"
@@ -866,4 +867,80 @@ func TestServiceUpdateReceivers(t *testing.T) {
 	// UpdateReceivers entry point on the running service.
 	rcvrCfgs, rcvrFactories := builders.NewNopReceiverConfigsAndFactories()
 	require.NoError(t, srv.UpdateReceivers(ctx, nil, rcvrCfgs, rcvrFactories, cfg.Pipelines))
+}
+
+func TestReclaimColdBinaryPagesLogging(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		core, logs := observer.New(zapcore.DebugLevel)
+		reclaimColdBinaryPages(zap.New(core), func() (reclaim.Result, error) {
+			return reclaim.Result{RangesAdvised: 2, BytesAdvised: 8192}, nil
+		})
+		entries := logs.All()
+		require.Len(t, entries, 1)
+		assert.Equal(t, zapcore.InfoLevel, entries[0].Level)
+		assert.Equal(t, "Reclaimed cold startup binary pages", entries[0].Message)
+		assert.Equal(t, int64(2), entries[0].ContextMap()["ranges_advised"])
+		assert.Equal(t, uint64(8192), entries[0].ContextMap()["bytes_advised"])
+	})
+
+	t.Run("skipped", func(t *testing.T) {
+		core, logs := observer.New(zapcore.DebugLevel)
+		reclaimColdBinaryPages(zap.New(core), func() (reclaim.Result, error) {
+			return reclaim.Result{SkippedReason: "in-memory filesystem"}, nil
+		})
+		entries := logs.All()
+		require.Len(t, entries, 1)
+		assert.Equal(t, zapcore.DebugLevel, entries[0].Level)
+		assert.Equal(t, "Skipped cold startup binary page reclaim", entries[0].Message)
+		assert.Equal(t, "in-memory filesystem", entries[0].ContextMap()["reason"])
+	})
+
+	t.Run("error_is_non_fatal", func(t *testing.T) {
+		core, logs := observer.New(zapcore.DebugLevel)
+		reclaimColdBinaryPages(zap.New(core), func() (reclaim.Result, error) {
+			return reclaim.Result{}, errors.New("permission denied")
+		})
+		entries := logs.All()
+		require.Len(t, entries, 1)
+		assert.Equal(t, zapcore.WarnLevel, entries[0].Level)
+		assert.Equal(t, "Failed to reclaim cold startup binary pages", entries[0].Message)
+	})
+}
+
+func TestServiceStartReclaimColdBinaryPagesGate(t *testing.T) {
+	runStart := func(t *testing.T, enabled bool) []observer.LoggedEntry {
+		t.Helper()
+		require.NoError(t, featuregate.GlobalRegistry().Set("pkg.service.reclaimColdBinaryPages", enabled))
+		t.Cleanup(func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set("pkg.service.reclaimColdBinaryPages", false))
+		})
+
+		core, logs := observer.New(zapcore.DebugLevel)
+		set := newNopSettings()
+		set.TelemetryFactory = telemetry.NewFactory(
+			func() component.Config { return nil },
+			telemetrytest.WithLogger(zap.New(core), nil),
+		)
+
+		srv, err := New(t.Context(), set, newNopConfig())
+		require.NoError(t, err)
+		require.NoError(t, srv.Start(t.Context()))
+		t.Cleanup(func() {
+			require.NoError(t, srv.Shutdown(context.Background()))
+		})
+		return logs.All()
+	}
+
+	hasReclaimLog := func(entries []observer.LoggedEntry) bool {
+		for _, e := range entries {
+			if e.Message == "Reclaimed cold startup binary pages" ||
+				e.Message == "Skipped cold startup binary page reclaim" {
+				return true
+			}
+		}
+		return false
+	}
+
+	assert.False(t, hasReclaimLog(runStart(t, false)))
+	assert.True(t, hasReclaimLog(runStart(t, true)))
 }
