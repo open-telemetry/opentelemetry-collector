@@ -80,6 +80,10 @@
           "type": "string",
           "description": "Is the target URL to send data to (e.g.: http://some.url:9411/v1/traces)."
         },
+        "error_on_max_response_body_size": {
+          "type": "boolean",
+          "description": "Makes reading a response body that exceeds max_response_body_size return\nan error instead of truncating the body. Default is false.\n"
+        },
         "force_attempt_http2": {
           "type": "boolean",
           "description": "Controls whether the HTTP transport is forced to use the HTTP/2 protocol.\nBy default, this is set to true.\nNOTE: HTTP/2 does not support settings such as max_conns_per_host, max_idle_conns_per_host and max_idle_conns.\n",
@@ -129,7 +133,7 @@
         },
         "max_response_body_size": {
           "type": "integer",
-          "description": "Sets the maximum response body size in bytes that the client will read.\nReading past the limit returns an error instead of truncating the body.\nDefault is 0 (unlimited).\n"
+          "description": "Sets the maximum response body size in bytes that the client will read.\nBy default, the rest of a larger body is ignored and the reader sees a\nshorter body without an error. Set error_on_max_response_body_size to\nreturn an error instead. Default is 0 (unlimited).\n"
         },
         "middlewares": {
           "type": "array",

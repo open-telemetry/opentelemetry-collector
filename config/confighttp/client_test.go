@@ -760,17 +760,24 @@ func TestClientMiddlewaresFieldCompatibility(t *testing.T) {
 
 func TestClientMaxResponseBodySize(t *testing.T) {
 	const limit = 16
+	full := strings.Repeat("a", limit)
 	tests := []struct {
-		name    string
-		body    string
-		chunked bool
-		wantErr bool
+		name        string
+		body        string
+		chunked     bool
+		errOnExceed bool
+		wantBody    string
+		wantErr     bool
 	}{
-		{name: "under limit", body: strings.Repeat("a", limit-1)},
-		{name: "at limit", body: strings.Repeat("a", limit)},
-		{name: "over limit", body: strings.Repeat("a", limit+1), wantErr: true},
-		{name: "over limit chunked", body: strings.Repeat("a", 4*limit), chunked: true, wantErr: true},
+		{name: "under limit", body: full[:limit-1], wantBody: full[:limit-1]},
+		{name: "at limit", body: full, wantBody: full},
+		{name: "over limit truncates", body: full + "a", wantBody: full},
+		{name: "over limit truncates chunked", body: strings.Repeat("a", 4*limit), chunked: true, wantBody: full},
 		{name: "empty"},
+		{name: "error mode under limit", body: full[:limit-1], errOnExceed: true, wantBody: full[:limit-1]},
+		{name: "error mode at limit", body: full, errOnExceed: true, wantBody: full},
+		{name: "error mode over limit", body: full + "a", errOnExceed: true, wantErr: true},
+		{name: "error mode over limit chunked", body: strings.Repeat("a", 4*limit), chunked: true, errOnExceed: true, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -785,6 +792,7 @@ func TestClientMaxResponseBodySize(t *testing.T) {
 			cc := NewDefaultClientConfig()
 			cc.Endpoint = srv.URL
 			cc.MaxResponseBodySize = limit
+			cc.ErrorOnMaxResponseBodySize = tt.errOnExceed
 			client, err := cc.ToClient(context.Background(), nil, componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 
@@ -800,7 +808,7 @@ func TestClientMaxResponseBodySize(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.body, string(got))
+			assert.Equal(t, tt.wantBody, string(got))
 		})
 	}
 }

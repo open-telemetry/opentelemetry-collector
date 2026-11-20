@@ -65,8 +65,14 @@ exported_configs:
         type: int64
         description: |
           Sets the maximum response body size in bytes that the client will read.
-          Reading past the limit returns an error instead of truncating the body.
-          Default is 0 (unlimited).
+          By default, the rest of a larger body is ignored and the reader sees a
+          shorter body without an error. Set error_on_max_response_body_size to
+          return an error instead. Default is 0 (unlimited).
+      error_on_max_response_body_size:
+        type: bool
+        description: |
+          Makes reading a response body that exceeds max_response_body_size return
+          an error instead of truncating the body. Default is false.
       http2_read_idle_timeout:
         type: duration
         description: |

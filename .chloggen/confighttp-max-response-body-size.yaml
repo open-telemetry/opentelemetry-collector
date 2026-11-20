@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/confighttp
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `max_response_body_size` to `ClientConfig` to limit the number of bytes read from HTTP response bodies.
+note: Add `max_response_body_size` and `error_on_max_response_body_size` to `ClientConfig` to limit the number of bytes read from HTTP response bodies.
 
 # One or more tracking issues or pull requests related to the change
 issues: [16453]
@@ -15,7 +15,8 @@ issues: [16453]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  By default a larger body is truncated without an error. Set `error_on_max_response_body_size` to return an error instead.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
