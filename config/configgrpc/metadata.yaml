@@ -150,6 +150,8 @@ exported_configs:
         description: Listener middleware is a handler customizing how the server will listen for connections over TCP.
         optional: true
         $ref: /config/configmiddleware.config
+        go_struct:
+          custom_validator:
       max_concurrent_streams:
         description: |
           Sets the limit on the number of concurrent streams to each ServerTransport. 

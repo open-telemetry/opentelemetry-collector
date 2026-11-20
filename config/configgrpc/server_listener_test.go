@@ -120,3 +120,17 @@ func TestServerListenerConfigUnmarshal(t *testing.T) {
 	require.True(t, config.ListenerMiddleware.HasValue())
 	require.Equal(t, component.MustNewID("listener"), config.ListenerMiddleware.Get().ID)
 }
+
+func TestServerListenerFeatureGate(t *testing.T) {
+	gateID := "pkg.configmiddleware.CustomTCPRouting"
+	previous := configmiddleware.IsCustomTCPRoutingEnabled()
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gateID, previous))
+	})
+	require.NoError(t, featuregate.GlobalRegistry().Set(gateID, false))
+	s := &ServerConfig{
+		NetAddr:            confignet.AddrConfig{Endpoint: "127.0.0.1:0"},
+		ListenerMiddleware: configoptional.Some(configmiddleware.Config{ID: component.MustNewID("foo")}),
+	}
+	require.Error(t, s.Validate())
+}

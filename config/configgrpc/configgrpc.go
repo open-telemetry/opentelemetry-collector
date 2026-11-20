@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/snappy"
 	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/zstd"
 	"go.opentelemetry.io/collector/config/configmiddleware"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
@@ -317,6 +318,13 @@ func (cc *ClientConfig) getGrpcDialOptions(
 func validateMaxRecvMsgSizeMiB(maxRecvMsgSizeMiB int) error {
 	if maxRecvMsgSizeMiB*1024*1024 < 0 {
 		return fmt.Errorf("invalid max_recv_msg_size_mib value, must be between 1 and %d: %d", math.MaxInt/1024/1024, maxRecvMsgSizeMiB)
+	}
+	return nil
+}
+
+func validateListenerMiddleware(middleware configoptional.Optional[configmiddleware.Config]) error {
+	if middleware.HasValue() && !configmiddleware.IsCustomTCPRoutingEnabled() {
+		return errors.New("use of the listener_middleware feature requires to enable the feature gate 'pkg.configmiddleware.CustomTCPRouting'")
 	}
 	return nil
 }

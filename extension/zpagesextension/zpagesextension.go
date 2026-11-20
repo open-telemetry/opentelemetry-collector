@@ -86,7 +86,7 @@ func (zpe *zpagesExtension) Start(ctx context.Context, host component.Host) erro
 
 	// Start the listener here so we can have earlier failure if port is
 	// already in use.
-	ln, err := zpe.config.ServerConfig.ToListener(ctx, host.GetExtensions())
+	ln, err := zpe.config.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return err
 	}

@@ -136,7 +136,7 @@ func (r *otlpReceiver) startGRPCServer(ctx context.Context, host component.Host)
 	}
 
 	var gln net.Listener
-	if gln, err = grpcCfg.ToListener(ctx, host.GetExtensions()); err != nil {
+	if gln, err = grpcCfg.NetAddr.Listen(ctx); err != nil {
 		return err
 	}
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", gln.Addr().String()))
