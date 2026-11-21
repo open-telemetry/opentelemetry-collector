@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
-func TestCreateDefaultConfig(t *testing.T) {
+func TestFactoryCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig()

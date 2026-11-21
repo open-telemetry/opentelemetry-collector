@@ -100,3 +100,52 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+
+config:
+  description: Config defines configuration for batch processor.
+  go_struct:
+    custom_validator:
+      name: validateConfig
+  properties:
+    timeout:
+      type: duration
+      description: |
+        Sets the time after which a batch will be sent regardless of size.
+        When this is set to zero, batched data will be sent immediately.
+      default: 200ms
+    send_batch_size:
+      type: uint32
+      description: |
+        Is the size of a batch which after hit, will trigger it to be sent.
+        When this is set to zero, the batch size is ignored and data will be sent immediately
+        subject to only send_batch_max_size.
+      default: 8192
+    send_batch_max_size:
+      type: uint32
+      description: |
+        Is the maximum size of a batch. It must be larger than send_batch_size.
+        Larger batches are split into smaller units.
+        Default value is 0, that means no maximum size.
+      default: 0
+    metadata_keys:
+      type: slice
+      values:
+        type: string
+      description: |
+        Is a list of client.Metadata keys that will be
+        used to form distinct batchers. If this setting is empty,
+        a single batcher instance will be used. When this setting
+        is not empty, one batcher will be used per distinct
+        combination of values for the listed metadata keys.
+
+        Empty value and unset metadata are treated as distinct cases.
+
+        Entries are case-insensitive. Duplicated entries will
+        trigger a validation error.
+    metadata_cardinality_limit:
+      type: uint32
+      description: |
+        Indicates the maximum number of
+        batcher instances that will be created through a distinct
+        combination of metadata_keys.
+      default: 1000
