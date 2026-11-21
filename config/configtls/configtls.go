@@ -339,6 +339,19 @@ func (c ClientConfig) LoadTLSConfig(_ context.Context) (*tls.Config, error) {
 	}
 	tlsCfg.ServerName = c.ServerName
 	tlsCfg.InsecureSkipVerify = c.InsecureSkipVerify
+	// In FIPS 140 mode the built-in verification also rejects chains using
+	// algorithms that are not FIPS-approved. That filter is not available to
+	// a custom verifier, so keep the built-in verification and do not reload
+	// the CA file.
+	if c.ReloadInterval > 0 && c.hasCAFile() && !c.InsecureSkipVerify && !fipsEnabled() {
+		// crypto/tls cannot swap RootCAs on a live config, so take over server
+		// certificate verification to verify against the reloaded CA pool.
+		// The built-in verification is disabled only because verifyConnection
+		// performs the equivalent chain and hostname checks.
+		reloader := newRootCAsReloader(c.Config, tlsCfg.RootCAs)
+		tlsCfg.InsecureSkipVerify = true
+		tlsCfg.VerifyConnection = reloader.verifyConnection
+	}
 	return tlsCfg, nil
 }
 

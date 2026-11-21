@@ -89,7 +89,7 @@ exported_configs:
         description: Sets the minimum TLS version that is acceptable. If not set, TLS 1.2 will be used. (optional)
         type: string
       reload_interval:
-        description: Specifies the duration after which the certificate will be reloaded If not set, it will never be reloaded (optional)
+        description: Specifies the duration after which the certificate and key will be reloaded. For clients, the CA file (ca_file) is reloaded too. If not set, they will never be reloaded (optional)
         type: duration
       tpm:
         description: Trusted platform module configuration

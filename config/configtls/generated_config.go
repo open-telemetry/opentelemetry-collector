@@ -84,7 +84,7 @@ type Config struct {
 	// MinVersion sets the minimum TLS version that is acceptable. If not set, TLS 1.2 will be used. (optional)
 	MinVersion string `mapstructure:"min_version,omitempty"`
 
-	// ReloadInterval specifies the duration after which the certificate will be reloaded If not set, it will never be reloaded (optional)
+	// ReloadInterval specifies the duration after which the certificate and key will be reloaded. For clients, the CA file (ca_file) is reloaded too. If not set, they will never be reloaded (optional)
 	ReloadInterval time.Duration `mapstructure:"reload_interval,omitempty"`
 
 	// TPMConfig trusted platform module configuration
