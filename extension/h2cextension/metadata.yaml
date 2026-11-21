@@ -1,0 +1,16 @@
+display_name: HTTP/2 Cleartext Extension
+type: h2c
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  warnings:
+    - This prototype can bypass HTTP server authentication and request body limits after an h2c connection is upgraded.
+    - h2c is unencrypted and should only be used behind a TLS-terminating proxy on a trusted network.
+
+tests:
+  config: {}

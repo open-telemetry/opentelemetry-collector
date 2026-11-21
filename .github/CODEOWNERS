@@ -80,6 +80,7 @@ extension/extensioncapabilities/                       @open-telemetry/collector
 extension/extensionmiddleware/                         @open-telemetry/collector-approvers
 extension/extensionmiddleware/extensionmiddlewaretest/ @open-telemetry/collector-approvers
 extension/extensiontest/                               @open-telemetry/collector-approvers
+extension/h2cextension/                                @open-telemetry/collector-approvers
 extension/memorylimiterextension/                      @open-telemetry/collector-approvers
 extension/xextension/                                  @open-telemetry/collector-approvers
 extension/xextension/storage/                          @open-telemetry/collector-approvers @swiatekm
