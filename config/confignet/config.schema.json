@@ -8,6 +8,10 @@
         "dialer": {
           "type": "object",
           "properties": {
+            "dscp": {
+              "type": "integer",
+              "description": "Sets the Differentiated Services Code Point (DSCP) value on outgoing connections. \nThis value is used to set the DS field in the IP header, enabling QoS classification \nby network devices. Valid values are 0 to 63. Common values: 0 (Default/Best Effort, CS0), \n46 (Expedited Forwarding, EF, for low-latency traffic), 34 (Assured Forwarding AF41). \nDefault is 0 (disabled, no marking applied).\n"
+            },
             "timeout": {
               "type": "string",
               "description": "The maximum amount of time a dial will wait for a connect to complete. The default is no timeout.",
@@ -31,6 +35,10 @@
     "dialer_config": {
       "type": "object",
       "properties": {
+        "dscp": {
+          "type": "integer",
+          "description": "Sets the Differentiated Services Code Point (DSCP) value on outgoing connections. \nThis value is used to set the DS field in the IP header, enabling QoS classification \nby network devices. Valid values are 0 to 63. Common values: 0 (Default/Best Effort, CS0), \n46 (Expedited Forwarding, EF, for low-latency traffic), 34 (Assured Forwarding AF41). \nDefault is 0 (disabled, no marking applied).\n"
+        },
         "timeout": {
           "type": "string",
           "description": "The maximum amount of time a dial will wait for a connect to complete. The default is no timeout.",
@@ -46,6 +54,10 @@
         "dialer": {
           "type": "object",
           "properties": {
+            "dscp": {
+              "type": "integer",
+              "description": "Sets the Differentiated Services Code Point (DSCP) value on outgoing connections. \nThis value is used to set the DS field in the IP header, enabling QoS classification \nby network devices. Valid values are 0 to 63. Common values: 0 (Default/Best Effort, CS0), \n46 (Expedited Forwarding, EF, for low-latency traffic), 34 (Assured Forwarding AF41). \nDefault is 0 (disabled, no marking applied).\n"
+            },
             "timeout": {
               "type": "string",
               "description": "The maximum amount of time a dial will wait for a connect to complete. The default is no timeout.",
