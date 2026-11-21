@@ -30,8 +30,7 @@ func (ms Stack) switchDictionary(src, dst ProfilesDictionary, mi *mergeIndex) er
 			return fmt.Errorf("invalid location index %d", v)
 		}
 
-		loc := src.LocationTable().At(int(v))
-		idx, err := mi.setLocation(dst.LocationTable(), loc)
+		idx, err := mi.location(src, dst, v)
 		if err != nil {
 			return fmt.Errorf("couldn't set location %d: %w", i, err)
 		}
