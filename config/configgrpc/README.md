@@ -116,3 +116,13 @@ README](../confignet/README.md).
 - [`write_buffer_size`](https://godoc.org/google.golang.org/grpc#WriteBufferSize)
 - [`auth`](../configauth/README.md)
 - [`middlewares`](../configmiddleware/README.md)
+
+## GZIP Writer Persistence
+
+Under featuregate `pkg.configgrpc.PersistGzipCompressors`, this package pre-registers its own gzip writer persistence.
+This is because the GC pattern for a general Collector workload can cause the default pool registered by `google.golang.org/grpc/encoding/gzip` to be constantly swept by Go garbage collection, meaning that a normal workload for an exporter writing data with gzip compression would constantly GC and re-allocate the gzip writers. This cause high allocations, GC iterations, and CPU Usage.
+
+Turning this featuregate on should improve your memory allocations, CPU usage, and data throughput by persisting a set of writers in the Go heap up to `GOMAXPROCS`. The tradeoff is that the more writers that need to be warmed, your living heap will grow slightly. We believe this tradeoff should be worth it for most users, as the savings on overall allocations might be harder to see but should be far better overall for the health of the Collector process.  
+Measured in Go 1.27, the worst-case heap usage for `GOMAXPROCS=64` and writing enough load that all 64 writers were warmed was around `65.7 MiB`.
+
+Please note that the way we implemented this featuregate necessitated that [`google.golang.org/grpc/encoding/gzip.SetLevel`](https://github.com/grpc/grpc-go/blob/f8bb66bd7775fa7fd9d7fa34f7cf6a976357cad4/encoding/gzip/gzip.go#L58) cannot be called. Attempts to call this function in external Collector components will panic.
