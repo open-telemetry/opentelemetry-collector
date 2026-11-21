@@ -133,6 +133,11 @@ func (be *BaseExporter) ExporterHelperBatchingEnabled() bool {
 	return be.queueCfg.HasValue() && be.queueCfg.Get().Batch.HasValue()
 }
 
+// ExporterHelperPersistentQueueEnabled reports whether the queue of this exporter is stored in a storage extension.
+func (be *BaseExporter) ExporterHelperPersistentQueueEnabled() bool {
+	return be.queueCfg.HasValue() && be.queueCfg.Get().StorageID.HasValue()
+}
+
 // Send sends the request using the first sender in the chain.
 func (be *BaseExporter) Send(ctx context.Context, req request.Request) error {
 	// Have to read the number of items before sending the request since the request can

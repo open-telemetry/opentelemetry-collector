@@ -95,10 +95,46 @@ func Build(ctx context.Context, set Settings) (*Graph, error) {
 	if err := pipelines.buildComponents(ctx, set); err != nil {
 		return pipelines, err
 	}
+	if err := pipelines.validateProcessorPersistentQueues(); err != nil {
+		return pipelines, err
+	}
 	// TODO: Revisit this warning when custom builds no longer need batchprocessor.
 	// See https://github.com/open-telemetry/opentelemetry-collector/issues/15965.
 	pipelines.warnIfDoubleBatching(set.PipelineConfigs)
 	return pipelines, nil
+}
+
+// validateProcessorPersistentQueues rejects a processor with a persistent queue used in several pipelines of one signal.
+// The queue is identified by component ID and signal only, so the per-pipeline instances would share one stored queue.
+func (g *Graph) validateProcessorPersistentQueues() error {
+	type queueKey struct {
+		id     component.ID
+		signal pipeline.Signal
+	}
+	users := make(map[queueKey][]string)
+	for pipelineID, pipe := range g.pipelines {
+		for _, node := range pipe.processors {
+			if proc, ok := node.(*processorNode); ok && proc.exporterHelperPersistentQueueUsed {
+				key := queueKey{id: proc.componentID, signal: pipelineID.Signal()}
+				users[key] = append(users[key], pipelineID.String())
+			}
+		}
+	}
+	var msgs []string
+	for key, pipelineIDs := range users {
+		if len(pipelineIDs) < 2 {
+			continue
+		}
+		slices.Sort(pipelineIDs)
+		msgs = append(msgs, fmt.Sprintf("processor %q has a persistent queue and is used in pipelines %q, "+
+			"which would share one stored queue: configure a separate instance for each pipeline, "+
+			"for example \"%s/<name>\"", key.id, pipelineIDs, key.id.Type()))
+	}
+	if len(msgs) == 0 {
+		return nil
+	}
+	slices.Sort(msgs)
+	return errors.New(strings.Join(msgs, "; "))
 }
 
 func (g *Graph) warnIfDoubleBatching(pipelineConfigs pipelines.Config) {
