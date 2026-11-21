@@ -322,8 +322,9 @@ metrics:
     enabled: true
     description: Number of received requests.
     unit: "{request}"
+    stability: development
     sum:
-      values: int
+      value_type: int
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [status_code]
