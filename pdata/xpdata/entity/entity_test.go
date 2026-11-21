@@ -123,3 +123,36 @@ func TestEntity_IdAndDescriptionAttributes_CanPut(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, "desc-value", val.Str())
 }
+
+func TestEntity_IDScope(t *testing.T) {
+	em := NewEntityMap()
+	e := em.PutEmpty("k8s.container")
+	assert.Equal(t, IdScopeUnspecified, e.IDScope())
+	assert.Empty(t, e.IDScopeEntityType())
+
+	e.SetIDScope(IdScopeLocal)
+	e.SetIDScopeEntityType("k8s.pod")
+	assert.Equal(t, IdScopeLocal, e.IDScope())
+	assert.Equal(t, "k8s.pod", e.IDScopeEntityType())
+
+	e.SetIDScope(IdScopeGlobal)
+	e.SetIDScopeEntityType("")
+	assert.Equal(t, IdScopeGlobal, e.IDScope())
+	assert.Empty(t, e.IDScopeEntityType())
+}
+
+func TestEntity_CopyToResource_PreservesScope(t *testing.T) {
+	e := NewEntity("k8s.container")
+	e.SetSchemaURL("https://opentelemetry.io/schemas/1.0.0")
+	e.SetIDScope(IdScopeLocal)
+	e.SetIDScopeEntityType("k8s.pod")
+	e.IdentifyingAttributes().PutStr("k8s.container.name", "c1")
+
+	res := pcommon.NewResource()
+	e.CopyToResource(res)
+	copied, ok := ResourceEntities(res).Get("k8s.container")
+	assert.True(t, ok)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.0.0", copied.SchemaURL())
+	assert.Equal(t, IdScopeLocal, copied.IDScope())
+	assert.Equal(t, "k8s.pod", copied.IDScopeEntityType())
+}

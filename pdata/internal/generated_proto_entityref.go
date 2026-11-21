@@ -16,10 +16,12 @@ import (
 )
 
 type EntityRef struct {
-	SchemaUrl       string
-	Type            string
-	IdKeys          []string
-	DescriptionKeys []string
+	SchemaUrl         string
+	Type              string
+	IdScopeEntityType string
+	IdKeys            []string
+	DescriptionKeys   []string
+	IdScope           IdScope
 }
 
 var (
@@ -71,6 +73,9 @@ func CopyEntityRef(dest, src *EntityRef) *EntityRef {
 	dest.IdKeys = append(dest.IdKeys[:0], src.IdKeys...)
 
 	dest.DescriptionKeys = append(dest.DescriptionKeys[:0], src.DescriptionKeys...)
+
+	dest.IdScope = src.IdScope
+	dest.IdScopeEntityType = src.IdScopeEntityType
 
 	return dest
 }
@@ -160,6 +165,14 @@ func (orig *EntityRef) MarshalJSON(dest *json.Stream) {
 		dest.WriteArrayEnd()
 	}
 
+	if int32(orig.IdScope) != 0 {
+		dest.WriteObjectField("idScope")
+		dest.WriteInt32(int32(orig.IdScope))
+	}
+	if orig.IdScopeEntityType != "" {
+		dest.WriteObjectField("idScopeEntityType")
+		dest.WriteString(orig.IdScopeEntityType)
+	}
 	dest.WriteObjectEnd()
 }
 
@@ -181,6 +194,10 @@ func (orig *EntityRef) UnmarshalJSON(iter *json.Iterator) {
 				orig.DescriptionKeys = append(orig.DescriptionKeys, iter.ReadString())
 			}
 
+		case "idScope", "id_scope":
+			orig.IdScope = IdScope(iter.ReadEnumValue(IdScope_value))
+		case "idScopeEntityType", "id_scope_entity_type":
+			orig.IdScopeEntityType = iter.ReadString()
 		default:
 			iter.HandleUnknownField(f)
 		}
@@ -207,6 +224,14 @@ func (orig *EntityRef) SizeProto() int {
 	}
 	for _, s := range orig.DescriptionKeys {
 		l = len(s)
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.IdScope != IdScope(0) {
+		n += 1 + proto.Sov(uint64(orig.IdScope))
+	}
+
+	l = len(orig.IdScopeEntityType)
+	if l > 0 {
 		n += 1 + proto.Sov(uint64(l)) + l
 	}
 	return n
@@ -247,6 +272,19 @@ func (orig *EntityRef) MarshalProto(buf []byte) int {
 		pos = proto.EncodeVarint(buf, pos, uint64(l))
 		pos--
 		buf[pos] = 0x22
+	}
+	if orig.IdScope != IdScope(0) {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.IdScope))
+		pos--
+		buf[pos] = 0x28
+	}
+	l = len(orig.IdScopeEntityType)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.IdScopeEntityType)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x32
 	}
 	return len(buf) - pos
 }
@@ -313,6 +351,29 @@ func (orig *EntityRef) UnmarshalProto(buf []byte) error {
 			}
 			startPos := pos - length
 			orig.DescriptionKeys = append(orig.DescriptionKeys, string(buf[startPos:pos]))
+
+		case 5:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field IdScope", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.IdScope = IdScope(num)
+
+		case 6:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field IdScopeEntityType", wireType)
+			}
+			var length int
+			length, pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			startPos := pos - length
+			orig.IdScopeEntityType = string(buf[startPos:pos])
 		default:
 			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
 			if err != nil {
@@ -329,6 +390,8 @@ func GenTestEntityRef() *EntityRef {
 	orig.Type = "test_type"
 	orig.IdKeys = []string{"", "test_idkeys"}
 	orig.DescriptionKeys = []string{"", "test_descriptionkeys"}
+	orig.IdScope = IdScope(13)
+	orig.IdScopeEntityType = "test_idscopeentitytype"
 	return orig
 }
 

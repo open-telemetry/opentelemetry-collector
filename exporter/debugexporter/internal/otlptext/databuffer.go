@@ -62,6 +62,12 @@ func (b *dataBuffer) logEntityRefs(resource pcommon.Resource) {
 		if entityRef.SchemaUrl() != "" {
 			b.logEntry("          -> Schema URL: %s", entityRef.SchemaUrl())
 		}
+		if entityRef.IdScope() != entity.IdScopeUnspecified {
+			b.logEntry("          -> ID scope: %s", entityRef.IdScope())
+		}
+		if entityRef.IdScopeEntityType() != "" {
+			b.logEntry("          -> ID scope entity type: %s", entityRef.IdScopeEntityType())
+		}
 
 		idKeys := entityRef.IdKeys()
 		if idKeys.Len() > 0 {

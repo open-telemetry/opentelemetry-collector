@@ -76,6 +76,26 @@ func TestEntityRef_DescriptionKeys(t *testing.T) {
 	assert.Equal(t, pcommon.StringSlice(internal.GenTestStringSliceWrapper()), ms.DescriptionKeys())
 }
 
+func TestEntityRef_IdScope(t *testing.T) {
+	ms := NewEntityRef()
+	assert.Equal(t, IdScope(internal.IdScope_ID_SCOPE_UNSPECIFIED), ms.IdScope())
+	testValIdScope := IdScope(internal.IdScope_ID_SCOPE_LOCAL)
+	ms.SetIdScope(testValIdScope)
+	assert.Equal(t, testValIdScope, ms.IdScope())
+}
+
+func TestEntityRef_IdScopeEntityType(t *testing.T) {
+	ms := NewEntityRef()
+	assert.Empty(t, ms.IdScopeEntityType())
+	ms.SetIdScopeEntityType("test_idscopeentitytype")
+	assert.Equal(t, "test_idscopeentitytype", ms.IdScopeEntityType())
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() {
+		newEntityRef(internal.NewEntityRef(), sharedState).SetIdScopeEntityType("test_idscopeentitytype")
+	})
+}
+
 func generateTestEntityRef() EntityRef {
 	return newEntityRef(internal.GenTestEntityRef(), internal.NewState())
 }
