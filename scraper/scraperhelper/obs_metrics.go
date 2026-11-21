@@ -6,6 +6,7 @@ package scraperhelper // import "go.opentelemetry.io/collector/scraper/scraperhe
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -54,7 +55,11 @@ func wrapObsMetrics(sc scraper.Metrics, receiverID, scraperID component.ID, set 
 		ctx, span := tracer.Start(ctx, spanName)
 		defer span.End()
 
+		start := time.Now()
 		md, err := sc.ScrapeMetrics(ctx)
+		// Record the duration of every scrape, including failed ones, so slow scrapes are visible
+		// regardless of outcome.
+		telemetryBuilder.ScraperScrapeDuration.Record(ctx, time.Since(start).Seconds(), otelAttrs)
 		numScrapedMetrics := 0
 		numErroredMetrics := 0
 		if err != nil {

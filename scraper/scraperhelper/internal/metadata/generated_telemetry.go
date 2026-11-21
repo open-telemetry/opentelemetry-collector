@@ -28,6 +28,7 @@ type TelemetryBuilder struct {
 	registrations              []metric.Registration
 	ScraperErroredLogRecords   metric.Int64Counter
 	ScraperErroredMetricPoints metric.Int64Counter
+	ScraperScrapeDuration      metric.Float64Histogram
 	ScraperScrapedLogRecords   metric.Int64Counter
 	ScraperScrapedMetricPoints metric.Int64Counter
 }
@@ -71,6 +72,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_scraper_errored_metric_points",
 		metric.WithDescription("Number of metric points that were unable to be scraped. [Alpha]"),
 		metric.WithUnit("{datapoint}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ScraperScrapeDuration, err = builder.meter.Float64Histogram(
+		"otelcol_scraper_scrape_duration",
+		metric.WithDescription("Time taken by a scraper to complete one scrape, including scrapes that end in an error. [Development]"),
+		metric.WithUnit("s"),
+		metric.WithExplicitBucketBoundaries([]float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.ScraperScrapedLogRecords, err = builder.meter.Int64Counter(
