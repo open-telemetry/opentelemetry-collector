@@ -53,6 +53,7 @@ func (n *processorNode) buildComponent(ctx context.Context,
 ) error {
 	set := processor.Settings{
 		ID:                n.componentID,
+		PipelineID:        n.pipelineID,
 		TelemetrySettings: componentattribute.TelemetrySettingsWithAttributes(tel, *n.Set()),
 		BuildInfo:         info,
 	}

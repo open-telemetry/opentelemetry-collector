@@ -66,8 +66,6 @@ func TestMetricsBuilder(t *testing.T) {
 			migrationGatesPinned := true
 			migrationGatesPinned = setFeatureGateForTest(t, ScraperSamplemigrationDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
 			migrationGatesPinned = setFeatureGateForTest(t, ScraperSamplemigrationEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ScraperSamplemigrationDontEmitV0SystemConventionsFeatureGate, false) && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, ScraperSamplemigrationEmitV1SystemConventionsFeatureGate, tt.name == "all_set") && migrationGatesPinned
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 			aggMap := make(map[string]string) // contains the aggregation strategies for each metric name
 			aggMap["system.cpu.utilization"] = mb.metricSystemCPUUtilization.config.AggregationStrategy

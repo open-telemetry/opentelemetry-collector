@@ -1202,6 +1202,52 @@ func (t *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t.roundTripFunc(req)
 }
 
+func TestSwitchingProtocolsResponseDoesNotBlock(t *testing.T) {
+	// A 101 response turns resp.Body into the raw connection, which the client
+	// timeout does not cover. The server answers 101 and then holds the
+	// connection open without sending anything else.
+	release := make(chan struct{})
+	srv := createBackend("/v1/logs", func(writer http.ResponseWriter, _ *http.Request) {
+		conn, _, err := http.NewResponseController(writer).Hijack()
+		if !assert.NoError(t, err) {
+			return
+		}
+		defer conn.Close()
+		_, err = conn.Write([]byte("HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: x\r\n\r\n"))
+		assert.NoError(t, err)
+		<-release
+	})
+	defer srv.Close()
+	defer close(release)
+
+	cfg := &Config{
+		Encoding:     EncodingProto,
+		LogsEndpoint: srv.URL + "/v1/logs",
+		ClientConfig: confighttp.ClientConfig{Timeout: 100 * time.Millisecond},
+		// Create without QueueConfig and RetryConfig so that ConsumeLogs
+		// returns the error that we want to check immediately.
+	}
+	exp, err := createLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+
+	// start the exporter
+	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, exp.Shutdown(context.Background()))
+	})
+
+	done := make(chan error, 1)
+	go func() { done <- exp.ConsumeLogs(context.Background(), plog.NewLogs()) }()
+	select {
+	case err = <-done:
+		require.ErrorContains(t, err, "responded with HTTP Status Code 101")
+		assert.True(t, consumererror.IsPermanent(err))
+	case <-time.After(5 * time.Second):
+		t.Fatal("export still blocked long after the client timeout expired")
+	}
+}
+
 func TestExport_ErrorShowsModifiedURL(t *testing.T) {
 	originalURL := "http://localhost:4318/v1/logs"
 	modifiedURL := "https://actual-destination.example.com/v1/logs"
