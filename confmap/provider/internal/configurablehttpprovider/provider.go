@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -82,9 +83,19 @@ func (fmp *provider) Retrieve(ctx context.Context, uri string, _ confmap.Watcher
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, string(fmp.scheme))
 	}
 
-	if _, err := url.ParseRequestURI(uri); err != nil {
-		return nil, fmt.Errorf("invalid uri %q: %w", uri, err)
+	parsedURI, err := url.ParseRequestURI(uri)
+	if err != nil {
+		// The uri may carry credentials (http://user:password@host/path) and cannot be
+		// redacted when it does not parse. *url.Error quotes the raw uri, so report only
+		// the underlying reason.
+		if urlErr, ok := errors.AsType[*url.Error](err); ok {
+			err = urlErr.Err
+		}
+		return nil, fmt.Errorf("invalid uri: %w", err)
 	}
+	// Userinfo in the uri is sent as basic auth; never put the password in an error,
+	// which ends up on stderr or in logs.
+	redactedURI := parsedURI.Redacted()
 
 	client, err := fmp.createClient()
 	if err != nil {
@@ -94,23 +105,23 @@ func (fmp *provider) Retrieve(ctx context.Context, uri string, _ confmap.Watcher
 	// send a HTTP GET request
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, uri, http.NoBody)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create HTTP GET request for uri %q: %w", uri, err)
+		return nil, fmt.Errorf("unable to create HTTP GET request for uri %q: %w", redactedURI, err)
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("unable to download the file via HTTP GET for uri %q: %w", uri, err)
+		return nil, fmt.Errorf("unable to download the file via HTTP GET for uri %q: %w", redactedURI, err)
 	}
 	defer resp.Body.Close()
 
 	// check the HTTP status code
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to load resource from uri %q. status code: %d", uri, resp.StatusCode)
+		return nil, fmt.Errorf("failed to load resource from uri %q. status code: %d", redactedURI, resp.StatusCode)
 	}
 
 	// read the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("fail to read the response body from uri %q: %w", uri, err)
+		return nil, fmt.Errorf("fail to read the response body from uri %q: %w", redactedURI, err)
 	}
 
 	return confmap.NewRetrievedFromYAML(body)

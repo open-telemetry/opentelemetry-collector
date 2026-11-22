@@ -19,6 +19,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.165.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.165.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.165.0
+	go.opentelemetry.io/collector/featuregate v1.71.0
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.165.0
 	go.opentelemetry.io/collector/internal/statusutil v0.165.0
 	go.opentelemetry.io/collector/internal/telemetry v0.165.0
@@ -71,7 +72,6 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.71.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.71.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.165.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.71.0 // indirect
 	go.opentelemetry.io/collector/internal/componentalias v0.165.0 // indirect
 	go.opentelemetry.io/collector/pipeline v1.71.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.165.0 // indirect
@@ -82,10 +82,10 @@ require (
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
-	golang.org/x/crypto v0.58.0 // indirect
-	golang.org/x/net v0.62.0 // indirect
-	golang.org/x/sys v0.49.0 // indirect
-	golang.org/x/text v0.43.0 // indirect
+	golang.org/x/crypto v0.59.0 // indirect
+	golang.org/x/net v0.63.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
+	golang.org/x/text v0.44.0 // indirect
 )
 
 replace go.opentelemetry.io/collector/component => ../../component
