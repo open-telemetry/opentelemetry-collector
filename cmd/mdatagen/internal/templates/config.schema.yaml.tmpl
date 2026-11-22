@@ -5,8 +5,8 @@
     properties:
       {{- range $name, $metric := .Metrics }}
       {{- $metricReag := hasAggregatableAttributes $metric.Attributes }}
-      {{ $name }}:
-        description: "{{ $name.Render }}MetricConfig provides config for the {{ $name }} metric."
+      {{ metricConfigKey $name }}:
+        description: "{{ $name.Render }}MetricConfig provides config for the {{ metricConfigKey $name }} metric."
         type: object
         properties:
           enabled:
