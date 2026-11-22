@@ -4,7 +4,7 @@ $defs:
     type: object
     properties:
       check_interval:
-        description: CheckInterval is the time between measurements of memory usage for the purposes of avoiding going over the limits. Defaults to zero, so no checks will be performed.
+        description: CheckInterval is the time between measurements of memory usage for the purposes of avoiding going over the limits. Must be greater than zero.
         type: string
         x-customType: time.Duration
         format: duration

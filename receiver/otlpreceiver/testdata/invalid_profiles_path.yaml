@@ -1,3 +1,0 @@
-protocols:
-  http:
-    profiles_url_path: ":invalid"

@@ -48,7 +48,7 @@ require (
 	go.uber.org/zap v1.28.0
 	go.yaml.in/yaml/v3 v3.0.6
 	golang.org/x/text v0.44.0
-	golang.org/x/tools v0.52.0
+	golang.org/x/tools v0.53.0
 )
 
 require (
@@ -64,7 +64,7 @@ require (
 	go.opentelemetry.io/collector/extension/xextension v0.165.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.165.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
-	golang.org/x/net v0.62.0 // indirect
+	golang.org/x/net v0.63.0 // indirect
 )
 
 require (

@@ -35,6 +35,11 @@ type Settings struct {
 	// ID returns the ID of the component that will be created.
 	ID component.ID
 
+	// PipelineID is the ID of the pipeline this processor instance belongs to.
+	// Note: The zero-value of this (such as when using `processortest.NewNopSettings`)
+	// will be an empty pipeline.ID struct, which marshals to empty string.
+	PipelineID pipeline.ID
+
 	component.TelemetrySettings
 
 	// BuildInfo can be used by components for informational purposes

@@ -210,7 +210,7 @@ type ServerConfig struct {
 	ResponseHeaders configopaque.MapList `mapstructure:"response_headers,omitempty"`
 
 	// CompressionAlgorithms configures the list of compression algorithms the server can accept.
-	// Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
+	// Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4", "x-snappy-framed"]
 	CompressionAlgorithms []string `mapstructure:"compression_algorithms,omitempty"`
 
 	// ReadTimeout is the maximum duration for reading the entire
