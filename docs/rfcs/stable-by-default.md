@@ -202,54 +202,24 @@ depending on the type of change and possible risk, as evaluated by Collector mai
 
 ```mermaid
 flowchart TD
-  A{{"
-    A. Is the change meant to affect
-    the Collector's behavior
-    in currently valid configurations?
-  "}}
+  A{{A. Is the change meant to affect the Collector's behavior in currently valid configurations?}}
   A -->|Yes| B
   A -->|No| C
 
-  B{{"
-    B. Is the current behavior
-    intended and documented?
-  "}}
-  B -->|Yes| Omm("
-    A feature gate is MANDATORY,
-    and waiting until a major release
-    to stabilize it is MANDATORY.
-  ")
+  B{{B. Is the current behavior intended and documented?}}
+  B -->|Yes| Omm(A feature gate is MANDATORY, and waiting until a major release to stabilize it is MANDATORY.)
   B -->|"No (bug or implementation detail)"| D
 
-  C{{"
-    C. Is the change meant to affect
-    the Collector's behavior only when
-    explicitly requested by the end user?
-  "}}
+  C{{C. Is the change meant to affect the Collector's behavior only when explicitly requested by the end user?}}
   C -->|"No (transparent internal change)"| D
   C -->|"Yes (new feature)"| E
 
-  D{{"
-    D. Is there significant risk of breaking
-    the setup of stable channel users,
-    however strange the setup may be?
-  "}}
-  D -->|Yes| Orr("
-    A feature gate is RECOMMENDED,
-    and waiting until a major release
-    to stabilize it is RECOMMENDED.
-  ")
+  D{{D. Is there significant risk of breaking the setup of stable channel users, however strange the setup may be?}}
+  D -->|Yes| Orr(A feature gate is RECOMMENDED, and waiting until a major release to stabilize it is RECOMMENDED.)
   D -->|No| Onn(No gating requirements.)
 
-  E{{"
-    E. Is the behavior of the new feature finalized,
-    and will not change after its first release?
-  "}}
-  E -->|No| Omr("
-    A feature gate is MANDATORY,
-    but may be stabilized in a minor release
-    once the behavior is finalized.
-  ")
+  E{{E. Is the behavior of the new feature finalized, and will not change after its first release?}}
+  E -->|No| Omr(A feature gate is MANDATORY, but may be stabilized in a minor release once the behavior is finalized.)
   E -->|Yes| Onn(No gating requirements.)
 ```
 
