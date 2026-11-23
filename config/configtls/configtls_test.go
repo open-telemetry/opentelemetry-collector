@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestNewDefaultConfig(t *testing.T) {
@@ -946,6 +947,22 @@ func TestCurvePreferences(t *testing.T) {
 				require.ErrorContains(t, err, test.expectedErr)
 			}
 		})
+	}
+}
+
+func TestServerConfigValidateCAFileGateDisabled(t *testing.T) {
+	gateID := "pkg.configtls.ValidateServerCAFile"
+	require.NoError(t, featuregate.GlobalRegistry().Set(gateID, false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gateID, true))
+	})
+
+	// With the gate disabled, ca_file/ca_pem without client_ca_file is accepted again.
+	for _, cfg := range []Config{
+		{CAFile: "ca.pem", CertFile: "cert.pem", KeyFile: "key.pem"},
+		{CAPem: "ca-pem", CertPem: "cert-pem", KeyPem: "key-pem"},
+	} {
+		require.NoError(t, ServerConfig{Config: cfg}.Validate())
 	}
 }
 

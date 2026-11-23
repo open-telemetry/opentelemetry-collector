@@ -133,3 +133,10 @@ exported_configs:
       path:
         description: The path to the TPM device or Unix domain socket. For instance /dev/tpm0 or /dev/tpmrm0.
         type: string
+
+feature_gates:
+  - id: pkg.configtls.ValidateServerCAFile
+    description: When enabled, a server TLS configuration that sets ca_file or ca_pem without client_ca_file is rejected at config validation. When disabled, ca_file and ca_pem are silently ignored by servers.
+    stage: beta
+    from_version: v0.166.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector/issues/16445

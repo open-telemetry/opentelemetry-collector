@@ -15,6 +15,8 @@ import (
 	"slices"
 	"sync"
 	"time"
+
+	"go.opentelemetry.io/collector/config/configtls/internal/metadata"
 )
 
 // We should avoid that users unknowingly use a vulnerable TLS version.
@@ -117,7 +119,7 @@ func (c ServerConfig) Validate() error {
 	}
 	// ca_file/ca_pem only populate RootCAs, which a TLS server never consults. Fail fast
 	// instead of silently serving a listener that does not verify client certificates.
-	if c.hasCA() && c.ClientCAFile == "" {
+	if metadata.PkgConfigtlsValidateServerCAFileFeatureGate.IsEnabled() && c.hasCA() && c.ClientCAFile == "" {
 		return errors.New("ca_file/ca_pem are not used by server connections; set client_ca_file to verify client certificates")
 	}
 	return nil
