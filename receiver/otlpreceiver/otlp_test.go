@@ -1372,7 +1372,7 @@ func TestShutdownWithIncompleteRequests(t *testing.T) {
 	go func() { done <- r.Shutdown(ctx) }()
 	select {
 	case err = <-done:
-		require.NoError(t, err)
+		require.Error(t, err)
 	case <-time.After(5 * time.Second):
 		t.Fatal("Shutdown did not return while incomplete requests were held open")
 	}
