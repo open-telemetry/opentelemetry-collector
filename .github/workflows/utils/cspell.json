@@ -575,6 +575,7 @@
     "validatable",
     "vanityurl",
     "vmmetrics",
+    "vsock",
     "winio",
     "withauth",
     "xconfighttp",
