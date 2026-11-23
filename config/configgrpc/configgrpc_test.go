@@ -1456,10 +1456,10 @@ func (gts *grpcTraceServer) startTestServer(t *testing.T, gss configoptional.Opt
 	return gts.startTestServerWithExtensions(t, gss, nil)
 }
 
-func (gts *grpcTraceServer) startTestServerWithExtensions(t *testing.T, gss configoptional.Optional[ServerConfig], extensions map[component.ID]component.Component, opts ...ToServerOption) (*grpc.Server, string) {
+func (gts *grpcTraceServer) startTestServerWithExtensions(t *testing.T, gss configoptional.Optional[ServerConfig], extensions map[component.ID]component.Component, _ ...ToServerOption) (*grpc.Server, string) {
 	listener, err := gss.Get().NetAddr.Listen(context.Background())
 	require.NoError(t, err)
-	server, err := gss.Get().ToServer(context.Background(), extensions, componenttest.NewNopTelemetrySettings(), opts...)
+	server, err := gss.Get().ToServer(context.Background(), extensions, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	registrar, err := gss.Get().ServiceRegistrar(context.Background(), extensions, server)
 	require.NoError(t, err)
@@ -1597,8 +1597,8 @@ func TestSlowAuthDoesNotBlockOtherRPCs(t *testing.T) {
 	go func() {
 		ctx, cancel := context.WithTimeout(metadata.AppendToOutgoingContext(context.Background(), "slow", "1"), 10*time.Second)
 		defer cancel()
-		_, err := client.Export(ctx, ptraceotlp.NewExportRequest(), grpc.WaitForReady(true))
-		slowDone <- err
+		_, inErr := client.Export(ctx, ptraceotlp.NewExportRequest(), grpc.WaitForReady(true))
+		slowDone <- inErr
 	}()
 	<-started
 
