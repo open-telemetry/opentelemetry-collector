@@ -1310,6 +1310,80 @@ func TestShutdown(t *testing.T) {
 	assert.Equal(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
 }
 
+func TestShutdownContext(t *testing.T) {
+	// Without a deadline, the grace period is added on top of the configured limit.
+	for _, limit := range []time.Duration{0, 2 * time.Minute} {
+		ctx, cancel := shutdownContext(context.Background(), limit)
+		deadline, ok := ctx.Deadline()
+		require.True(t, ok)
+		assert.WithinDuration(t, time.Now().Add(limit+shutdownGracePeriod), deadline, 5*time.Second)
+		cancel()
+	}
+
+	// A deadline set by the caller is always honored as is.
+	parent, cancelParent := context.WithTimeout(context.Background(), time.Second)
+	defer cancelParent()
+	ctx, cancel := shutdownContext(parent, 2*time.Minute)
+	defer cancel()
+	assert.Equal(t, parent, ctx)
+}
+
+// TestShutdownWithIncompleteRequests verifies that Shutdown does not wait
+// forever on requests whose peer never finishes sending them: a gRPC call that
+// sent its headers but no message, and an HTTP request whose headers never end.
+// Neither has reached the handler's consumer (or an authenticator), so a peer
+// needs no credentials to hold them open.
+func TestShutdownWithIncompleteRequests(t *testing.T) {
+	endpointGrpc := testutil.GetAvailableLocalAddress(t)
+	endpointHTTP := testutil.GetAvailableLocalAddress(t)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Protocols.GRPC.GetOrInsertDefault().NetAddr.Endpoint = endpointGrpc
+	cfg.Protocols.HTTP.GetOrInsertDefault().ServerConfig.NetAddr.Endpoint = endpointHTTP
+	set := receivertest.NewNopSettings(metadata.Type)
+	set.ID = otlpReceiverID
+	r, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Open a gRPC Export call and never send the request message.
+	conn, err := grpc.NewClient(endpointGrpc, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, conn.Close()) })
+	streamCtx, cancelStream := context.WithCancel(context.Background())
+	t.Cleanup(cancelStream)
+	stream, err := conn.NewStream(streamCtx, &grpc.StreamDesc{}, "/opentelemetry.proto.collector.trace.v1.TraceService/Export")
+	require.NoError(t, err)
+
+	// Open an HTTP request and never finish sending its headers.
+	httpConn, err := net.Dial("tcp", endpointHTTP)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = httpConn.Close() })
+	_, err = fmt.Fprintf(httpConn, "POST %s HTTP/1.1\r\nHost: %s\r\n", defaultTracesURLPath, endpointHTTP)
+	require.NoError(t, err)
+
+	// Give the servers time to read the headers and start the handlers.
+	time.Sleep(100 * time.Millisecond)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- r.Shutdown(ctx) }()
+	select {
+	case err = <-done:
+		require.Error(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("Shutdown did not return while incomplete requests were held open")
+	}
+
+	// The held call must have been terminated by the server.
+	require.Error(t, stream.RecvMsg(ptraceotlp.NewExportResponse()))
+	require.NoError(t, httpConn.SetReadDeadline(time.Now().Add(5*time.Second)))
+	_, err = httpConn.Read(make([]byte, 1))
+	require.ErrorIs(t, err, io.EOF)
+}
+
 func generateTraces(senderFn senderFunc, doneSignal chan bool) {
 	// Continuously generate spans until signaled to stop.
 loop:
