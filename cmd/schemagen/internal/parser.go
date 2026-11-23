@@ -273,7 +273,7 @@ func (p *Parser) parseExpr(expr ast.Expr) (SchemaElement, error) {
 }
 
 func (p *Parser) parseStruct(structType *ast.StructType) (SchemaElement, error) {
-	var schemaObject SchemaObject = CreateObjectField("")
+	schemaObject := CreateObjectField("")
 
 	for _, field := range structType.Fields.List {
 		tag, ok := ParseTag(field.Tag)
@@ -293,19 +293,22 @@ func (p *Parser) parseStruct(structType *ast.StructType) (SchemaElement, error) 
 		p.addNamedFields(field, schemaObject)
 	}
 
-	return schemaObject.(SchemaElement), nil
+	return schemaObject, nil
 }
 
 // addRemainField handles a field tagged with mapstructure ",remain". Such a
 // field collects every key that no other field of the struct claims, so it is
 // not a property: it describes the additional properties of the object.
-func (p *Parser) addRemainField(field *ast.Field, schemaObject SchemaObject) {
-	object, ok := schemaObject.(*ObjectSchemaElement)
-	if !ok {
-		return
+func (p *Parser) addRemainField(field *ast.Field, object *ObjectSchemaElement) {
+	fieldType := field.Type
+	if ident, isIdent := fieldType.(*ast.Ident); isIdent {
+		// Look through a named map type to its value schema.
+		if info, exists := p.types[ident.Name]; exists {
+			fieldType = info.spec.Type
+		}
 	}
 	var values SchemaElement = CreateSimpleField(SchemaTypeAny, "")
-	if element, err := p.parseExpr(field.Type); err == nil {
+	if element, err := p.parseExpr(fieldType); err == nil {
 		if m, isMap := element.(*ObjectSchemaElement); isMap && m.AdditionalProperties != nil {
 			values = m.AdditionalProperties
 		}
@@ -390,6 +393,11 @@ func (p *Parser) parseIdent(ident *ast.Ident) (SchemaElement, error) {
 	}
 
 	if info, exists := p.types[typeName]; exists {
+		if _, isInterface := info.spec.Type.(*ast.InterfaceType); isInterface {
+			// A named interface type never becomes a definition, so a
+			// reference to it could not be resolved.
+			return CreateSimpleField(SchemaTypeAny, ""), nil
+		}
 		p.processQueue.PushBack(info)
 		return CreateRefField(strcase.ToSnake(typeName), ""), nil
 	}

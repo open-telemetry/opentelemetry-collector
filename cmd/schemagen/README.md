@@ -170,7 +170,9 @@ package) are dropped from the output with a log warning rather than aborting.
 
 An inlined schema cannot express recursion. When a type contains itself,
 directly or through a slice, a map or another struct, the nested occurrence is
-replaced by an element with no type, which accepts any value.
+replaced by an element with no type, which accepts any value. This also applies
+to the `$defs` that stay in the output in `package` mode, and to named slice
+and map types such as `type Tree []Tree`.
 
 In `component` mode the `$defs` section is removed after resolution because all
 types have been inlined.
@@ -192,11 +194,12 @@ types have been inlined.
   property name so only documented configuration knobs make it into the schema.
 - A field tagged `mapstructure:",remain"` is not a property. It sets the
   `additionalProperties` of the enclosing object: the value schema of the map
-  when the field is a map, otherwise any value.
+  when the field is a map or a named map type, otherwise any value.
 - A named type that has an `UnmarshalText` method (value or pointer receiver)
   is emitted as `type: string`, whatever its underlying Go type.
-- Fields of type `interface{}` and inline interface types produce an element
-  with no type, which accepts any value.
+- Fields of type `interface{}`, inline interface types and named interface
+  types of the same package produce an element with no type, which accepts any
+  value.
 - Named map types such as `type Headers map[string]string` are kept as
   definitions.
 - Selectors that match entries under `mappings` produce

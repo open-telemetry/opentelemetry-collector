@@ -16,11 +16,12 @@ issues: [16456]
 # These lines will be padded with 2 spaces and then inserted directly into the changelog.
 # Use pipe (|) for multiline entries.
 subtext: |
-  - A field of type `interface{}` accepts any value. Before, schemagen failed on it.
+  - A field of type `interface{}` or of a named interface type accepts any value. Before, schemagen failed on the first and dropped the second.
   - A named map type such as `type Headers map[string]string` is kept as a definition.
   - A field tagged `mapstructure:",remain"` sets `additionalProperties` of its object and is no longer a property.
   - A type with an `UnmarshalText` method is emitted as a string.
   - With `-r`, a type that contains itself is cut at the nested occurrence, which accepts any value.
+  - With `-r`, a reference to a named slice or map type is always resolved. Before, it could stay in the output depending on map iteration order.
 
 # Optional: The change log or logs in which this entry should be rendered.
 # e.g. '[user]' or '[user, api]'.
