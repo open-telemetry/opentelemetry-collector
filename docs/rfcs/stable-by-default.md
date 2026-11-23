@@ -77,7 +77,8 @@ New features within a component are often controlled by a [feature gate](../../f
 | Deprecated | Off     | No           |
 
 The life cycle of a component or feature gate usually goes through the levels in order,
-with the exception of "Deprecated" and "Unmaintained", which are separate from the rest of the stability ladder.
+with the exception of "Deprecated" and "Unmaintained", which are separate from the rest of the stability ladder
+(cf. [the component stability reference document](../component-stability.md#moving-between-stability-levels)).
 
 ### Where will it be stable
 
@@ -110,9 +111,12 @@ in order to be instantiable in this distribution by default.
 
 The valid values will be `development`, `alpha`, `beta`, and `stable`.
 
-In this context, a component will be considered "instantiated"
-when the `service` section of the Collector config references its config,
-either in a pipeline or in `extensions`.
+In this context, a component will be considered "instantiated" when:
+- the `service` section of the Collector config references its config,
+  either in a pipeline or in `extensions`;
+- a component creates instances of another component programmatically
+  (e.g. receiver instances created by the
+  [receiver_creator](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/receivercreator/README.md)).
 
 Stability levels are compared as `Development` < `Alpha` < `Beta` < `Stable`.
 
@@ -149,9 +153,8 @@ Additionally, `deprecated` feature gates simply cannot be enabled by end users c
 As such, we choose to exclude both values for this field:
 the only valid values will be `beta` and `stable`.
 
-OCB's generated code would pass this field to
-the `otelcol` runtime package via a new field in `otelcol.CollectorSettings`,
-where it would then be passed to the `featuregate` package ahead of command line argument parsing.
+OCB's generated code would pass this field to the `otelcol` runtime package
+via a new field in `otelcol.CollectorSettings`.
 
 ### Collector CLI changes
 
@@ -180,40 +183,100 @@ enabling alpha feature gates (for further experimentation)
 and disabling beta feature gates (as a workaround if they cause issues)
 would still be available in the usual way.
 
+Concretely, the implementation would involve changes in:
+- the `otelcol` package to introduce the CLI flag;
+- the `service` package to enforce the provided component stability level;
+- the `featuregate` package to implement the "stable-only" feature gate mode.
+
 ### Policy changes
 
-To make these changes useful, I propose the following changes to
+To make these changes useful, this RFC proposes some changes to
 (or clarifications of) our coding guidelines and stability policy,
-which maintainers will need to enforce:
+which maintainers will need to enforce.
 
-- Changes to intended behavior after a component is Stable MUST be gated by an Alpha or Beta feature gate.
-  - While such feature gates can be migrated from Alpha to Beta at any time,
-    migration to Stable MUST take place during a major release
-    of the component.
-  - For Collector distributions maintained by the Collector SIG,
-    this must also correspond to a major release of the distribution.
+Specifically, we propose implementing restrictions on:
+- when changes to the Collector should be gated by a feature gate;
+- and when those feature gates should be migrated to the Stable stage;
 
-- Bug fixes MAY be released without a feature gate.
-  - However, if it seems that a significant fraction of users may rely on the existing buggy behavior,
-    it is RECOMMENDED to place these bug fixes under a feature gate.
-  - In that case, migration to Stable SHOULD wait until a major release.
+depending on the type of change and possible risk, as evaluated by Collector maintainers.
 
-- New features which must be explicitly enabled to take effect (e.g. a new configuration option)
-  MAY initially be released in a minor version of the component without a feature gate.
-  - However, in that case, their behavior in that release will immediately be considered stable.
-  - To preserve some flexibility after the initial implementation, it is thus RECOMMENDED
-    to place new features with some degree of complexity under a feature gate.
-  - Such feature gates MAY be migrated to Stable in a minor release.
-  - In particular, new keys may be added to a config struct in an experimental capacity;
-    See [the section on experimental fields in our coding guidelines](../coding-guidelines.md#experimental-fields-on-stable-configuration-structs)
-    for more detail.
+```mermaid
+flowchart TD
+  A{{"
+    A. Is the change meant to affect
+    the Collector's behavior
+    in currently valid configurations?
+  "}}
+  A -->|Yes| B
+  A -->|No| C
 
-- Optional behavior which is not designed to become the default:
-  - SHOULD be implemented as a YAML config option if possible;
-  - SHOULD be implemented as a new CLI flag otherwise;
-  - MAY be implemented as an Alpha feature gate if it is meant to always remain experimental;
-  - MUST NOT be implemented as a feature gate otherwise.
-    (This avoids unnecessarily restricting the feature set available with `--channel=stable`.)
+  B{{"
+    B. Is the current behavior
+    intended and documented?
+  "}}
+  B -->|Yes| Omm("
+    A feature gate is MANDATORY,
+    and waiting until a major release
+    to stabilize it is MANDATORY.
+  ")
+  B -->|"No (bug or implementation detail)"| D
+
+  C{{"
+    C. Is the change meant to affect
+    the Collector's behavior only when
+    explicitly requested by the end user?
+  "}}
+  C -->|"No (transparent internal change)"| D
+  C -->|"Yes (new feature)"| E
+
+  D{{"
+    D. Is there significant risk of breaking
+    the setup of stable channel users,
+    however strange the setup may be?
+  "}}
+  D -->|Yes| Orr("
+    A feature gate is RECOMMENDED,
+    and waiting until a major release
+    to stabilize it is RECOMMENDED.
+  ")
+  D -->|No| Onn(No gating requirements.)
+
+  E{{"
+    E. Is the behavior of the new feature finalized,
+    and will not change after its first release?
+  "}}
+  E -->|No| Omr("
+    A feature gate is MANDATORY,
+    but may be stabilized in a minor release
+    once the behavior is finalized.
+  ")
+  E -->|Yes| Onn(No gating requirements.)
+```
+
+Additional changes:
+
+- For Collector distributions maintained by the Collector SIG,
+  upgrade of a component to a new major release
+  MUST also correspond to a major release of the distribution
+  to make adoption breaking changes more visible to end users.
+
+- While the Collector service will enforce stability requirements for service-instantiated components,
+  it is the responsibility of a component to enforce them for programatically instantiated subcomponents
+  (e.g. receiver instances created by the
+  [receiver_creator](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/receivercreator/README.md)).
+
+  Alternatively (or while waiting for an API which exposes the requisite information),
+  such components will be restricted to the minimum stability level of their subcomponents.
+
+- Optional features which are not meant to become the default,
+  but which are finalized and ready to be widely available,
+  SHOULD not be solely controlled by an Alpha feature gate.
+  
+  Contributors should use a YAML config option in the general case,
+  or a CLI flag in rare cases where that isn't possible.
+  
+  As listed in the decision tree, a feature gate MAY be used
+  _in addition_ to mark the option as experimental.
 
 ### Other changes
 
@@ -221,7 +284,7 @@ To apply the last policy change, maintainers and code owners will need to find
 cases of Alpha feature gates which gate "stable" behavior changes,
 and replace them by either a YAML config option, or a new CLI flag if not possible.
 
-A known example of this is [`confmap.enableMergeAppendOption`](https://github.com/open-telemetry/opentelemetry-collector/blob/main/confmap/internal/metadata/generated_feature_gates.go),
+A known example of the latter is [`confmap.enableMergeAppendOption`](https://github.com/open-telemetry/opentelemetry-collector/blob/main/confmap/internal/metadata/generated_feature_gates.go),
 which controls fundamental config parsing behavior, and thus cannot be implemented as a config option.
 
 This migration need not be completed before the distribution is marked stable;
