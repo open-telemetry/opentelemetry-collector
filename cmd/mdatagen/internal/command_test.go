@@ -2358,7 +2358,7 @@ func TestGenerateConfigFiles_ReadmeExpandsNestedRefFromExternalSchema(t *testing
 	require.NoError(t, os.MkdirAll(tmpdir, 0o700))
 	require.NoError(t, os.MkdirAll(sharedDir, 0o700))
 	// the schema loader locates the repository root through git
-	require.NoError(t, exec.CommandContext(t.Context(), "git", "init", root).Run())
+	require.NoError(t, exec.CommandContext(t.Context(), "git", "init", root).Run()) //nolint:gosec // G204: root is a test temp dir
 	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
 	sharedMetadata := `type: shared
 status:
