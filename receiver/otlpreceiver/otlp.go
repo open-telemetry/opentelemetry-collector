@@ -120,20 +120,27 @@ func (r *otlpReceiver) startGRPCServer(ctx context.Context, host component.Host)
 		return err
 	}
 
+	// Register through the server's registrar so that, when authentication is configured,
+	// requests are authenticated before they are decompressed and decoded.
+	registrar, err := grpcCfg.ServiceRegistrar(ctx, host.GetExtensions(), r.serverGRPC)
+	if err != nil {
+		return err
+	}
+
 	if r.nextTraces != nil {
-		ptraceotlp.RegisterGRPCServer(r.serverGRPC, trace.New(r.nextTraces, r.obsrepGRPC))
+		ptraceotlp.RegisterGRPCService(registrar, trace.New(r.nextTraces, r.obsrepGRPC))
 	}
 
 	if r.nextMetrics != nil {
-		pmetricotlp.RegisterGRPCServer(r.serverGRPC, metrics.New(r.nextMetrics, r.obsrepGRPC))
+		pmetricotlp.RegisterGRPCService(registrar, metrics.New(r.nextMetrics, r.obsrepGRPC))
 	}
 
 	if r.nextLogs != nil {
-		plogotlp.RegisterGRPCServer(r.serverGRPC, logs.New(r.nextLogs, r.obsrepGRPC))
+		plogotlp.RegisterGRPCService(registrar, logs.New(r.nextLogs, r.obsrepGRPC))
 	}
 
 	if r.nextProfiles != nil {
-		pprofileotlp.RegisterGRPCServer(r.serverGRPC, profiles.New(r.nextProfiles, r.obsrepProfilesGRPC))
+		pprofileotlp.RegisterGRPCService(registrar, profiles.New(r.nextProfiles, r.obsrepProfilesGRPC))
 	}
 
 	var gln net.Listener

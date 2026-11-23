@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -30,11 +31,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/encoding"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -45,6 +48,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -767,6 +771,135 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 	require.Len(t, sink.AllTraces(), expectedReceivedBatches)
 
 	assertReceiverTraces(t, tt, otlpReceiverID, "grpc", int64(expectedReceivedBatches), int64(expectedIngestionBlockedRPCs))
+}
+
+// countingGzipName is the name of a gzip compressor that counts decompressions.
+const countingGzipName = "counting-gzip"
+
+var (
+	countingGzipOnce         sync.Once
+	countingGzipDecompresses atomic.Int64
+)
+
+type countingGzip struct {
+	encoding.Compressor
+}
+
+func (countingGzip) Name() string { return countingGzipName }
+
+func (c countingGzip) Decompress(r io.Reader) (io.Reader, error) {
+	countingGzipDecompresses.Add(1)
+	return c.Compressor.Decompress(r)
+}
+
+// rejectingAuth is an auth extension that rejects every request and counts the attempts.
+type rejectingAuth struct {
+	component.StartFunc
+	component.ShutdownFunc
+	calls atomic.Int64
+}
+
+func (a *rejectingAuth) Authenticate(context.Context, map[string][]string) (context.Context, error) {
+	a.calls.Add(1)
+	return nil, errors.New("not authenticated")
+}
+
+type hostWithExtensions struct {
+	component.Host
+	extensions map[component.ID]component.Component
+}
+
+func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component {
+	return h.extensions
+}
+
+// TestOTLPReceiverGRPCAuthRejectsBeforeDecompression verifies, for every signal, that a
+// request the configured authenticator rejects is not decompressed first. Otherwise an
+// unauthenticated client can make the receiver spend CPU and memory on request bodies it
+// is going to discard.
+func TestOTLPReceiverGRPCAuthRejectsBeforeDecompression(t *testing.T) {
+	countingGzipOnce.Do(func() {
+		encoding.RegisterCompressor(countingGzip{Compressor: encoding.GetCompressor("gzip")})
+	})
+	// An empty message is never compressed, so the requests need a body.
+	body := strings.Repeat("a", 1024)
+	callOpts := []grpc.CallOption{grpc.UseCompressor(countingGzipName), grpc.WaitForReady(true)}
+
+	tests := []struct {
+		name   string
+		export func(context.Context, *grpc.ClientConn) error
+	}{
+		{
+			name: "traces",
+			export: func(ctx context.Context, cc *grpc.ClientConn) error {
+				td := ptrace.NewTraces()
+				td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName(body)
+				_, err := ptraceotlp.NewGRPCClient(cc).Export(ctx, ptraceotlp.NewExportRequestFromTraces(td), callOpts...)
+				return err
+			},
+		},
+		{
+			name: "metrics",
+			export: func(ctx context.Context, cc *grpc.ClientConn) error {
+				md := pmetric.NewMetrics()
+				md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName(body)
+				_, err := pmetricotlp.NewGRPCClient(cc).Export(ctx, pmetricotlp.NewExportRequestFromMetrics(md), callOpts...)
+				return err
+			},
+		},
+		{
+			name: "logs",
+			export: func(ctx context.Context, cc *grpc.ClientConn) error {
+				ld := plog.NewLogs()
+				ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(body)
+				_, err := plogotlp.NewGRPCClient(cc).Export(ctx, plogotlp.NewExportRequestFromLogs(ld), callOpts...)
+				return err
+			},
+		},
+		{
+			name: "profiles",
+			export: func(ctx context.Context, cc *grpc.ClientConn) error {
+				pd := pprofile.NewProfiles()
+				pd.Dictionary().StringTable().Append("", body)
+				_, err := pprofileotlp.NewGRPCClient(cc).Export(ctx, pprofileotlp.NewExportRequestFromProfiles(pd), callOpts...)
+				return err
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			countingGzipDecompresses.Store(0)
+			authID := component.MustNewID("rejecting")
+			auth := &rejectingAuth{}
+
+			addr := testutil.GetAvailableLocalAddress(t)
+			cfg := createDefaultConfig().(*Config)
+			grpcCfg := cfg.Protocols.GRPC.GetOrInsertDefault()
+			grpcCfg.NetAddr.Endpoint = addr
+			grpcCfg.Auth = configoptional.Some(configauth.Config{AuthenticatorID: authID})
+
+			recv := newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, consumertest.NewNop())
+			host := hostWithExtensions{
+				Host:       componenttest.NewNopHost(),
+				extensions: map[component.ID]component.Component{authID: auth},
+			}
+			require.NoError(t, recv.Start(context.Background(), host))
+			t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
+
+			cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			require.NoError(t, err)
+			defer func() { assert.NoError(t, cc.Close()) }()
+
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			err = tt.export(ctx, cc)
+
+			assert.Equal(t, codes.Unauthenticated, status.Code(err))
+			assert.EqualValues(t, 1, auth.calls.Load(), "the authenticator should run exactly once")
+			assert.Zero(t, countingGzipDecompresses.Load(), "the request was decompressed before it was authenticated")
+		})
+	}
 }
 
 // TestOTLPReceiverHTTPTracesIngestTest checks that the HTTP trace receiver
