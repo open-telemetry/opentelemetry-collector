@@ -131,9 +131,8 @@ detector entries.
 The Collector does not expose traces by default, but can be configured.
 The Collector's internal telemetry uses OpenTelemetry SDK.
 
-The following configuration can be used in combination with the aforementioned
-feature gates to emit internal metrics and traces from the Collector to an OTLP
-backend:
+The following configuration can be used to emit internal metrics and traces from
+the Collector to an OTLP backend:
 
 ```yaml
 service:
@@ -157,8 +156,19 @@ service:
 
 See the [example configuration][otel-sdk-config] for additional options.
 
-> This configuration does not support emitting logs as there is no support for
-> [logs] in the OpenTelemetry Go SDK at this time.
+You can also configure the Collector to emit internal logs using log processors. For example:
+
+```yaml
+service:
+  telemetry:
+    logs:
+      processors:
+        - batch:
+            exporter:
+              otlp:
+                protocol: grpc
+                endpoint: https://backend:4317
+```
 
 You can also configure the Collector to send its own traces using the OTLP
 exporter. Send the traces to an OTLP server running on the same Collector, so it
@@ -169,25 +179,16 @@ service:
   telemetry:
     traces:
       processors:
-        batch:
-          exporter:
-            otlp:
-              protocol: grpc
-              endpoint: ${MY_POD_IP}:4317
+        - batch:
+            exporter:
+              otlp:
+                protocol: grpc
+                endpoint: ${MY_POD_IP}:4317
 ```
 
 [Internal telemetry]:
   https://opentelemetry.io/docs/collector/internal-telemetry/
 [Troubleshooting]: https://opentelemetry.io/docs/collector/troubleshooting/
-[issue7532]:
-  https://github.com/open-telemetry/opentelemetry-collector/issues/7532
-[issue7454]:
-  https://github.com/open-telemetry/opentelemetry-collector/issues/7454
-[logs]: https://github.com/open-telemetry/opentelemetry-go/issues/3827
-[OpenTelemetry Configuration]:
-  https://github.com/open-telemetry/opentelemetry-configuration
-[OpenTelemetry Configuration Go support table]:
-  https://github.com/open-telemetry/opentelemetry-configuration/blob/main/language-support-status.md#go
 [otel-sdk-config]:
   https://github.com/open-telemetry/opentelemetry-configuration/blob/main/examples/otel-sdk-config.yaml
 [Current values]:
