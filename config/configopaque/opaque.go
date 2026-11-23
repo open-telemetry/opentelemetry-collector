@@ -4,6 +4,7 @@
 package configopaque // import "go.opentelemetry.io/collector/config/configopaque"
 
 import (
+	"crypto/subtle"
 	"fmt"
 )
 
@@ -33,4 +34,10 @@ func (s String) GoString() string {
 // MarshalBinary marshals the string `[REDACTED]` as []byte.
 func (s String) MarshalBinary() (text []byte, err error) {
 	return []byte(maskedString), nil
+}
+
+// Equal returns whether the contents of the string match the argument. To
+// reduce the risk of timing attacks, it uses `subtle.ConstantTimeCompare`.
+func (s String) Equal(compared string) bool {
+	return subtle.ConstantTimeCompare([]byte(compared), []byte(s)) == 1
 }
