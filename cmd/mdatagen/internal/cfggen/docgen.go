@@ -30,16 +30,20 @@ type DocSection struct {
 	// Scalar is true for non-object definitions (type aliases such as an enum
 	// string or a bounded int), which render as a single summary row.
 	Scalar bool
+	// Exported holds the definitions rendered in the "Exported configs" part of
+	// the same document; only references to these can be linked to.
+	Exported map[string]*ConfigMetadata
 }
 
 // CfgRootSection wraps a schema for the top-level configSection call.
-func CfgRootSection(cfg *ConfigMetadata) DocSection {
-	return DocSection{Schema: cfg}
+func CfgRootSection(md *ConfigsMetadata) DocSection {
+	return DocSection{Schema: md.Config, Exported: md.ExportedConfigs}
 }
 
-// CfgSubSection wraps a schema for a recursive configSection call.
-func CfgSubSection(cfg *ConfigMetadata, anchor, title string) DocSection {
-	return DocSection{Schema: cfg, Anchor: anchor, Title: title}
+// CfgSubSection wraps a schema for a recursive configSection call, inheriting
+// the exported definitions of the parent section.
+func CfgSubSection(parent DocSection, cfg *ConfigMetadata, anchor, title string) DocSection {
+	return DocSection{Schema: cfg, Anchor: anchor, Title: title, Exported: parent.Exported}
 }
 
 // CfgPropDocs returns a slice of PropDoc, in declaration order, for all YAML-visible
@@ -242,8 +246,8 @@ func CfgExportedSections(md *ConfigsMetadata) []DocSection {
 		if cfg == nil || cfg.InternalOnly {
 			continue
 		}
-		anchor := CfgAnchor("exported_configs", name)
-		sec := CfgSubSection(cfg, anchor, anchor)
+		anchor := name
+		sec := CfgSubSection(DocSection{Exported: md.ExportedConfigs}, cfg, anchor, anchor)
 		sec.Scalar = !CfgIsObject(cfg)
 		sections = append(sections, sec)
 	}
@@ -255,7 +259,9 @@ func CfgExportedSections(md *ConfigsMetadata) []DocSection {
 // or "" if there is none. Such a property is documented by linking to that
 // definition's own section instead of expanding its table a second time.
 // InternalOnly definitions have no section of their own, so they are skipped.
-func CfgExportedRef(cfg *ConfigMetadata) string {
+// So are references that are not defined in the document's own exported_configs,
+// such as ones inherited from an external schema, which would be dead links.
+func CfgExportedRef(sec DocSection, cfg *ConfigMetadata) string {
 	if !CfgIsObject(cfg) || cfg.Ref == "" || cfg.InternalOnly {
 		return ""
 	}
@@ -263,5 +269,9 @@ func CfgExportedRef(cfg *ConfigMetadata) string {
 	if !ref.IsInternal() {
 		return ""
 	}
-	return ref.ConfigName()
+	name := ref.ConfigName()
+	if def, ok := sec.Exported[name]; !ok || def.InternalOnly {
+		return ""
+	}
+	return name
 }
