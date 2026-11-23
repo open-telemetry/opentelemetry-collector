@@ -67,22 +67,7 @@ func NewDefaultServerConfig() ServerConfig {
 
 // ToListener creates a net.Listener.
 func (sc *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
-	listener, err := sc.NetAddr.Listen(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if sc.TLS.HasValue() {
-		var tlsCfg *tls.Config
-		tlsCfg, err = sc.TLS.Get().LoadTLSConfig(ctx)
-		if err != nil {
-			return nil, err
-		}
-		tlsCfg.NextProtos = []string{http2.NextProtoTLS, "http/1.1"}
-		listener = tls.NewListener(listener, tlsCfg)
-	}
-
-	return listener, nil
+	return sc.ToListenerWithOptions(ctx)
 }
 
 // ToListenerWithOptions creates a net.Listener with optional behaviors.
