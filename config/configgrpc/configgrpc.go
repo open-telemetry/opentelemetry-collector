@@ -374,6 +374,73 @@ func (sc *ServerConfig) ToServer(
 	return grpc.NewServer(grpcOpts...), nil
 }
 
+// ServiceRegistrar returns the registrar services should use to register themselves on a
+// server created by [ServerConfig.ToServer] with the same extensions. When authentication
+// is configured, unary RPCs are authenticated before their request is decompressed and
+// decoded, which gRPC interceptors cannot do. Otherwise it returns the server itself.
+func (sc *ServerConfig) ServiceRegistrar(
+	ctx context.Context,
+	extensions map[component.ID]component.Component,
+	server *grpc.Server,
+) (grpc.ServiceRegistrar, error) {
+	if !sc.Auth.HasValue() {
+		return server, nil
+	}
+	authenticator, err := sc.Auth.Get().GetServerAuthenticator(ctx, extensions)
+	if err != nil {
+		return nil, err
+	}
+	return &preAuthRegistrar{
+		ServiceRegistrar: server,
+		authenticator:    authenticator,
+		includeMetadata:  sc.IncludeMetadata,
+	}, nil
+}
+
+// preAuthRegistrar wraps the handler of every unary method registered through it, so
+// that the RPC is authenticated before the generated handler reads the request message.
+type preAuthRegistrar struct {
+	grpc.ServiceRegistrar
+	authenticator   extensionauth.Server
+	includeMetadata bool
+}
+
+func (r *preAuthRegistrar) RegisterService(desc *grpc.ServiceDesc, impl any) {
+	wrapped := *desc
+	wrapped.Methods = make([]grpc.MethodDesc, len(desc.Methods))
+	for i, md := range desc.Methods {
+		handler := md.Handler
+		md.Handler = func(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+			headers, ok := metadata.FromIncomingContext(ctx)
+			if !ok {
+				return nil, errMetadataNotFound
+			}
+			ctx, err := r.authenticator.Authenticate(contextWithClient(ctx, r.includeMetadata), headers)
+			if err != nil {
+				return nil, authStatusError(err)
+			}
+			return handler(srv, context.WithValue(ctx, authenticatedEarlyKey{}, true), dec, interceptor)
+		}
+		wrapped.Methods[i] = md
+	}
+	r.ServiceRegistrar.RegisterService(&wrapped, impl)
+}
+
+// authenticatedEarlyKey marks contexts of RPCs already authenticated before their request
+// was read, so the auth interceptors do not authenticate them a second time.
+type authenticatedEarlyKey struct{}
+
+func authenticatedEarly(ctx context.Context) bool {
+	return ctx.Value(authenticatedEarlyKey{}) != nil
+}
+
+func authStatusError(err error) error {
+	if s, ok := status.FromError(err); ok {
+		return s.Err()
+	}
+	return status.Error(codes.Unauthenticated, err.Error())
+}
+
 func (sc *ServerConfig) getGrpcServerOptions(
 	ctx context.Context,
 	extensions map[component.ID]component.Component,
@@ -532,6 +599,10 @@ func contextWithClient(ctx context.Context, includeMetadata bool) context.Contex
 
 func authUnaryServerInterceptor(server extensionauth.Server) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		if authenticatedEarly(ctx) {
+			return handler(ctx, req)
+		}
+
 		headers, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
 			return nil, errMetadataNotFound
@@ -539,11 +610,7 @@ func authUnaryServerInterceptor(server extensionauth.Server) grpc.UnaryServerInt
 
 		ctx, err := server.Authenticate(ctx, headers)
 		if err != nil {
-			if s, ok := status.FromError(err); ok {
-				return nil, s.Err()
-			}
-
-			return nil, status.Error(codes.Unauthenticated, err.Error())
+			return nil, authStatusError(err)
 		}
 
 		return handler(ctx, req)
