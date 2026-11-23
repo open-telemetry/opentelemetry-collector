@@ -838,6 +838,18 @@ func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, env G
 		return "&" + exp
 	}
 	if md.IsOptional {
+		switch md.Type {
+		case ByteType, RuneType, IntType, Int8Type, Int16Type, Int32Type, Int64Type,
+			UintType, Uint8Type, Uint16Type, Uint32Type, Uint64Type, Float32Type, Float64Type:
+			goType, err := resolveGoType(md, name, env)
+			if err != nil {
+				panic(err)
+			}
+			// Go infers Some's type from the argument, which may differ from the field's type.
+			if goType != "int" && md.GoStruct.CustomDefault == nil {
+				return fmt.Sprintf("configoptional.Some[%s](%s)", goType, exp)
+			}
+		}
 		return wrapOptionalValue(md, exp)
 	}
 	return exp
