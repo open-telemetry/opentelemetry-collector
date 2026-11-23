@@ -44,6 +44,8 @@ func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plog
 	rejectedLogRecords := 0
 	if metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.IsEnabled() {
 		rejectedLogRecords = req.RejectInvalidUTF8()
+	} else if metadata.ReceiverOtlpSanitizeInvalidUTF8FeatureGate.IsEnabled() {
+		req.SanitizeUTF8()
 	}
 	resp := plogotlp.NewExportResponse()
 	if rejectedLogRecords > 0 {

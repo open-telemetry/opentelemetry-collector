@@ -3,7 +3,8 @@
 
 // Don't run this test on platforms without CGO (Windows, Darwin, or AIX)
 // as it requires a TPM simulator which depends on openssl headers.
-//go:build cgo && !windows && !darwin && !aix
+// The simulator's C code is not big-endian safe and segfaults on s390x.
+//go:build cgo && !windows && !darwin && !aix && !s390x
 
 package configtls // import "go.opentelemetry.io/collector/config/configtls"
 
