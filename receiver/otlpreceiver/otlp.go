@@ -259,7 +259,7 @@ func (r *otlpReceiver) Shutdown(ctx context.Context) error {
 			// Shutdown returned without draining every connection; close the
 			// remaining ones instead of leaving the collector waiting on them.
 			r.settings.Logger.Warn("HTTP server did not drain in time, closing open connections")
-			err = r.serverHTTP.Close()
+			err = errors.Join(err, r.serverHTTP.Close())
 		}
 	}
 
