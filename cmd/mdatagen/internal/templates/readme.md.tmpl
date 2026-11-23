@@ -35,6 +35,9 @@
 {{- if and (ne $class "cmd") (ne $class "pkg")  }}
 | Distributions | [{{ stringsJoin .Status.SortedDistributions "], [" }}] |
 {{- end }}
+{{- if .Discovery }}
+| Discovery     | {{ stringsJoin .Discovery.SortedEndpointTypes ", " }} |
+{{- end }}
 {{- if .Status.Warnings }}
 | Warnings      | [{{ stringsJoin .Status.Warnings ", " }}](#warnings) |
 {{- end }}

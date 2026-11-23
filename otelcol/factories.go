@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/internal/componentalias"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -33,6 +34,10 @@ type Factories struct {
 
 	// Connectors maps connector type names in the config to the respective factory.
 	Connectors map[component.Type]connector.Factory
+
+	// Scrapers maps scraper type names to the respective factory. Scrapers aren't
+	// configured directly; components such as receivers look them up through the host.
+	Scrapers map[component.Type]scraper.Factory
 
 	// Telemetry is the factory to create the telemetry providers for the service.
 	Telemetry telemetry.Factory

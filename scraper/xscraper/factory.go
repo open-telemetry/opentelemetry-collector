@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/xcomponentdiscovery"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/scraper"
 )
@@ -21,6 +22,10 @@ type Factory interface {
 
 	// ProfilesStability gets the stability level of the Profiles scraper.
 	ProfilesStability() component.StabilityLevel
+
+	// DiscoveryRule returns the default discovery rule. It returns the zero
+	// value if the scraper doesn't have one. Callers must not modify it.
+	DiscoveryRule() xcomponentdiscovery.Rule
 }
 
 // FactoryOption apply changes to Options.
@@ -44,10 +49,15 @@ type factory struct {
 
 	createProfilesFunc     CreateProfilesFunc
 	profilesStabilityLevel component.StabilityLevel
+	discoveryRule          xcomponentdiscovery.Rule
 }
 
 func (f *factory) ProfilesStability() component.StabilityLevel {
 	return f.profilesStabilityLevel
+}
+
+func (f *factory) DiscoveryRule() xcomponentdiscovery.Rule {
+	return f.discoveryRule
 }
 
 func (f *factory) CreateProfiles(ctx context.Context, set scraper.Settings, cfg component.Config) (Profiles, error) {
@@ -79,6 +89,13 @@ func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel
 	return factoryOptionFunc(func(o *factory) {
 		o.profilesStabilityLevel = sl
 		o.createProfilesFunc = createProfiles
+	})
+}
+
+// WithDiscoveryRule configures the default discovery rule for the scraper.
+func WithDiscoveryRule(rule xcomponentdiscovery.Rule) FactoryOption {
+	return factoryOptionFunc(func(o *factory) {
+		o.discoveryRule = rule
 	})
 }
 

@@ -42,6 +42,7 @@ require (
 var replaceModules = []string{
 	"/component",
 	"/component/componentstatus",
+	"/component/xcomponentdiscovery",
 	"/component/componenttest",
 	"/client",
 	"/config/configauth",
@@ -118,6 +119,7 @@ var replaceModules = []string{
 	"/receiver/receiverhelper",
 	"/receiver/receiverhelper/xreceiverhelper",
 	"/receiver/xreceiver",
+	"/scraper",
 	"/service",
 	"/service/hostcapabilities",
 	"/service/telemetry/telemetrytest",
@@ -168,6 +170,33 @@ func TestGenerateQuotesStrings(t *testing.T) {
 	assert.Contains(t, string(src), "Description: "+strconv.Quote(cfg.Distribution.Description)+",")
 	assert.Contains(t, string(src), "Version:     "+strconv.Quote(cfg.Distribution.Version)+",")
 	assert.Contains(t, string(src), "DefaultScheme: "+strconv.Quote(cfg.ConfResolver.DefaultURIScheme)+",")
+}
+
+func TestGenerateScrapers(t *testing.T) {
+	cfg := newTestConfig(t)
+	cfg.Distribution.OutputPath = t.TempDir()
+	cfg.Scrapers = []Module{{
+		GoMod:  "github.com/example/scrapers v0.1.0",
+		Import: "github.com/example/scrapers/redisscraper",
+	}}
+	require.NoError(t, cfg.Validate())
+	require.NoError(t, cfg.ParseModules())
+	require.NoError(t, Generate(cfg))
+
+	componentsFile := filepath.Clean(filepath.Join(cfg.Distribution.OutputPath, "components.go"))
+	_, err := parser.ParseFile(token.NewFileSet(), componentsFile, nil, 0)
+	require.NoError(t, err)
+
+	src, err := os.ReadFile(componentsFile)
+	require.NoError(t, err)
+	assert.Contains(t, string(src), `redisscraper "github.com/example/scrapers/redisscraper"`)
+	assert.Contains(t, string(src), "factories.Scrapers, err = otelcol.MakeFactoryMap[scraper.Factory](")
+	assert.Contains(t, string(src), "redisscraper.NewFactory(),")
+
+	goModFile := filepath.Clean(filepath.Join(cfg.Distribution.OutputPath, "go.mod"))
+	goMod, err := os.ReadFile(goModFile)
+	require.NoError(t, err)
+	assert.Contains(t, string(goMod), "github.com/example/scrapers v0.1.0")
 }
 
 func TestGenerateInvalidOutputPath(t *testing.T) {

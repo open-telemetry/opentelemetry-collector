@@ -150,3 +150,5 @@ replace go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xrece
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
 
 replace go.opentelemetry.io/collector/config/configstorage => ../../config/configstorage
+
+replace go.opentelemetry.io/collector/component/xcomponentdiscovery => ../../component/xcomponentdiscovery

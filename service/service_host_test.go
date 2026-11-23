@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/service/hostcapabilities"
 )
 
 var wrongType = component.MustNewType("wrong")
@@ -45,6 +47,20 @@ func TestService_Host_GetFactory(t *testing.T) {
 
 	// Try retrieve non existing component.Kind.
 	assert.Nil(t, srv.host.GetFactory(component.Kind{}, nopType))
+}
+
+func TestService_Host_GetScraperFactory(t *testing.T) {
+	scraperFactory := scraper.NewFactory(nopType, func() component.Config { return &struct{}{} })
+	set := newNopSettings()
+	set.ScrapersFactories = map[component.Type]scraper.Factory{nopType: scraperFactory}
+	srv, err := New(context.Background(), set, newNopConfig())
+	require.NoError(t, err)
+
+	var host component.Host = srv.host
+	sf, ok := host.(hostcapabilities.ScraperFactory)
+	require.True(t, ok)
+	assert.Equal(t, scraperFactory, sf.GetScraperFactory(nopType))
+	assert.Nil(t, sf.GetScraperFactory(wrongType))
 }
 
 func TestService_Host_GetExtensions(t *testing.T) {

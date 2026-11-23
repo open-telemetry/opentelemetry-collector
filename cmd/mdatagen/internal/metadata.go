@@ -75,6 +75,8 @@ type Metadata struct {
 	PackageName string `mapstructure:"package_name"`
 	// FeatureGates that are managed by the component.
 	FeatureGates []FeatureGate `mapstructure:"feature_gates"`
+	// Discovery is the default discovery rule of a receiver or scraper.
+	Discovery *Discovery `mapstructure:"discovery"`
 	// Config is the configuration schemas for the component.
 	*cfggen.ConfigsMetadata `mapstructure:",squash"`
 }
@@ -150,6 +152,12 @@ func (md *Metadata) Validate() error {
 
 	if err := md.validateSendingQueue(); err != nil {
 		errs = errors.Join(errs, err)
+	}
+
+	if md.Discovery != nil && md.Status != nil {
+		if err := md.Discovery.validate(md.Status.Class); err != nil {
+			errs = errors.Join(errs, err)
+		}
 	}
 
 	if err := md.validateTests(); err != nil {

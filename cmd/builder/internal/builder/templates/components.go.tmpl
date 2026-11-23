@@ -10,6 +10,9 @@ import (
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
+	{{- if .Scrapers }}
+	"go.opentelemetry.io/collector/scraper"
+	{{- end }}
 	{{.Telemetry.Name}} {{ printf "%q" .Telemetry.Import }}
 	{{- range .Connectors}}
 	{{.Name}} {{ printf "%q" .Import }}
@@ -24,6 +27,9 @@ import (
 	{{.Name}} {{ printf "%q" .Import }}
 	{{- end}}
 	{{- range .Receivers}}
+	{{.Name}} {{ printf "%q" .Import }}
+	{{- end}}
+	{{- range .Scrapers}}
 	{{.Name}} {{ printf "%q" .Import }}
 	{{- end}}
 )
@@ -117,6 +123,18 @@ func components() (otelcol.Factories, error) {
 		{{.Name}}.NewFactory().Type(): {{ printf "%q" .GoMod }},
 		{{- end}}
 	})
+
+	{{- if .Scrapers }}
+
+	factories.Scrapers, err = otelcol.MakeFactoryMap[scraper.Factory](
+		{{- range .Scrapers}}
+		{{.Name}}.NewFactory(),
+		{{- end}}
+	)
+	if err != nil {
+		return otelcol.Factories{}, err
+	}
+	{{- end }}
 
 	return factories, nil
 }
