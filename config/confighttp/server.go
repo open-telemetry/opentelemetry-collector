@@ -24,10 +24,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp/internal"
 	"go.opentelemetry.io/collector/config/confighttp/internal/metadata"
+	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 )
 
 const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
@@ -81,6 +83,66 @@ func (sc *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 	}
 
 	return listener, nil
+}
+
+// ToListenerWithOptions creates a net.Listener with optional behaviors.
+func (sc *ServerConfig) ToListenerWithOptions(ctx context.Context, opts ...ToListenerOption) (net.Listener, error) {
+	var listener net.Listener
+	var err error
+	listenerOpts := &toListenerOptions{}
+	listenerOpts.Apply(opts...)
+
+	if sc.ListenerMiddleware.HasValue() {
+		if listenerOpts.Extensions == nil {
+			return nil, errors.New("listen_middleware is configured but this component or its host does not support extensions")
+		}
+		available := listenerOpts.Extensions
+		var listen extensionmiddleware.ListenContextFunc
+		listen, err = sc.ListenerMiddleware.Get().GetListener(ctx, available)
+		if err != nil {
+			return nil, err
+		}
+		listener, err = listen(ctx, string(sc.NetAddr.Transport), sc.NetAddr.Endpoint)
+	} else {
+		listener, err = sc.NetAddr.Listen(ctx)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if sc.TLS.HasValue() {
+		var tlsCfg *tls.Config
+		tlsCfg, err = sc.TLS.Get().LoadTLSConfig(ctx)
+		if err != nil {
+			return nil, err
+		}
+		tlsCfg.NextProtos = []string{http2.NextProtoTLS, "http/1.1"}
+		listener = tls.NewListener(listener, tlsCfg)
+	}
+
+	return listener, nil
+}
+
+func (sc *ServerConfig) Validate() error {
+	if sc.ListenerMiddleware.HasValue() && !configmiddleware.IsCustomTCPRoutingEnabled() {
+		return errors.New("use of the listener_middleware feature requires to enable the feature gate 'pkg.configmiddleware.CustomTCPRouting'")
+	}
+	return nil
+}
+
+// toListenerOptions has options that change the behavior of the HTTP listener
+// returned by ServerConfig.ToListenerWithOptions().
+type toListenerOptions = internal.ToListenerOptions
+
+// ToListenerOption is an option to change the behavior of the HTTP listener
+// returned by ServerConfig.ToListenerWithOptions().
+type ToListenerOption = internal.ToListenerOption
+
+// WithExtensions sets the extensions to consider for the listener behaviors
+func WithExtensions(extensions map[component.ID]component.Component) ToListenerOption {
+	return internal.ToListenerOptionFunc(func(opts *toListenerOptions) {
+		opts.Extensions = extensions
+	})
 }
 
 // toServerOptions has options that change the behavior of the HTTP server

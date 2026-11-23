@@ -34,8 +34,10 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/snappy"
 	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/zstd"
 	"go.opentelemetry.io/collector/config/configmiddleware"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 )
 
 // DefaultBalancerName is the name of the default load balancer.
@@ -341,6 +343,13 @@ func validateMaxRecvMsgSizeMiB(maxRecvMsgSizeMiB int) error {
 	return nil
 }
 
+func validateListenerMiddleware(middleware configoptional.Optional[configmiddleware.Config]) error {
+	if middleware.HasValue() && !configmiddleware.IsCustomTCPRoutingEnabled() {
+		return errors.New("use of the listener_middleware feature requires to enable the feature gate 'pkg.configmiddleware.CustomTCPRouting'")
+	}
+	return nil
+}
+
 // ToServerOption is a sealed interface wrapping options for [ServerConfig.ToServer].
 type ToServerOption interface {
 	isToServerOption()
@@ -348,6 +357,23 @@ type ToServerOption interface {
 
 type grpcServerOptionWrapper struct {
 	opt grpc.ServerOption
+}
+
+// ToListener creates a net.Listener for the gRPC server.
+func (sc *ServerConfig) ToListener(ctx context.Context, extensions map[component.ID]component.Component) (net.Listener, error) {
+	if !sc.ListenerMiddleware.HasValue() {
+		return sc.NetAddr.Listen(ctx)
+	}
+	var listen extensionmiddleware.ListenContextFunc
+	listen, err := sc.ListenerMiddleware.Get().GetListener(ctx, extensions)
+	if err != nil {
+		return nil, err
+	}
+	listener, err := listen(ctx, string(sc.NetAddr.Transport), sc.NetAddr.Endpoint)
+	if err != nil {
+		return nil, err
+	}
+	return listener, nil
 }
 
 // WithGrpcServerOption wraps a [grpc.ServerOption] into a [ToServerOption].
