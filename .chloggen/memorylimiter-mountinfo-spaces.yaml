@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: processor/memorylimiter
+
+note: Fix memory limiter failing to start with percentage limits when a mount point's super options contain spaces (e.g. Docker Desktop on WSL2).
+
+issues: [16174]
+
+subtext:
+
+change_logs: [user]

@@ -72,6 +72,22 @@ func TestNewMountPointFromLine(t *testing.T) {
 				SuperOptions:   []string{"rw", "cpu"},
 			},
 		},
+		{
+			name: "wsl",
+			line: "2619 80 0:302 / /Docker/host rw,noatime - 9p drvfs rw,dirsync,aname=drvfs;path=C:\\Program Files\\Docker\\Docker\\resources;symlinkroot=/mnt/,mmap,access=client,msize=262144,trans=virtio",
+			expected: &MountPoint{
+				MountID:        2619,
+				ParentID:       80,
+				DeviceID:       "0:302",
+				Root:           "/",
+				MountPoint:     "/Docker/host",
+				Options:        []string{"rw", "noatime"},
+				OptionalFields: []string{},
+				FSType:         "9p",
+				MountSource:    "drvfs",
+				SuperOptions:   []string{"rw", "dirsync", "aname=drvfs;path=C:\\Program Files\\Docker\\Docker\\resources;symlinkroot=/mnt/", "mmap", "access=client", "msize=262144", "trans=virtio"},
+			},
+		},
 	}
 
 	for _, tt := range testTable {
