@@ -209,15 +209,20 @@ func TestCfgRootSection(t *testing.T) {
 	assert.Empty(t, sec.Title)
 }
 
-func TestCfgSubSection(t *testing.T) {
+func TestDocSection_Sub(t *testing.T) {
 	t.Parallel()
 	cfg := &ConfigMetadata{Type: "object"}
 	exported := map[string]*ConfigMetadata{"inner": {Type: "object"}}
-	sec := CfgSubSection(DocSection{Exported: exported}, cfg, "tls", "tls")
+	root := DocSection{Exported: exported}
+	sec := root.Sub(cfg, "tls")
 	assert.Equal(t, cfg, sec.Schema)
 	assert.Equal(t, exported, sec.Exported)
 	assert.Equal(t, "tls", sec.Anchor)
 	assert.Equal(t, "tls", sec.Title)
+
+	nested := DocSection{Anchor: "exported_configs.outer", Title: "outer"}.Sub(cfg, "tls")
+	assert.Equal(t, "exported_configs.outer.tls", nested.Anchor)
+	assert.Equal(t, "outer.tls", nested.Title)
 }
 
 func TestCfgExportedSections(t *testing.T) {
@@ -246,12 +251,12 @@ func TestCfgExportedSections(t *testing.T) {
 	sections := CfgExportedSections(md)
 	require.Len(t, sections, 3, "internal and nil definitions must be skipped")
 	// sorted by name for stable README output
-	assert.Equal(t, "alpha", sections[0].Anchor)
+	assert.Equal(t, "exported_configs.alpha", sections[0].Anchor)
 	assert.Equal(t, "alpha", sections[0].Title)
 	assert.False(t, sections[0].Scalar)
-	assert.Equal(t, "scalar", sections[1].Anchor)
+	assert.Equal(t, "exported_configs.scalar", sections[1].Anchor)
 	assert.True(t, sections[1].Scalar, "scalar aliases must be flagged for scalar rendering")
-	assert.Equal(t, "zeta", sections[2].Anchor)
+	assert.Equal(t, "exported_configs.zeta", sections[2].Anchor)
 	assert.False(t, sections[2].Scalar)
 	assert.NotNil(t, sections[0].Schema)
 }

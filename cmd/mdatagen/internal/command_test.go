@@ -2299,7 +2299,7 @@ func TestGenerateConfigFiles_ReadmeIncludesExportedConfigs(t *testing.T) {
 
 			contents, err := os.ReadFile(filepath.Clean(readmePath))
 			require.NoError(t, err)
-			require.Contains(t, string(contents), "### <a id=\"sample_def\"></a>sample_def")
+			require.Contains(t, string(contents), "### <a id=\"exported_configs.sample_def\"></a>sample_def")
 			require.Contains(t, string(contents), "| `host_name` | string |  | no | The host name. |")
 			if tt.withConfig {
 				require.Contains(t, string(contents), "| `endpoint` | string |  | no | The endpoint. |")
@@ -2345,10 +2345,10 @@ func TestGenerateConfigFiles_ReadmeLinksObjectRefToExportedSection(t *testing.T)
 	require.NoError(t, err)
 	readme := string(contents)
 	// the referenced definition has its own section ...
-	require.Contains(t, readme, "### <a id=\"inner\"></a>inner")
+	require.Contains(t, readme, "### <a id=\"exported_configs.inner\"></a>inner")
 	// ... and the referencing property links to it instead of expanding it again
-	require.Contains(t, readme, "| `child` | object (see [inner](#inner)) |")
-	require.NotContains(t, readme, "outer.child")
+	require.Contains(t, readme, "| `child` | object (see [inner](#exported_configs.inner)) |")
+	require.NotContains(t, readme, "exported_configs.outer.child")
 }
 
 func TestGenerateConfigFiles_ReadmeExpandsNestedRefFromExternalSchema(t *testing.T) {
@@ -2402,7 +2402,7 @@ exported_configs:
 	require.NoError(t, err)
 	readme := string(contents)
 	// auth_config is defined in the external schema only, so there is no section to link to ...
-	require.NotContains(t, readme, "(#auth_config)")
+	require.NotContains(t, readme, "(#exported_configs.auth_config)")
 	// ... and it is expanded in place instead
 	require.Contains(t, readme, "### <a id=\"auth\"></a>auth")
 	require.Contains(t, readme, "| `token` | string |")

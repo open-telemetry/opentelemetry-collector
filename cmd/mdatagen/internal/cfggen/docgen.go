@@ -40,10 +40,16 @@ func CfgRootSection(md *ConfigsMetadata) DocSection {
 	return DocSection{Schema: md.Config, Exported: md.ExportedConfigs}
 }
 
-// CfgSubSection wraps a schema for a recursive configSection call, inheriting
-// the exported definitions of the parent section.
-func CfgSubSection(parent DocSection, cfg *ConfigMetadata, anchor, title string) DocSection {
-	return DocSection{Schema: cfg, Anchor: anchor, Title: title, Exported: parent.Exported}
+// Sub wraps the schema of the property called name for a recursive configSection
+// call. The anchor and title extend those of s, and the exported definitions
+// are inherited.
+func (s DocSection) Sub(cfg *ConfigMetadata, name string) DocSection {
+	return DocSection{
+		Schema:   cfg,
+		Anchor:   CfgAnchor(s.Anchor, name),
+		Title:    CfgAnchor(s.Title, name),
+		Exported: s.Exported,
+	}
 }
 
 // CfgPropDocs returns a slice of PropDoc, in declaration order, for all YAML-visible
@@ -225,7 +231,6 @@ func NewCfgDocFns() map[string]any {
 		"cfgDocType":          CfgDocType,
 		"cfgDocDefault":       CfgDocDefault,
 		"cfgRootSection":      CfgRootSection,
-		"cfgSubSection":       CfgSubSection,
 		"cfgExportedSections": CfgExportedSections,
 		"cfgDocConstraints":   CfgDocConstraints,
 		"cfgExportedRef":      CfgExportedRef,
@@ -246,8 +251,14 @@ func CfgExportedSections(md *ConfigsMetadata) []DocSection {
 		if cfg == nil || cfg.InternalOnly {
 			continue
 		}
-		anchor := name
-		sec := CfgSubSection(DocSection{Exported: md.ExportedConfigs}, cfg, anchor, anchor)
+		// the prefix keeps anchors of exported definitions apart from those of
+		// the root config properties, it is not displayed
+		sec := DocSection{
+			Schema:   cfg,
+			Anchor:   CfgAnchor("exported_configs", name),
+			Title:    name,
+			Exported: md.ExportedConfigs,
+		}
 		sec.Scalar = !CfgIsObject(cfg)
 		sections = append(sections, sec)
 	}
