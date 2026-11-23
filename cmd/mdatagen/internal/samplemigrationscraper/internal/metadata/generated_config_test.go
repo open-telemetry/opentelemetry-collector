@@ -43,6 +43,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []SystemCPUUtilizationV1MetricAttributeKey{SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyCPUMode},
 					},
+					SystemMemoryLimitUtilizationV1: SystemMemoryLimitUtilizationV1MetricConfig{
+						Enabled: true,
+					},
+					SystemMemoryLimitUtilization: SystemMemoryLimitUtilizationMetricConfig{
+						Enabled: true,
+					},
 					SystemMemoryLinuxAvailableV1: SystemMemoryLinuxAvailableV1MetricConfig{
 						Enabled: true,
 					},
@@ -69,6 +75,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 						AggregationStrategy: AggregationStrategySum,
 						EnabledAttributes:   []SystemCPUUtilizationV1MetricAttributeKey{SystemCPUUtilizationV1MetricAttributeKeyCPULogicalNumber, SystemCPUUtilizationV1MetricAttributeKeyCPUMode},
 					},
+					SystemMemoryLimitUtilizationV1: SystemMemoryLimitUtilizationV1MetricConfig{
+						Enabled: false,
+					},
+					SystemMemoryLimitUtilization: SystemMemoryLimitUtilizationMetricConfig{
+						Enabled: false,
+					},
 					SystemMemoryLinuxAvailableV1: SystemMemoryLinuxAvailableV1MetricConfig{
 						Enabled: false,
 					},
@@ -79,7 +91,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(LinuxMemoryAvailableMetricConfig{}, SystemCPUFooMetricConfig{}, SystemCPUUtilizationMetricConfig{}, SystemCPUUtilizationV1MetricConfig{}, SystemMemoryLinuxAvailableV1MetricConfig{}))
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(LinuxMemoryAvailableMetricConfig{}, SystemCPUFooMetricConfig{}, SystemCPUUtilizationMetricConfig{}, SystemCPUUtilizationV1MetricConfig{}, SystemMemoryLimitUtilizationV1MetricConfig{}, SystemMemoryLimitUtilizationMetricConfig{}, SystemMemoryLinuxAvailableV1MetricConfig{}))
 			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}

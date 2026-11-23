@@ -1,6 +1,6 @@
 # check_interval is the time between measurements of memory usage for the
-# purposes of avoiding going over the limits. Defaults to zero, so no
-# checks will be performed. Values below 1 second are not recommended since
+# purposes of avoiding going over the limits. Must be greater than zero.
+# Values below 1 second are not recommended since
 # it can result in unnecessary CPU consumption.
 check_interval: 5s
 

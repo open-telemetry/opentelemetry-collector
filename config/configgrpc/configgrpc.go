@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
+	"google.golang.org/grpc/balancer/pickfirst"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -72,6 +73,10 @@ func validateClientConfig(cc *ClientConfig) error {
 		}
 	}
 
+	if cc.PickFirst.HasValue() && !cc.usesPickFirst() {
+		return fmt.Errorf("pick_first can only be set when balancer_name is %s or empty, got %q", pickfirst.Name, cc.BalancerName)
+	}
+
 	if cc.DialerMiddleware.HasValue() && !configmiddleware.IsCustomTCPRoutingEnabled() {
 		return errors.New("use of the dialer_middleware feature requires to enable the feature gate 'pkg.configmiddleware.CustomTCPRouting'")
 	}
@@ -120,6 +125,22 @@ func (cc *ClientConfig) grpcDialTarget() string {
 	default:
 		return cc.Endpoint
 	}
+}
+
+// defaultServiceConfig returns the gRPC service config for the configured balancer.
+// loadBalancingPolicy cannot carry policy options, so the pick_first block is passed
+// through loadBalancingConfig instead.
+func (cc *ClientConfig) defaultServiceConfig() string {
+	if cc.PickFirst.HasValue() && cc.usesPickFirst() {
+		return fmt.Sprintf(`{"loadBalancingConfig":[{%q:{"shuffleAddressList":%t}}]}`, pickfirst.Name, cc.PickFirst.Get().ShuffleAddressList)
+	}
+	return fmt.Sprintf(`{"loadBalancingPolicy":%q}`, cc.BalancerName)
+}
+
+// usesPickFirst treats an empty balancer_name as pick_first because gRPC
+// defaults to pick_first when no load balancing policy is set.
+func (cc *ClientConfig) usesPickFirst() bool {
+	return cc.BalancerName == "" || cc.BalancerName == pickfirst.Name
 }
 
 func (cc *ClientConfig) isSchemeHTTP() bool {
@@ -260,8 +281,8 @@ func (cc *ClientConfig) getGrpcDialOptions(
 		opts = append(opts, grpc.WithPerRPCCredentials(perRPCCredentials))
 	}
 
-	if cc.BalancerName != "" {
-		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":%q}`, cc.BalancerName)))
+	if cc.BalancerName != "" || cc.PickFirst.HasValue() {
+		opts = append(opts, grpc.WithDefaultServiceConfig(cc.defaultServiceConfig()))
 	}
 
 	if cc.Authority != "" {
