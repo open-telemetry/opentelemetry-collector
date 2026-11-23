@@ -121,6 +121,36 @@ func TestClientCAFileReload(t *testing.T) {
 	}
 }
 
+// TestClientCAFileReloadOverlappingBundle covers trust bundle rotation as done
+// by e.g. SPIFFE/SPIRE: the new CA is added to the bundle before it is used for
+// signing, so both CAs are trusted during the overlap.
+func TestClientCAFileReloadOverlappingBundle(t *testing.T) {
+	setFIPSMode(t, false)
+	caFile := filepath.Join(t.TempDir(), "ca.crt")
+	writeCA(t, caFile, "ca-1.crt")
+
+	cfg := ClientConfig{Config: Config{CAFile: caFile, ReloadInterval: time.Millisecond}}
+	tlsCfg, err := cfg.LoadTLSConfig(context.Background())
+	require.NoError(t, err)
+
+	tlsCfg.ServerName = "example2"
+	require.Error(t, handshake(t, tlsCfg.Clone(), "server-2"))
+
+	// Publish the new CA alongside the old one.
+	ca1, err := os.ReadFile(filepath.Join("testdata", "ca-1.crt"))
+	require.NoError(t, err)
+	ca2, err := os.ReadFile(filepath.Join("testdata", "ca-2.crt"))
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(caFile, append(append(ca1, '\n'), ca2...), 0o600)) //nolint:gosec // temp dir path from t.TempDir
+	time.Sleep(5 * time.Millisecond)
+
+	// Both the old and the new CA are trusted during the overlap.
+	tlsCfg.ServerName = "example1"
+	require.NoError(t, handshake(t, tlsCfg.Clone(), "server-1"))
+	tlsCfg.ServerName = "example2"
+	require.NoError(t, handshake(t, tlsCfg.Clone(), "server-2"))
+}
+
 func TestClientCAFileReloadVerifiesHostname(t *testing.T) {
 	setFIPSMode(t, false)
 	caFile := filepath.Join(t.TempDir(), "ca.crt")
