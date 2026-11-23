@@ -51,7 +51,7 @@ func TestServerCustomListener(t *testing.T) {
 			}, nil
 		},
 	}}
-	listener, err := config.ToListener(t.Context(), extensions)
+	listener, err := config.ToListenerWithOptions(t.Context(), WithExtensions(extensions))
 	require.NoError(t, err)
 	server := &http.Server{
 		ReadHeaderTimeout: time.Second,
@@ -89,7 +89,7 @@ func TestServerCustomListenerErrors(t *testing.T) {
 		NetAddr:            confignet.AddrConfig{Transport: confignet.TransportTypeTCP, Endpoint: "127.0.0.1:0"},
 		ListenerMiddleware: configoptional.Some(configmiddleware.Config{ID: id}),
 	}
-	_, err := config.ToListener(t.Context(), map[component.ID]component.Component{})
+	_, err := config.ToListenerWithOptions(t.Context(), WithExtensions(map[component.ID]component.Component{}))
 	require.ErrorContains(t, err, "middleware not found")
 
 	wantErr := errors.New("listen failed")
@@ -102,7 +102,7 @@ func TestServerCustomListenerErrors(t *testing.T) {
 			return func(context.Context, string, string) (net.Listener, error) { return nil, wantErr }, nil
 		},
 	}}
-	_, err = config.ToListener(t.Context(), extensions)
+	_, err = config.ToListenerWithOptions(t.Context(), WithExtensions(extensions))
 	require.ErrorIs(t, err, wantErr)
 
 	extensions[id] = struct {
@@ -112,7 +112,7 @@ func TestServerCustomListenerErrors(t *testing.T) {
 		Extension:       extensionmiddlewaretest.NewNop(),
 		GetListenerFunc: nil,
 	}
-	_, err = config.ToListener(t.Context(), extensions)
+	_, err = config.ToListenerWithOptions(t.Context(), WithExtensions(extensions))
 	require.ErrorContains(t, err, "listener is not initialized")
 }
 
