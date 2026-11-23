@@ -14,7 +14,9 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/pdata/xpdata/pref"
 )
 
 func TestProfilesNotMultiplexing(t *testing.T) {
@@ -84,13 +86,13 @@ func TestProfilesMultiplexingMutating(t *testing.T) {
 
 	assert.NotSame(t, &td, &p1.AllProfiles()[0])
 	assert.NotSame(t, &td, &p1.AllProfiles()[1])
-	assert.Equal(t, td, p1.AllProfiles()[0])
-	assert.Equal(t, td, p1.AllProfiles()[1])
+	assert.True(t, pref.EqualProfiles(td, p1.AllProfiles()[0]))
+	assert.True(t, pref.EqualProfiles(td, p1.AllProfiles()[1]))
 
 	assert.NotSame(t, &td, &p2.AllProfiles()[0])
 	assert.NotSame(t, &td, &p2.AllProfiles()[1])
-	assert.Equal(t, td, p2.AllProfiles()[0])
-	assert.Equal(t, td, p2.AllProfiles()[1])
+	assert.True(t, pref.EqualProfiles(td, p2.AllProfiles()[0]))
+	assert.True(t, pref.EqualProfiles(td, p2.AllProfiles()[1]))
 
 	// For this consumer, will receive the initial data.
 	assert.Equal(t, td, p3.AllProfiles()[0])
@@ -159,8 +161,8 @@ func TestProfilesMultiplexingMixLastMutating(t *testing.T) {
 
 	assert.NotSame(t, &td, &p1.AllProfiles()[0])
 	assert.NotSame(t, &td, &p1.AllProfiles()[1])
-	assert.Equal(t, td, p1.AllProfiles()[0])
-	assert.Equal(t, td, p1.AllProfiles()[1])
+	assert.True(t, pref.EqualProfiles(td, p1.AllProfiles()[0]))
+	assert.True(t, pref.EqualProfiles(td, p1.AllProfiles()[1]))
 
 	// For this consumer, will receive the initial data.
 	assert.Equal(t, td, p2.AllProfiles()[0])
@@ -171,8 +173,8 @@ func TestProfilesMultiplexingMixLastMutating(t *testing.T) {
 	// For this consumer, will clone the initial data.
 	assert.NotSame(t, &td, &p3.AllProfiles()[0])
 	assert.NotSame(t, &td, &p3.AllProfiles()[1])
-	assert.Equal(t, td, p3.AllProfiles()[0])
-	assert.Equal(t, td, p3.AllProfiles()[1])
+	assert.True(t, pref.EqualProfiles(td, p3.AllProfiles()[0]))
+	assert.True(t, pref.EqualProfiles(td, p3.AllProfiles()[1]))
 
 	// The data should not be marked as read only.
 	assert.False(t, td.IsReadOnly())
@@ -197,13 +199,13 @@ func TestProfilesMultiplexingMixLastNonMutating(t *testing.T) {
 
 	assert.NotSame(t, &td, &p1.AllProfiles()[0])
 	assert.NotSame(t, &td, &p1.AllProfiles()[1])
-	assert.Equal(t, td, p1.AllProfiles()[0])
-	assert.Equal(t, td, p1.AllProfiles()[1])
+	assert.True(t, pref.EqualProfiles(td, p1.AllProfiles()[0]))
+	assert.True(t, pref.EqualProfiles(td, p1.AllProfiles()[1]))
 
 	assert.NotSame(t, &td, &p2.AllProfiles()[0])
 	assert.NotSame(t, &td, &p2.AllProfiles()[1])
-	assert.Equal(t, td, p2.AllProfiles()[0])
-	assert.Equal(t, td, p2.AllProfiles()[1])
+	assert.True(t, pref.EqualProfiles(td, p2.AllProfiles()[0]))
+	assert.True(t, pref.EqualProfiles(td, p2.AllProfiles()[1]))
 
 	// For this consumer, will receive the initial data.
 	assert.Equal(t, td, p3.AllProfiles()[0])
@@ -213,6 +215,46 @@ func TestProfilesMultiplexingMixLastNonMutating(t *testing.T) {
 
 	// The data should not be marked as read only.
 	assert.False(t, td.IsReadOnly())
+}
+
+func TestProfilesMultiplexingRefCount(t *testing.T) {
+	enableProtoPoolingForTest(t)
+
+	// Each consumer acts like a pipeline: it takes ownership of the data if no one did yet and
+	// releases it when it returns.
+	var counts []int
+	newConsumer := func() xconsumer.Profiles {
+		c, err := xconsumer.NewProfiles(func(_ context.Context, pd pprofile.Profiles) error {
+			if pref.MarkPipelineOwnedProfiles(pd) {
+				defer pref.UnrefProfiles(pd)
+			}
+			counts = append(counts, pd.SampleCount())
+			return nil
+		})
+		require.NoError(t, err)
+		return c
+	}
+	fc := NewProfiles([]xconsumer.Profiles{newConsumer(), newConsumer()})
+
+	t.Run("not_owned", func(t *testing.T) {
+		counts = nil
+		pd := testdata.GenerateProfiles(2)
+		require.NoError(t, fc.ConsumeProfiles(context.Background(), pd))
+		assert.Equal(t, []int{2, 2}, counts)
+		// The fanout consumer owned the data and released it after all consumers received it.
+		assert.Equal(t, 0, pd.SampleCount())
+	})
+
+	t.Run("owned_upstream", func(t *testing.T) {
+		counts = nil
+		pd := testdata.GenerateProfiles(2)
+		require.True(t, pref.MarkPipelineOwnedProfiles(pd))
+		require.NoError(t, fc.ConsumeProfiles(context.Background(), pd))
+		assert.Equal(t, []int{2, 2}, counts)
+		// Releasing the data is left to the upstream owner.
+		assert.Equal(t, 2, pd.SampleCount())
+		pref.UnrefProfiles(pd)
+	})
 }
 
 func TestProfilesWhenErrors(t *testing.T) {
