@@ -6,24 +6,24 @@ require (
 	github.com/golang/snappy v1.0.0
 	github.com/klauspost/compress v1.20.4
 	github.com/stretchr/testify v1.12.1
-	go.opentelemetry.io/collector/client v1.71.0
-	go.opentelemetry.io/collector/component v1.71.0
+	go.opentelemetry.io/collector/client v1.72.0
+	go.opentelemetry.io/collector/component v1.72.0
 	go.opentelemetry.io/collector/component/componenttest v0.165.0
-	go.opentelemetry.io/collector/config/configauth v1.71.0
-	go.opentelemetry.io/collector/config/configcompression v1.71.0
-	go.opentelemetry.io/collector/config/configmiddleware v1.71.0
-	go.opentelemetry.io/collector/config/confignet v1.71.0
-	go.opentelemetry.io/collector/config/configopaque v1.71.0
-	go.opentelemetry.io/collector/config/configoptional v1.71.0
-	go.opentelemetry.io/collector/config/configtls v1.71.0
-	go.opentelemetry.io/collector/confmap v1.71.0
-	go.opentelemetry.io/collector/extension v1.71.0
-	go.opentelemetry.io/collector/extension/extensionauth v1.71.0
+	go.opentelemetry.io/collector/config/configauth v1.72.0
+	go.opentelemetry.io/collector/config/configcompression v1.72.0
+	go.opentelemetry.io/collector/config/configmiddleware v1.72.0
+	go.opentelemetry.io/collector/config/confignet v1.72.0
+	go.opentelemetry.io/collector/config/configopaque v1.72.0
+	go.opentelemetry.io/collector/config/configoptional v1.72.0
+	go.opentelemetry.io/collector/config/configtls v1.72.0
+	go.opentelemetry.io/collector/confmap v1.72.0
+	go.opentelemetry.io/collector/extension v1.72.0
+	go.opentelemetry.io/collector/extension/extensionauth v1.72.0
 	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.165.0
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.165.0
 	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.165.0
-	go.opentelemetry.io/collector/featuregate v1.71.0
-	go.opentelemetry.io/collector/pdata v1.71.0
+	go.opentelemetry.io/collector/featuregate v1.72.0
+	go.opentelemetry.io/collector/pdata v1.72.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.165.0
 	go.opentelemetry.io/collector/pdata/testdata v0.165.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.72.0
