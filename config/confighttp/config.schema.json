@@ -59,6 +59,11 @@
           "properties": {
             "level": {
               "type": "integer"
+            },
+            "max_bytes": {
+              "type": "integer",
+              "description": "Maximum number of raw bytes that can be processed before an error is raised.",
+              "default": 1000000
             }
           },
           "description": "Provides advanced configuration options for the configured compression type."

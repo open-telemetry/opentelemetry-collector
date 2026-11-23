@@ -5,13 +5,27 @@ package configcompression
 import (
 	"errors"
 	"slices"
+
+	"go.opentelemetry.io/collector/config/configoptional"
 )
 
 type CompressionParams struct {
-	Level Level `mapstructure:"level,omitempty"`
+	Level configoptional.Optional[Level] `mapstructure:"level,omitempty"`
+
+	// MaxBytes maximum number of raw bytes that can be processed before an error is raised.
+	MaxBytes configoptional.Optional[int64] `mapstructure:"max_bytes"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
+}
+
+// NewDefaultCompressionParams returns a new CompressionParams with its default values applied.
+// Prefer this over an empty struct literal so default changes stay in sync automatically.
+func NewDefaultCompressionParams() CompressionParams {
+	return CompressionParams{
+		Level:    configoptional.None[Level](),
+		MaxBytes: configoptional.Some[int64](1000000),
+	}
 }
 
 type Level int

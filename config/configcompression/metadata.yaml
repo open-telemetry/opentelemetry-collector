@@ -12,6 +12,12 @@ exported_configs:
     properties:
       level:
         $ref: level
+        optional: true
+      max_bytes:
+        description: Maximum number of raw bytes that can be processed before an error is raised.
+        type: int64
+        optional: true
+        default: 1000000
   level:
     type: int
   type:

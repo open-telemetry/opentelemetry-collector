@@ -1,0 +1,6 @@
+change_type: breaking
+component: pkg/configcompression
+note: Make `CompressionParams.Level` optional and add an optional `MaxBytes` field.
+issues: []
+subtext: The default constructor sets `MaxBytes` to 1,000,000 bytes (1 MB).
+change_logs: [api]
