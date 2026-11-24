@@ -202,12 +202,13 @@ func (g *Graph) Update(ctx context.Context, set Settings, req UpdateRequest, hos
 
 // identifyReloads finds the pipelines with processor changes and what to
 // replace in each. The graph cannot tell whether processors with the same
-// component ID share an instance across pipelines, and shutting down one stops
-// it for all of them. So a processor is also replaced in every other pipeline
-// that uses its ID, with the processors upstream of it, until nothing more is
-// added. It returns false if a pipeline is not in the graph, or if a pipeline
-// to reload is fed by a connector, which keeps a reference to the pipeline's
-// capabilities node that cannot be swapped while the connector runs.
+// component ID share an instance across pipelines. Shutting down one stops it
+// for all of them, and a processor built on its own would not find the running
+// instance. So a processor that is replaced or added is also replaced in every
+// other pipeline that uses its ID, with the processors upstream of it, until
+// nothing more is added. It returns false if a pipeline is not in the graph, or
+// if a pipeline to reload is fed by a connector, which keeps a reference to the
+// pipeline's capabilities node that cannot be swapped while the connector runs.
 func (g *Graph) identifyReloads(set Settings, changedProcessors map[component.ID]bool) ([]*processorReload, map[pipeline.ID]bool, bool) {
 	changed := maps.Clone(changedProcessors)
 	if changed == nil {
@@ -237,6 +238,12 @@ func (g *Graph) identifyReloads(set Settings, changedProcessors map[component.ID
 		grew := false
 		for _, reload := range reloads {
 			for _, pn := range reload.oldProcessors {
+				if !changed[pn.componentID] {
+					changed[pn.componentID] = true
+					grew = true
+				}
+			}
+			for _, pn := range reload.newProcessors {
 				if !changed[pn.componentID] {
 					changed[pn.componentID] = true
 					grew = true

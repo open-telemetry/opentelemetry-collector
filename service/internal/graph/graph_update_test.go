@@ -431,10 +431,21 @@ func TestUpdate_ProcessorsRequiresFullReload(t *testing.T) {
 		assert.Zero(t, rcvr.stops, "graph must not be modified")
 
 		// The pipeline feeding the connector can reload its own processors.
-		applied, err = updateProcessors(t, pg, host, set, pipelines.Config{
-			in:  {Receivers: []component.ID{testReceiverID}, Processors: []component.ID{procA}, Exporters: []component.ID{connID}},
-			out: mk([]component.ID{procA})[out],
-		})
+		withIn := func(inProc component.ID) pipelines.Config {
+			return pipelines.Config{
+				in:  {Receivers: []component.ID{testReceiverID}, Processors: []component.ID{inProc}, Exporters: []component.ID{connID}},
+				out: mk([]component.ID{procA})[out],
+			}
+		}
+
+		// Unless it uses a processor ID that the connector-fed pipeline also
+		// uses, which would have to be replaced there too.
+		applied, err = updateProcessors(t, pg, host, set, withIn(procA))
+		require.NoError(t, err)
+		assert.False(t, applied)
+		assert.Zero(t, rcvr.stops, "graph must not be modified")
+
+		applied, err = updateProcessors(t, pg, host, set, withIn(procC))
 		require.NoError(t, err)
 		assert.True(t, applied)
 		assert.Equal(t, 1, rcvr.stops)
@@ -989,4 +1000,38 @@ func TestUpdate_ReplacesProcessorsWithSameIDInOtherPipelines(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, processorNames(procC, procA), logs)
 	})
+}
+
+func TestAddSharedProcessorToSecondPipeline(t *testing.T) {
+	sharedID := component.MustNewID("sharedprocessor")
+	var backends []*sharedProcessorBackend
+	factories := map[component.Type]processor.Factory{sharedProcessorType: newSharedProcessorFactory(&backends)}
+	exp := []component.ID{component.MustNewID("exampleexporter")}
+	mk := func(traces []component.ID) pipelines.Config {
+		return pipelines.Config{
+			tracesID: {Receivers: []component.ID{testReceiverID}, Processors: traces, Exporters: exp},
+			logsID:   {Receivers: []component.ID{testReceiverID}, Processors: []component.ID{sharedID}, Exporters: exp},
+		}
+	}
+	cfgs := map[component.ID]component.Config{sharedID: &sharedProcessorConfig{}}
+	pg, host, set := buildProcessorTestGraphWith(t, mk(nil), nil, builders.NewProcessor(cfgs, factories))
+
+	// Unchanged config, freshly decoded as on any reload.
+	set.PipelineConfigs = mk([]component.ID{sharedID})
+	applied, err := pg.Update(context.Background(), set, UpdateRequest{
+		NewProcessorCfgs:   map[component.ID]component.Config{sharedID: &sharedProcessorConfig{}},
+		ProcessorFactories: factories,
+		NewReceiverCfgs:    testReceiverCfgs(),
+		ReceiverFactories:  processorTestReceiverFactories,
+	}, host)
+	require.NoError(t, err)
+	require.True(t, applied)
+
+	live := 0
+	for _, b := range backends {
+		if !b.stopped.Load() {
+			live++
+		}
+	}
+	assert.Equal(t, 1, live, "backends created=%d live=%d", len(backends), live)
 }
