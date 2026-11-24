@@ -7,6 +7,65 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.72.0/v0.166.0
+
+### 💡 Enhancements 💡
+
+- `pkg/configgrpc`: Add the `pick_first.shuffle_address_list` option to shuffle the resolved address list for gRPC clients that use the `pick_first` balancer. (#16235)
+  When enabled, clients that receive the same address list no longer all connect to the first address (gRFC A62).
+  The option is disabled by default.
+  
+- `pkg/configmiddleware`: allow listener middleware extensions to create HTTP and gRPC server listeners (#16029)
+- `pkg/service`: Log whether the Collector runs in FIPS 140-3 mode in the startup log line. (#16346)
+  The `Starting ...` log line gets a `FIPS140` field with the value of `crypto/fips140.Enabled()`,
+  so operators can confirm from the Collector's own logs that `GODEBUG=fips140=on` is in effect.
+  
+- `pkg/xscraperhelper`: Report receiver telemetry for profiles scraped by `NewProfilesController`, as is done for the other signals. (#16399)
+- `receiver/otlp`: Add `receiver.otlp.sanitizeInvalidUTF8` feature gate to replace invalid UTF-8 in OTLP requests with U+FFFD instead of forwarding invalid data downstream (#11449)
+  This behavior is behind the `receiver.otlp.sanitizeInvalidUTF8` feature gate.
+  When enabled, the OTLP receiver replaces every run of invalid UTF-8 bytes in the string fields of incoming traces, metrics, logs and profiles with the Unicode replacement character U+FFFD.
+  Sanitized requests are forwarded whole, without partial success counts.
+  If `receiver.otlp.rejectInvalidUTF8` is also enabled, it takes precedence and invalid items are rejected instead.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/builder`: Using invalid characters in `dist.name` (`.`, `/`) now return an error. (#16416)
+- `cmd/builder`: The builder now fails with an error instead of following such a symlink. (#16401)
+- `cmd/builder`: Provide additional validation in processing templates. (#16402)
+- `cmd/mdatagen`: Fix telemetry metric stability schema and missing stability error message (#16363)
+- `cmd/mdatagen`: Ensure metadata values are escaped in templates (#16396)
+- `cmd/mdatagen`: Reject a `generated_package_name` that is not a valid Go identifier instead of using it as a directory and package name. (#16395)
+- `exporter/otlp_grpc`: Limiting logging of the `error_message` of a partial success response to 1 KiB. (#16415)
+- `exporter/otlp_grpc`: Bound the response headers and trailers accepted from the backend to 64 KiB. (#16415)
+- `exporter/otlp_http`: Limit response size parsed by the exporter from upstream errors. (#16407)
+- `exporter/otlp_http`: Do not read the body of a `HTTP 101` response, which blocked the export forever. (#16460)
+- `pkg/confighttp`: Set `ServerName` on the internal telemetry generated instead of the request's `Host` header. (#16433)
+- `pkg/confighttp`: Bound the cookie jar used by clients with `cookies` enabled. (#16421)
+- `pkg/confighttp`: Limit the response headers accepted by clients created by `ClientConfig.ToClient` to 1 MiB (`http.DefaultMaxHeaderBytes`). (#16423)
+- `pkg/configtls`: Update `tpm::auth` and `tpm::owner_auth` fields as opaque so they are redacted like `key_pem`. (#16435)
+- `pkg/confmap`: Honor context cancellation and deadlines when retrieving configuration over HTTP and HTTPS. (#16351)
+- `pkg/exporterhelper`: Limit retry backoff delay to the `max_interval` configured. (#16417)
+- `pkg/otelcol`: Redact values below sections disabled with `enabled: false` in the unexpanded configuration snapshot reported by the OpAMP extension when `reports_raw_config` is enabled (#16441)
+  `ConfigSnapshot.Unexpanded()` learns which leaves are opaque from the marshaled configuration.
+  A section disabled with `enabled: false` and an `omitempty` field set to its zero value are not
+  marshaled, so inline secrets below them were reported verbatim.
+  Every leaf without a counterpart in the marshaled configuration is now masked; nulls, booleans
+  and plain `${...}` provider references stay visible.
+  
+- `pkg/service`: Rebuild a receiver for all of its signals when it is added, removed or rebuilt for one of them during a partial receiver reload, so that a receiver sharing one instance across signals, such as `otlp`, keeps serving the others. (#16260)
+- `provider/http`: Redact password in URI when it is being logged. (#16418)
+- `receiver/otlp`: Limit response size parsed by the receiver from the exporter when it receives upstream errors. (#16407)
+- `receiver/otlp`: Add `receiver.otlp.rejectInvalidUTF8` feature gate to reject invalid UTF-8 in OTLP requests instead of forwarding invalid data downstream (#11449)
+  This behavior is behind the `receiver.otlp.rejectInvalidUTF8` feature gate.
+  When enabled, the OTLP receiver validates incoming traces, metrics, logs, and profiles for invalid UTF-8.
+  Invalid items are rejected at the smallest supported signal unit and reported through OTLP partial success counts.
+  For profiles, an invalid string in the shared profiles dictionary rejects every profile in the request because the dictionary cannot be attributed to a single profile.
+  
+- `receiver/otlp`: Bound the time `Shutdown` waits for in-flight requests so that a peer holding an incomplete request open cannot block collector shutdown or config reload indefinitely. (#16462)
+
+<!-- previous-version -->
+
 ## v1.71.0/v0.165.0
 
 ### 🛑 Breaking changes 🛑
