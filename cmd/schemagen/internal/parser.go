@@ -16,13 +16,9 @@ import (
 )
 
 type Parser struct {
-	config *Config
-	schema *Schema
-	types  map[string]*TypeInfo
-	// textTypes holds the names of the types that implement
-	// encoding.TextUnmarshaler. They are written as strings in a configuration
-	// file whatever their Go representation is.
-	textTypes    map[string]bool
+	config       *Config
+	schema       *Schema
+	types        map[string]*TypeInfo
 	processQueue *list.List
 	pkg          *packages.Package
 	current      *TypeInfo
@@ -40,7 +36,6 @@ func NewParser(cfg *Config) *Parser {
 	return &Parser{
 		config:       cfg,
 		types:        make(map[string]*TypeInfo),
-		textTypes:    make(map[string]bool),
 		processQueue: list.New(),
 	}
 }
@@ -85,14 +80,28 @@ func (p *Parser) ParsePattern(pattern string) (*Schema, error) {
 }
 
 func (p *Parser) processPackages(set *token.FileSet, pkgs []*packages.Package) {
+	var textTypes []string
 	for _, pkg := range pkgs {
 		for _, file := range pkg.Syntax {
-			p.collectTypesAndImports(file, pkg.PkgPath, ast.NewCommentMap(set, file, file.Comments))
+			textTypes = append(textTypes,
+				p.collectTypesAndImports(file, pkg.PkgPath, ast.NewCommentMap(set, file, file.Comments))...)
+		}
+	}
+	// A type that implements encoding.TextUnmarshaler is written as a string
+	// in a configuration file whatever its Go representation is, so it is
+	// stored as a string type. The method can be declared before the type or
+	// in another file, so this runs after all the types are collected.
+	for _, name := range textTypes {
+		if info, ok := p.types[name]; ok {
+			info.spec = &ast.TypeSpec{Name: info.spec.Name, Type: ast.NewIdent("string")}
 		}
 	}
 }
 
-func (p *Parser) collectTypesAndImports(file *ast.File, pkgPath string, cmap ast.CommentMap) {
+// collectTypesAndImports stores the exported types of the file and returns the
+// names of the types that have an UnmarshalText method.
+func (p *Parser) collectTypesAndImports(file *ast.File, pkgPath string, cmap ast.CommentMap) []string {
+	var textTypes []string
 	target := p.types
 	// collect imports from current file, distinguish internal vs external
 	imports := make(map[string]string)
@@ -108,7 +117,7 @@ func (p *Parser) collectTypesAndImports(file *ast.File, pkgPath string, cmap ast
 	for _, decl := range file.Decls {
 		if funcDecl, isFunc := decl.(*ast.FuncDecl); isFunc {
 			if name, isText := textUnmarshalerReceiver(funcDecl); isText {
-				p.textTypes[name] = true
+				textTypes = append(textTypes, name)
 			}
 			continue
 		}
@@ -128,6 +137,7 @@ func (p *Parser) collectTypesAndImports(file *ast.File, pkgPath string, cmap ast
 			}
 		}
 	}
+	return textTypes
 }
 
 // textUnmarshalerReceiver returns the receiver type name when decl is an
@@ -230,15 +240,9 @@ func (p *Parser) parseType(typeInfo *TypeInfo) (SchemaElement, error) {
 		// skip these types
 		return nil, nil
 	}
-	var schemaElement SchemaElement
-	if p.textTypes[typeInfo.typeName] {
-		schemaElement = CreateSimpleField(SchemaTypeString, "")
-	} else {
-		var err error
-		schemaElement, err = p.parseExpr(typeSpec.Type)
-		if err != nil {
-			return nil, err
-		}
+	schemaElement, err := p.parseExpr(typeSpec.Type)
+	if err != nil {
+		return nil, err
 	}
 	if schemaElement != nil && len(typeInfo.comms) > 0 {
 		if desc, ok := ExtractDescriptionFromComment(typeInfo.comms[0]); ok {
