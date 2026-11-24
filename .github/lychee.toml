@@ -6,7 +6,7 @@ exclude  = [
     "^http(s)?://localhost",
     "^http(s)?://example.com",
     # excluding links to pull requests and issues is done for performance
-    "^https://github.com/open-telemetry/opentelemetry-collector/(issues|pull)/\d+$"
+    '^https://github\.com/open-telemetry/opentelemetry-collector/(issues|pull)/\d+$'
 ]
 
 # GitHub renders comment anchors client-side, so only check the issue/PR itself.
