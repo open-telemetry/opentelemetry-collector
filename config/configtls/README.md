@@ -19,7 +19,7 @@ optional and requires additional configuration (see examples below).
   [grpc.WithInsecure()](https://godoc.org/google.golang.org/grpc#WithInsecure)
   for gRPC.
 - `curve_preferences` (default = []): specify your curve preferences that will
-  be used in an ECDHE handshake, in preference order. When empty, the
+  be used in an ECDHE handshake. When empty, the
   `crypto/tls` defaults are used. Accepted values are:
   - X25519MLKEM768
   - SecP256r1MLKEM768
