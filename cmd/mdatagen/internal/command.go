@@ -802,7 +802,7 @@ func generateConfigGoStruct(md Metadata, outputDir string) error {
 
 	packageName := filepath.Base(outputDir)
 	env := cfggen.NewGeneratorEnv(rootPkg, md.PackageName, isComponent(md.Status))
-	fns := cfggen.WithCfgFns(getTemplateFuncMap(md, rootPkg), env)
+	fns := cfggen.WithCfgFns(getTemplateFuncMap(md, rootPkg), env, md.ConfigsMetadata)
 
 	files := []struct{ tmpl, dst string }{
 		{tmpl: "config_from_cfggen.go.tmpl", dst: "generated_config.go"},
@@ -832,7 +832,7 @@ func injectConfigDocsToReadme(md Metadata, mdDir, importRootPath string) error {
 			rootPkg = pkg
 		}
 		env := cfggen.NewGeneratorEnv(rootPkg, md.PackageName, isComponent(md.Status))
-		fns := cfggen.WithCfgFns(getTemplateFuncMap(md, rootPkg), env)
+		fns := cfggen.WithCfgFns(getTemplateFuncMap(md, rootPkg), env, md.ConfigsMetadata)
 		if err := inlineReplaceWithFns(
 			filepath.Join("templates", "config_doc.md.tmpl"),
 			readmePath,

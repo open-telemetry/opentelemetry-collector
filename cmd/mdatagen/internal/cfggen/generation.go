@@ -185,11 +185,11 @@ func ExternalDefaultCall(ref string, env GeneratorEnv) (string, error) {
 }
 
 // WithCfgFns merges config generation template functions into the given function map.
-// The rootPackage and componentPackage are captured in closures so the template doesn't need to thread them through.
-func WithCfgFns(fns map[string]any, env GeneratorEnv) map[string]any {
+// The generator environment and config metadata are captured in closures so the template doesn't need to thread them through.
+func WithCfgFns(fns map[string]any, env GeneratorEnv, md *ConfigsMetadata) map[string]any {
 	cfgFns := NewCfgFns(env)
 	maps.Copy(fns, cfgFns)
-	maps.Copy(fns, NewCfgDocFns())
+	maps.Copy(fns, NewCfgDocFns(md))
 	return fns
 }
 

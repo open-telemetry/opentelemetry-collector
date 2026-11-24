@@ -268,11 +268,24 @@ func TestCfgExportedRef(t *testing.T) {
 			Properties:   map[string]*ConfigMetadata{"host": {Type: "string"}},
 		}
 	}
-	assert.Equal(t, "inner", CfgExportedRef(obj("inner", false)))
-	assert.Empty(t, CfgExportedRef(nil))
-	assert.Empty(t, CfgExportedRef(obj("", false)), "no $ref")
-	assert.Empty(t, CfgExportedRef(obj("inner", true)), "internal-only definitions have no section")
-	assert.Empty(t, CfgExportedRef(obj("../samplepkg.sample_config", false)), "local ref")
-	assert.Empty(t, CfgExportedRef(obj("go.opentelemetry.io/collector/config/confignet.addr_config", false)), "external ref")
-	assert.Empty(t, CfgExportedRef(&ConfigMetadata{Type: "string", Ref: "inner"}), "scalar")
+	md := &ConfigsMetadata{
+		ExportedConfigs: map[string]*ConfigMetadata{
+			"inner":   obj("", false),
+			"hidden":  obj("", true),
+			"nil_def": nil,
+		},
+	}
+
+	assert.Equal(t, "inner", CfgExportedRef(obj("inner", false), md))
+	assert.Empty(t, CfgExportedRef(obj("other_pkg_def", false), md), "internal ref not in current exported_configs must expand inline")
+	assert.Empty(t, CfgExportedRef(obj("hidden", false), md), "internal-only exported_configs entry has no section")
+	assert.Empty(t, CfgExportedRef(obj("nil_def", false), md), "nil exported_configs entry has no section")
+	assert.Empty(t, CfgExportedRef(obj("inner", false), nil), "nil metadata")
+	assert.Empty(t, CfgExportedRef(obj("inner", false), &ConfigsMetadata{}), "empty exported_configs")
+	assert.Empty(t, CfgExportedRef(nil, md))
+	assert.Empty(t, CfgExportedRef(obj("", false), md), "no $ref")
+	assert.Empty(t, CfgExportedRef(obj("inner", true), md), "internal-only definitions have no section")
+	assert.Empty(t, CfgExportedRef(obj("../samplepkg.sample_config", false), md), "local ref")
+	assert.Empty(t, CfgExportedRef(obj("go.opentelemetry.io/collector/config/confignet.addr_config", false), md), "external ref")
+	assert.Empty(t, CfgExportedRef(&ConfigMetadata{Type: "string", Ref: "inner"}, md), "scalar")
 }
