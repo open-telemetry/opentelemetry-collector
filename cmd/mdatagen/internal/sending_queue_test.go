@@ -154,7 +154,7 @@ func TestSendingQueueValidate(t *testing.T) {
 					"batch":         map[string]any{"enabled": true},
 				},
 			},
-			wantErr: "`num_consumers` must be positive",
+			wantErr: "num_consumers value must be greater than 0",
 		},
 		{
 			name: "invalid nested batch override",

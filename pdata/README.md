@@ -144,7 +144,7 @@ and `<struct name><oneof field>Type` for (2). For example:
 The enum constants MUST be called the same as the type with a suffix named after the oneof option, e.g.:
 
 - `MetricTypeSum` (1)
-- `NumberDataPointValueTypeString` (2)
+- `NumberDataPointValueTypeDouble` (2)
 
 An unset oneof protobuf value MUST be represented by a pdata constant with `Empty` suffix, e.g.:
 
@@ -156,7 +156,7 @@ The pdata enum type SHOULD have `String()` method returning a string value of th
 #### Repeated protobuf fields
 
 Each repeated protobuf message field exposed in pdata MUST be represented as another pdata struct that SHOULD be
-called the same as the underlying protobuf field with `Slice` suffix. An exception example is `pdata.Map` that
+called the same as the underlying protobuf field with `Slice` suffix. An exception example is `pcommon.Map` that
 provides a different interface to manipulate the underlying protobuf data.
 
 #### Repeated scalar fields
@@ -166,14 +166,14 @@ slice. Name of the type SHOULD include name of the primitive data type ending wi
 
 #### Enum fields
 
-Each protobuf enum field exposed in pdata MUST have a type declared with underlying `int64` type. Name of the type
+Each protobuf enum field exposed in pdata MUST have a type declared with underlying `int32` type. Name of the type
 SHOULD follow the same rules as for struct type names representing protobuf messages:
 
 - If a protobuf enum is defined on the package level, pdata type SHOULD have the same name.
 - If a protobuf enum is defined as part of another message, pdata type SHOULD include the protobuf message name as a
   prefix.
 
-Constants defined for the pdata int64 type MUST have the same names and numeric values defined in protobuf. Names
+Constants defined for the pdata int32 type MUST have the same names and numeric values defined in protobuf. Names
 of the constants must be translated from ALL_CAPS_SNAKE_CASE to CamelCase.
 
 The pdata enum type SHOULD have `String()` method returning a string value for each constant.

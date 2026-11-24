@@ -54,3 +54,7 @@ server-side middleware object.
 
 - **GRPCClient**: The extension returns `[]grpc.DialOption`.
 - **GRPCServer**: The extension returns `[]grpc.ServerOption`.
+
+### Network listeners
+
+- **Listener**: The extension returns a function that creates a `net.Listener` for a network and address.
