@@ -22,7 +22,7 @@ for internal telemetry.
     + [Units](#units)
     + [Process for defining new metrics](#process-for-defining-new-metrics)
 - [Experimental resource detection](#experimental-resource-detection)
-- [Experimental trace telemetry](#experimental-trace-telemetry)
+- [Experimental trace and log telemetry](#experimental-trace-and-log-telemetry)
 
 <!-- tocstop -->
 
@@ -126,7 +126,7 @@ service:
 Supported values are `container`, `host`, `process`, and `service`
 detector entries.
 
-## Experimental trace telemetry
+## Experimental trace and log telemetry
 
 The Collector does not expose traces by default, but can be configured.
 The Collector's internal telemetry uses OpenTelemetry SDK.
@@ -156,7 +156,8 @@ service:
 
 See the [example configuration][otel-sdk-config] for additional options.
 
-You can also configure the Collector to emit internal logs using log processors. For example:
+You can also configure the Collector to emit internal logs using log processors.
+For example:
 
 ```yaml
 service:
