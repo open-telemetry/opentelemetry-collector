@@ -1013,11 +1013,12 @@ func TestMemLimitRefreshes(t *testing.T) {
 		return newPercentageMemUsageChecker(2000*mibBytes, 50, 10), nil
 	}
 
+	// 50% of 1000 MiB = 500 MiB before refresh
+	require.Equal(t, uint64(500*mibBytes), ml.usageChecker.Load().memAllocLimit, "pinned starting limit")
 	require.NoError(t, ml.Start(context.Background(), host))
 	t.Cleanup(func() { require.NoError(t, ml.Shutdown(context.Background())) })
 
-	// 50% of 1000 MiB = 500 MiB before refresh; 50% of 2000 MiB = 1000 MiB after.
-	require.Equal(t, uint64(500*mibBytes), ml.usageChecker.Load().memAllocLimit, "pinned starting limit")
+	// 50% of 2000 MiB = 1000 MiB after refresh
 	require.Eventually(t, func() bool {
 		return ml.usageChecker.Load().memAllocLimit == uint64(1000*mibBytes)
 	}, time.Second, 5*time.Millisecond, "usageChecker was not refreshed to the new limit")
