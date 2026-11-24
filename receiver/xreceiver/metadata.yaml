@@ -7,5 +7,6 @@ status:
     active:
       - mx-psi
       - dmathieu
+      - florianl
   stability:
     alpha: [profiles]

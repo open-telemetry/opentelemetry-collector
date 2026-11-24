@@ -94,11 +94,11 @@ func TestMetricsBuilder(t *testing.T) {
 			// stage forbids the requested state (e.g. once promoted to stable), only the gate-dependent
 			// assertions below are skipped; the rest of the test still runs.
 			migrationGatesPinned := true
-			{{- range $name, $metric := .Metrics }}
-			{{- if $metric.Migration }}
-			migrationGatesPinned = setFeatureGateForTest(t, {{ printf "%s" $metric.Migration.ThroughGates.DisableOld | publicVar }}FeatureGate, false) && migrationGatesPinned
-			migrationGatesPinned = setFeatureGateForTest(t, {{ printf "%s" $metric.Migration.ThroughGates.EnableNew | publicVar }}FeatureGate, tt.name == "all_set") && migrationGatesPinned
+			{{- range $gate := migrationDisableOldGates }}
+			migrationGatesPinned = setFeatureGateForTest(t, {{ printf "%s" $gate | publicVar }}FeatureGate, false) && migrationGatesPinned
 			{{- end }}
+			{{- range $gate := migrationEnableNewGates }}
+			migrationGatesPinned = setFeatureGateForTest(t, {{ printf "%s" $gate | publicVar }}FeatureGate, tt.name == "all_set") && migrationGatesPinned
 			{{- end }}
 			{{- end }}
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
@@ -116,19 +116,19 @@ func TestMetricsBuilder(t *testing.T) {
 			{{- range $name, $metric := .Metrics }}
 			{{- if $metric.Warnings.IfEnabled }}
 			if {{- if $metric.Enabled }} tt.metricsSet == testDataSetDefault || {{- end }} tt.metricsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `{{ $name }}` should not be enabled: {{ $metric.Warnings.IfEnabled }}", observedLogs.All()[expectedWarnings].Message)
+				assert.Equal(t, "[WARNING] `{{ metricConfigKey $name }}` should not be enabled: {{ $metric.Warnings.IfEnabled }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			{{- end }}
 			{{- if $metric.Warnings.IfEnabledNotSet }}
 			if tt.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `{{ $name }}`: {{ $metric.Warnings.IfEnabledNotSet }}", observedLogs.All()[expectedWarnings].Message)
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `{{ metricConfigKey $name }}`: {{ $metric.Warnings.IfEnabledNotSet }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			{{- end }}
 			{{- if $metric.Warnings.IfConfigured }}
 			if tt.metricsSet == testDataSetAll || tt.metricsSet == testDataSetNone {
-				assert.Equal(t, "[WARNING] `{{ $name }}` should not be configured: {{ $metric.Warnings.IfConfigured }}", observedLogs.All()[expectedWarnings].Message)
+				assert.Equal(t, "[WARNING] `{{ metricConfigKey $name }}` should not be configured: {{ $metric.Warnings.IfConfigured }}", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			{{- end }}
@@ -227,6 +227,15 @@ func TestMetricsBuilder(t *testing.T) {
 				{{- end -}}
 				{{- end -}}
 				)
+{{- if $metric.Migration.IndependentValue }}
+				mb.Record{{ $metric.Migration.To.Render }}DataPoint(ts, 1
+{{- range (index $.Metrics $metric.Migration.To).Attributes -}}
+{{- if not (attributeInfo .).IsConditional -}}
+, {{- template "getAttributeValue" . -}}
+{{- end -}}
+{{- end -}}
+)
+{{- end }}
 			}
 			{{- else }}
 			{{ if $metric.Enabled }}defaultMetricsCount++{{ end }}
@@ -613,6 +622,15 @@ func TestVersionedMetrics(t *testing.T) {
                 {{- end -}}
                 {{- end -}}
                 )
+{{- if $metric.Migration.IndependentValue }}
+                mb.Record{{ $metric.Migration.To.Render }}DataPoint(ts, 1
+{{- range (index $.Metrics $metric.Migration.To).Attributes -}}
+{{- if not (attributeInfo .).IsConditional -}}
+, {{- template "getAttributeValue" . -}}
+{{- end -}}
+{{- end -}}
+)
+{{- end }}
 
                 metrics := mb.Emit(WithResource(pcommon.NewResource()))
 

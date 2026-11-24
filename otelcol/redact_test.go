@@ -349,6 +349,126 @@ func TestRedactWithPreExpansion(t *testing.T) {
 			},
 		},
 		{
+			name: "mask subtree missing from redacted view",
+			pre: map[string]any{
+				"receivers": map[string]any{
+					"foo": map[string]any{
+						"endpoint": "localhost:4318",
+						"tls": map[string]any{ // #nosec G101
+							"enabled":   false,
+							"key_pem":   "secret",
+							"ca_file":   "${env:CA_FILE}",
+							"max_ver":   nil,
+							"ciphers":   []any{"a", 1},
+							"reload_in": 10,
+						},
+					},
+				},
+			},
+			redacted: map[string]any{
+				"receivers": map[string]any{
+					"foo": map[string]any{
+						"endpoint": "localhost:4318",
+					},
+				},
+			},
+			want: map[string]any{
+				"receivers": map[string]any{
+					"foo": map[string]any{
+						"endpoint": "localhost:4318",
+						"tls": map[string]any{ // #nosec G101
+							"enabled":   false,
+							"key_pem":   redactedMask,
+							"ca_file":   "${env:CA_FILE}",
+							"max_ver":   nil,
+							"ciphers":   []any{redactedMask, redactedMask},
+							"reload_in": redactedMask,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "mask subtree marshaled as null",
+			pre: map[string]any{
+				"receivers": map[string]any{
+					"foo": map[string]any{
+						"grpc": map[string]any{
+							"enabled": false,
+							"tls": map[string]any{ // #nosec G101
+								"key_pem": "secret",
+							},
+						},
+					},
+				},
+			},
+			redacted: map[string]any{
+				"receivers": map[string]any{
+					"foo": map[string]any{
+						"grpc": nil,
+					},
+				},
+			},
+			want: map[string]any{
+				"receivers": map[string]any{
+					"foo": map[string]any{
+						"grpc": map[string]any{
+							"enabled": false,
+							"tls": map[string]any{
+								"key_pem": redactedMask,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "mask omitted leaf with literal env default",
+			pre: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{ // #nosec G101
+						"token": "${env:NAME:-literal}",
+					},
+				},
+			},
+			redacted: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{},
+				},
+			},
+			want: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"token": redactedMask,
+					},
+				},
+			},
+		},
+		{
+			name: "mask list items missing from redacted view",
+			pre: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"items": []any{"first", "second"},
+					},
+				},
+			},
+			redacted: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"items": []any{"first"},
+					},
+				},
+			},
+			want: map[string]any{
+				"exporters": map[string]any{
+					"foo": map[string]any{
+						"items": []any{"first", redactedMask},
+					},
+				},
+			},
+		},
+		{
 			name: "non-opaque strings untouched",
 			pre: map[string]any{
 				"exporters": map[string]any{
