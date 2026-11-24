@@ -4,10 +4,18 @@ accept = ["200..=299", "429"]
 
 exclude  = [
     "^http(s)?://localhost",
-    "^http(s)?://example.com"
+    "^http(s)?://example.com",
+    # excluding links to pull requests and issues is done for performance
+    "^https://github.com/open-telemetry/opentelemetry-collector/(issues|pull)/\d+$"
 ]
 
 # GitHub renders comment anchors client-side, so only check the issue/PR itself.
 remap = [
     '^(https://github\.com/[^/]+/[^/]+/(issues|pull)/\d+)#(issuecomment|pullrequestreview|discussion_r)-?\d+$ $1',
 ]
+
+# better to be safe and avoid failures
+max_retries = 6
+
+# this helps slow down the rate of requests to avoid rate limiting
+max_concurrency = 4
