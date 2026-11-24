@@ -1,5 +1,6 @@
 type: object
 properties:
+  codec: {}
   groups:
     type: object
     additionalProperties:

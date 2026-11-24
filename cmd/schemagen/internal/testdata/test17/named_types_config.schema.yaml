@@ -4,6 +4,8 @@ $defs:
     type: object
     additionalProperties:
       $ref: names
+  handler:
+    description: Handler is a named interface type.
   names:
     description: Names is a named slice of strings.
     type: array
@@ -16,9 +18,12 @@ $defs:
       $ref: tree
 type: object
 properties:
+  codec:
+    $ref: ./internal.codec
   groups:
     $ref: groups
-  handler: {}
+  handler:
+    $ref: handler
   names:
     $ref: names
   tree:

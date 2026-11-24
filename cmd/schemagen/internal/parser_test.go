@@ -330,6 +330,20 @@ func (l Level) String() string { return "" }
 func UnmarshalText(_ []byte) error { return nil }
 
 func (g *Generic[T]) UnmarshalText(_ []byte) error { return nil }
+
+func (n NoParam) UnmarshalText() error { return nil }
+
+func (s StringParam) UnmarshalText(_ string) error { return nil }
+
+func (t TwoParams) UnmarshalText(_, _ []byte) error { return nil }
+
+func (a ArrayParam) UnmarshalText(_ [4]byte) error { return nil }
+
+func (n NoResult) UnmarshalText(_ []byte) {}
+
+func (b BoolResult) UnmarshalText(_ []byte) bool { return true }
+
+func (t TwoResults) UnmarshalText(_ []byte) (int, error) { return 0, nil }
 `
 	file, err := parser.ParseFile(token.NewFileSet(), "test.go", src, 0)
 	require.NoError(t, err)
@@ -342,8 +356,9 @@ func (g *Generic[T]) UnmarshalText(_ []byte) error { return nil }
 			got = append(got, name)
 		}
 	}
-	// A method with another name, a function with no receiver and a method
-	// on a generic type are not reported.
+	// A method with another name, a function with no receiver, a method on a
+	// generic type and a method whose signature is not UnmarshalText([]byte)
+	// error are not reported.
 	assert.Equal(t, []string{"Level", "Mode"}, got)
 }
 

@@ -195,11 +195,14 @@ types have been inlined.
 - A field tagged `mapstructure:",remain"` is not a property. It sets the
   `additionalProperties` of the enclosing object: the value schema of the map
   when the field is a map or a named map type, otherwise any value.
-- A named type that has an `UnmarshalText` method (value or pointer receiver)
-  is emitted as `type: string`, whatever its underlying Go type.
-- Fields of type `interface{}`, inline interface types and named interface
-  types of the same package produce an element with no type, which accepts any
-  value.
+- A named type that has an `UnmarshalText([]byte) error` method (value or
+  pointer receiver) is emitted as `type: string`, whatever its underlying Go
+  type.
+- Fields of type `interface{}` and inline interface types produce an element
+  with no type, which accepts any value.
+- A named interface type is kept as a definition with no type, which accepts
+  any value. A field of that type refers to it, from the same package or from
+  another one.
 - Named map types such as `type Headers map[string]string` are kept as
   definitions.
 - Selectors that match entries under `mappings` produce

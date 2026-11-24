@@ -3,6 +3,8 @@
 
 package test17
 
+import "go.opentelemetry.io/collector/cmd/schemagen/internal/testdata/test17/internal"
+
 // Handler is a named interface type.
 type Handler interface {
 	Handle() error
@@ -18,9 +20,10 @@ type Groups map[string]Names
 type Tree []Tree
 
 type NamedTypesConfig struct {
-	Handler Handler `mapstructure:"handler"`
-	Names   Names   `mapstructure:"names"`
-	Groups  Groups  `mapstructure:"groups"`
-	Tree    Tree    `mapstructure:"tree"`
-	Extra   Groups  `mapstructure:",remain"`
+	Handler Handler        `mapstructure:"handler"`
+	Codec   internal.Codec `mapstructure:"codec"`
+	Names   Names          `mapstructure:"names"`
+	Groups  Groups         `mapstructure:"groups"`
+	Tree    Tree           `mapstructure:"tree"`
+	Extra   Groups         `mapstructure:",remain"`
 }

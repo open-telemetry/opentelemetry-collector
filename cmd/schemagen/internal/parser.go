@@ -140,10 +140,13 @@ func (p *Parser) collectTypesAndImports(file *ast.File, pkgPath string, cmap ast
 	return textTypes
 }
 
-// textUnmarshalerReceiver returns the receiver type name when decl is an
-// UnmarshalText method.
+// textUnmarshalerReceiver returns the receiver type name when decl is the
+// UnmarshalText([]byte) error method of encoding.TextUnmarshaler.
 func textUnmarshalerReceiver(decl *ast.FuncDecl) (string, bool) {
 	if decl.Name.Name != "UnmarshalText" || decl.Recv == nil || len(decl.Recv.List) != 1 {
+		return "", false
+	}
+	if !isSingleParam(decl.Type.Params, isByteSlice) || !isSingleParam(decl.Type.Results, isErrorType) {
 		return "", false
 	}
 	recv := decl.Recv.List[0].Type
@@ -155,6 +158,29 @@ func textUnmarshalerReceiver(decl *ast.FuncDecl) (string, bool) {
 		return "", false
 	}
 	return ident.Name, true
+}
+
+// isSingleParam reports whether fields declares exactly one parameter or
+// result and its type satisfies match.
+func isSingleParam(fields *ast.FieldList, match func(ast.Expr) bool) bool {
+	if fields == nil || len(fields.List) != 1 || len(fields.List[0].Names) > 1 {
+		return false
+	}
+	return match(fields.List[0].Type)
+}
+
+func isByteSlice(expr ast.Expr) bool {
+	arr, ok := expr.(*ast.ArrayType)
+	if !ok || arr.Len != nil {
+		return false
+	}
+	elem, ok := arr.Elt.(*ast.Ident)
+	return ok && elem.Name == "byte"
+}
+
+func isErrorType(expr ast.Expr) bool {
+	ident, ok := expr.(*ast.Ident)
+	return ok && ident.Name == "error"
 }
 
 func (p *Parser) feedProcessQueue(pattern string) error {
@@ -234,10 +260,10 @@ func (p *Parser) isConfigType(typeInfo *TypeInfo) bool {
 
 func (p *Parser) parseType(typeInfo *TypeInfo) (SchemaElement, error) {
 	typeSpec := typeInfo.spec
-	// skip non-struct types at the top level
-	switch typeSpec.Type.(type) {
-	case *ast.InterfaceType, *ast.FuncType:
-		// skip these types
+	// A func type has no configuration representation. A named interface type
+	// is kept: it becomes a definition that accepts any value, so that a
+	// reference to it resolves, from this package or from another one.
+	if _, isFunc := typeSpec.Type.(*ast.FuncType); isFunc {
 		return nil, nil
 	}
 	schemaElement, err := p.parseExpr(typeSpec.Type)
@@ -397,11 +423,6 @@ func (p *Parser) parseIdent(ident *ast.Ident) (SchemaElement, error) {
 	}
 
 	if info, exists := p.types[typeName]; exists {
-		if _, isInterface := info.spec.Type.(*ast.InterfaceType); isInterface {
-			// A named interface type never becomes a definition, so a
-			// reference to it could not be resolved.
-			return CreateSimpleField(SchemaTypeAny, ""), nil
-		}
 		p.processQueue.PushBack(info)
 		return CreateRefField(strcase.ToSnake(typeName), ""), nil
 	}
