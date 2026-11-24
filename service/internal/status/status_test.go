@@ -255,13 +255,14 @@ func TestStatusFuncsConcurrent(t *testing.T) {
 			}
 			compFn(componentstatus.NewEvent(componentstatus.StatusStopping))
 			compFn(componentstatus.NewEvent(componentstatus.StatusStopped))
+			rep.RemoveInstance(id)
 			wg.Done()
 		}()
 	}
 
 	wg.Wait()
 	require.Equal(t, 8012, count)
-	assert.Empty(t, rep.(*reporter).fsmMap, "stopped instances must not be retained")
+	assert.Empty(t, rep.(*reporter).fsmMap, "removed instances must not be retained")
 }
 
 func TestReportComponentOKIfStarting(t *testing.T) {
@@ -338,13 +339,13 @@ func TestReportComponentOKIfStarting(t *testing.T) {
 	}
 }
 
-// TestReporterDropsStoppedInstances verifies that the reporter forgets an
-// instance once it reports StatusStopped. Partial reloads replace component
-// instances while the service keeps running, so a reporter that keeps every
-// instance it has ever seen grows with each reload. A late event for a
-// dropped instance is reported as an invalid transition and must not bring
-// the entry back.
-func TestReporterDropsStoppedInstances(t *testing.T) {
+// TestReporterRemoveInstance verifies that RemoveInstance drops only the given
+// instance, both when it is in StatusStopped and when an error reported while
+// stopping left it in StatusRecoverableError. StatusStopped alone does not drop
+// an entry. After removal the instance is unknown: a late StatusOK is an
+// invalid transition that leaves no entry, and StatusStarting registers the
+// instance again.
+func TestReporterRemoveInstance(t *testing.T) {
 	var invalid []error
 	rep := NewReporter(
 		func(*componentstatus.InstanceID, *componentstatus.Event) {},
@@ -352,28 +353,49 @@ func TestReporterDropsStoppedInstances(t *testing.T) {
 	)
 	r := rep.(*reporter)
 
-	ids := []*componentstatus.InstanceID{{}, {}}
-	for _, id := range ids {
-		for _, st := range []componentstatus.Status{
-			componentstatus.StatusStarting,
-			componentstatus.StatusOK,
-			componentstatus.StatusStopping,
-		} {
-			rep.ReportStatus(id, componentstatus.NewEvent(st))
-		}
+	stopped := &componentstatus.InstanceID{}
+	for _, st := range []componentstatus.Status{
+		componentstatus.StatusStarting,
+		componentstatus.StatusOK,
+		componentstatus.StatusStopping,
+		componentstatus.StatusStopped,
+	} {
+		rep.ReportStatus(stopped, componentstatus.NewEvent(st))
 	}
+	failed := &componentstatus.InstanceID{}
+	for _, st := range []componentstatus.Status{
+		componentstatus.StatusStarting,
+		componentstatus.StatusOK,
+		componentstatus.StatusStopping,
+		componentstatus.StatusRecoverableError,
+		componentstatus.StatusStopped,
+	} {
+		rep.ReportStatus(failed, componentstatus.NewEvent(st))
+	}
+	require.Len(t, invalid, 1, "StatusStopped right after an error reported while stopping is an invalid transition")
 	require.Len(t, r.fsmMap, 2)
 
-	for _, id := range ids {
-		rep.ReportStatus(id, componentstatus.NewEvent(componentstatus.StatusStopped))
-	}
-	assert.Empty(t, r.fsmMap)
-	assert.Empty(t, invalid)
+	// Removing an instance the reporter does not know changes nothing.
+	rep.RemoveInstance(&componentstatus.InstanceID{})
+	require.Len(t, r.fsmMap, 2)
 
-	rep.ReportStatus(ids[0], componentstatus.NewEvent(componentstatus.StatusOK))
+	rep.RemoveInstance(stopped)
+	_, ok := r.fsmMap[failed]
+	require.True(t, ok, "removing one instance must keep the others")
+	require.Len(t, r.fsmMap, 1)
+	rep.RemoveInstance(failed)
 	assert.Empty(t, r.fsmMap)
-	require.Len(t, invalid, 1)
-	require.ErrorIs(t, invalid[0], errInvalidStateTransition)
+
+	rep.ReportStatus(failed, componentstatus.NewEvent(componentstatus.StatusOK))
+	assert.Empty(t, r.fsmMap)
+	require.Len(t, invalid, 2)
+	for _, err := range invalid {
+		require.ErrorIs(t, err, errInvalidStateTransition)
+	}
+
+	// No trace of a removed instance is kept, so StatusStarting registers it again.
+	rep.ReportStatus(stopped, componentstatus.NewEvent(componentstatus.StatusStarting))
+	assert.Len(t, r.fsmMap, 1)
 }
 
 // TestReporterUnknownInstanceFirstEvent verifies that an event other than

@@ -664,9 +664,10 @@ func (g *Graph) UpdateReceivers(ctx context.Context, set Settings,
 		return err
 	}
 
-	// Phase 5: Remove shutdown nodes from the graph and pipeline maps.
-	g.removeReceiverNodes(toRemove)
-	g.removeReceiverNodes(toRebuild)
+	// Phase 5: Remove shutdown nodes from the graph, the pipeline maps and the
+	// status reporter.
+	g.removeReceiverNodes(toRemove, host.Reporter)
+	g.removeReceiverNodes(toRebuild, host.Reporter)
 
 	// Phases 6-8: Create, wire and build nodes for added and rebuilt receivers.
 	wanted := make(map[int64]bool, len(toAdd)+len(toRebuild))
@@ -723,15 +724,27 @@ func (g *Graph) shutdownReceiverNodes(ctx context.Context, nodes map[int64]*rece
 }
 
 // removeReceiverNodes removes the given receiver nodes, their edges and their
-// instance IDs from the graph and from every pipeline that lists them.
-func (g *Graph) removeReceiverNodes(nodes map[int64]*receiverNode) {
+// instance IDs from the graph and from every pipeline that lists them, and
+// removes their instances from reporter (see removeInstance).
+func (g *Graph) removeReceiverNodes(nodes map[int64]*receiverNode, reporter status.Reporter) {
 	for nodeID := range nodes {
 		g.componentGraph.RemoveNode(nodeID)
-		delete(g.instanceIDs, nodeID)
+		g.removeInstance(nodeID, reporter)
 		for _, pipe := range g.pipelines {
 			delete(pipe.receivers, nodeID)
 		}
 	}
+}
+
+// removeInstance forgets the instance ID of a node that leaves the graph and
+// removes its state machine from the status reporter. Call it only after the
+// graph has reported the node's final status, otherwise that status reaches an
+// unknown instance and is dropped. Every path that removes a component node
+// from a running graph must go through it. Otherwise the reporter keeps the
+// state machine of the old instance for the lifetime of the service.
+func (g *Graph) removeInstance(nodeID int64, reporter status.Reporter) {
+	reporter.RemoveInstance(g.instanceIDs[nodeID])
+	delete(g.instanceIDs, nodeID)
 }
 
 // addReceiverNodes creates a node for every receiver of set.PipelineConfigs

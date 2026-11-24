@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -4004,6 +4005,170 @@ func TestUpdateReceiversSharedInstanceBehindWrappers(t *testing.T) {
 	assert.Same(t, instances[1], tracesRcvr)
 	assert.EqualValues(t, 1, tracesRcvr.started.Load())
 	assert.EqualValues(t, 0, tracesRcvr.stopped.Load())
+
+	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+}
+
+// statusRecorder is a status.Reporter that records, in order, the statuses
+// reported for each instance and its removal, and forwards every call to the
+// wrapped reporter.
+type statusRecorder struct {
+	status.Reporter
+	mu      sync.Mutex
+	records []statusRecord
+}
+
+type statusRecord struct {
+	id    *componentstatus.InstanceID
+	event string
+}
+
+const removedEvent = "removed"
+
+func (r *statusRecorder) ReportStatus(id *componentstatus.InstanceID, ev *componentstatus.Event) {
+	r.record(id, ev.Status().String())
+	r.Reporter.ReportStatus(id, ev)
+}
+
+func (r *statusRecorder) RemoveInstance(id *componentstatus.InstanceID) {
+	r.record(id, removedEvent)
+	r.Reporter.RemoveInstance(id)
+}
+
+func (r *statusRecorder) record(id *componentstatus.InstanceID, event string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.records = append(r.records, statusRecord{id: id, event: event})
+}
+
+// history returns, in order, what was recorded for id.
+func (r *statusRecorder) history(id *componentstatus.InstanceID) []string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	var events []string
+	for _, rec := range r.records {
+		if rec.id == id {
+			events = append(events, rec.event)
+		}
+	}
+	return events
+}
+
+// removedCount returns how many removals were recorded.
+func (r *statusRecorder) removedCount() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	count := 0
+	for _, rec := range r.records {
+		if rec.event == removedEvent {
+			count++
+		}
+	}
+	return count
+}
+
+// stopThenRemove is what a partial reload records for an instance it replaces:
+// the graph reports the node stopped, then removes the instance.
+var stopThenRemove = []string{
+	componentstatus.StatusStopping.String(),
+	componentstatus.StatusStopped.String(),
+	removedEvent,
+}
+
+// TestUpdateReceiversRemovesReplacedInstances verifies that a partial reload
+// removes from the status reporter the instances of the receiver nodes it
+// removes or rebuilds, only after reporting them stopped, and keeps the
+// instance of an unchanged receiver.
+func TestUpdateReceiversRemovesReplacedInstances(t *testing.T) {
+	type namedCfg struct{ Name string }
+	keepID := component.MustNewIDWithName("examplereceiver", "keep")
+	removeID := component.MustNewIDWithName("examplereceiver", "remove")
+	rebuildID := component.MustNewIDWithName("examplereceiver", "rebuild")
+	rcvrCfgs := map[component.ID]component.Config{
+		keepID:    &namedCfg{Name: "keep"},
+		removeID:  &namedCfg{Name: "remove"},
+		rebuildID: &namedCfg{Name: "rebuild_v1"},
+	}
+	tracesPipeline := func(recvIDs ...component.ID) pipelines.Config {
+		return pipelines.Config{
+			pipeline.NewID(pipeline.SignalTraces): {
+				Receivers:  recvIDs,
+				Processors: []component.ID{component.MustNewID("exampleprocessor")},
+				Exporters:  []component.ID{component.MustNewID("exampleexporter")},
+			},
+		}
+	}
+
+	pg, host, set := updateReceiversTestGraph(t, rcvrCfgs, nil, tracesPipeline(keepID, removeID, rebuildID))
+	recorder := &statusRecorder{Reporter: host.Reporter}
+	host.Reporter = recorder
+
+	keepNodeID := newReceiverNode(pipeline.SignalTraces, keepID).ID()
+	rebuildNodeID := newReceiverNode(pipeline.SignalTraces, rebuildID).ID()
+	keepInstance := pg.instanceIDs[keepNodeID]
+	removedInstance := pg.instanceIDs[newReceiverNode(pipeline.SignalTraces, removeID).ID()]
+	oldRebuildInstance := pg.instanceIDs[rebuildNodeID]
+	require.NotNil(t, keepInstance)
+	require.NotNil(t, removedInstance)
+	require.NotNil(t, oldRebuildInstance)
+
+	// Remove "remove" and change the config of "rebuild".
+	newRcvrCfgs := map[component.ID]component.Config{
+		keepID:    rcvrCfgs[keepID],
+		rebuildID: &namedCfg{Name: "rebuild_v2"},
+	}
+	updatedSet := makeUpdatedSettings(set, newRcvrCfgs, tracesPipeline(keepID, rebuildID))
+	require.NoError(t, pg.UpdateReceivers(context.Background(), updatedSet, changedReceiverIDs(rcvrCfgs, newRcvrCfgs), newRcvrCfgs, testReceiverFactories, host))
+
+	assert.Equal(t, stopThenRemove, recorder.history(removedInstance), "the removed receiver")
+	assert.Equal(t, stopThenRemove, recorder.history(oldRebuildInstance), "the old instance of the rebuilt receiver")
+	assert.Empty(t, recorder.history(keepInstance), "the unchanged receiver")
+	assert.Equal(t, 2, recorder.removedCount())
+	assert.Same(t, keepInstance, pg.instanceIDs[keepNodeID], "the unchanged receiver should keep its instance")
+	newRebuildInstance := pg.instanceIDs[rebuildNodeID]
+	require.NotNil(t, newRebuildInstance)
+	assert.NotSame(t, oldRebuildInstance, newRebuildInstance, "the rebuilt receiver should get a new instance")
+	assert.NotContains(t, recorder.history(newRebuildInstance), removedEvent)
+
+	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
+}
+
+// TestUpdateReceiversRemovesSharedInstanceNodes verifies that when a receiver
+// shares one instance across signals, a partial reload removes from the status
+// reporter the instances of all nodes that held it, including the node that is
+// rebuilt only because it shares the instance.
+func TestUpdateReceiversRemovesSharedInstanceNodes(t *testing.T) {
+	var instances []*sharedReceiver
+	factories := map[component.Type]receiver.Factory{sharedReceiverType: newSharedReceiverFactory(&instances)}
+	sharedID := component.MustNewID("sharedreceiver")
+	rcvrCfgs := map[component.ID]component.Config{sharedID: &sharedReceiverConfig{id: "v1"}}
+
+	pg, host, set := receiverTestGraph(t, rcvrCfgs, factories, sharedReceiverPipelines(sharedID, nil))
+	require.Len(t, instances, 1, "one instance serves both signals")
+	recorder := &statusRecorder{Reporter: host.Reporter}
+	host.Reporter = recorder
+
+	tracesNodeID := newReceiverNode(pipeline.SignalTraces, sharedID).ID()
+	oldTracesInstance := pg.instanceIDs[tracesNodeID]
+	oldMetricsInstance := pg.instanceIDs[newReceiverNode(pipeline.SignalMetrics, sharedID).ID()]
+	require.NotNil(t, oldTracesInstance)
+	require.NotNil(t, oldMetricsInstance)
+
+	// The metrics pipeline drops the receiver, so the traces node is rebuilt too.
+	updatedPipelines := sharedReceiverPipelines(sharedID, nil)
+	updatedPipelines[pipeline.NewID(pipeline.SignalMetrics)].Receivers = nil
+	updatedSet := makeErrUpdatedSettings(set, rcvrCfgs, updatedPipelines)
+	updatedSet.ReceiverBuilder = builders.NewReceiver(rcvrCfgs, factories)
+	require.NoError(t, pg.UpdateReceivers(context.Background(), updatedSet, changedReceiverIDs(rcvrCfgs, rcvrCfgs), rcvrCfgs, factories, host))
+	require.Len(t, instances, 2, "the traces node is rebuilt on a new instance")
+
+	assert.Equal(t, stopThenRemove, recorder.history(oldMetricsInstance), "the removed metrics node")
+	assert.Equal(t, stopThenRemove, recorder.history(oldTracesInstance), "the traces node rebuilt because it shares the instance")
+	assert.Equal(t, 2, recorder.removedCount())
+	newTracesInstance := pg.instanceIDs[tracesNodeID]
+	require.NotNil(t, newTracesInstance)
+	assert.NotSame(t, oldTracesInstance, newTracesInstance, "the rebuilt traces node should get a new instance")
+	assert.NotContains(t, recorder.history(newTracesInstance), removedEvent)
 
 	require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 }

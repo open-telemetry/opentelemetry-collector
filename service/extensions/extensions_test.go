@@ -511,6 +511,10 @@ func (h *statusReporterHost) ReportOKIfStarting(id *componentstatus.InstanceID) 
 	h.reporter.ReportOKIfStarting(id)
 }
 
+func (h *statusReporterHost) RemoveInstance(id *componentstatus.InstanceID) {
+	h.reporter.RemoveInstance(id)
+}
+
 type selfReportingExtension struct {
 	event *componentstatus.Event
 }

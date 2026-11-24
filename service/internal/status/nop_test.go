@@ -9,4 +9,5 @@ func TestNopStatusReporter(*testing.T) {
 	nop := NewNopStatusReporter()
 	nop.ReportOKIfStarting(nil)
 	nop.ReportStatus(nil, nil)
+	nop.RemoveInstance(nil)
 }
