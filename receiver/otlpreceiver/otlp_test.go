@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -30,11 +31,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/encoding"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -45,6 +48,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -769,6 +773,135 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 	assertReceiverTraces(t, tt, otlpReceiverID, "grpc", int64(expectedReceivedBatches), int64(expectedIngestionBlockedRPCs))
 }
 
+// countingGzipName is the name of a gzip compressor that counts decompressions.
+const countingGzipName = "counting-gzip"
+
+var (
+	countingGzipOnce         sync.Once
+	countingGzipDecompresses atomic.Int64
+)
+
+type countingGzip struct {
+	encoding.Compressor
+}
+
+func (countingGzip) Name() string { return countingGzipName }
+
+func (c countingGzip) Decompress(r io.Reader) (io.Reader, error) {
+	countingGzipDecompresses.Add(1)
+	return c.Compressor.Decompress(r)
+}
+
+// rejectingAuth is an auth extension that rejects every request and counts the attempts.
+type rejectingAuth struct {
+	component.StartFunc
+	component.ShutdownFunc
+	calls atomic.Int64
+}
+
+func (a *rejectingAuth) Authenticate(context.Context, map[string][]string) (context.Context, error) {
+	a.calls.Add(1)
+	return nil, errors.New("not authenticated")
+}
+
+type hostWithExtensions struct {
+	component.Host
+	extensions map[component.ID]component.Component
+}
+
+func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component {
+	return h.extensions
+}
+
+// TestOTLPReceiverGRPCAuthRejectsBeforeDecompression verifies, for every signal, that a
+// request the configured authenticator rejects is not decompressed first. Otherwise an
+// unauthenticated client can make the receiver spend CPU and memory on request bodies it
+// is going to discard.
+func TestOTLPReceiverGRPCAuthRejectsBeforeDecompression(t *testing.T) {
+	countingGzipOnce.Do(func() {
+		encoding.RegisterCompressor(countingGzip{Compressor: encoding.GetCompressor("gzip")})
+	})
+	// An empty message is never compressed, so the requests need a body.
+	body := strings.Repeat("a", 1024)
+	callOpts := []grpc.CallOption{grpc.UseCompressor(countingGzipName), grpc.WaitForReady(true)}
+
+	tests := []struct {
+		name   string
+		export func(context.Context, *grpc.ClientConn) error
+	}{
+		{
+			name: "traces",
+			export: func(ctx context.Context, cc *grpc.ClientConn) error {
+				td := ptrace.NewTraces()
+				td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName(body)
+				_, err := ptraceotlp.NewGRPCClient(cc).Export(ctx, ptraceotlp.NewExportRequestFromTraces(td), callOpts...)
+				return err
+			},
+		},
+		{
+			name: "metrics",
+			export: func(ctx context.Context, cc *grpc.ClientConn) error {
+				md := pmetric.NewMetrics()
+				md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName(body)
+				_, err := pmetricotlp.NewGRPCClient(cc).Export(ctx, pmetricotlp.NewExportRequestFromMetrics(md), callOpts...)
+				return err
+			},
+		},
+		{
+			name: "logs",
+			export: func(ctx context.Context, cc *grpc.ClientConn) error {
+				ld := plog.NewLogs()
+				ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(body)
+				_, err := plogotlp.NewGRPCClient(cc).Export(ctx, plogotlp.NewExportRequestFromLogs(ld), callOpts...)
+				return err
+			},
+		},
+		{
+			name: "profiles",
+			export: func(ctx context.Context, cc *grpc.ClientConn) error {
+				pd := pprofile.NewProfiles()
+				pd.Dictionary().StringTable().Append("", body)
+				_, err := pprofileotlp.NewGRPCClient(cc).Export(ctx, pprofileotlp.NewExportRequestFromProfiles(pd), callOpts...)
+				return err
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			countingGzipDecompresses.Store(0)
+			authID := component.MustNewID("rejecting")
+			auth := &rejectingAuth{}
+
+			addr := testutil.GetAvailableLocalAddress(t)
+			cfg := createDefaultConfig().(*Config)
+			grpcCfg := cfg.Protocols.GRPC.GetOrInsertDefault()
+			grpcCfg.NetAddr.Endpoint = addr
+			grpcCfg.Auth = configoptional.Some(configauth.Config{AuthenticatorID: authID})
+
+			recv := newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, consumertest.NewNop())
+			host := hostWithExtensions{
+				Host:       componenttest.NewNopHost(),
+				extensions: map[component.ID]component.Component{authID: auth},
+			}
+			require.NoError(t, recv.Start(context.Background(), host))
+			t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
+
+			cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			require.NoError(t, err)
+			defer func() { assert.NoError(t, cc.Close()) }()
+
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			err = tt.export(ctx, cc)
+
+			assert.Equal(t, codes.Unauthenticated, status.Code(err))
+			assert.EqualValues(t, 1, auth.calls.Load(), "the authenticator should run exactly once")
+			assert.Zero(t, countingGzipDecompresses.Load(), "the request was decompressed before it was authenticated")
+		})
+	}
+}
+
 // TestOTLPReceiverHTTPTracesIngestTest checks that the HTTP trace receiver
 // is returning the proper response (return and metrics) when the next consumer
 // in the pipeline reports error. The test changes the responses returned by the
@@ -1308,6 +1441,80 @@ func TestShutdown(t *testing.T) {
 	// The last, additional trace should not be received by sink, so the number of spans in
 	// the sink should not change.
 	assert.Equal(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
+}
+
+func TestShutdownContext(t *testing.T) {
+	// Without a deadline, the grace period is added on top of the configured limit.
+	for _, limit := range []time.Duration{0, 2 * time.Minute} {
+		ctx, cancel := shutdownContext(context.Background(), limit)
+		deadline, ok := ctx.Deadline()
+		require.True(t, ok)
+		assert.WithinDuration(t, time.Now().Add(limit+shutdownGracePeriod), deadline, 5*time.Second)
+		cancel()
+	}
+
+	// A deadline set by the caller is always honored as is.
+	parent, cancelParent := context.WithTimeout(context.Background(), time.Second)
+	defer cancelParent()
+	ctx, cancel := shutdownContext(parent, 2*time.Minute)
+	defer cancel()
+	assert.Equal(t, parent, ctx)
+}
+
+// TestShutdownWithIncompleteRequests verifies that Shutdown does not wait
+// forever on requests whose peer never finishes sending them: a gRPC call that
+// sent its headers but no message, and an HTTP request whose headers never end.
+// Neither has reached the handler's consumer (or an authenticator), so a peer
+// needs no credentials to hold them open.
+func TestShutdownWithIncompleteRequests(t *testing.T) {
+	endpointGrpc := testutil.GetAvailableLocalAddress(t)
+	endpointHTTP := testutil.GetAvailableLocalAddress(t)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Protocols.GRPC.GetOrInsertDefault().NetAddr.Endpoint = endpointGrpc
+	cfg.Protocols.HTTP.GetOrInsertDefault().ServerConfig.NetAddr.Endpoint = endpointHTTP
+	set := receivertest.NewNopSettings(metadata.Type)
+	set.ID = otlpReceiverID
+	r, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Open a gRPC Export call and never send the request message.
+	conn, err := grpc.NewClient(endpointGrpc, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, conn.Close()) })
+	streamCtx, cancelStream := context.WithCancel(context.Background())
+	t.Cleanup(cancelStream)
+	stream, err := conn.NewStream(streamCtx, &grpc.StreamDesc{}, "/opentelemetry.proto.collector.trace.v1.TraceService/Export")
+	require.NoError(t, err)
+
+	// Open an HTTP request and never finish sending its headers.
+	httpConn, err := net.Dial("tcp", endpointHTTP)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = httpConn.Close() })
+	_, err = fmt.Fprintf(httpConn, "POST %s HTTP/1.1\r\nHost: %s\r\n", defaultTracesURLPath, endpointHTTP)
+	require.NoError(t, err)
+
+	// Give the servers time to read the headers and start the handlers.
+	time.Sleep(100 * time.Millisecond)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- r.Shutdown(ctx) }()
+	select {
+	case err = <-done:
+		require.Error(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("Shutdown did not return while incomplete requests were held open")
+	}
+
+	// The held call must have been terminated by the server.
+	require.Error(t, stream.RecvMsg(ptraceotlp.NewExportResponse()))
+	require.NoError(t, httpConn.SetReadDeadline(time.Now().Add(5*time.Second)))
+	_, err = httpConn.Read(make([]byte, 1))
+	require.ErrorIs(t, err, io.EOF)
 }
 
 func generateTraces(senderFn senderFunc, doneSignal chan bool) {

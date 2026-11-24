@@ -150,6 +150,34 @@ func requireProfilesEqualIgnoringAppendedStrings(t *testing.T, want, got pprofil
 	require.Equal(t, w, g)
 }
 
+func TestSanitizeUTF8(t *testing.T) {
+	pd := pprofile.NewProfiles()
+	pd.Dictionary().StringTable().Append("", "bad\xff")
+	rp := pd.ResourceProfiles().AppendEmpty()
+	rp.Resource().Attributes().PutStr("bad\xff", "bad\xff")
+	sp := rp.ScopeProfiles().AppendEmpty()
+	sp.Scope().SetName("scope\xff")
+	sp.Profiles().AppendEmpty().SetOriginalPayloadFormat("format\xff")
+
+	NewExportRequestFromProfiles(pd).SanitizeUTF8()
+
+	expected := pprofile.NewProfiles()
+	expected.Dictionary().StringTable().Append("", "bad�")
+	erp := expected.ResourceProfiles().AppendEmpty()
+	erp.Resource().Attributes().PutStr("bad�", "bad�")
+	esp := erp.ScopeProfiles().AppendEmpty()
+	esp.Scope().SetName("scope�")
+	esp.Profiles().AppendEmpty().SetOriginalPayloadFormat("format�")
+	assert.Equal(t, expected, pd)
+}
+
+func TestSanitizeUTF8ReadOnly(t *testing.T) {
+	pd := pprofile.NewProfiles()
+	pd.Dictionary().StringTable().Append("bad\xff")
+	pd.MarkReadOnly()
+	assert.Panics(t, func() { NewExportRequestFromProfiles(pd).SanitizeUTF8() })
+}
+
 func TestRejectInvalidUTF8(t *testing.T) {
 	t.Run("invalid dictionary", func(t *testing.T) {
 		pd := pprofile.NewProfiles()

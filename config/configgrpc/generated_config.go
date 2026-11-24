@@ -29,6 +29,9 @@ type ClientConfig struct {
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
 	BalancerName string `mapstructure:"balancer_name"`
 
+	// PickFirst configures the pick_first balancer. Only valid when balancer_name is pick_first or empty.
+	PickFirst configoptional.Optional[PickFirstConfig] `mapstructure:"pick_first,omitempty"`
+
 	// Compression the compression key for supported compression types within collector.
 	Compression configcompression.Type `mapstructure:"compression,omitempty"`
 
@@ -91,6 +94,7 @@ func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
 		Auth:             configoptional.None[configauth.Config](),
 		BalancerName:     "round_robin",
+		PickFirst:        configoptional.None[PickFirstConfig](),
 		Keepalive:        configoptional.Some(NewDefaultKeepaliveClientConfig()),
 		DialerMiddleware: configoptional.None[configmiddleware.Config](),
 		TLS:              configtls.NewDefaultClientConfig(),
@@ -187,6 +191,17 @@ func NewDefaultKeepaliveServerParameters() KeepaliveServerParameters {
 	return KeepaliveServerParameters{}
 }
 
+// PickFirstConfig mirrors the pick_first load balancing config of gRPC.
+// https://github.com/grpc/proposal/blob/master/A62-pick-first.md
+type PickFirstConfig struct {
+	// ShuffleAddressList shuffles the resolved addresses before connecting, so clients that receive
+	// the same address list spread across backends.
+	ShuffleAddressList bool `mapstructure:"shuffle_address_list,omitempty"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
 // ServerConfig defines common settings for a gRPC server configuration.
 type ServerConfig struct {
 	// Auth authentication for this receiver
@@ -197,6 +212,9 @@ type ServerConfig struct {
 
 	// Keepalive anchor for all the settings related to keepalive.
 	Keepalive configoptional.Optional[KeepaliveServerConfig] `mapstructure:"keepalive,omitempty"`
+
+	// ListenerMiddleware listener middleware is a handler customizing how the server will listen for connections over TCP.
+	ListenerMiddleware configoptional.Optional[configmiddleware.Config] `mapstructure:"listener_middleware,omitempty"`
 
 	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
 	// It has effect only for streaming RPCs.
@@ -231,6 +249,10 @@ type ServerConfig struct {
 func (c *ServerConfig) Validate() error {
 	var err error
 
+	if inner_err := validateListenerMiddleware(c.ListenerMiddleware); inner_err != nil {
+		err = errors.Join(err, inner_err)
+	}
+
 	if inner_err := validateMaxRecvMsgSizeMiB(c.MaxRecvMsgSizeMiB); inner_err != nil {
 		err = errors.Join(err, inner_err)
 	}
@@ -252,9 +274,10 @@ func NewDefaultServerConfig() ServerConfig {
 	addrConfig := confignet.NewDefaultAddrConfig()
 	addrConfig.Transport = "tcp"
 	return ServerConfig{
-		Auth:      configoptional.None[configauth.Config](),
-		Keepalive: configoptional.Some(NewDefaultKeepaliveServerConfig()),
-		TLS:       configoptional.None[configtls.ServerConfig](),
-		NetAddr:   addrConfig,
+		Auth:               configoptional.None[configauth.Config](),
+		Keepalive:          configoptional.Some(NewDefaultKeepaliveServerConfig()),
+		ListenerMiddleware: configoptional.None[configmiddleware.Config](),
+		TLS:                configoptional.None[configtls.ServerConfig](),
+		NetAddr:            addrConfig,
 	}
 }

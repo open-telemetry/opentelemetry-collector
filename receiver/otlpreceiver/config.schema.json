@@ -69,6 +69,16 @@
               "description": "Anchor for all the settings related to keepalive.",
               "default": {}
             },
+            "listener_middleware": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Specifies the name of the extension to use."
+                }
+              },
+              "description": "Listener middleware is a handler customizing how the server will listen for connections over TCP."
+            },
             "max_concurrent_streams": {
               "type": "integer",
               "description": "Sets the limit on the number of concurrent streams to each ServerTransport. \nIt has effect only for streaming RPCs.\n"
@@ -176,13 +186,15 @@
                       "type": "object",
                       "properties": {
                         "auth": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "The authorization value of the TLS key stored in the TPM. (optional)"
                         },
                         "enabled": {
                           "type": "boolean"
                         },
                         "owner_auth": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "The owner authorization value of the TPM. (optional)"
                         },
                         "path": {
                           "type": "string",
@@ -192,7 +204,7 @@
                       "description": "Trusted platform module configuration"
                     }
                   },
-                  "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn''t anything specific to a server connection. Components with server connections should use Config.\n",
+                  "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn't anything specific to a server connection. Components with server connections should use Config.\n",
                   "default": {}
                 }
               ]
@@ -305,7 +317,7 @@
                   "items": {
                     "type": "string"
                   },
-                  "description": "Configures the list of compression algorithms the server can accept. \nDefault: [\"\", \"gzip\", \"zstd\", \"zlib\", \"snappy\", \"deflate\"]\n"
+                  "description": "Configures the list of compression algorithms the server can accept. \nDefault: [\"\", \"gzip\", \"zstd\", \"zlib\", \"snappy\", \"deflate\", \"lz4\", \"x-snappy-framed\"]\n"
                 },
                 "cors": {
                   "type": "object",
@@ -354,6 +366,16 @@
                     }
                   },
                   "description": "Controls HTTP keep-alives.\nBy default, keep-alives are always enabled. Only very resource-constrained environments should disable them.\nUnmarshal folds this section into the deprecated fields below, which\nremain the source of truth during their deprecation window, and always\nresets it to None. A value visible to ToServer was therefore set\nprogrammatically after unmarshaling (or the config was never unmarshaled)\nand takes precedence over the deprecated fields.\n"
+                },
+                "listener_middleware": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Specifies the name of the extension to use."
+                    }
+                  },
+                  "description": "Listener middleware is a handler customizing how the server will listen for connections over TCP."
                 },
                 "max_request_body_size": {
                   "type": "integer",
@@ -471,13 +493,15 @@
                           "type": "object",
                           "properties": {
                             "auth": {
-                              "type": "string"
+                              "type": "string",
+                              "description": "The authorization value of the TLS key stored in the TPM. (optional)"
                             },
                             "enabled": {
                               "type": "boolean"
                             },
                             "owner_auth": {
-                              "type": "string"
+                              "type": "string",
+                              "description": "The owner authorization value of the TPM. (optional)"
                             },
                             "path": {
                               "type": "string",
@@ -487,7 +511,7 @@
                           "description": "Trusted platform module configuration"
                         }
                       },
-                      "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn''t anything specific to a server connection. Components with server connections should use Config.\n",
+                      "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn't anything specific to a server connection. Components with server connections should use Config.\n",
                       "default": {}
                     }
                   ]
@@ -591,7 +615,7 @@
               "items": {
                 "type": "string"
               },
-              "description": "Configures the list of compression algorithms the server can accept. \nDefault: [\"\", \"gzip\", \"zstd\", \"zlib\", \"snappy\", \"deflate\"]\n"
+              "description": "Configures the list of compression algorithms the server can accept. \nDefault: [\"\", \"gzip\", \"zstd\", \"zlib\", \"snappy\", \"deflate\", \"lz4\", \"x-snappy-framed\"]\n"
             },
             "cors": {
               "type": "object",
@@ -640,6 +664,16 @@
                 }
               },
               "description": "Controls HTTP keep-alives.\nBy default, keep-alives are always enabled. Only very resource-constrained environments should disable them.\nUnmarshal folds this section into the deprecated fields below, which\nremain the source of truth during their deprecation window, and always\nresets it to None. A value visible to ToServer was therefore set\nprogrammatically after unmarshaling (or the config was never unmarshaled)\nand takes precedence over the deprecated fields.\n"
+            },
+            "listener_middleware": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Specifies the name of the extension to use."
+                }
+              },
+              "description": "Listener middleware is a handler customizing how the server will listen for connections over TCP."
             },
             "max_request_body_size": {
               "type": "integer",
@@ -757,13 +791,15 @@
                       "type": "object",
                       "properties": {
                         "auth": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "The authorization value of the TLS key stored in the TPM. (optional)"
                         },
                         "enabled": {
                           "type": "boolean"
                         },
                         "owner_auth": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "The owner authorization value of the TPM. (optional)"
                         },
                         "path": {
                           "type": "string",
@@ -773,7 +809,7 @@
                       "description": "Trusted platform module configuration"
                     }
                   },
-                  "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn''t anything specific to a server connection. Components with server connections should use Config.\n",
+                  "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn't anything specific to a server connection. Components with server connections should use Config.\n",
                   "default": {}
                 }
               ]
