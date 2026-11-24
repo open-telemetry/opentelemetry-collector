@@ -1,0 +1,27 @@
+$defs:
+  groups:
+    description: Groups is a named map of a named slice type.
+    type: object
+    additionalProperties:
+      $ref: names
+  names:
+    description: Names is a named slice of strings.
+    type: array
+    items:
+      type: string
+  tree:
+    description: Tree is a named slice type that refers to itself.
+    type: array
+    items:
+      $ref: tree
+type: object
+properties:
+  groups:
+    $ref: groups
+  handler: {}
+  names:
+    $ref: names
+  tree:
+    $ref: tree
+additionalProperties:
+  $ref: names
