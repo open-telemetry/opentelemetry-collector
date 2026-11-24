@@ -6,6 +6,7 @@ package memorylimiter
 import (
 	"context"
 	"runtime"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -65,7 +66,9 @@ func TestMemoryPressureResponse(t *testing.T) {
 	assert.True(t, ml.MustRefuse())
 
 	// Check spike limit
-	ml.usageChecker.memSpikeLimit = 512 * mibBytes
+	uc := *ml.usageChecker.Load()
+	uc.memSpikeLimit = 512 * mibBytes
+	ml.usageChecker.Store(&uc)
 
 	// Below memSpikeLimit.
 	currentMemAlloc = 500
@@ -666,7 +669,7 @@ func TestCheckLimitAndBackoff(t *testing.T) {
 		ml.currentHardGCInterval = 15 * time.Second
 		ml.lastStats = &runtime.MemStats{Alloc: 100 * mibBytes}
 		ms := &runtime.MemStats{Alloc: 50 * mibBytes}
-		above := ml.checkLimitAndBackoff(ms, true)
+		above := ml.checkLimitAndBackoff(ml.usageChecker.Load(), ms, true)
 		assert.False(t, above)
 		assert.Zero(t, ml.currentSoftGCInterval)
 		assert.Zero(t, ml.currentHardGCInterval)
@@ -680,7 +683,7 @@ func TestCheckLimitAndBackoff(t *testing.T) {
 		// 110 → 99 is a 10% drop, above the 5% threshold, but still above
 		// soft limit (95 MiB) so it counts as effective-by-reclaim.
 		ms := &runtime.MemStats{Alloc: 99 * mibBytes}
-		above := ml.checkLimitAndBackoff(ms, true)
+		above := ml.checkLimitAndBackoff(ml.usageChecker.Load(), ms, true)
 		assert.True(t, above, "still above soft limit (95 MiB)")
 		assert.Zero(t, ml.currentSoftGCInterval)
 		assert.Zero(t, ml.currentHardGCInterval)
@@ -690,7 +693,7 @@ func TestCheckLimitAndBackoff(t *testing.T) {
 		ml := newML()
 		ml.lastStats = &runtime.MemStats{Alloc: 100 * mibBytes}
 		ms := &runtime.MemStats{Alloc: 99 * mibBytes}
-		ml.checkLimitAndBackoff(ms, true)
+		ml.checkLimitAndBackoff(ml.usageChecker.Load(), ms, true)
 		// Both advance from 0 to 1.9s (floor 950ms doubled), capped at 30s.
 		assert.Equal(t, 1900*time.Millisecond, ml.currentSoftGCInterval)
 		assert.Equal(t, 1900*time.Millisecond, ml.currentHardGCInterval)
@@ -704,7 +707,7 @@ func TestCheckLimitAndBackoff(t *testing.T) {
 		ml.currentSoftGCInterval = 5 * time.Second
 		ml.currentHardGCInterval = 7 * time.Second
 		ms := &runtime.MemStats{Alloc: 99 * mibBytes}
-		ml.checkLimitAndBackoff(ms, false)
+		ml.checkLimitAndBackoff(ml.usageChecker.Load(), ms, false)
 		assert.Equal(t, 5*time.Second, ml.currentSoftGCInterval)
 		assert.Equal(t, 7*time.Second, ml.currentHardGCInterval)
 	})
@@ -726,7 +729,7 @@ func TestCheckLimitAndBackoff(t *testing.T) {
 		require.NoError(t, err)
 		ml.lastStats = &runtime.MemStats{Alloc: 100 * mibBytes}
 		ms := &runtime.MemStats{Alloc: 99 * mibBytes}
-		ml.checkLimitAndBackoff(ms, true)
+		ml.checkLimitAndBackoff(ml.usageChecker.Load(), ms, true)
 		assert.Equal(t, 20*time.Second, ml.currentSoftGCInterval, "soft grows: floor 10s doubled to 20s")
 		assert.Zero(t, ml.currentHardGCInterval, "hard pinned to min_hard=0 (backoff disabled)")
 	})
@@ -988,4 +991,85 @@ func TestStart(t *testing.T) {
 	require.NoError(t, ml.Start(context.Background(), host))
 	assert.Equal(t, host, ml.host)
 	require.NoError(t, ml.Shutdown(context.Background()))
+}
+
+func TestMemLimitRefreshes(t *testing.T) {
+	host := componenttest.NewNopHost()
+	cfg := &Config{
+		CheckInterval:         1 * time.Minute,
+		MemoryLimitPercentage: 50,
+		MemorySpikePercentage: 10,
+		RefreshInterval:       5 * time.Millisecond,
+		GarbageCollector:      configoptional.Some(GarbageCollectorConfig{}),
+	}
+	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, ml.refreshCheckerFn, "refresh loop should be enabled for percentage limit")
+
+	// Pin a known starting threshold, then simulate an in-place memory limit
+	// resize by having the refresher return a different checker.
+	ml.usageChecker.Store(newPercentageMemUsageChecker(1000*mibBytes, 50, 10))
+	ml.refreshCheckerFn = func() (*memUsageChecker, error) {
+		return newPercentageMemUsageChecker(2000*mibBytes, 50, 10), nil
+	}
+
+	require.NoError(t, ml.Start(context.Background(), host))
+	t.Cleanup(func() { require.NoError(t, ml.Shutdown(context.Background())) })
+
+	// 50% of 1000 MiB = 500 MiB before refresh; 50% of 2000 MiB = 1000 MiB after.
+	require.Equal(t, uint64(500*mibBytes), ml.usageChecker.Load().memAllocLimit, "pinned starting limit")
+	require.Eventually(t, func() bool {
+		return ml.usageChecker.Load().memAllocLimit == uint64(1000*mibBytes)
+	}, time.Second, 5*time.Millisecond, "usageChecker was not refreshed to the new limit")
+}
+
+func TestMemLimitRefreshStopsOnShutdown(t *testing.T) {
+	host := componenttest.NewNopHost()
+	cfg := &Config{
+		CheckInterval:         1 * time.Minute,
+		MemoryLimitPercentage: 50,
+		MemorySpikePercentage: 10,
+		RefreshInterval:       5 * time.Millisecond,
+		GarbageCollector:      configoptional.Some(GarbageCollectorConfig{}),
+	}
+	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
+	require.NoError(t, err)
+
+	// Inject a fake refresher so the test does not depend on cgroups. The
+	// percentage config above makes NewMemoryLimiter enable the refresh loop;
+	// overriding the fn only swaps what the loop re-derives on each tick.
+	require.NotNil(t, ml.refreshCheckerFn, "refresh loop should be enabled for percentage limit")
+	var calls atomic.Int64
+	ml.refreshCheckerFn = func() (*memUsageChecker, error) {
+		calls.Add(1)
+		return newPercentageMemUsageChecker(1000*mibBytes, 50, 10), nil
+	}
+
+	require.NoError(t, ml.Start(context.Background(), host))
+
+	// The refresh loop must actually run.
+	require.Eventually(t, func() bool {
+		return calls.Load() > 0
+	}, time.Second, 5*time.Millisecond, "refresh loop never called refreshCheckerFn")
+
+	require.NoError(t, ml.Shutdown(context.Background()))
+
+	// After Shutdown the loop is stopped: the call count must not keep growing.
+	stopped := calls.Load()
+	time.Sleep(50 * time.Millisecond)
+	assert.Equal(t, stopped, calls.Load(), "refresh loop kept running after Shutdown")
+}
+
+func TestMemLimitRefreshDisabledForFixedLimit(t *testing.T) {
+	cfg := &Config{
+		CheckInterval:       1 * time.Minute,
+		MemoryLimitMiB:      50,
+		MemorySpikeLimitMiB: 10,
+		RefreshInterval:     5 * time.Millisecond,
+		GarbageCollector:    configoptional.Some(GarbageCollectorConfig{}),
+	}
+	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
+	require.NoError(t, err)
+	assert.Zero(t, ml.refreshInterval, "refresh must be disabled when a fixed limit_mib is set")
+	assert.Nil(t, ml.refreshCheckerFn)
 }
