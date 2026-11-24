@@ -1,0 +1,5 @@
+change_type: deprecation
+component: processor/batch
+note: Deprecate the batch processor for traces, metrics, and logs. Existing pipelines continue to work and log a migration warning at startup.
+issues: [12022]
+subtext: See the [migration guide](https://opentelemetry.io/blog/2026/collector-batching-migration/) for exporter-level batching and the `queue_batch` processor.

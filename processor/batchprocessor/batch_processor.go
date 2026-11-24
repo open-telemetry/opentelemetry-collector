@@ -169,6 +169,7 @@ func (bp *batchProcessor[T]) Capabilities() consumer.Capabilities {
 
 // Start is invoked during service startup.
 func (bp *batchProcessor[T]) Start(ctx context.Context, _ component.Host) error {
+	bp.logger.Warn("The batch processor is deprecated. Use exporter-level batching or the queue_batch processor. See https://opentelemetry.io/blog/2026/collector-batching-migration/")
 	return bp.batcher.start(ctx)
 }
 

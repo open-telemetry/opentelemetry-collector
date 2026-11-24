@@ -6,7 +6,13 @@ status:
   disable_codecov_badge: true
   class: processor
   stability:
-    beta: [traces, metrics, logs]
+    deprecated: [traces, metrics, logs]
+  deprecation:
+    traces: &batch_deprecation
+      date: "2026-11-24"
+      migration: "Use exporter-level batching or the `queue_batch` processor. See the [migration guide](https://opentelemetry.io/blog/2026/collector-batching-migration/)."
+    metrics: *batch_deprecation
+    logs: *batch_deprecation
   distributions: [core, contrib, k8s]
 
 tests:
