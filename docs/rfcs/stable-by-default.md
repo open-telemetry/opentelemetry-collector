@@ -225,18 +225,28 @@ flowchart TD
 
 Additional changes:
 
-- For Collector distributions maintained by the Collector SIG,
-  upgrade of a component to a new major release
-  MUST also correspond to a major release of the distribution
-  to make adoption breaking changes more visible to end users.
+- For the sake of making deviations from stable behavior opt-in,
+  distribution maintainers should also strive to make it obvious when a component went through a major release,
+  so that users upgrading their version of the distribution will know
+  when they are opting into possible breaking changes to existing stable behavior.
+
+  For Collector distributions maintained by the Collector SIG, we suggest that for the time being,
+  a new major release of a component MUST also correspond to a major release of the distribution.
+  
+  We may later introduce alternate mechanisms, such as making new major versions of a component
+  available only when referenced with a name including the major version (like was done with
+  [the `healthcheckv2` extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/healthcheckv2extension)).
 
 - While the Collector service will enforce stability requirements for service-instantiated components,
   it is the responsibility of a component to enforce them for programatically instantiated subcomponents
   (e.g. receiver instances created by the
   [receiver_creator](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/receivercreator/README.md)).
 
-  Alternatively (or while waiting for an API which exposes the requisite information),
-  such components will be restricted to the minimum stability level of their subcomponents.
+  To achieve this, for the time being, components which instantiate subcomponents
+  MUST NOT be stabilized past the stability level of their subcomponents.
+
+  We may later introduce mechanisms for such components to enforce stability requirements at runtime,
+  at which point implementing such mechanisms will exempt them from the above requirement.
 
 - Optional features which are not meant to become the default,
   but which are finalized and ready to be widely available,
