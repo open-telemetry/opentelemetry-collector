@@ -114,11 +114,11 @@ host machine's memory capacity, `limit_percentage` may be more appropriate.
 
 Please refer to [config.go](../../internal/memorylimiter/config.go) for the config spec.
 
-The following configuration options are available. Note that one of `limit_mib`
-or `limit_percentage` must be set.
+The following configuration options are available. Note that `check_interval`
+and one of `limit_mib` or `limit_percentage` must be set.
 
-- `check_interval` (default = 0s): Time between measurements of memory
-usage. The recommended value is 1 second.
+- `check_interval` (no default): Time between measurements of memory
+usage. The value must be greater than zero. The recommended value is 1 second.
 If the expected traffic to the Collector is very spiky then decrease the `check_interval`
 or increase `spike_limit_mib` to avoid memory usage going over the hard limit.
 - `limit_mib` (default = 0): Maximum amount of memory, in MiB, targeted to be
@@ -140,6 +140,14 @@ measurements of memory usage. The value must be less than `limit_percentage`.
 This option is used to calculate `spike_limit_mib` from the total available memory.
 For instance setting of 25% with the total memory of 1GiB will result in the spike limit of 250MiB.
 This option is intended to be used only with `limit_percentage`.
+- `min_gc_interval_when_soft_limited` (default = `10s`): Minimum interval
+between forced GC calls while in soft-limited mode (`limit_mib - spike_limit_mib`).
+A value of `0` means no minimum interval. Must be greater than or equal to
+`min_gc_interval_when_hard_limited`. Forced GC is a CPU-heavy operation, and
+executing it too frequently may affect the recovery capabilities of the collector.
+- `min_gc_interval_when_hard_limited` (default = `0s`): Minimum interval
+between forced GC calls while in hard-limited mode (`limit_mib`).
+A value of `0` means no minimum interval.
 - `max_gc_interval_when_soft_limited` (default = `30s`): Caps the exponential
 backoff between forced GC calls while in soft-limited mode. When a forced GC
 fails to free memory, the interval doubles starting from

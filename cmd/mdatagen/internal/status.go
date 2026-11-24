@@ -73,6 +73,7 @@ var validClasses = []string{
 	"provider",
 	"receiver",
 	"scraper",
+	"internal",
 }
 
 var validStabilityKeys = []string{

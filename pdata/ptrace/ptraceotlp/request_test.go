@@ -94,3 +94,111 @@ func TestTracesProtoWireCompatibility(t *testing.T) {
 	otlp.MigrateTraces(td.orig.ResourceSpans)
 	assert.Equal(t, td, td2)
 }
+
+func TestSanitizeUTF8(t *testing.T) {
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("bad\xff", "bad\xff")
+	ss := rs.ScopeSpans().AppendEmpty()
+	ss.Scope().SetName("scope\xff")
+	span := ss.Spans().AppendEmpty()
+	span.SetName("span\xff")
+	span.Attributes().PutStr("ok", "ok")
+	span.Events().AppendEmpty().SetName("event\xff")
+	span.Links().AppendEmpty().Attributes().PutStr("link\xff", "link\xff")
+	span.Status().SetMessage("status\xff")
+
+	NewExportRequestFromTraces(td).SanitizeUTF8()
+
+	expected := ptrace.NewTraces()
+	ers := expected.ResourceSpans().AppendEmpty()
+	ers.Resource().Attributes().PutStr("bad�", "bad�")
+	ess := ers.ScopeSpans().AppendEmpty()
+	ess.Scope().SetName("scope�")
+	espan := ess.Spans().AppendEmpty()
+	espan.SetName("span�")
+	espan.Attributes().PutStr("ok", "ok")
+	espan.Events().AppendEmpty().SetName("event�")
+	espan.Links().AppendEmpty().Attributes().PutStr("link�", "link�")
+	espan.Status().SetMessage("status�")
+	assert.Equal(t, expected, td)
+}
+
+func TestSanitizeUTF8ReadOnly(t *testing.T) {
+	td := ptrace.NewTraces()
+	td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("bad\xff")
+	td.MarkReadOnly()
+	assert.Panics(t, func() { NewExportRequestFromTraces(td).SanitizeUTF8() })
+}
+
+func TestRejectInvalidUTF8(t *testing.T) {
+	t.Run("invalid resource", func(t *testing.T) {
+		td := ptrace.NewTraces()
+		rs := td.ResourceSpans().AppendEmpty()
+		rs.Resource().Attributes().PutStr("bad", string([]byte{0xff}))
+		rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+		assert.False(t, NewExportRequestFromTraces(td).ValidateUTF8())
+		assert.Equal(t, 1, NewExportRequestFromTraces(td).RejectInvalidUTF8())
+		assert.Equal(t, 0, td.SpanCount())
+	})
+
+	t.Run("invalid scope", func(t *testing.T) {
+		td := ptrace.NewTraces()
+		ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+		ss.Scope().SetName(string([]byte{0xff}))
+		ss.Spans().AppendEmpty()
+
+		assert.Equal(t, 1, NewExportRequestFromTraces(td).RejectInvalidUTF8())
+		assert.Equal(t, 0, td.SpanCount())
+	})
+
+	t.Run("invalid resource schema url", func(t *testing.T) {
+		td := ptrace.NewTraces()
+		rs := td.ResourceSpans().AppendEmpty()
+		rs.SetSchemaUrl(string([]byte{0xff}))
+		rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+
+		assert.False(t, NewExportRequestFromTraces(td).ValidateUTF8())
+		assert.Equal(t, 1, NewExportRequestFromTraces(td).RejectInvalidUTF8())
+		assert.Equal(t, 0, td.SpanCount())
+	})
+
+	t.Run("invalid scope schema url", func(t *testing.T) {
+		td := ptrace.NewTraces()
+		ss := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+		ss.SetSchemaUrl(string([]byte{0xff}))
+		ss.Spans().AppendEmpty()
+
+		assert.Equal(t, 1, NewExportRequestFromTraces(td).RejectInvalidUTF8())
+		assert.Equal(t, 0, td.SpanCount())
+	})
+
+	t.Run("invalid span", func(t *testing.T) {
+		td := ptrace.NewTraces()
+		spans := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
+		spans.AppendEmpty().SetName("ok")
+		spans.AppendEmpty().SetName(string([]byte{0xff}))
+
+		assert.Equal(t, 1, NewExportRequestFromTraces(td).RejectInvalidUTF8())
+		assert.Equal(t, 1, td.SpanCount())
+	})
+
+	t.Run("empty containers are kept", func(t *testing.T) {
+		td := ptrace.NewTraces()
+		td.ResourceSpans().AppendEmpty()
+		td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+
+		assert.Equal(t, 0, NewExportRequestFromTraces(td).RejectInvalidUTF8())
+		assert.Equal(t, 2, td.ResourceSpans().Len())
+		assert.Equal(t, 1, td.ResourceSpans().At(1).ScopeSpans().Len())
+	})
+
+	t.Run("emptied containers are dropped", func(t *testing.T) {
+		td := ptrace.NewTraces()
+		td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName(string([]byte{0xff}))
+
+		assert.Equal(t, 1, NewExportRequestFromTraces(td).RejectInvalidUTF8())
+		assert.Equal(t, 0, td.ResourceSpans().Len())
+	})
+}

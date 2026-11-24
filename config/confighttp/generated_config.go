@@ -196,6 +196,9 @@ type ServerConfig struct {
 	// Auth is the authentication configuration for this receiver.
 	Auth configoptional.Optional[AuthConfig] `mapstructure:"auth,omitempty"`
 
+	// ListenerMiddleware listener middleware is a handler customizing how the server will listen for connections over TCP.
+	ListenerMiddleware configoptional.Optional[configmiddleware.Config] `mapstructure:"listener_middleware,omitempty"`
+
 	// MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.
 	// The limit is enforced on the bytes received and, when the request has a
 	// supported Content-Encoding (for example gzip), again on the decompressed
@@ -210,7 +213,7 @@ type ServerConfig struct {
 	ResponseHeaders configopaque.MapList `mapstructure:"response_headers,omitempty"`
 
 	// CompressionAlgorithms configures the list of compression algorithms the server can accept.
-	// Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
+	// Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4", "x-snappy-framed"]
 	CompressionAlgorithms []string `mapstructure:"compression_algorithms,omitempty"`
 
 	// ReadTimeout is the maximum duration for reading the entire

@@ -95,3 +95,109 @@ func TestLogsProtoWireCompatibility(t *testing.T) {
 	otlp.MigrateLogs(ld.orig.ResourceLogs)
 	assert.Equal(t, ld, ld2)
 }
+
+func TestSanitizeUTF8(t *testing.T) {
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("bad\xff", "bad\xff")
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName("scope\xff")
+	lr := sl.LogRecords().AppendEmpty()
+	lr.Body().SetStr("body\xff")
+	lr.SetSeverityText("INFO\xff")
+	lr.Attributes().PutStr("ok", "ok")
+	lr.Attributes().PutEmptyMap("nested").PutStr("k\xff", "v\xff")
+
+	NewExportRequestFromLogs(ld).SanitizeUTF8()
+
+	expected := plog.NewLogs()
+	erl := expected.ResourceLogs().AppendEmpty()
+	erl.Resource().Attributes().PutStr("bad�", "bad�")
+	esl := erl.ScopeLogs().AppendEmpty()
+	esl.Scope().SetName("scope�")
+	elr := esl.LogRecords().AppendEmpty()
+	elr.Body().SetStr("body�")
+	elr.SetSeverityText("INFO�")
+	elr.Attributes().PutStr("ok", "ok")
+	elr.Attributes().PutEmptyMap("nested").PutStr("k�", "v�")
+	assert.Equal(t, expected, ld)
+}
+
+func TestSanitizeUTF8ReadOnly(t *testing.T) {
+	ld := plog.NewLogs()
+	ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("bad\xff")
+	ld.MarkReadOnly()
+	assert.Panics(t, func() { NewExportRequestFromLogs(ld).SanitizeUTF8() })
+}
+
+func TestRejectInvalidUTF8(t *testing.T) {
+	t.Run("invalid resource", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("bad", string([]byte{0xff}))
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		assert.False(t, NewExportRequestFromLogs(ld).ValidateUTF8())
+		assert.Equal(t, 1, NewExportRequestFromLogs(ld).RejectInvalidUTF8())
+		assert.Equal(t, 0, ld.LogRecordCount())
+	})
+
+	t.Run("invalid scope", func(t *testing.T) {
+		ld := plog.NewLogs()
+		sl := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+		sl.Scope().SetName(string([]byte{0xff}))
+		sl.LogRecords().AppendEmpty()
+
+		assert.Equal(t, 1, NewExportRequestFromLogs(ld).RejectInvalidUTF8())
+		assert.Equal(t, 0, ld.LogRecordCount())
+	})
+
+	t.Run("invalid resource schema url", func(t *testing.T) {
+		ld := plog.NewLogs()
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.SetSchemaUrl(string([]byte{0xff}))
+		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+		assert.False(t, NewExportRequestFromLogs(ld).ValidateUTF8())
+		assert.Equal(t, 1, NewExportRequestFromLogs(ld).RejectInvalidUTF8())
+		assert.Equal(t, 0, ld.LogRecordCount())
+	})
+
+	t.Run("invalid scope schema url", func(t *testing.T) {
+		ld := plog.NewLogs()
+		sl := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+		sl.SetSchemaUrl(string([]byte{0xff}))
+		sl.LogRecords().AppendEmpty()
+
+		assert.Equal(t, 1, NewExportRequestFromLogs(ld).RejectInvalidUTF8())
+		assert.Equal(t, 0, ld.LogRecordCount())
+	})
+
+	t.Run("invalid log record", func(t *testing.T) {
+		ld := plog.NewLogs()
+		logs := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+		logs.AppendEmpty().Body().SetStr("ok")
+		logs.AppendEmpty().Body().SetStr(string([]byte{0xff}))
+
+		assert.Equal(t, 1, NewExportRequestFromLogs(ld).RejectInvalidUTF8())
+		assert.Equal(t, 1, ld.LogRecordCount())
+	})
+
+	t.Run("empty containers are kept", func(t *testing.T) {
+		ld := plog.NewLogs()
+		ld.ResourceLogs().AppendEmpty()
+		ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+
+		assert.Equal(t, 0, NewExportRequestFromLogs(ld).RejectInvalidUTF8())
+		assert.Equal(t, 2, ld.ResourceLogs().Len())
+		assert.Equal(t, 1, ld.ResourceLogs().At(1).ScopeLogs().Len())
+	})
+
+	t.Run("emptied containers are dropped", func(t *testing.T) {
+		ld := plog.NewLogs()
+		ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(string([]byte{0xff}))
+
+		assert.Equal(t, 1, NewExportRequestFromLogs(ld).RejectInvalidUTF8())
+		assert.Equal(t, 0, ld.ResourceLogs().Len())
+	})
+}

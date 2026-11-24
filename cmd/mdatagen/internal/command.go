@@ -40,6 +40,7 @@ const (
 var nonComponents = []string{
 	"cmd",
 	"converter",
+	"internal",
 	"pkg",
 	"provider",
 }
@@ -53,11 +54,7 @@ func getVersion() (string, error) {
 	return info.Main.Version, nil
 }
 
-// NewCommand constructs a new cobra.Command using the given Settings.
-// Any URIs specified in CollectorSettings.ConfigProviderSettings.ResolverSettings.URIs
-// are considered defaults and will be overwritten by config flags passed as
-// command-line arguments to the executable.
-// At least one Provider must be set.
+// NewCommand constructs a new cobra.Command.
 func NewCommand() (*cobra.Command, error) {
 	ver, err := getVersion()
 	if err != nil {
@@ -195,7 +192,7 @@ func run(ymlPath string) error {
 	if len(md.Telemetry.Metrics) != 0 { // if there are telemetry metrics, generate telemetry specific files
 		testDir := filepath.Join(ymlDir, "internal", md.GeneratedPackageName+"test")
 		if err = os.MkdirAll(testDir, 0o700); err != nil {
-			return fmt.Errorf("unable to create output test directory %q: %w", codeDir, err)
+			return fmt.Errorf("unable to create output test directory %q: %w", testDir, err)
 		}
 		toGenerate[filepath.Join(tmplDir, "telemetry.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry.go")
 		toGenerate[filepath.Join(tmplDir, "telemetry_test.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry_test.go")
@@ -302,6 +299,27 @@ func run(ymlPath string) error {
 	return nil
 }
 
+// uniqueMigrationGates returns the migration gates selected by sel, deduplicated and in deterministic order.
+func uniqueMigrationGates(md Metadata, sel func(MigrationGates) FeatureGateID) []FeatureGateID {
+	names := make([]MetricName, 0, len(md.Metrics))
+	for mn := range md.Metrics {
+		names = append(names, mn)
+	}
+	slices.Sort(names)
+
+	var gates []FeatureGateID
+	for _, mn := range names {
+		m := md.Metrics[mn]
+		if m.Migration == nil {
+			continue
+		}
+		if gate := sel(m.Migration.ThroughGates); gate != "" && !slices.Contains(gates, gate) {
+			gates = append(gates, gate)
+		}
+	}
+	return gates
+}
+
 func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 	return template.FuncMap{
 		"publicVar": func(s string) (string, error) {
@@ -405,6 +423,8 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 
 			return used
 		},
+		"metricConfigKey":     md.metricConfigKey,
+		"hasIndependentValue": md.hasIndependentValue,
 		"getLegacyAttributes": func(targetMetricName MetricName) []AttributeName {
 			if legacyMetrics, ok := md.Metrics[MetricName(targetMetricName.EmittedName())]; ok {
 				if legacyMetrics.Migration == nil || legacyMetrics.Migration.To != targetMetricName {
@@ -442,6 +462,12 @@ func getTemplateFuncMap(md Metadata, importRootPath string) template.FuncMap {
 		},
 		"metricInfo": func(mn MetricName) Metric {
 			return md.Metrics[mn]
+		},
+		"migrationDisableOldGates": func() []FeatureGateID {
+			return uniqueMigrationGates(md, func(g MigrationGates) FeatureGateID { return g.DisableOld })
+		},
+		"migrationEnableNewGates": func() []FeatureGateID {
+			return uniqueMigrationGates(md, func(g MigrationGates) FeatureGateID { return g.EnableNew })
 		},
 		"eventInfo": func(en EventName) Event {
 			return md.Events[en]

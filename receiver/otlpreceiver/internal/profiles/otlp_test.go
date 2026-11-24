@@ -8,18 +8,22 @@ import (
 	"errors"
 	"net"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
@@ -50,6 +54,80 @@ func TestExport_EmptyRequest(t *testing.T) {
 	assert.NotNil(t, resp, "The response is missing")
 }
 
+func TestExport_InvalidUTF8(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.ID(), true)
+
+	td := testdata.GenerateProfiles(2)
+	profileCount := td.ProfileCount()
+	sampleCount := td.SampleCount()
+	td.Dictionary().StringTable().Append(string([]byte{0xff}))
+	req := pprofileotlp.NewExportRequestFromProfiles(td)
+
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	profileSink := new(consumertest.ProfilesSink)
+	profileClient := makeProfileServiceClientWithTelemetry(t, profileSink, tt)
+	resp, err := profileClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, int64(profileCount), resp.PartialSuccess().RejectedProfiles())
+	assert.Equal(t, invalidUTF8Message, resp.PartialSuccess().ErrorMessage())
+	assert.Empty(t, profileSink.AllProfiles())
+
+	// The response counts rejected profiles, the receiver telemetry counts rejected samples.
+	assertReceiverSum(t, tt, "otelcol_receiver_refused_profile_samples", int64(sampleCount))
+}
+
+func TestExport_SanitizeInvalidUTF8(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpSanitizeInvalidUTF8FeatureGate.ID(), true)
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.ID(), false)
+
+	td := testdata.GenerateProfiles(2)
+	profileCount := td.ProfileCount()
+	sampleCount := td.SampleCount()
+	td.Dictionary().StringTable().Append("bad\xffvalue")
+	badIdx := td.Dictionary().StringTable().Len() - 1
+	req := pprofileotlp.NewExportRequestFromProfiles(td)
+
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	profileSink := new(consumertest.ProfilesSink)
+	profileClient := makeProfileServiceClientWithTelemetry(t, profileSink, tt)
+	resp, err := profileClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Zero(t, resp.PartialSuccess().RejectedProfiles())
+	assert.Empty(t, resp.PartialSuccess().ErrorMessage())
+
+	pds := profileSink.AllProfiles()
+	require.Len(t, pds, 1)
+	assert.Equal(t, profileCount, pds[0].ProfileCount())
+
+	got := pds[0].Dictionary().StringTable().At(badIdx)
+	assert.Equal(t, "bad\uFFFDvalue", got)
+	assert.True(t, utf8.ValidString(got))
+
+	assertReceiverSum(t, tt, "otelcol_receiver_accepted_profile_samples", int64(sampleCount))
+}
+
+func TestExport_SanitizeInvalidUTF8RejectTakesPrecedence(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpSanitizeInvalidUTF8FeatureGate.ID(), true)
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.ID(), true)
+
+	td := testdata.GenerateProfiles(2)
+	profileCount := td.ProfileCount()
+	td.Dictionary().StringTable().Append("bad\xffvalue")
+	req := pprofileotlp.NewExportRequestFromProfiles(td)
+
+	profileSink := new(consumertest.ProfilesSink)
+	profileClient := makeProfileServiceClient(t, profileSink)
+	resp, err := profileClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, int64(profileCount), resp.PartialSuccess().RejectedProfiles())
+	assert.Equal(t, invalidUTF8Message, resp.PartialSuccess().ErrorMessage())
+	assert.Empty(t, profileSink.AllProfiles())
+}
+
 func TestExport_NonPermanentErrorConsumer(t *testing.T) {
 	td := testdata.GenerateProfiles(1)
 	req := pprofileotlp.NewExportRequestFromProfiles(td)
@@ -73,7 +151,11 @@ func TestExport_PermanentErrorConsumer(t *testing.T) {
 }
 
 func makeProfileServiceClient(t *testing.T, tc xconsumer.Profiles) pprofileotlp.GRPCClient {
-	addr := otlpReceiverOnGRPCServer(t, tc)
+	return makeProfileServiceClientWithTelemetry(t, tc, nil)
+}
+
+func makeProfileServiceClientWithTelemetry(t *testing.T, tc xconsumer.Profiles, tt *componenttest.Telemetry) pprofileotlp.GRPCClient {
+	addr := otlpReceiverOnGRPCServer(t, tc, tt)
 	cc, err := grpc.NewClient(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err, "Failed to create the profileServiceClient: %v", err)
 	t.Cleanup(func() {
@@ -83,7 +165,9 @@ func makeProfileServiceClient(t *testing.T, tc xconsumer.Profiles) pprofileotlp.
 	return pprofileotlp.NewGRPCClient(cc)
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T, tc xconsumer.Profiles) net.Addr {
+// otlpReceiverOnGRPCServer starts the receiver on a gRPC server. When tt is not nil, the
+// receiver telemetry is wired to it so tests can assert the emitted metrics.
+func otlpReceiverOnGRPCServer(t *testing.T, tc xconsumer.Profiles, tt *componenttest.Telemetry) net.Addr {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
@@ -92,6 +176,9 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc xconsumer.Profiles) net.Addr {
 	})
 
 	set := receivertest.NewNopSettings(metadata.Type)
+	if tt != nil {
+		set.TelemetrySettings = tt.NewTelemetrySettings()
+	}
 	set.ID = component.MustNewIDWithName("otlp", "profiles")
 	obsreport, err := xreceiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
@@ -109,4 +196,18 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc xconsumer.Profiles) net.Addr {
 	}()
 
 	return ln.Addr()
+}
+
+// assertReceiverSum checks the value of a receiver counter metric.
+func assertReceiverSum(t *testing.T, tt *componenttest.Telemetry, name string, want int64) {
+	t.Helper()
+	m, err := tt.GetMetric(name)
+	require.NoError(t, err)
+	sum, ok := m.Data.(metricdata.Sum[int64])
+	require.True(t, ok, "metric %s is not an int64 sum", name)
+	var got int64
+	for _, dp := range sum.DataPoints {
+		got += dp.Value
+	}
+	assert.Equal(t, want, got, "metric %s", name)
 }

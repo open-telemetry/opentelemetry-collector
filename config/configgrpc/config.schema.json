@@ -93,6 +93,16 @@
           },
           "description": "Middlewares for the gRPC client."
         },
+        "pick_first": {
+          "type": "object",
+          "properties": {
+            "shuffle_address_list": {
+              "type": "boolean",
+              "description": "Shuffles the resolved addresses before connecting, so clients that receive\nthe same address list spread across backends.\n"
+            }
+          },
+          "description": "Configures the pick_first balancer. Only valid when balancer_name is pick_first or empty.\n"
+        },
         "read_buffer_size": {
           "type": "integer",
           "description": "ReadBufferSize for gRPC client. See grpc.WithReadBufferSize. \n(https://godoc.org/google.golang.org/grpc#WithReadBufferSize).\n"
@@ -181,13 +191,15 @@
                   "type": "object",
                   "properties": {
                     "auth": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The authorization value of the TLS key stored in the TPM. (optional)"
                     },
                     "enabled": {
                       "type": "boolean"
                     },
                     "owner_auth": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The owner authorization value of the TPM. (optional)"
                     },
                     "path": {
                       "type": "string",
@@ -197,7 +209,7 @@
                   "description": "Trusted platform module configuration"
                 }
               },
-              "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn''t anything specific to a server connection. Components with server connections should use Config.\n",
+              "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn't anything specific to a server connection. Components with server connections should use Config.\n",
               "default": {}
             }
           ]
@@ -325,6 +337,16 @@
       "description": "Configuration of the keepalive.ServerParameters. The same default values \nas keepalive.ServerParameters are applicable and get applied by the server. \nSee https://godoc.org/google.golang.org/grpc/keepalive#ServerParameters for details.\n",
       "default": {}
     },
+    "pick_first_config": {
+      "type": "object",
+      "properties": {
+        "shuffle_address_list": {
+          "type": "boolean",
+          "description": "Shuffles the resolved addresses before connecting, so clients that receive\nthe same address list spread across backends.\n"
+        }
+      },
+      "description": "Mirrors the pick_first load balancing config of gRPC.\nhttps://github.com/grpc/proposal/blob/master/A62-pick-first.md\n"
+    },
     "server_config": {
       "type": "object",
       "properties": {
@@ -389,6 +411,16 @@
           },
           "description": "Anchor for all the settings related to keepalive.",
           "default": {}
+        },
+        "listener_middleware": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Specifies the name of the extension to use."
+            }
+          },
+          "description": "Listener middleware is a handler customizing how the server will listen for connections over TCP."
         },
         "max_concurrent_streams": {
           "type": "integer",
@@ -497,13 +529,15 @@
                   "type": "object",
                   "properties": {
                     "auth": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The authorization value of the TLS key stored in the TPM. (optional)"
                     },
                     "enabled": {
                       "type": "boolean"
                     },
                     "owner_auth": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "The owner authorization value of the TPM. (optional)"
                     },
                     "path": {
                       "type": "string",
@@ -513,7 +547,7 @@
                   "description": "Trusted platform module configuration"
                 }
               },
-              "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn''t anything specific to a server connection. Components with server connections should use Config.\n",
+              "description": "Exposes the common client and server TLS configurations. \nNote: Since there isn't anything specific to a server connection. Components with server connections should use Config.\n",
               "default": {}
             }
           ]

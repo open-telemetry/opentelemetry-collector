@@ -8,18 +8,22 @@ import (
 	"errors"
 	"net"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
@@ -49,6 +53,82 @@ func TestExport_EmptyRequest(t *testing.T) {
 	assert.NotNil(t, resp, "The response is missing")
 }
 
+func TestExport_InvalidUTF8(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.ID(), true)
+
+	td := testdata.GenerateTraces(2)
+	td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("bad", string([]byte{0xff}))
+	req := ptraceotlp.NewExportRequestFromTraces(td)
+
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	traceSink := new(consumertest.TracesSink)
+	traceClient := makeTraceServiceClientWithTelemetry(t, traceSink, tt)
+	resp, err := traceClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), resp.PartialSuccess().RejectedSpans())
+	assert.Equal(t, invalidUTF8Message, resp.PartialSuccess().ErrorMessage())
+
+	tds := traceSink.AllTraces()
+	require.Len(t, tds, 1)
+	assert.Equal(t, 1, tds[0].SpanCount())
+
+	// Rejected spans must be visible in the receiver telemetry, not only in the response.
+	assertReceiverSum(t, tt, "otelcol_receiver_refused_spans", 1)
+	assertReceiverSum(t, tt, "otelcol_receiver_accepted_spans", 1)
+}
+
+func TestExport_SanitizeInvalidUTF8(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpSanitizeInvalidUTF8FeatureGate.ID(), true)
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.ID(), false)
+
+	td := testdata.GenerateTraces(2)
+	td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("bad", "bad\xffvalue")
+	req := ptraceotlp.NewExportRequestFromTraces(td)
+
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	traceSink := new(consumertest.TracesSink)
+	traceClient := makeTraceServiceClientWithTelemetry(t, traceSink, tt)
+	resp, err := traceClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Zero(t, resp.PartialSuccess().RejectedSpans())
+	assert.Empty(t, resp.PartialSuccess().ErrorMessage())
+
+	tds := traceSink.AllTraces()
+	require.Len(t, tds, 1)
+	assert.Equal(t, 2, tds[0].SpanCount())
+
+	got, ok := tds[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Get("bad")
+	require.True(t, ok)
+	assert.Equal(t, "bad\uFFFDvalue", got.Str())
+	assert.True(t, utf8.ValidString(got.Str()))
+
+	assertReceiverSum(t, tt, "otelcol_receiver_accepted_spans", int64(2))
+}
+
+func TestExport_SanitizeInvalidUTF8RejectTakesPrecedence(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpSanitizeInvalidUTF8FeatureGate.ID(), true)
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.ID(), true)
+
+	td := testdata.GenerateTraces(2)
+	td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("bad", "bad\xffvalue")
+	req := ptraceotlp.NewExportRequestFromTraces(td)
+
+	traceSink := new(consumertest.TracesSink)
+	traceClient := makeTraceServiceClient(t, traceSink)
+	resp, err := traceClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), resp.PartialSuccess().RejectedSpans())
+	assert.Equal(t, invalidUTF8Message, resp.PartialSuccess().ErrorMessage())
+
+	tds := traceSink.AllTraces()
+	require.Len(t, tds, 1)
+	assert.Equal(t, 1, tds[0].SpanCount())
+}
+
 func TestExport_NonPermanentErrorConsumer(t *testing.T) {
 	td := testdata.GenerateTraces(1)
 	req := ptraceotlp.NewExportRequestFromTraces(td)
@@ -72,7 +152,11 @@ func TestExport_PermanentErrorConsumer(t *testing.T) {
 }
 
 func makeTraceServiceClient(t *testing.T, tc consumer.Traces) ptraceotlp.GRPCClient {
-	addr := otlpReceiverOnGRPCServer(t, tc)
+	return makeTraceServiceClientWithTelemetry(t, tc, nil)
+}
+
+func makeTraceServiceClientWithTelemetry(t *testing.T, tc consumer.Traces, tt *componenttest.Telemetry) ptraceotlp.GRPCClient {
+	addr := otlpReceiverOnGRPCServer(t, tc, tt)
 	cc, err := grpc.NewClient(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	t.Cleanup(func() {
@@ -82,7 +166,9 @@ func makeTraceServiceClient(t *testing.T, tc consumer.Traces) ptraceotlp.GRPCCli
 	return ptraceotlp.NewGRPCClient(cc)
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) net.Addr {
+// otlpReceiverOnGRPCServer starts the receiver on a gRPC server. When tt is not nil, the
+// receiver telemetry is wired to it so tests can assert the emitted metrics.
+func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces, tt *componenttest.Telemetry) net.Addr {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
@@ -91,6 +177,9 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) net.Addr {
 	})
 
 	set := receivertest.NewNopSettings(metadata.Type)
+	if tt != nil {
+		set.TelemetrySettings = tt.NewTelemetrySettings()
+	}
 	set.ID = component.MustNewIDWithName("otlp", "trace")
 	obsreport, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
@@ -107,4 +196,18 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) net.Addr {
 	}()
 
 	return ln.Addr()
+}
+
+// assertReceiverSum checks the value of a receiver counter metric.
+func assertReceiverSum(t *testing.T, tt *componenttest.Telemetry, name string, want int64) {
+	t.Helper()
+	m, err := tt.GetMetric(name)
+	require.NoError(t, err)
+	sum, ok := m.Data.(metricdata.Sum[int64])
+	require.True(t, ok, "metric %s is not an int64 sum", name)
+	var got int64
+	for _, dp := range sum.DataPoints {
+		got += dp.Value
+	}
+	assert.Equal(t, want, got, "metric %s", name)
 }
