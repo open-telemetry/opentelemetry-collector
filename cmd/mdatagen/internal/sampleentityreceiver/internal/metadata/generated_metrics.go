@@ -9,11 +9,11 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v1.40.0"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/xpdata/xhash"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const (
@@ -295,8 +295,8 @@ type MetricsBuilder struct {
 	metricsCapacity                int                  // maximum observed number of metrics per resource.
 	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                      component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter map[string]filter.Filter
-	resourceAttributeExcludeFilter map[string]filter.Filter
+	resourceAttributeIncludeFilter map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter map[string]strmatch.Matcher
 	metricK8sPodCPUTime            metricK8sPodCPUTime
 	metricK8sPodPhase              metricK8sPodPhase
 	metricK8sReplicasetDesired     metricK8sReplicasetDesired
@@ -328,38 +328,38 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sPodCPUTime:            newMetricK8sPodCPUTime(mbc.Metrics.K8sPodCPUTime),
 		metricK8sPodPhase:              newMetricK8sPodPhase(mbc.Metrics.K8sPodPhase),
 		metricK8sReplicasetDesired:     newMetricK8sReplicasetDesired(mbc.Metrics.K8sReplicasetDesired),
-		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter: make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter: make(map[string]strmatch.Matcher),
 	}
 	if mbc.ResourceAttributes.K8sNamespaceName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["k8s.namespace.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNamespaceName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["k8s.namespace.name"] = strmatch.New(mbc.ResourceAttributes.K8sNamespaceName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.K8sNamespaceName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.namespace.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNamespaceName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["k8s.namespace.name"] = strmatch.New(mbc.ResourceAttributes.K8sNamespaceName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sPodName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["k8s.pod.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["k8s.pod.name"] = strmatch.New(mbc.ResourceAttributes.K8sPodName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.K8sPodName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.pod.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["k8s.pod.name"] = strmatch.New(mbc.ResourceAttributes.K8sPodName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sPodUID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["k8s.pod.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodUID.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["k8s.pod.uid"] = strmatch.New(mbc.ResourceAttributes.K8sPodUID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.K8sPodUID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.pod.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodUID.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["k8s.pod.uid"] = strmatch.New(mbc.ResourceAttributes.K8sPodUID.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sReplicasetName.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["k8s.replicaset.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sReplicasetName.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["k8s.replicaset.name"] = strmatch.New(mbc.ResourceAttributes.K8sReplicasetName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.K8sReplicasetName.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.replicaset.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sReplicasetName.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["k8s.replicaset.name"] = strmatch.New(mbc.ResourceAttributes.K8sReplicasetName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sReplicasetUID.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["k8s.replicaset.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sReplicasetUID.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["k8s.replicaset.uid"] = strmatch.New(mbc.ResourceAttributes.K8sReplicasetUID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.K8sReplicasetUID.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.replicaset.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sReplicasetUID.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["k8s.replicaset.uid"] = strmatch.New(mbc.ResourceAttributes.K8sReplicasetUID.MetricsExclude)
 	}
 
 	for _, op := range options {

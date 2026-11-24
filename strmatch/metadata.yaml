@@ -1,4 +1,4 @@
-type: filter
+type: strmatch
 github_project: open-telemetry/opentelemetry-collector
 
 status:
@@ -7,7 +7,7 @@ status:
 
 exported_configs:
   config:
-    description: Config configures the matching behavior of a Filter.
+    description: Config configures the matching behavior of a Matcher.
     type: object
     properties:
       regexp:

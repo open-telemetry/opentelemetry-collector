@@ -2246,8 +2246,8 @@ func TestGenerateConfigSchema_LocalizesSameRootRefs(t *testing.T) {
 
 	actual, err := os.ReadFile(filepath.Clean(outputFile))
 	require.NoError(t, err)
-	require.Contains(t, string(actual), "$ref: /filter.config")
-	require.NotContains(t, string(actual), "$ref: go.opentelemetry.io/collector/filter.config")
+	require.Contains(t, string(actual), "$ref: /strmatch.config")
+	require.NotContains(t, string(actual), "$ref: go.opentelemetry.io/collector/strmatch.config")
 }
 
 func TestGenerateConfigFiles_ReadmeIncludesExportedConfigs(t *testing.T) {

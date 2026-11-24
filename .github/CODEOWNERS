@@ -85,7 +85,6 @@ extension/xextension/                                  @open-telemetry/collector
 extension/xextension/storage/                          @open-telemetry/collector-approvers @swiatekm
 extension/zpagesextension/                             @open-telemetry/collector-approvers
 featuregate/                                           @open-telemetry/collector-approvers
-filter/                                                @open-telemetry/collector-approvers
 otelcol/                                               @open-telemetry/collector-approvers
 otelcol/otelcoltest/                                   @open-telemetry/collector-approvers
 pdata/                                                 @open-telemetry/collector-approvers @bogdandrutu @dmitryax
@@ -118,6 +117,7 @@ service/                                               @open-telemetry/collector
 service/hostcapabilities/                              @open-telemetry/collector-approvers
 service/internal/graph/                                @open-telemetry/collector-approvers
 service/telemetry/telemetrytest/                       @open-telemetry/collector-approvers
+strmatch/                                              @open-telemetry/collector-approvers
 
 # End components list
 
