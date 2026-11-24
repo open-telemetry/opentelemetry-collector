@@ -228,6 +228,14 @@ func TestValidate(t *testing.T) {
 			wantErr: "metric \"system.cpu.time\": migration.to refers to undefined metric \"system.cpu.time@v1\"\nfeature gate \"versioned.metrics.DontEmitV0SystemConventions\": ID must be prefixed with \"receiver.test_versioned.\"\nfeature gate \"versioned.metrics.EmitV1SystemConventions\": ID must be prefixed with \"receiver.test_versioned.\"",
 		},
 		{
+			name:    "testdata/validate_migrations_independent_value_same_name.yaml",
+			wantErr: `metric "system.memory.utilization": migration.independent_value requires the target metric "system.memory.utilization@v1" to have a different emitted name`,
+		},
+		{
+			name:    "testdata/validate_migrations_emitted_name_config_key_not_unique.yaml",
+			wantErr: `metric "system.memory.limit_utilization": migration.emitted_name_config_key requires the emitted name of "system.memory.limit.utilization@v1" to be unique, but it is shared with "system.memory.limit.utilization"`,
+		},
+		{
 			name:    "testdata/feature_gates.yaml",
 			wantErr: "",
 		},
@@ -1272,6 +1280,36 @@ func TestAttributeTestValueEnum(t *testing.T) {
 			attr := Attribute{FullName: "mode", Enum: tt.enum, Type: ValueType{ValueType: pcommon.ValueTypeStr}}
 			assert.Equal(t, tt.wantTestVal, attr.TestValue())
 			assert.Equal(t, tt.wantTestVal2, attr.TestValueTwo())
+		})
+	}
+}
+
+func TestMigrationTargetHelpers(t *testing.T) {
+	md := &Metadata{
+		Metrics: map[MetricName]Metric{
+			"legacy.plain":         {Migration: &MetricMigration{To: "target.plain@v1"}},
+			"target.plain@v1":      {},
+			"legacy.opt_in":        {Migration: &MetricMigration{To: "target.opt_in@v1", IndependentValue: true, EmittedNameConfigKey: true}},
+			"target.opt_in@v1":     {},
+			"standalone.metric":    {},
+			"standalone.metric@v2": {},
+		},
+	}
+
+	tests := []struct {
+		name                 MetricName
+		wantConfigKey        string
+		wantIndependentValue bool
+	}{
+		{name: "target.plain@v1", wantConfigKey: "target.plain@v1"},
+		{name: "target.opt_in@v1", wantConfigKey: "target.opt_in", wantIndependentValue: true},
+		{name: "legacy.opt_in", wantConfigKey: "legacy.opt_in"},
+		{name: "standalone.metric@v2", wantConfigKey: "standalone.metric@v2"},
+	}
+	for _, tt := range tests {
+		t.Run(string(tt.name), func(t *testing.T) {
+			assert.Equal(t, tt.wantConfigKey, md.metricConfigKey(tt.name))
+			assert.Equal(t, tt.wantIndependentValue, md.hasIndependentValue(tt.name))
 		})
 	}
 }
