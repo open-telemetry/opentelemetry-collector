@@ -22,6 +22,15 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/hpack"
+
+	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configmiddleware"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
 func TestHTTP1Passthrough(t *testing.T) {
@@ -107,64 +116,143 @@ func TestPriorKnowledgeTruncatedPrefaceClosesHijackedConnection(t *testing.T) {
 	require.NoError(t, extension.Shutdown(context.Background()))
 }
 
-func TestUpgradeSubsequentStreamsBypassOuterAuthAndBodyLimit(t *testing.T) {
+func TestUpgradeStreamsReenterServerHandlerWithoutUpgradeContext(t *testing.T) {
 	t.Parallel()
 
-	const bodyLimit = 4
 	type identityKey struct{}
-	identities := make(chan string, 3)
+	identities := make(chan string, 4)
+	var outerRequests atomic.Int64
 	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
 		identity, _ := r.Context().Value(identityKey{}).(string)
 		identities <- identity
-		_, _ = io.WriteString(w, strconv.Itoa(len(body)))
+		w.WriteHeader(http.StatusNoContent)
 	})
 	handler := newH2CHandler(t, inner)
 	outer := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Authorization") != "Bearer allowed" {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
+		outerRequests.Add(1)
+		if subject, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok {
+			r = r.WithContext(context.WithValue(r.Context(), identityKey{}, subject))
 		}
-		r = r.WithContext(context.WithValue(r.Context(), identityKey{}, "upgrade-identity"))
-		r.Body = http.MaxBytesReader(w, r.Body, bodyLimit)
 		handler.ServeHTTP(w, r)
 	})
 	server := httptest.NewServer(outer)
 	t.Cleanup(server.Close)
+	address := server.Listener.Addr().String()
 
-	conn, framer := startUpgrade(t, server.Listener.Addr().String())
+	conn, framer := startUpgrade(t, address, "Bearer alice")
 	defer conn.Close()
-	require.Equal(t, "upgrade-identity", <-identities)
+	require.Equal(t, "alice", <-identities)
+	require.Equal(t, int64(1), outerRequests.Load(), "the upgrade request must not re-enter the server handler")
 
-	status, body := upgradedRequest(
-		t,
-		framer,
-		3,
-		server.Listener.Addr().String(),
-		"/unauthenticated",
-		nil,
-		false,
-	)
-	require.Equal(t, http.StatusOK, status)
-	require.Equal(t, "0", body)
-	require.Equal(t, "upgrade-identity", <-identities)
+	status, _ := upgradedRequest(t, framer, 3, address, "/anonymous", nil, "")
+	require.Equal(t, http.StatusNoContent, status)
+	require.Empty(t, <-identities, "streams must not inherit the upgrade request context")
 
-	status, body = upgradedRequest(
-		t,
-		framer,
-		5,
-		server.Listener.Addr().String(),
-		"/oversized",
-		[]byte("too large"),
-		true,
-	)
-	require.Equal(t, http.StatusOK, status)
-	require.Equal(t, "9", body)
-	require.Equal(t, "upgrade-identity", <-identities)
+	status, _ = upgradedRequest(t, framer, 5, address, "/bob", nil, "Bearer bob")
+	require.Equal(t, http.StatusNoContent, status)
+	require.Equal(t, "bob", <-identities)
+	require.Equal(t, int64(3), outerRequests.Load(), "each later stream must enter the server handler")
+}
+
+func TestConfighttpAuthenticatesEachStream(t *testing.T) {
+	t.Parallel()
+
+	authID := component.MustNewID("testauth")
+	h2cID := component.MustNewID("h2c")
+	extension := &h2cExtension{}
+	extensions := map[component.ID]component.Component{
+		authID: subjectAuthenticator{},
+		h2cID:  extension,
+	}
+	subjects := make(chan string, 4)
+	receiver := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		subject, _ := client.FromContext(r.Context()).Auth.GetAttribute("subject").(string)
+		subjects <- subject
+		w.WriteHeader(http.StatusNoContent)
+	})
+	address := startConfighttpServer(t, extensions, receiver, func(cfg *confighttp.ServerConfig) {
+		cfg.Auth = configoptional.Some(confighttp.AuthConfig{
+			Config: configauth.Config{AuthenticatorID: authID},
+		})
+	})
+
+	conn, framer := startUpgrade(t, address, "Bearer alice")
+	defer conn.Close()
+	require.Equal(t, "alice", <-subjects)
+
+	status, _ := upgradedRequest(t, framer, 3, address, "/anonymous", nil, "")
+	require.Equal(t, http.StatusUnauthorized, status)
+
+	status, _ = upgradedRequest(t, framer, 5, address, "/bob", nil, "Bearer bob")
+	require.Equal(t, http.StatusNoContent, status)
+	require.Equal(t, "bob", <-subjects)
+
+	status, _ = upgradedRequest(t, framer, 7, address, "/invalid", nil, "Bearer ")
+	require.Equal(t, http.StatusUnauthorized, status)
+
+	status, _ = upgradedRequest(t, framer, 9, address, "/alice", nil, "Bearer alice")
+	require.Equal(t, http.StatusNoContent, status)
+	require.Equal(t, "alice", <-subjects)
+	require.Empty(t, subjects)
+}
+
+func TestConfighttpRejectsPriorKnowledgeWhenAuthIsConfigured(t *testing.T) {
+	t.Parallel()
+
+	authID := component.MustNewID("testauth")
+	h2cID := component.MustNewID("h2c")
+	var requests atomic.Int64
+	address := startConfighttpServer(t, map[component.ID]component.Component{
+		authID: subjectAuthenticator{},
+		h2cID:  &h2cExtension{},
+	}, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		requests.Add(1)
+	}), func(cfg *confighttp.ServerConfig) {
+		cfg.Auth = configoptional.Some(confighttp.AuthConfig{
+			Config: configauth.Config{AuthenticatorID: authID},
+		})
+	})
+
+	conn, err := net.Dial("tcp", address)
+	require.NoError(t, err)
+	defer conn.Close()
+	require.NoError(t, conn.SetDeadline(time.Now().Add(5*time.Second)))
+	_, err = io.WriteString(conn, http2.ClientPreface)
+	require.NoError(t, err)
+	statusLine, err := bufio.NewReader(conn).ReadString('\n')
+	require.NoError(t, err)
+	require.Contains(t, statusLine, "401")
+	require.Zero(t, requests.Load())
+}
+
+func TestConfighttpPriorKnowledgeStreamsHaveIndependentClientInfo(t *testing.T) {
+	t.Parallel()
+
+	h2cID := component.MustNewID("h2c")
+	type result struct {
+		auth     client.AuthData
+		hasValue bool
+	}
+	results := make(chan result, 2)
+	address := startConfighttpServer(t, map[component.ID]component.Component{
+		h2cID: &h2cExtension{},
+	}, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		info := client.FromContext(r.Context())
+		results <- result{auth: info.Auth, hasValue: info.Addr != nil}
+		w.WriteHeader(http.StatusNoContent)
+	}), nil)
+
+	httpClient := priorKnowledgeClient(t)
+	for _, path := range []string{"/first", "/second"} {
+		resp, err := httpClient.Get("http://" + address + path)
+		require.NoError(t, err)
+		require.NoError(t, resp.Body.Close())
+		require.Equal(t, http.StatusNoContent, resp.StatusCode)
+		require.Equal(t, 2, resp.ProtoMajor)
+		got := <-results
+		require.Nil(t, got.auth)
+		require.True(t, got.hasValue, "client info must be populated for every stream")
+	}
 }
 
 func TestShutdownClosesHijackedConnections(t *testing.T) {
@@ -179,7 +267,7 @@ func TestShutdownClosesHijackedConnections(t *testing.T) {
 	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
 
-	conn, framer := startUpgrade(t, server.Listener.Addr().String())
+	conn, framer := startUpgrade(t, server.Listener.Addr().String(), "")
 	defer conn.Close()
 	require.Equal(t, int64(1), requests.Load())
 
@@ -266,7 +354,7 @@ func (c closeErrorConn) Close() error {
 	return c.err
 }
 
-func startUpgrade(t *testing.T, address string) (net.Conn, *http2.Framer) {
+func startUpgrade(t *testing.T, address, authorization string) (net.Conn, *http2.Framer) {
 	t.Helper()
 
 	conn, err := net.Dial("tcp", address)
@@ -275,11 +363,16 @@ func startUpgrade(t *testing.T, address string) (net.Conn, *http2.Framer) {
 		require.NoError(t, conn.SetDeadline(deadline))
 	}
 
+	authorizationHeader := ""
+	if authorization != "" {
+		authorizationHeader = "Authorization: " + authorization + "\r\n"
+	}
 	_, err = fmt.Fprintf(
 		conn,
 		"GET /upgrade HTTP/1.1\r\nHost: %s\r\nConnection: Upgrade, HTTP2-Settings\r\n"+
-			"Upgrade: h2c\r\nHTTP2-Settings: AAMAAABk\r\nAuthorization: Bearer allowed\r\n\r\n",
+			"Upgrade: h2c\r\nHTTP2-Settings: AAMAAABk\r\n%s\r\n",
 		address,
+		authorizationHeader,
 	)
 	require.NoError(t, err)
 
@@ -297,7 +390,7 @@ func startUpgrade(t *testing.T, address string) (net.Conn, *http2.Framer) {
 
 	_, err = io.WriteString(conn, http2.ClientPreface)
 	require.NoError(t, err)
-	framer := http2.NewFramer(conn, bufferedConn{Conn: conn, reader: reader})
+	framer := http2.NewFramer(conn, &bufferedConn{Conn: conn, reader: reader})
 	framer.ReadMetaHeaders = hpack.NewDecoder(4096, nil)
 	require.NoError(t, framer.WriteSettings())
 
@@ -331,7 +424,7 @@ func upgradedRequest(
 	authority,
 	path string,
 	body []byte,
-	authorized bool,
+	authorization string,
 ) (int, string) {
 	t.Helper()
 
@@ -347,8 +440,8 @@ func upgradedRequest(
 		fields[0].Value = http.MethodPost
 		fields = append(fields, hpack.HeaderField{Name: "content-length", Value: strconv.Itoa(len(body))})
 	}
-	if authorized {
-		fields = append(fields, hpack.HeaderField{Name: "authorization", Value: "Bearer allowed"})
+	if authorization != "" {
+		fields = append(fields, hpack.HeaderField{Name: "authorization", Value: authorization})
 	}
 	for _, field := range fields {
 		require.NoError(t, encoder.WriteField(field))
@@ -393,11 +486,83 @@ func upgradedRequest(
 	}
 }
 
-type bufferedConn struct {
-	net.Conn
-	reader *bufio.Reader
+func priorKnowledgeClient(t *testing.T) *http.Client {
+	t.Helper()
+
+	protocols := new(http.Protocols)
+	protocols.SetUnencryptedHTTP2(true)
+	protocols.SetHTTP1(false)
+	transport := &http.Transport{Protocols: protocols}
+	t.Cleanup(transport.CloseIdleConnections)
+	return &http.Client{Transport: transport}
 }
 
-func (c bufferedConn) Read(p []byte) (int, error) {
-	return c.reader.Read(p)
+func startConfighttpServer(
+	t *testing.T,
+	extensions map[component.ID]component.Component,
+	handler http.Handler,
+	configure func(*confighttp.ServerConfig),
+) string {
+	t.Helper()
+
+	cfg := confighttp.NewDefaultServerConfig()
+	cfg.NetAddr.Endpoint = "127.0.0.1:0"
+	cfg.Middlewares = []configmiddleware.Config{{ID: component.MustNewID("h2c")}}
+	if configure != nil {
+		configure(&cfg)
+	}
+	listener, err := cfg.ToListener(context.Background())
+	require.NoError(t, err)
+	server, err := cfg.ToServer(context.Background(), extensions, componenttest.NewNopTelemetrySettings(), handler)
+	require.NoError(t, err)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		_ = server.Serve(listener)
+	}()
+	t.Cleanup(func() {
+		require.NoError(t, server.Close())
+		<-done
+		for id, ext := range extensions {
+			if h2c, ok := ext.(*h2cExtension); ok {
+				require.NoError(t, h2c.Shutdown(context.Background()), id.String())
+			}
+		}
+	})
+	return listener.Addr().String()
+}
+
+type subjectAuthenticator struct {
+	component.StartFunc
+	component.ShutdownFunc
+}
+
+var _ extensionauth.Server = subjectAuthenticator{}
+
+func (subjectAuthenticator) Authenticate(ctx context.Context, sources map[string][]string) (context.Context, error) {
+	for name, values := range sources {
+		if !strings.EqualFold(name, "Authorization") || len(values) != 1 {
+			continue
+		}
+		subject, ok := strings.CutPrefix(values[0], "Bearer ")
+		if ok && subject != "" {
+			info := client.FromContext(ctx)
+			info.Auth = subjectAuthData(subject)
+			return client.NewContext(ctx, info), nil
+		}
+	}
+	return ctx, errors.New("missing bearer token")
+}
+
+type subjectAuthData string
+
+func (subjectAuthData) GetAttributeNames() []string {
+	return []string{"subject"}
+}
+
+func (s subjectAuthData) GetAttribute(name string) any {
+	if name == "subject" {
+		return string(s)
+	}
+	return nil
 }
