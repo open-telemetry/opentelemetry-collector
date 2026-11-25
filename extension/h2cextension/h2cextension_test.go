@@ -393,6 +393,7 @@ func TestConfighttpShutdownDrainsStreams(t *testing.T) {
 	}
 	require.Error(t, err, "new requests must fail after shutdown starts")
 	require.Equal(t, int64(1), entries.Load(), "a new request reached the handler after shutdown started")
+	require.NotErrorIs(t, err, context.DeadlineExceeded, "the late request must fail because of shutdown, not the timeout")
 
 	releaseHandler()
 	var ok bool
