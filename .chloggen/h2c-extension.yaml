@@ -13,7 +13,7 @@ issues: [16338, 16329]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: This middleware prototype bypasses outer authentication and request body limits on upgraded streams; see the component README.
+subtext: Later h2c streams re-enter the full HTTP server handler and are authenticated individually; see the component README for remaining limitations.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
