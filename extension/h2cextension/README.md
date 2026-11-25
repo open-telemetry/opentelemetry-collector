@@ -4,7 +4,7 @@
 | ------------- |-----------|
 | Stability     | [development]  |
 | Distributions | [] |
-| Warnings      | [Decompression and draining connections on server shutdown are not verified yet for h2c streams., h2c is unencrypted and should only be used behind a TLS-terminating proxy on a trusted network.](#warnings) |
+| Warnings      | [Decompression is not verified yet for h2c streams., h2c is unencrypted and should only be used behind a TLS-terminating proxy on a trusted network.](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fh2c%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fh2c) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fh2c%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fh2c) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -39,6 +39,10 @@ share context values, such as the authenticated identity, with other streams on
 the same connection. `max_request_body_size` applies to each stream, both to the
 received body and to the body after decompression.
 
+h2c connections belong to the receiver's server. When that server shuts down,
+it sends HTTP/2 GOAWAY, refuses new streams, waits for in-flight streams and
+then closes the connection.
+
 The server keeps accepting HTTP/1.1 and, with TLS, HTTP/2.
 
 ## Protocol limitations
@@ -47,8 +51,7 @@ The server keeps accepting HTTP/1.1 and, with TLS, HTTP/2.
   (RFC 9113 Section 3.3). The HTTP/1.1 `Upgrade: h2c` mechanism is deprecated by
   RFC 9113 and is not supported by the Go standard library. An upgrade request
   is served as a normal HTTP/1.1 request and the connection stays on HTTP/1.1.
-- **Not yet verified for h2c streams:** decompression, draining connections on
-  server shutdown, client metadata
+- **Not yet verified for h2c streams:** decompression, client metadata
   (`include_metadata`), HTTP telemetry, CORS and response headers.
 
 h2c is plaintext. Use it only on a trusted network behind a TLS-terminating

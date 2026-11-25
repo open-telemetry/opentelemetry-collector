@@ -177,6 +177,60 @@ func TestConfighttpLimitsRequestBodySizePerStream(t *testing.T) {
 	require.Equal(t, int64(1), srv.connections.Load(), "all streams must share one h2c connection")
 }
 
+func TestConfighttpShutdownDrainsStreams(t *testing.T) {
+	t.Parallel()
+
+	started := make(chan struct{})
+	release := make(chan struct{})
+	srv := startConfighttpServer(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		close(started)
+		<-release
+		w.WriteHeader(http.StatusNoContent)
+	}), nil)
+
+	httpClient := priorKnowledgeClient(t)
+	inFlight := make(chan *http.Response, 1)
+	go func() {
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.url, http.NoBody)
+		if err != nil {
+			close(inFlight)
+			return
+		}
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			close(inFlight)
+			return
+		}
+		_ = resp.Body.Close()
+		inFlight <- resp
+	}()
+	<-started
+
+	shutdownCtx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	shutdown := make(chan error, 1)
+	go func() { shutdown <- srv.server.Shutdown(shutdownCtx) }()
+
+	require.Never(t, func() bool { return len(shutdown) > 0 }, 200*time.Millisecond, 10*time.Millisecond,
+		"shutdown must wait for the in-flight stream")
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.url, http.NoBody)
+	require.NoError(t, err)
+	resp, err := httpClient.Do(req)
+	if err == nil {
+		require.NoError(t, resp.Body.Close())
+	}
+	require.Error(t, err, "new streams must be refused after shutdown starts")
+
+	close(release)
+	resp, ok := <-inFlight
+	require.True(t, ok, "the in-flight stream must complete")
+	require.Equal(t, 2, resp.ProtoMajor)
+	require.Equal(t, http.StatusNoContent, resp.StatusCode)
+	require.NoError(t, <-shutdown, "shutdown must close the h2c connection")
+	<-srv.serveDone
+	require.Equal(t, int64(1), srv.connections.Load())
+}
+
 // The HTTP/1.1 Upgrade to h2c is optional (RFC 7540 Section 3.2) and is not
 // supported by net/http, so the request is served as HTTP/1.1.
 func TestConfighttpUpgradeServedAsHTTP1(t *testing.T) {
@@ -212,6 +266,7 @@ type testServer struct {
 	address     string
 	url         string
 	connections *atomic.Int64
+	serveDone   <-chan struct{}
 }
 
 func withAuth(cfg *confighttp.ServerConfig) {
@@ -253,7 +308,7 @@ func startConfighttpServer(t *testing.T, handler http.Handler, configure func(*c
 		<-done
 	})
 	address := listener.Addr().String()
-	return &testServer{server: server, address: address, url: "http://" + address, connections: connections}
+	return &testServer{server: server, address: address, url: "http://" + address, connections: connections, serveDone: done}
 }
 
 func http1Client(t *testing.T) *http.Client {
