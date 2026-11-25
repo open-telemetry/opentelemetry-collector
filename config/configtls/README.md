@@ -28,8 +28,13 @@ optional and requires additional configuration (see examples below).
 The following certificate parameters can be configured:
 
 - `ca_file`: Path to the CA cert. For a client this verifies the server
-  certificate. For a server this verifies client certificates. If empty, the
-  system root CAs are used.
+  certificate. If empty, the system root CAs are used. It is not used by
+  servers: to verify client certificates a server must set `client_ca_file`
+  (see [Server Configuration](#server-configuration)); a server configuration
+  that sets `ca_file` without `client_ca_file` is rejected. This validation is
+  controlled by the beta feature gate `pkg.configtls.ValidateServerCAFile`;
+  disable it with `--feature-gates=-pkg.configtls.ValidateServerCAFile` to
+  accept such configurations again.
   - `ca_pem`: Alternative to `ca_file`. Provide the CA cert contents as a string instead of a filepath.
 
 - `cert_file`: Path to the TLS certificate. For a server this is required to

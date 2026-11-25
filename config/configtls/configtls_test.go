@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestNewDefaultConfig(t *testing.T) {
@@ -949,6 +950,22 @@ func TestCurvePreferences(t *testing.T) {
 	}
 }
 
+func TestServerConfigValidateCAFileGateDisabled(t *testing.T) {
+	gateID := "pkg.configtls.ValidateServerCAFile"
+	require.NoError(t, featuregate.GlobalRegistry().Set(gateID, false))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gateID, true))
+	})
+
+	// With the gate disabled, ca_file/ca_pem without client_ca_file is accepted again.
+	for _, cfg := range []Config{
+		{CAFile: "ca.pem", CertFile: "cert.pem", KeyFile: "key.pem"},
+		{CAPem: "ca-pem", CertPem: "cert-pem", KeyPem: "key-pem"},
+	} {
+		require.NoError(t, ServerConfig{Config: cfg}.Validate())
+	}
+}
+
 func TestServerConfigValidate(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -1019,6 +1036,28 @@ func TestServerConfigValidate(t *testing.T) {
 			errorTxt: "config: provide either key file or PEM, but not both",
 		},
 		{
+			name: "server config with CA file but no client CA file",
+			serverConfig: ServerConfig{
+				Config: Config{
+					CAFile:   "ca.pem",
+					CertFile: "cert.pem",
+					KeyFile:  "key.pem",
+				},
+			},
+			errorTxt: "ca_file/ca_pem are not used by server connections; set client_ca_file to verify client certificates",
+		},
+		{
+			name: "server config with CA PEM but no client CA file",
+			serverConfig: ServerConfig{
+				Config: Config{
+					CAPem:   "ca-pem",
+					CertPem: "cert-pem",
+					KeyPem:  "key-pem",
+				},
+			},
+			errorTxt: "ca_file/ca_pem are not used by server connections; set client_ca_file to verify client certificates",
+		},
+		{
 			name: "valid server config with cert and key files",
 			serverConfig: ServerConfig{
 				Config: Config{
@@ -1043,6 +1082,17 @@ func TestServerConfigValidate(t *testing.T) {
 					CertFile: "cert.pem",
 					KeyPem:   "key-pem",
 				},
+			},
+		},
+		{
+			name: "valid server config with CA file and client CA file",
+			serverConfig: ServerConfig{
+				Config: Config{
+					CAFile:   "ca.pem",
+					CertFile: "cert.pem",
+					KeyFile:  "key.pem",
+				},
+				ClientCAFile: "client-ca.pem",
 			},
 		},
 	}
