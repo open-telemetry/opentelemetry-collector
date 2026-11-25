@@ -560,12 +560,52 @@ func TestGrpcServerValidate(t *testing.T) {
 
 func TestValidateMaxRecvMsgSizeMiB(t *testing.T) {
 	maxMiB := math.MaxInt / (1024 * 1024)
-	assert.NoError(t, validateMaxRecvMsgSizeMiB(0))
-	assert.NoError(t, validateMaxRecvMsgSizeMiB(1))
-	assert.NoError(t, validateMaxRecvMsgSizeMiB(maxMiB))
-	require.Error(t, validateMaxRecvMsgSizeMiB(-1))
-	require.Error(t, validateMaxRecvMsgSizeMiB(maxMiB+1))
-	assert.Error(t, validateMaxRecvMsgSizeMiB(math.MinInt))
+
+	tests := []struct {
+		name    string
+		input   int
+		wantErr bool
+	}{
+		{
+			name:  "zero is valid",
+			input: 0,
+		},
+		{
+			name:  "one MiB is valid",
+			input: 1,
+		},
+		{
+			name:  "maximum valid MiB",
+			input: maxMiB,
+		},
+		{
+			name:    "negative value",
+			input:   -1,
+			wantErr: true,
+		},
+		{
+			name:    "value exceeding maximum",
+			input:   maxMiB + 1,
+			wantErr: true,
+		},
+		{
+			name:    "minimum integer",
+			input:   math.MinInt,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateMaxRecvMsgSizeMiB(tt.input)
+
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
 }
 
 func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
