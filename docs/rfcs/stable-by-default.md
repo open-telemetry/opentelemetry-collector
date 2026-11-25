@@ -200,17 +200,21 @@ Specifically, we propose implementing restrictions on:
 
 depending on the type of change and possible risk, as evaluated by Collector maintainers.
 
+These restrictions only apply to stable components and features:
+- An unstable component has no restrictions, but may want to plan ahead by gating behavior which is still experimental and not ready to be stabilized.
+- Behavior already gated under an unstable feature gate may be changed further at any time, without requiring a second feature gate.
+
 ```mermaid
 flowchart TD
-  A{{A. Is the change meant to affect the Collector's behavior in currently valid configurations?}}
+  A{{A. Is the change meant to affect the Collector's stable behavior in currently valid configurations?}}
   A -->|Yes| B
   A -->|No| C
 
-  B{{B. Is the current behavior intended and documented?}}
+  B{{B. Is the current stable behavior intended and documented?}}
   B -->|Yes| Omm(A feature gate is MANDATORY, and waiting until a major release to stabilize it is MANDATORY.)
   B -->|"No (bug or implementation detail)"| D
 
-  C{{C. Is the change meant to affect the Collector's behavior only when explicitly requested by the end user?}}
+  C{{C. Is the change meant to affect the Collector's stable behavior only when explicitly requested by the end user?}}
   C -->|"No (transparent internal change)"| D
   C -->|"Yes (new feature)"| E
 
@@ -223,19 +227,21 @@ flowchart TD
   E -->|Yes| Onn(No gating requirements.)
 ```
 
-Additional changes:
+**Additional policy changes:**
 
 - For the sake of making deviations from stable behavior opt-in,
-  distribution maintainers should also strive to make it obvious when a component went through a major release,
+  distribution maintainers should also strive to make it obvious when a stable component went through a major release,
   so that users upgrading their version of the distribution will know
   when they are opting into possible breaking changes to existing stable behavior.
 
   For Collector distributions maintained by the Collector SIG, we suggest that for the time being,
-  a new major release of a component MUST also correspond to a major release of the distribution.
+  a new major release of a stable component MUST also correspond to a major release of the distribution.
   
   We may later introduce alternate mechanisms, such as making new major versions of a component
   available only when referenced with a name including the major version (like was done with
   [the `healthcheckv2` extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/healthcheckv2extension)).
+
+  Note that this does not apply to the initial stable release of a component.
 
 - While the Collector service will enforce stability requirements for service-instantiated components,
   it is the responsibility of a component to enforce them for programatically instantiated subcomponents
