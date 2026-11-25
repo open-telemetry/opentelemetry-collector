@@ -88,7 +88,7 @@ featuregate/                                           @open-telemetry/collector
 filter/                                                @open-telemetry/collector-approvers
 otelcol/                                               @open-telemetry/collector-approvers
 otelcol/otelcoltest/                                   @open-telemetry/collector-approvers
-pdata/                                                 @open-telemetry/collector-approvers @bogdandrutu @dmitryax
+pdata/                                                 @open-telemetry/collector-approvers @bogdandrutu @dmitryax @singhvibhanshu
 pdata/pprofile/                                        @open-telemetry/collector-approvers @mx-psi @dmathieu @florianl
 pdata/xpdata/                                          @open-telemetry/collector-approvers
 pipeline/                                              @open-telemetry/collector-approvers

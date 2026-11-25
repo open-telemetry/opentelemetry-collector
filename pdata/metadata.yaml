@@ -8,6 +8,7 @@ status:
     active:
       - bogdandrutu
       - dmitryax
+      - singhvibhanshu
   stability:
     stable: [traces, metrics, logs]
 
