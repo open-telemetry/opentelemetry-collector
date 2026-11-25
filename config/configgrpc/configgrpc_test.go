@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"math"
 	"net"
 	"os"
 	"path/filepath"
@@ -555,6 +556,16 @@ func TestGrpcServerValidate(t *testing.T) {
 			assert.ErrorContains(t, err, tt.err)
 		})
 	}
+}
+
+func TestValidateMaxRecvMsgSizeMiB(t *testing.T) {
+	maxMiB := math.MaxInt / (1024 * 1024)
+	assert.NoError(t, validateMaxRecvMsgSizeMiB(0))
+	assert.NoError(t, validateMaxRecvMsgSizeMiB(1))
+	assert.NoError(t, validateMaxRecvMsgSizeMiB(maxMiB))
+	assert.Error(t, validateMaxRecvMsgSizeMiB(-1))
+	assert.Error(t, validateMaxRecvMsgSizeMiB(maxMiB+1))
+	assert.Error(t, validateMaxRecvMsgSizeMiB(math.MinInt))
 }
 
 func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {

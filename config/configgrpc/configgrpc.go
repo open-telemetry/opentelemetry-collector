@@ -337,9 +337,16 @@ func (cc *ClientConfig) getGrpcDialOptions(
 }
 
 func validateMaxRecvMsgSizeMiB(maxRecvMsgSizeMiB int) error {
-	if maxRecvMsgSizeMiB*1024*1024 < 0 {
-		return fmt.Errorf("invalid max_recv_msg_size_mib value, must be between 1 and %d: %d", math.MaxInt/1024/1024, maxRecvMsgSizeMiB)
+	maxMiB := math.MaxInt / (1024 * 1024)
+
+	if maxRecvMsgSizeMiB < 0 || maxRecvMsgSizeMiB > maxMiB {
+		return fmt.Errorf(
+			"invalid max_recv_msg_size_mib value, must be between 0 and %d: %d",
+			maxMiB,
+			maxRecvMsgSizeMiB,
+		)
 	}
+
 	return nil
 }
 
