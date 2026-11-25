@@ -127,6 +127,40 @@ func TestConfighttpPriorKnowledgeStreamsHaveIndependentClientInfo(t *testing.T) 
 	}
 }
 
+func TestConfighttpIncludesMetadataPerStream(t *testing.T) {
+	t.Parallel()
+
+	tenants := make(chan []string, 3)
+	srv := startConfighttpServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tenants <- client.FromContext(r.Context()).Metadata.Get("x-tenant")
+		w.WriteHeader(http.StatusNoContent)
+	}), func(cfg *confighttp.ServerConfig) {
+		cfg.IncludeMetadata = true
+	})
+
+	httpClient := priorKnowledgeClient(t)
+	for _, tenant := range []string{"alpha", "", "beta"} {
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.url, http.NoBody)
+		require.NoError(t, err)
+		if tenant != "" {
+			req.Header.Set("X-Tenant", tenant)
+		}
+		resp, err := httpClient.Do(req)
+		require.NoError(t, err)
+		require.NoError(t, resp.Body.Close())
+		require.Equal(t, 2, resp.ProtoMajor)
+		require.Equal(t, http.StatusNoContent, resp.StatusCode)
+
+		got := <-tenants
+		if tenant == "" {
+			require.Empty(t, got, "a stream must not see metadata from earlier streams")
+			continue
+		}
+		require.Equal(t, []string{tenant}, got)
+	}
+	require.Equal(t, int64(1), srv.connections.Load(), "all streams must share one h2c connection")
+}
+
 func TestConfighttpLimitsRequestBodySizePerStream(t *testing.T) {
 	t.Parallel()
 
