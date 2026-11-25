@@ -243,6 +243,18 @@ flowchart TD
 
   Note that this does not apply to the initial stable release of a component.
 
+- In order to be able to release V2 of a distribution at the same time as V2 of a component,
+  [the "Long-term support" section of the VERSIONING document](../../VERSIONING.md#long-term-support-after-v1) will need to be updated.
+  
+  It currently mandates that a V1 distribution be supported for 1 year after the release of V2, and that a V1 component be supported for 6 months.
+  It is unclear how we can properly support a distribution longer than the components included in it, so this RFC proposes that the two timelines be aligned to 6 months.
+
+  Additionally, this section permits the removal of a component from a distribution
+  in a minor release after a 6 month deprecation period.
+  We see this as insufficient to properly communicate the risk of breakage.
+  Thus, this RFC proposes that removal of a component be limited to a major release of the distribution,
+  with the 6 month support period of the previous release serving as a transition period.
+
 - While the Collector service will enforce stability requirements for service-instantiated components,
   it is the responsibility of a component to enforce them for programmatically instantiated subcomponents
   (e.g. receiver instances created by the
