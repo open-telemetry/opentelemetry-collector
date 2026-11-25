@@ -159,6 +159,15 @@ func TestServerMiddlewareProtocols(t *testing.T) {
 			Component:                  newTestServerMiddleware("h2c"),
 			GetHTTPServerProtocolsFunc: unencryptedHTTP2,
 		},
+		component.MustNewID("defaults"): &testServerProtocolsMiddleware{
+			Component: newTestServerMiddleware("defaults"),
+			GetHTTPServerProtocolsFunc: func(context.Context) (http.Protocols, error) {
+				var p http.Protocols
+				p.SetHTTP1(true)
+				p.SetHTTP2(true)
+				return p, nil
+			},
+		},
 		component.MustNewID("broken"): &testServerProtocolsMiddleware{
 			Component: newTestServerMiddleware("broken"),
 			GetHTTPServerProtocolsFunc: func(context.Context) (http.Protocols, error) {
@@ -205,6 +214,13 @@ func TestServerMiddlewareProtocols(t *testing.T) {
 
 	t.Run("unchanged_without_request", func(t *testing.T) {
 		srv, url := start(t, "plain")
+		assert.Nil(t, srv.Protocols)
+		_, err := get(url, h2c)
+		require.Error(t, err)
+	})
+
+	t.Run("unchanged_when_requesting_defaults", func(t *testing.T) {
+		srv, url := start(t, "defaults")
 		assert.Nil(t, srv.Protocols)
 		_, err := get(url, h2c)
 		require.Error(t, err)

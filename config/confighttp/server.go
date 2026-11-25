@@ -321,12 +321,13 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 }
 
 // addProtocols adds the protocols requested by a middleware to the server's
-// protocols. While no middleware has requested any, protocols stays nil so
-// the server keeps the net/http defaults. The first request starts from
-// HTTP/1 and HTTP/2, the documented net/http defaults, so a middleware can
-// add protocols but never turn one off.
+// protocols. HTTP/1 and HTTP/2 are net/http defaults, so requesting them
+// changes nothing. Until a middleware requests another protocol, protocols
+// stays nil and the server keeps the net/http defaults. The first such
+// request starts from HTTP/1 and HTTP/2, so a middleware can add protocols
+// but never turn one off.
 func addProtocols(protocols *http.Protocols, requested http.Protocols) *http.Protocols {
-	if !requested.HTTP1() && !requested.HTTP2() && !requested.UnencryptedHTTP2() {
+	if !requested.UnencryptedHTTP2() {
 		return protocols
 	}
 	if protocols == nil {
