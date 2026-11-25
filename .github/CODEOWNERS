@@ -85,6 +85,7 @@ extension/xextension/                                  @open-telemetry/collector
 extension/xextension/storage/                          @open-telemetry/collector-approvers @swiatekm
 extension/zpagesextension/                             @open-telemetry/collector-approvers
 featuregate/                                           @open-telemetry/collector-approvers
+filter/                                                @open-telemetry/collector-approvers
 otelcol/                                               @open-telemetry/collector-approvers
 otelcol/otelcoltest/                                   @open-telemetry/collector-approvers
 pdata/                                                 @open-telemetry/collector-approvers @bogdandrutu @dmitryax
