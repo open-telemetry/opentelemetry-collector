@@ -184,6 +184,7 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 	if len(sc.Middlewares) > 0 && extensions == nil {
 		return nil, errors.New("middlewares were configured but this component or its host does not support extensions")
 	}
+	var protocols *http.Protocols
 	for _, m := range slices.Backward(sc.Middlewares) {
 		wrapper, err := m.GetHTTPServerHandler(ctx, extensions)
 		// If we failed to get the middleware
@@ -195,6 +196,11 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		if err != nil {
 			return nil, err
 		}
+		requested, err := m.GetHTTPServerProtocols(ctx, extensions)
+		if err != nil {
+			return nil, err
+		}
+		protocols = addProtocols(protocols, requested)
 	}
 
 	// MaxRequestBodySize is enforced twice: on the received (possibly compressed)
@@ -306,11 +312,32 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		WriteTimeout:      sc.WriteTimeout,
 		IdleTimeout:       idleTimeout,
 		ErrorLog:          errorLog,
+		Protocols:         protocols,
 	}
 
 	server.SetKeepAlivesEnabled(keepAlivesEnabled)
 
 	return server, err
+}
+
+// addProtocols adds the protocols requested by a middleware to the server's
+// protocols. While no middleware has requested any, protocols stays nil so
+// the server keeps the net/http defaults. The first request starts from
+// HTTP/1 and HTTP/2, the documented net/http defaults, so a middleware can
+// add protocols but never turn one off.
+func addProtocols(protocols *http.Protocols, requested http.Protocols) *http.Protocols {
+	if !requested.HTTP1() && !requested.HTTP2() && !requested.UnencryptedHTTP2() {
+		return protocols
+	}
+	if protocols == nil {
+		protocols = &http.Protocols{}
+		protocols.SetHTTP1(true)
+		protocols.SetHTTP2(true)
+	}
+	if requested.UnencryptedHTTP2() {
+		protocols.SetUnencryptedHTTP2(true)
+	}
+	return protocols
 }
 
 func responseHeadersHandler(handler http.Handler, headers configopaque.MapList) http.Handler {

@@ -55,6 +55,16 @@ func newTestServerConfig(name string) configmiddleware.Config {
 	}
 }
 
+// testServerProtocolsMiddleware adds HTTPServerProtocols to a test middleware.
+type testServerProtocolsMiddleware struct {
+	component.Component
+	extensionmiddleware.GetHTTPServerProtocolsFunc
+}
+
+func (m *testServerProtocolsMiddleware) GetHTTPHandler(ctx context.Context) (extensionmiddleware.WrapHTTPHandlerFunc, error) {
+	return m.Component.(extensionmiddleware.HTTPServer).GetHTTPHandler(ctx)
+}
+
 func TestServerMiddleware(t *testing.T) {
 	// Register two test extensions
 	extensions := map[component.ID]component.Component{
@@ -135,6 +145,92 @@ func TestServerMiddleware(t *testing.T) {
 			assert.Equal(t, tc.expectedOutput, string(body))
 		})
 	}
+}
+
+func TestServerMiddlewareProtocols(t *testing.T) {
+	unencryptedHTTP2 := func(context.Context) (http.Protocols, error) {
+		var p http.Protocols
+		p.SetUnencryptedHTTP2(true)
+		return p, nil
+	}
+	extensions := map[component.ID]component.Component{
+		component.MustNewID("plain"): newTestServerMiddleware("plain"),
+		component.MustNewID("h2c"): &testServerProtocolsMiddleware{
+			Component:                  newTestServerMiddleware("h2c"),
+			GetHTTPServerProtocolsFunc: unencryptedHTTP2,
+		},
+		component.MustNewID("broken"): &testServerProtocolsMiddleware{
+			Component: newTestServerMiddleware("broken"),
+			GetHTTPServerProtocolsFunc: func(context.Context) (http.Protocols, error) {
+				return http.Protocols{}, errors.New("protocols error")
+			},
+		},
+	}
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+	start := func(t *testing.T, middlewares ...string) (*http.Server, string) {
+		cfg := ServerConfig{
+			NetAddr: confignet.AddrConfig{
+				Endpoint:  "localhost:0",
+				Transport: confignet.TransportTypeTCP,
+			},
+		}
+		for _, name := range middlewares {
+			cfg.Middlewares = append(cfg.Middlewares, newTestServerConfig(name))
+		}
+		srv, err := cfg.ToServer(t.Context(), extensions, componenttest.NewNopTelemetrySettings(), handler)
+		require.NoError(t, err)
+		ln, err := cfg.ToListener(t.Context())
+		require.NoError(t, err)
+		go func() { _ = srv.Serve(ln) }()
+		t.Cleanup(func() { require.NoError(t, srv.Close()) })
+		return srv, "http://" + ln.Addr().String()
+	}
+	// get returns the HTTP major version the client negotiated.
+	get := func(url string, protocols func(*http.Protocols)) (int, error) {
+		var p http.Protocols
+		protocols(&p)
+		client := &http.Client{Transport: &http.Transport{Protocols: &p}}
+		defer client.CloseIdleConnections()
+		resp, err := client.Get(url)
+		if err != nil {
+			return 0, err
+		}
+		defer resp.Body.Close()
+		return resp.ProtoMajor, nil
+	}
+	http1 := func(p *http.Protocols) { p.SetHTTP1(true) }
+	h2c := func(p *http.Protocols) { p.SetUnencryptedHTTP2(true) }
+
+	t.Run("unchanged_without_request", func(t *testing.T) {
+		srv, url := start(t, "plain")
+		assert.Nil(t, srv.Protocols)
+		_, err := get(url, h2c)
+		require.Error(t, err)
+	})
+
+	t.Run("adds_requested_protocols", func(t *testing.T) {
+		srv, url := start(t, "plain", "h2c")
+		require.NotNil(t, srv.Protocols)
+		assert.True(t, srv.Protocols.HTTP1())
+		assert.True(t, srv.Protocols.HTTP2())
+		assert.True(t, srv.Protocols.UnencryptedHTTP2())
+
+		major, err := get(url, h2c)
+		require.NoError(t, err)
+		assert.Equal(t, 2, major)
+
+		major, err = get(url, http1)
+		require.NoError(t, err)
+		assert.Equal(t, 1, major)
+	})
+
+	t.Run("returns_error", func(t *testing.T) {
+		cfg := ServerConfig{Middlewares: []configmiddleware.Config{newTestServerConfig("broken")}}
+		_, err := cfg.ToServer(t.Context(), extensions, componenttest.NewNopTelemetrySettings(), handler)
+		require.ErrorContains(t, err, "protocols error")
+	})
 }
 
 func TestServerMiddlewareErrors(t *testing.T) {
