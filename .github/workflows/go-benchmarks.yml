@@ -62,7 +62,7 @@ jobs:
         if: env.SKIP_BENCH != 'true'
       - name: Setup Go
         if: env.SKIP_BENCH != 'true'
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: stable
           cache: true
@@ -85,7 +85,7 @@ jobs:
 
       - name: Run the benchmarks
         if: env.SKIP_BENCH != 'true'
-        uses: CodSpeedHQ/action@af75f77f17a054769abefaa42fe8dc2975469b5f # v5.6.3
+        uses: CodSpeedHQ/action@b1f28b5eccf7cb5bfe6a2a89cb3053eb67f1150c # v5.8.0
         with:
           mode: walltime
           run: make for-all-target TARGET="timebenchmark" GOMODULES="${{ env.TARGET_MODULES }}"

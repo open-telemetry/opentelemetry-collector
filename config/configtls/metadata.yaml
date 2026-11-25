@@ -36,12 +36,13 @@ exported_configs:
   config:
     description: | 
       Exposes the common client and server TLS configurations. 
-      Note: Since there isn''t anything specific to a server connection. Components with server connections should use Config.
+      Note: Since there isn't anything specific to a server connection. Components with server connections should use Config.
     properties:
       ca_file:
         description: |
-          Path to the CA cert. For a client this verifies the server certificate. 
-          For a server this verifies client certificates. If empty uses system root CA. (optional)
+          Path to the CA cert. For a client this verifies the server certificate.
+          If empty uses system root CA. Not used by servers: to verify client certificates
+          a server must set client_ca_file instead. (optional)
         type: string
       ca_pem:
         description: In memory PEM encoded cert. (optional)
@@ -122,11 +123,20 @@ exported_configs:
     description: Defines trusted platform module configuration for storing TLS keys.
     properties:
       auth:
-        type: string
+        description: The authorization value of the TLS key stored in the TPM. (optional)
+        type: opaque_string
       enabled:
         type: bool
       owner_auth:
-        type: string
+        description: The owner authorization value of the TPM. (optional)
+        type: opaque_string
       path:
         description: The path to the TPM device or Unix domain socket. For instance /dev/tpm0 or /dev/tpmrm0.
         type: string
+
+feature_gates:
+  - id: pkg.configtls.ValidateServerCAFile
+    description: When enabled, a server TLS configuration that sets ca_file or ca_pem without client_ca_file is rejected at config validation. When disabled, ca_file and ca_pem are silently ignored by servers.
+    stage: beta
+    from_version: v0.167.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector/issues/16445

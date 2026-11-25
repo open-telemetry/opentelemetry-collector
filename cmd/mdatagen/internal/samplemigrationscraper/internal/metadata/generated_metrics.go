@@ -137,17 +137,25 @@ var MetricsInfo = metricsInfo{
 		Name:       "system.cpu.utilization",
 		Attributes: []string{"cpu.logical_number", "cpu.mode"},
 	},
+	SystemMemoryLimitUtilizationV1: metricInfo{
+		Name: "system.memory.limit.utilization",
+	},
+	SystemMemoryLimitUtilization: metricInfo{
+		Name: "system.memory.limit_utilization",
+	},
 	SystemMemoryLinuxAvailableV1: metricInfo{
 		Name: "system.memory.linux.available",
 	},
 }
 
 type metricsInfo struct {
-	LinuxMemoryAvailable         metricInfo
-	SystemCPUFoo                 metricInfo
-	SystemCPUUtilization         metricInfo
-	SystemCPUUtilizationV1       metricInfo
-	SystemMemoryLinuxAvailableV1 metricInfo
+	LinuxMemoryAvailable           metricInfo
+	SystemCPUFoo                   metricInfo
+	SystemCPUUtilization           metricInfo
+	SystemCPUUtilizationV1         metricInfo
+	SystemMemoryLimitUtilizationV1 metricInfo
+	SystemMemoryLimitUtilization   metricInfo
+	SystemMemoryLinuxAvailableV1   metricInfo
 }
 
 type metricInfo struct {
@@ -451,6 +459,106 @@ func newMetricSystemCPUUtilizationV1(cfg SystemCPUUtilizationV1MetricConfig) met
 	return m
 }
 
+type metricSystemMemoryLimitUtilizationV1 struct {
+	data     pmetric.Metric                             // data buffer for generated metric.
+	config   SystemMemoryLimitUtilizationV1MetricConfig // metric config provided by user.
+	capacity int                                        // max observed number of data points added to the metric.
+}
+
+// init fills system.memory.limit.utilization@v1 metric with initial data.
+func (m *metricSystemMemoryLimitUtilizationV1) init() {
+	m.data.SetName("system.memory.limit.utilization")
+	m.data.SetDescription("Memory utilization as a ratio of the limit, based on the memory working set.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSystemMemoryLimitUtilizationV1) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemMemoryLimitUtilizationV1) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemMemoryLimitUtilizationV1) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemMemoryLimitUtilizationV1(cfg SystemMemoryLimitUtilizationV1MetricConfig) metricSystemMemoryLimitUtilizationV1 {
+	m := metricSystemMemoryLimitUtilizationV1{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemMemoryLimitUtilization struct {
+	data     pmetric.Metric                           // data buffer for generated metric.
+	config   SystemMemoryLimitUtilizationMetricConfig // metric config provided by user.
+	capacity int                                      // max observed number of data points added to the metric.
+}
+
+// init fills system.memory.limit_utilization metric with initial data.
+func (m *metricSystemMemoryLimitUtilization) init() {
+	m.data.SetName("system.memory.limit_utilization")
+	m.data.SetDescription("Legacy memory utilization as a ratio of the limit, based on memory usage.")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSystemMemoryLimitUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemMemoryLimitUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemMemoryLimitUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemMemoryLimitUtilization(cfg SystemMemoryLimitUtilizationMetricConfig) metricSystemMemoryLimitUtilization {
+	m := metricSystemMemoryLimitUtilization{config: cfg}
+
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSystemMemoryLinuxAvailableV1 struct {
 	data     pmetric.Metric                           // data buffer for generated metric.
 	config   SystemMemoryLinuxAvailableV1MetricConfig // metric config provided by user.
@@ -506,16 +614,18 @@ func newMetricSystemMemoryLinuxAvailableV1(cfg SystemMemoryLinuxAvailableV1Metri
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                             MetricsBuilderConfig // config of the metrics builder.
-	startTime                          pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                    int                  // maximum observed number of metrics per resource.
-	metricsBuffer                      pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                          component.BuildInfo  // contains version information.
-	metricLinuxMemoryAvailable         metricLinuxMemoryAvailable
-	metricSystemCPUFoo                 metricSystemCPUFoo
-	metricSystemCPUUtilization         metricSystemCPUUtilization
-	metricSystemCPUUtilizationV1       metricSystemCPUUtilizationV1
-	metricSystemMemoryLinuxAvailableV1 metricSystemMemoryLinuxAvailableV1
+	config                               MetricsBuilderConfig // config of the metrics builder.
+	startTime                            pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                      int                  // maximum observed number of metrics per resource.
+	metricsBuffer                        pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                            component.BuildInfo  // contains version information.
+	metricLinuxMemoryAvailable           metricLinuxMemoryAvailable
+	metricSystemCPUFoo                   metricSystemCPUFoo
+	metricSystemCPUUtilization           metricSystemCPUUtilization
+	metricSystemCPUUtilizationV1         metricSystemCPUUtilizationV1
+	metricSystemMemoryLimitUtilizationV1 metricSystemMemoryLimitUtilizationV1
+	metricSystemMemoryLimitUtilization   metricSystemMemoryLimitUtilization
+	metricSystemMemoryLinuxAvailableV1   metricSystemMemoryLinuxAvailableV1
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -536,16 +646,21 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 	})
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, options ...MetricBuilderOption) *MetricsBuilder {
+	if mbc.Metrics.SystemMemoryLimitUtilizationV1.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] `system.memory.limit.utilization` should not be configured: This metric is in development.")
+	}
 	mb := &MetricsBuilder{
-		config:                             mbc,
-		startTime:                          pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                      pmetric.NewMetrics(),
-		buildInfo:                          settings.BuildInfo,
-		metricLinuxMemoryAvailable:         newMetricLinuxMemoryAvailable(mbc.Metrics.LinuxMemoryAvailable),
-		metricSystemCPUFoo:                 newMetricSystemCPUFoo(mbc.Metrics.SystemCPUFoo),
-		metricSystemCPUUtilization:         newMetricSystemCPUUtilization(mbc.Metrics.SystemCPUUtilization),
-		metricSystemCPUUtilizationV1:       newMetricSystemCPUUtilizationV1(mbc.Metrics.SystemCPUUtilizationV1),
-		metricSystemMemoryLinuxAvailableV1: newMetricSystemMemoryLinuxAvailableV1(mbc.Metrics.SystemMemoryLinuxAvailableV1),
+		config:                               mbc,
+		startTime:                            pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                        pmetric.NewMetrics(),
+		buildInfo:                            settings.BuildInfo,
+		metricLinuxMemoryAvailable:           newMetricLinuxMemoryAvailable(mbc.Metrics.LinuxMemoryAvailable),
+		metricSystemCPUFoo:                   newMetricSystemCPUFoo(mbc.Metrics.SystemCPUFoo),
+		metricSystemCPUUtilization:           newMetricSystemCPUUtilization(mbc.Metrics.SystemCPUUtilization),
+		metricSystemCPUUtilizationV1:         newMetricSystemCPUUtilizationV1(mbc.Metrics.SystemCPUUtilizationV1),
+		metricSystemMemoryLimitUtilizationV1: newMetricSystemMemoryLimitUtilizationV1(mbc.Metrics.SystemMemoryLimitUtilizationV1),
+		metricSystemMemoryLimitUtilization:   newMetricSystemMemoryLimitUtilization(mbc.Metrics.SystemMemoryLimitUtilization),
+		metricSystemMemoryLinuxAvailableV1:   newMetricSystemMemoryLinuxAvailableV1(mbc.Metrics.SystemMemoryLinuxAvailableV1),
 	}
 	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
 		if mb.metricLinuxMemoryAvailable.config.Enabled && !mb.metricSystemMemoryLinuxAvailableV1.config.enabledSetByUser {
@@ -590,6 +705,17 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, opti
 			mb.metricSystemCPUUtilizationV1.config.Enabled = false
 			settings.Logger.Warn("[WARNING] metric `system.cpu.utilization@v1` requires feature gate `scraper.samplemigration.EmitV1SystemConventions` to be enabled, metric has been disabled")
 		}
+	}
+	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
+		if mb.metricSystemMemoryLimitUtilization.config.Enabled && !mb.metricSystemMemoryLimitUtilizationV1.config.enabledSetByUser {
+			mb.metricSystemMemoryLimitUtilizationV1.config.Enabled = true
+			mb.metricSystemMemoryLimitUtilizationV1.data = pmetric.NewMetric()
+			mb.metricSystemMemoryLimitUtilizationV1.init()
+		}
+	}
+	if !ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() && mb.metricSystemMemoryLimitUtilizationV1.config.Enabled {
+		mb.metricSystemMemoryLimitUtilizationV1.config.Enabled = false
+		settings.Logger.Warn("[WARNING] metric `system.memory.limit.utilization@v1` requires feature gate `scraper.samplemigration.EmitV1SystemConventions` to be enabled, metric has been disabled")
 	}
 
 	for _, op := range options {
@@ -659,6 +785,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSystemCPUFoo.emit(ils.Metrics())
 	mb.metricSystemCPUUtilization.emit(ils.Metrics())
 	mb.metricSystemCPUUtilizationV1.emit(ils.Metrics())
+	mb.metricSystemMemoryLimitUtilizationV1.emit(ils.Metrics())
+	mb.metricSystemMemoryLimitUtilization.emit(ils.Metrics())
 	mb.metricSystemMemoryLinuxAvailableV1.emit(ils.Metrics())
 
 	for _, op := range options {
@@ -707,6 +835,20 @@ func (mb *MetricsBuilder) RecordSystemCPUUtilizationDataPoint(ts pcommon.Timesta
 	}
 	if ScraperSamplemigrationEmitV1SystemConventionsFeatureGate.IsEnabled() {
 		mb.metricSystemCPUUtilizationV1.recordDataPoint(mb.startTime, ts, val, cpuLogicalNumberAttributeValue, cpuModeAttributeValue.String(), cpuAttributeValue, stateAttributeValue.String(), emitLegacy)
+	}
+}
+
+// RecordSystemMemoryLimitUtilizationV1DataPoint adds a data point to system.memory.limit.utilization@v1 metric.
+func (mb *MetricsBuilder) RecordSystemMemoryLimitUtilizationV1DataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricSystemMemoryLimitUtilizationV1.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemMemoryLimitUtilizationDataPoint adds a data point to system.memory.limit_utilization metric.
+func (mb *MetricsBuilder) RecordSystemMemoryLimitUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	// Dual-schema emission controlled by feature gates
+	emitLegacy := !ScraperSamplemigrationDontEmitV0SystemConventionsFeatureGate.IsEnabled()
+	if emitLegacy {
+		mb.metricSystemMemoryLimitUtilization.recordDataPoint(mb.startTime, ts, val)
 	}
 }
 

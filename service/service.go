@@ -7,6 +7,7 @@ package service // import "go.opentelemetry.io/collector/service"
 
 import (
 	"context"
+	"crypto/fips140"
 	"errors"
 	"fmt"
 	"runtime"
@@ -233,6 +234,7 @@ func (srv *Service) Start(ctx context.Context) error {
 	srv.telemetrySettings.Logger.Info("Starting "+srv.buildInfo.Command+"...",
 		zap.String("Version", srv.buildInfo.Version),
 		zap.Int("NumCPU", runtime.NumCPU()),
+		zap.Bool("FIPS140", fips140.Enabled()),
 	)
 
 	if err := srv.host.ServiceExtensions.Start(ctx, srv.host); err != nil {
@@ -266,19 +268,36 @@ func ReceiverPartialReloadEnabled() bool {
 		metadata.ServicePartialReloadReceiversFeatureGate.IsEnabled()
 }
 
-// UpdateReceivers performs a partial reload of receiver components.
-// Only receivers that have been added, removed, or whose configuration or
-// pipeline membership changed are restarted. All other components remain
-// running without interruption.
-func (srv *Service) UpdateReceivers(ctx context.Context,
+// ProcessorPartialReloadEnabled reports whether processor partial reload is
+// active: both service.partialReload and service.partialReloadProcessors must
+// be enabled.
+func ProcessorPartialReloadEnabled() bool {
+	return metadata.ServicePartialReloadFeatureGate.IsEnabled() &&
+		metadata.ServicePartialReloadProcessorsFeatureGate.IsEnabled()
+}
+
+// Update partially reloads receivers and processors in one pass, restarting
+// only the affected components. It returns false without making changes if a
+// full reload is required.
+func (srv *Service) Update(ctx context.Context,
 	changedReceivers map[component.ID]bool,
 	newReceiverConfigs map[component.ID]component.Config,
 	receiverFactories map[component.Type]receiver.Factory,
+	changedProcessors map[component.ID]bool,
+	newProcessorConfigs map[component.ID]component.Config,
+	processorFactories map[component.Type]processor.Factory,
 	pipelineConfigs pipelines.Config,
-) error {
-	srv.telemetrySettings.Logger.Info("Performing partial receiver reload")
+) (bool, error) {
+	srv.telemetrySettings.Logger.Info("Performing partial reload")
 	srv.graphSettings.PipelineConfigs = pipelineConfigs
-	return srv.host.Pipelines.UpdateReceivers(ctx, srv.graphSettings, changedReceivers, newReceiverConfigs, receiverFactories, srv.host)
+	return srv.host.Pipelines.Update(ctx, srv.graphSettings, graph.UpdateRequest{
+		ChangedReceivers:   changedReceivers,
+		NewReceiverCfgs:    newReceiverConfigs,
+		ReceiverFactories:  receiverFactories,
+		ChangedProcessors:  changedProcessors,
+		NewProcessorCfgs:   newProcessorConfigs,
+		ProcessorFactories: processorFactories,
+	}, srv.host)
 }
 
 // Shutdown the service. Shutdown will do the following steps in order:

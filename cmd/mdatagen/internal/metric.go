@@ -90,7 +90,7 @@ func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 			"only one of the following has to be specified: sum, gauge, histogram"))
 	}
 	if m.Stability == component.StabilityLevelUndefined {
-		errs = errors.Join(errs, errors.New("missing required field: `stability.level`"))
+		errs = errors.Join(errs, errors.New("missing required field: `stability`"))
 	}
 	if m.Description == "" {
 		errs = errors.Join(errs, errors.New(`missing metric description`))
@@ -419,6 +419,14 @@ type MetricMigration struct {
 	To MetricName `mapstructure:"to"`
 	// ThroughGates lists the gates controlling emission of old/new.
 	ThroughGates MigrationGates `mapstructure:"through_gates"`
+	// IndependentValue, when true, generates a separate Record function for the
+	// target metric instead of recording the legacy value into it. Use it when the
+	// target metric is calculated differently from the legacy one.
+	IndependentValue bool `mapstructure:"independent_value"`
+	// EmittedNameConfigKey, when true, uses the emitted name of the target metric
+	// (without the version suffix) as its configuration key and in the documentation.
+	// It requires the emitted name to be unique within the metadata file.
+	EmittedNameConfigKey bool `mapstructure:"emitted_name_config_key"`
 }
 
 type MigrationGates struct {
