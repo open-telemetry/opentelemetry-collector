@@ -4,7 +4,7 @@
 | ------------- |-----------|
 | Stability     | [development]  |
 | Distributions | [] |
-| Warnings      | [Request body limits and decompression on later h2c streams are not verified yet, and hijacked connections stay open until the extension shuts down., h2c is unencrypted and should only be used behind a TLS-terminating proxy on a trusted network.](#warnings) |
+| Warnings      | [Request body limits, decompression and draining connections on server shutdown are not verified yet for h2c streams., h2c is unencrypted and should only be used behind a TLS-terminating proxy on a trusted network.](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fh2c%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fh2c) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fh2c%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fh2c) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -29,35 +29,26 @@ service:
   extensions: [h2c]
 ```
 
-## How h2c streams are handled
+## How h2c works
 
-The middleware runs inside the `confighttp` server handler chain. When a request
-starts an h2c connection, the middleware hijacks the connection and serves
-HTTP/2 on it. Each later stream re-enters the HTTP server's full handler, so it
-is authenticated like an HTTP/1.1 request. Streams do not inherit context
-values, such as the authenticated identity, from the request that started the
-connection.
+The extension asks the `confighttp` server to accept unencrypted HTTP/2 through
+`http.Server.Protocols`. It does not wrap or replace the request handler. The Go
+standard library serves each HTTP/2 stream through the server's full handler
+chain, so every stream is authenticated like an HTTP/1.1 request. Streams do not
+share context values, such as the authenticated identity, with other streams on
+the same connection.
 
-An HTTP/1.1 `Upgrade: h2c` request becomes stream 1. It already went through the
-handler chain before the upgrade, so it is not handled a second time.
+The server keeps accepting HTTP/1.1 and, with TLS, HTTP/2.
 
-## Security and protocol limitations
+## Protocol limitations
 
-- **Prior knowledge with authentication:** the prior-knowledge preamble
-  (`PRI * HTTP/2.0`) has no credentials. When authentication is configured, the
-  server rejects it before the middleware sees it. Use an HTTP/1.1
-  `Upgrade: h2c` request with credentials instead.
-- **Not yet verified on later streams:** request body limits, decompression,
-  client metadata, HTTP telemetry, CORS and response headers.
-- **Shutdown:** `http.Server.Shutdown` does not close hijacked connections. They
-  stay open until the extension shuts down.
-
-The Go standard library's `http.Server.Protocols` API is preferred for enabling
-prior-knowledge unencrypted HTTP/2 because it keeps requests in the normal server
-handler chain. A handler middleware cannot configure that server field, and the
-standard API does not provide HTTP/1.1 `Upgrade: h2c` support. This middleware
-serves HTTP/2 on the hijacked connection with `golang.org/x/net/http2` to support
-both prior-knowledge and HTTP/1.1 upgrade requests.
+- **Prior knowledge only:** clients must start h2c with prior knowledge
+  (RFC 9113 Section 3.3). The HTTP/1.1 `Upgrade: h2c` mechanism is deprecated by
+  RFC 9113 and is not supported by the Go standard library. An upgrade request
+  is served as a normal HTTP/1.1 request and the connection stays on HTTP/1.1.
+- **Not yet verified for h2c streams:** request body limits, decompression,
+  draining connections on server shutdown, client metadata
+  (`include_metadata`), HTTP telemetry, CORS and response headers.
 
 h2c is plaintext. Use it only on a trusted network behind a TLS-terminating
 proxy. Do not expose the listener directly to untrusted networks.
