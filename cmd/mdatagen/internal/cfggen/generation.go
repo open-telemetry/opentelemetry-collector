@@ -122,19 +122,26 @@ func NewCfgFns(env GeneratorEnv) map[string]any {
 }
 
 // GeneratorEnv provides selected attributes of the environment surrounding config
-// that's being generated, such as: rootPackage, componentPackage, isComponent.
+// that's being generated, such as: rootPackage, componentPackage, isComponent, configsMetadata.
 type GeneratorEnv struct {
 	rootPackage      string
 	componentPackage string
 	isComponent      bool
+	configsMetadata  *ConfigsMetadata
 }
 
-func NewGeneratorEnv(rootPackage, componentPackage string, isComponent bool) GeneratorEnv {
+func NewGeneratorEnv(rootPackage, componentPackage string, isComponent bool, configsMetadata *ConfigsMetadata) GeneratorEnv {
 	return GeneratorEnv{
 		rootPackage:      rootPackage,
 		componentPackage: componentPackage,
 		isComponent:      isComponent,
+		configsMetadata:  configsMetadata,
 	}
+}
+
+// ConfigsMetadata returns the config metadata associated with this generator environment.
+func (e GeneratorEnv) ConfigsMetadata() *ConfigsMetadata {
+	return e.configsMetadata
 }
 
 // defaultCtorName returns the name of the default-value constructor for typeName.
@@ -186,10 +193,10 @@ func ExternalDefaultCall(ref string, env GeneratorEnv) (string, error) {
 
 // WithCfgFns merges config generation template functions into the given function map.
 // The generator environment and config metadata are captured in closures so the template doesn't need to thread them through.
-func WithCfgFns(fns map[string]any, env GeneratorEnv, md *ConfigsMetadata) map[string]any {
+func WithCfgFns(fns map[string]any, env GeneratorEnv) map[string]any {
 	cfgFns := NewCfgFns(env)
 	maps.Copy(fns, cfgFns)
-	maps.Copy(fns, NewCfgDocFns(md))
+	maps.Copy(fns, NewCfgDocFns(env.configsMetadata))
 	return fns
 }
 

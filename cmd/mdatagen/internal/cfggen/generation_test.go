@@ -1300,6 +1300,15 @@ func TestNewCfgFns_CamelVar(t *testing.T) {
 	require.Panics(t, func() { camelVar("") })
 }
 
+func TestNewGeneratorEnv(t *testing.T) {
+	md := &ConfigsMetadata{}
+	env := NewGeneratorEnv("root", "comp", true, md)
+	require.Equal(t, "root", env.rootPackage)
+	require.Equal(t, "comp", env.componentPackage)
+	require.True(t, env.isComponent)
+	require.Equal(t, md, env.ConfigsMetadata())
+}
+
 func TestWithCfgFns(t *testing.T) {
 	base := map[string]any{"existing": "value"}
 	md := &ConfigsMetadata{
@@ -1310,7 +1319,7 @@ func TestWithCfgFns(t *testing.T) {
 			},
 		},
 	}
-	result := WithCfgFns(base, GeneratorEnv{rootPackage: "", componentPackage: ""}, md)
+	result := WithCfgFns(base, GeneratorEnv{rootPackage: "", componentPackage: "", configsMetadata: md})
 
 	require.Equal(t, "value", result["existing"])
 	require.Contains(t, result, "mapGoType")
