@@ -18,6 +18,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -159,6 +161,37 @@ func TestConfighttpIncludesMetadataPerStream(t *testing.T) {
 		require.Equal(t, []string{tenant}, got)
 	}
 	require.Equal(t, int64(1), srv.connections.Load(), "all streams must share one h2c connection")
+}
+
+func TestConfighttpRecordsSpanPerStream(t *testing.T) {
+	t.Parallel()
+
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	srv := startConfighttpServerWithSettings(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}), nil, tel.NewTelemetrySettings())
+
+	const streams = 3
+	httpClient := priorKnowledgeClient(t)
+	for range streams {
+		resp, err := httpClient.Get(srv.url)
+		require.NoError(t, err)
+		require.NoError(t, resp.Body.Close())
+		require.Equal(t, 2, resp.ProtoMajor)
+		require.Equal(t, http.StatusNoContent, resp.StatusCode)
+	}
+	require.Equal(t, int64(1), srv.connections.Load(), "all streams must share one h2c connection")
+
+	require.Eventually(t, func() bool { return len(tel.SpanRecorder.Ended()) == streams }, 5*time.Second, 10*time.Millisecond)
+	traceIDs := map[trace.TraceID]struct{}{}
+	for _, span := range tel.SpanRecorder.Ended() {
+		require.Equal(t, trace.SpanKindServer, span.SpanKind())
+		require.False(t, span.Parent().IsValid(), "a stream span must not be parented by another stream")
+		require.Contains(t, span.Attributes(), attribute.String("network.protocol.version", "2.0"))
+		traceIDs[span.SpanContext().TraceID()] = struct{}{}
+	}
+	require.Len(t, traceIDs, streams, "each stream must start its own trace")
 }
 
 func TestConfighttpLimitsRequestBodySizePerStream(t *testing.T) {
@@ -360,6 +393,11 @@ func withAuth(cfg *confighttp.ServerConfig) {
 
 func startConfighttpServer(t *testing.T, handler http.Handler, configure func(*confighttp.ServerConfig)) *testServer {
 	t.Helper()
+	return startConfighttpServerWithSettings(t, handler, configure, componenttest.NewNopTelemetrySettings())
+}
+
+func startConfighttpServerWithSettings(t *testing.T, handler http.Handler, configure func(*confighttp.ServerConfig), settings component.TelemetrySettings) *testServer {
+	t.Helper()
 
 	extensions := map[component.ID]component.Component{
 		authID: subjectAuthenticator{},
@@ -373,7 +411,7 @@ func startConfighttpServer(t *testing.T, handler http.Handler, configure func(*c
 	}
 	listener, err := cfg.ToListener(t.Context())
 	require.NoError(t, err)
-	server, err := cfg.ToServer(t.Context(), extensions, componenttest.NewNopTelemetrySettings(), handler)
+	server, err := cfg.ToServer(t.Context(), extensions, settings, handler)
 	require.NoError(t, err)
 	connections := &atomic.Int64{}
 	server.ConnState = func(_ net.Conn, state http.ConnState) {

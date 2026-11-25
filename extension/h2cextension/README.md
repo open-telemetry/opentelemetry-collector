@@ -37,7 +37,8 @@ standard library serves each HTTP/2 stream through the server's full handler
 chain, so every stream is authenticated like an HTTP/1.1 request. Streams do not
 share context values, such as the authenticated identity, with other streams on
 the same connection. With `include_metadata`, each stream's client metadata comes
-from that stream's headers. Each stream's body is decompressed according to its
+from that stream's headers, and the server records a separate HTTP server span
+for each stream. Each stream's body is decompressed according to its
 `Content-Encoding`, and `max_request_body_size` applies both to the received
 body and to the body after decompression.
 
@@ -53,8 +54,7 @@ The server keeps accepting HTTP/1.1 and, with TLS, HTTP/2.
   (RFC 9113 Section 3.3). The HTTP/1.1 `Upgrade: h2c` mechanism is deprecated by
   RFC 9113 and is not supported by the Go standard library. An upgrade request
   is served as a normal HTTP/1.1 request and the connection stays on HTTP/1.1.
-- **Not yet verified for h2c streams:** HTTP telemetry, CORS and response
-  headers.
+- **Not yet verified for h2c streams:** CORS and response headers.
 
 h2c is plaintext. Use it only on a trusted network behind a TLS-terminating
 proxy. Do not expose the listener directly to untrusted networks.
