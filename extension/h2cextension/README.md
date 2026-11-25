@@ -4,7 +4,7 @@
 | ------------- |-----------|
 | Stability     | [development]  |
 | Distributions | [] |
-| Warnings      | [This prototype can bypass HTTP server authentication and request body limits after an h2c connection is upgraded., h2c is unencrypted and should only be used behind a TLS-terminating proxy on a trusted network.](#warnings) |
+| Warnings      | [Request body limits and decompression on later h2c streams are not verified yet, and hijacked connections stay open until the extension shuts down., h2c is unencrypted and should only be used behind a TLS-terminating proxy on a trusted network.](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fh2c%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fh2c) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fh2c%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fh2c) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -29,26 +29,35 @@ service:
   extensions: [h2c]
 ```
 
+## How h2c streams are handled
+
+The middleware runs inside the `confighttp` server handler chain. When a request
+starts an h2c connection, the middleware hijacks the connection and serves
+HTTP/2 on it. Each later stream re-enters the HTTP server's full handler, so it
+is authenticated like an HTTP/1.1 request. Streams do not inherit context
+values, such as the authenticated identity, from the request that started the
+connection.
+
+An HTTP/1.1 `Upgrade: h2c` request becomes stream 1. It already went through the
+handler chain before the upgrade, so it is not handled a second time.
+
 ## Security and protocol limitations
 
-**This middleware prototype is not safe to use when the HTTP server relies on
-authentication, request body limits, decompression limits, CORS, or HTTP
-telemetry.** The middleware wraps the innermost handler in `confighttp`'s server
-chain. Once an h2c request is upgraded, the HTTP/2 implementation hijacks the
-connection and sends later streams directly to that inner handler. Those streams
-do not pass through the outer `confighttp` handlers. With authentication enabled,
-prior-knowledge h2c can also be rejected before the middleware sees the protocol
-preamble. HTTP/1.1 Upgrade streams inherit the request context from the upgrade
-request, including any identity added by outer authentication, but are not
-individually authenticated. The connection-reuse tests demonstrate this behavior.
+- **Prior knowledge with authentication:** the prior-knowledge preamble
+  (`PRI * HTTP/2.0`) has no credentials. When authentication is configured, the
+  server rejects it before the middleware sees it. Use an HTTP/1.1
+  `Upgrade: h2c` request with credentials instead.
+- **Not yet verified on later streams:** request body limits, decompression,
+  client metadata, HTTP telemetry, CORS and response headers.
+- **Shutdown:** `http.Server.Shutdown` does not close hijacked connections. They
+  stay open until the extension shuts down.
 
 The Go standard library's `http.Server.Protocols` API is preferred for enabling
 prior-knowledge unencrypted HTTP/2 because it keeps requests in the normal server
 handler chain. A handler middleware cannot configure that server field, and the
-standard API does not provide HTTP/1.1 `Upgrade: h2c` support. This prototype
-uses the deprecated `golang.org/x/net/http2/h2c.NewHandler` to support both
-prior-knowledge and HTTP/1.1 upgrade requests; a server-level extension hook is
-needed to avoid the middleware limitation.
+standard API does not provide HTTP/1.1 `Upgrade: h2c` support. This middleware
+serves HTTP/2 on the hijacked connection with `golang.org/x/net/http2` to support
+both prior-knowledge and HTTP/1.1 upgrade requests.
 
 h2c is plaintext. Use it only on a trusted network behind a TLS-terminating
 proxy. Do not expose the listener directly to untrusted networks.
