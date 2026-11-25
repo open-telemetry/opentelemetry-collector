@@ -46,6 +46,9 @@ or server-side middleware object.
 
 - **HTTPClient**: The extension returns a function to create new `http.RoundTripper`s.
 - **HTTPServer**: The extension returns a function to create new `http.Handler`s.
+- **HTTPServerProtocols**: Optional for HTTP server middleware. The extension
+  returns `http.Protocols` to add to the server's default protocols, such as
+  unencrypted HTTP/2. It is called once when the server is created.
 
 ### GRPC
 

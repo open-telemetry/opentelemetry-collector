@@ -54,6 +54,27 @@ func (f GetGRPCServerOptionsFunc) GetGRPCServerOptions(ctx context.Context) ([]g
 // HTTP server middleware at runtime.
 type WrapHTTPHandlerFunc = func(context.Context, http.Handler) (http.Handler, error)
 
+// HTTPServerProtocols is an optional interface for HTTP server middleware
+// extensions that need the HTTP server to accept more protocols, such as
+// unencrypted HTTP/2. The returned protocols are added to the server's default
+// protocols. An extension cannot disable a protocol.
+type HTTPServerProtocols interface {
+	// GetHTTPServerProtocols returns the protocols to enable on the HTTP server.
+	GetHTTPServerProtocols(context.Context) (http.Protocols, error)
+}
+
+var _ HTTPServerProtocols = (*GetHTTPServerProtocolsFunc)(nil)
+
+// GetHTTPServerProtocolsFunc is a function that implements HTTPServerProtocols.
+type GetHTTPServerProtocolsFunc func(context.Context) (http.Protocols, error)
+
+func (f GetHTTPServerProtocolsFunc) GetHTTPServerProtocols(ctx context.Context) (http.Protocols, error) {
+	if f == nil {
+		return http.Protocols{}, nil
+	}
+	return f(ctx)
+}
+
 // Listener is an interface for network listener extensions.
 type Listener interface {
 	// GetListenContext returns the function to create network listeners.
