@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -336,10 +337,16 @@ func TestConfighttpDecompressesEachStream(t *testing.T) {
 func TestConfighttpShutdownDrainsStreams(t *testing.T) {
 	t.Parallel()
 
+	var entries atomic.Int64
 	started := make(chan struct{})
 	release := make(chan struct{})
+	var releaseOnce sync.Once
+	releaseHandler := func() { releaseOnce.Do(func() { close(release) }) }
+	t.Cleanup(releaseHandler)
 	srv := startConfighttpServer(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		close(started)
+		if entries.Add(1) == 1 {
+			close(started)
+		}
 		<-release
 		w.WriteHeader(http.StatusNoContent)
 	}), nil)
@@ -360,7 +367,11 @@ func TestConfighttpShutdownDrainsStreams(t *testing.T) {
 		_ = resp.Body.Close()
 		inFlight <- resp
 	}()
-	<-started
+	select {
+	case <-started:
+	case <-time.After(5 * time.Second):
+		require.FailNow(t, "the first stream never reached the handler")
+	}
 
 	shutdownCtx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
@@ -376,9 +387,15 @@ func TestConfighttpShutdownDrainsStreams(t *testing.T) {
 		require.NoError(t, resp.Body.Close())
 	}
 	require.Error(t, err, "new streams must be refused after shutdown starts")
+	require.Equal(t, int64(1), entries.Load(), "a new stream reached the handler after shutdown started")
 
-	close(release)
-	resp, ok := <-inFlight
+	releaseHandler()
+	var ok bool
+	select {
+	case resp, ok = <-inFlight:
+	case <-time.After(5 * time.Second):
+		require.FailNow(t, "the in-flight stream never completed")
+	}
 	require.True(t, ok, "the in-flight stream must complete")
 	require.Equal(t, 2, resp.ProtoMajor)
 	require.Equal(t, http.StatusNoContent, resp.StatusCode)
