@@ -92,6 +92,14 @@ func Generate(cfg *Config) error {
 		return fmt.Errorf("failed to create output path: %w", err)
 	}
 
+	// Write the generated files through an os.Root so that an entry already present in the
+	// output path (for example a symlink named main.go) cannot redirect the write outside of it.
+	root, err := os.OpenRoot(cfg.Distribution.OutputPath)
+	if err != nil {
+		return fmt.Errorf("failed to open output path: %w", err)
+	}
+	defer root.Close()
+
 	for _, tmpl := range []*template.Template{
 		mainTemplate,
 		mainOthersTemplate,
@@ -102,7 +110,7 @@ func Generate(cfg *Config) error {
 		if tmpl == goModTemplate && cfg.SkipGetModules {
 			continue
 		}
-		if err := processAndWrite(cfg, tmpl, tmpl.Name(), cfg); err != nil {
+		if err := processAndWrite(root, tmpl, tmpl.Name(), cfg); err != nil {
 			return fmt.Errorf("failed to generate source file %q: %w", tmpl.Name(), err)
 		}
 	}
@@ -242,8 +250,8 @@ func downloadModules(cfg *Config) error {
 	return fmt.Errorf("%w: %s", errDownloadFailed, failReason)
 }
 
-func processAndWrite(cfg *Config, tmpl *template.Template, outFile string, tmplParams any) error {
-	out, err := os.Create(filepath.Clean(filepath.Join(cfg.Distribution.OutputPath, outFile)))
+func processAndWrite(root *os.Root, tmpl *template.Template, outFile string, tmplParams any) error {
+	out, err := root.Create(outFile)
 	if err != nil {
 		return err
 	}

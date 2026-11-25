@@ -92,3 +92,27 @@ func TestStringMarshalBinary(t *testing.T) {
 		assert.Equal(t, []byte("[REDACTED]"), opaque)
 	}
 }
+
+func TestStringEqual(t *testing.T) {
+	tests := []struct {
+		name     string
+		secret   String
+		compared string
+		want     bool
+	}{
+		{name: "match", secret: "s3cret", compared: "s3cret", want: true},
+		{name: "different content", secret: "s3cret", compared: "s3creT", want: false},
+		{name: "prefix of secret", secret: "s3cret", compared: "s3c", want: false},
+		{name: "secret is prefix", secret: "s3cret", compared: "s3cret!", want: false},
+		{name: "empty compared", secret: "s3cret", compared: "", want: false},
+		{name: "empty secret", secret: "", compared: "s3cret", want: false},
+		{name: "both empty", secret: "", compared: "", want: true},
+		{name: "masked value is not the secret", secret: "s3cret", compared: maskedString, want: false},
+		{name: "secret equal to mask text", secret: maskedString, compared: maskedString, want: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.secret.Equal(tt.compared))
+		})
+	}
+}

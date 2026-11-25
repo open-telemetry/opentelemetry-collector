@@ -142,7 +142,7 @@ $defs:
         x-optional: true
         $ref: auth_config
       compression_algorithms:
-        description: 'CompressionAlgorithms configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]'
+        description: 'CompressionAlgorithms configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4", "x-snappy-framed"]'
         type: array
         items:
           type: string
@@ -160,6 +160,10 @@ $defs:
         description: Keepalive settings for the HTTP server.
         x-optional: true
         $ref: keepalive_server_config
+      listener_middleware:
+        description: Listener middleware is a handler customizing how the server will listen for connections over TCP.
+        optional: true
+        $ref: /config/configmiddleware.config
       max_request_body_size:
         description: 'MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB. The limit is enforced on the bytes received and, when the request has a supported Content-Encoding (for example gzip), again on the decompressed body. Set it to the maximum expected decompressed payload size.'
         type: integer

@@ -2,7 +2,7 @@
 {{- $metricName := . }}
 {{- $metric := $metricName | metricInfo -}}
 
-### {{ $metricName }}
+### {{ metricConfigKey $metricName }}
 
 {{ trimRight $metric.Description "\n" }}
 
@@ -24,7 +24,7 @@
 **Deprecation note**: {{ $metric.Deprecated.Note }}
 {{- end }}{{ end }}
 
-{{- if $metric.Versioned }}
+{{- if and $metric.Versioned (ne (metricConfigKey $metricName) $metricName.EmittedName) }}
 
 Emitted Name: `{{ $metricName.EmittedName }}`
 
@@ -34,11 +34,15 @@ Emitted Name: `{{ $metricName.EmittedName }}`
 
 #### Migration
 
-- Target Metric: `{{ $metric.Migration.To }}`
+- Target Metric: `{{ metricConfigKey $metric.Migration.To }}`
 - Disable Old Gate: `{{ $metric.Migration.ThroughGates.DisableOld }}`
 - Enable New Gate: `{{ $metric.Migration.ThroughGates.EnableNew }}`
 
 When the disable-old gate is enabled, emission of this metric is suppressed. When the enable-new gate is enabled, the target metric is emitted. If both gates are disabled, only this metric is emitted; if both are enabled, only the target metric is emitted.
+{{- if $metric.Migration.IndependentValue }}
+
+The target metric is calculated independently from this metric and is recorded separately.
+{{- end }}
 
 {{- end }}
 
