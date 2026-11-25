@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: pkg/configgrpc
+note: Prevent integer overflow when validating max_recv_msg_size_mib.
+issues: [16498]
+subtext:
+change_logs: [user]

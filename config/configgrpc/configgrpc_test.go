@@ -563,8 +563,8 @@ func TestValidateMaxRecvMsgSizeMiB(t *testing.T) {
 	assert.NoError(t, validateMaxRecvMsgSizeMiB(0))
 	assert.NoError(t, validateMaxRecvMsgSizeMiB(1))
 	assert.NoError(t, validateMaxRecvMsgSizeMiB(maxMiB))
-	assert.Error(t, validateMaxRecvMsgSizeMiB(-1))
-	assert.Error(t, validateMaxRecvMsgSizeMiB(maxMiB+1))
+	require.Error(t, validateMaxRecvMsgSizeMiB(-1))
+	require.Error(t, validateMaxRecvMsgSizeMiB(maxMiB+1))
 	assert.Error(t, validateMaxRecvMsgSizeMiB(math.MinInt))
 }
 
