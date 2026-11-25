@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"google.golang.org/grpc"
 
@@ -56,6 +57,23 @@ func (m Config) GetHTTPServerHandler(ctx context.Context, extensions map[compone
 	}
 
 	return nil, fmt.Errorf("failed to resolve middleware %q: %w", m.ID, errMiddlewareNotFound)
+}
+
+// GetHTTPServerProtocols returns the HTTP protocols that the selected
+// middleware asks the server to enable. Implementing
+// extensionmiddleware.HTTPServerProtocols is optional, so an extension
+// without it returns empty protocols and no error. If the middleware is
+// not found, an error is returned. This should only be used by HTTP
+// servers.
+func (m Config) GetHTTPServerProtocols(ctx context.Context, extensions map[component.ID]component.Component) (http.Protocols, error) {
+	if ext, found := extensions[m.ID]; found {
+		if server, ok := ext.(extensionmiddleware.HTTPServerProtocols); ok {
+			return server.GetHTTPServerProtocols(ctx)
+		}
+		return http.Protocols{}, nil
+	}
+
+	return http.Protocols{}, fmt.Errorf("failed to resolve middleware %q: %w", m.ID, errMiddlewareNotFound)
 }
 
 // GetGRPCClientOptions attempts to select the appropriate

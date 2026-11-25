@@ -5,7 +5,9 @@ package configmiddleware
 
 import (
 	"context"
+	"errors"
 	"net"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -88,6 +90,71 @@ func TestConfig_GetHTTPServerHandler(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, value)
 			}
+		})
+	}
+}
+
+type mockHTTPServerProtocols struct {
+	component.StartFunc
+	component.ShutdownFunc
+	extensionmiddleware.GetHTTPServerProtocolsFunc
+}
+
+func TestConfig_GetHTTPServerProtocols(t *testing.T) {
+	var unencryptedHTTP2 http.Protocols
+	unencryptedHTTP2.SetUnencryptedHTTP2(true)
+	wantErr := errors.New("protocols failure")
+
+	tests := []struct {
+		name       string
+		extensions map[component.ID]component.Component
+		want       http.Protocols
+		wantErr    error
+	}{
+		{
+			name: "returns_protocols",
+			extensions: map[component.ID]component.Component{
+				testID: mockHTTPServerProtocols{
+					GetHTTPServerProtocolsFunc: func(context.Context) (http.Protocols, error) {
+						return unencryptedHTTP2, nil
+					},
+				},
+			},
+			want: unencryptedHTTP2,
+		},
+		{
+			name: "returns_error",
+			extensions: map[component.ID]component.Component{
+				testID: mockHTTPServerProtocols{
+					GetHTTPServerProtocolsFunc: func(context.Context) (http.Protocols, error) {
+						return http.Protocols{}, wantErr
+					},
+				},
+			},
+			wantErr: wantErr,
+		},
+		{
+			name: "not_implemented",
+			extensions: map[component.ID]component.Component{
+				testID: extensionmiddlewaretest.NewNop(),
+			},
+		},
+		{
+			name:       "middleware_not_found",
+			extensions: map[component.ID]component.Component{},
+			wantErr:    errMiddlewareNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Config{ID: testID}.GetHTTPServerProtocols(t.Context(), tt.extensions)
+			if tt.wantErr != nil {
+				require.ErrorIs(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }
