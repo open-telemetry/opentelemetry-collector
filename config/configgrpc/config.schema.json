@@ -93,6 +93,16 @@
           },
           "description": "Middlewares for the gRPC client."
         },
+        "pick_first": {
+          "type": "object",
+          "properties": {
+            "shuffle_address_list": {
+              "type": "boolean",
+              "description": "Shuffles the resolved addresses before connecting, so clients that receive\nthe same address list spread across backends.\n"
+            }
+          },
+          "description": "Configures the pick_first balancer. Only valid when balancer_name is pick_first or empty.\n"
+        },
         "read_buffer_size": {
           "type": "integer",
           "description": "ReadBufferSize for gRPC client. See grpc.WithReadBufferSize. \n(https://godoc.org/google.golang.org/grpc#WithReadBufferSize).\n"
@@ -120,7 +130,7 @@
               "properties": {
                 "ca_file": {
                   "type": "string",
-                  "description": "Path to the CA cert. For a client this verifies the server certificate. \nFor a server this verifies client certificates. If empty uses system root CA. (optional)\n"
+                  "description": "Path to the CA cert. For a client this verifies the server certificate.\nIf empty uses system root CA. Not used by servers: to verify client certificates\na server must set client_ca_file instead. (optional)\n"
                 },
                 "ca_pem": {
                   "type": "string",
@@ -327,6 +337,16 @@
       "description": "Configuration of the keepalive.ServerParameters. The same default values \nas keepalive.ServerParameters are applicable and get applied by the server. \nSee https://godoc.org/google.golang.org/grpc/keepalive#ServerParameters for details.\n",
       "default": {}
     },
+    "pick_first_config": {
+      "type": "object",
+      "properties": {
+        "shuffle_address_list": {
+          "type": "boolean",
+          "description": "Shuffles the resolved addresses before connecting, so clients that receive\nthe same address list spread across backends.\n"
+        }
+      },
+      "description": "Mirrors the pick_first load balancing config of gRPC.\nhttps://github.com/grpc/proposal/blob/master/A62-pick-first.md\n"
+    },
     "server_config": {
       "type": "object",
       "properties": {
@@ -392,6 +412,16 @@
           "description": "Anchor for all the settings related to keepalive.",
           "default": {}
         },
+        "listener_middleware": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Specifies the name of the extension to use."
+            }
+          },
+          "description": "Listener middleware is a handler customizing how the server will listen for connections over TCP."
+        },
         "max_concurrent_streams": {
           "type": "integer",
           "description": "Sets the limit on the number of concurrent streams to each ServerTransport. \nIt has effect only for streaming RPCs.\n"
@@ -438,7 +468,7 @@
               "properties": {
                 "ca_file": {
                   "type": "string",
-                  "description": "Path to the CA cert. For a client this verifies the server certificate. \nFor a server this verifies client certificates. If empty uses system root CA. (optional)\n"
+                  "description": "Path to the CA cert. For a client this verifies the server certificate.\nIf empty uses system root CA. Not used by servers: to verify client certificates\na server must set client_ca_file instead. (optional)\n"
                 },
                 "ca_pem": {
                   "type": "string",

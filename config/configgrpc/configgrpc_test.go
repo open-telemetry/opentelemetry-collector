@@ -6,20 +6,27 @@ package configgrpc
 import (
 	"context"
 	"errors"
+	"io"
 	"net"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/balancer/pickfirst"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/encoding"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -31,9 +38,17 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
@@ -283,6 +298,81 @@ func TestSanitizeEndpoint(t *testing.T) {
 	assert.Equal(t, "bad\x7f://host:4317", cfg.sanitizedEndpoint())
 }
 
+func TestDefaultServiceConfig(t *testing.T) {
+	tests := []struct {
+		name         string
+		balancerName string
+		pickFirst    configoptional.Optional[PickFirstConfig]
+		expected     string
+	}{
+		{
+			name:         "round_robin",
+			balancerName: "round_robin",
+			expected:     `{"loadBalancingPolicy":"round_robin"}`,
+		},
+		{
+			name:         "pick_first without the pick_first block keeps address order",
+			balancerName: pickfirst.Name,
+			expected:     `{"loadBalancingPolicy":"pick_first"}`,
+		},
+		{
+			name:         "pick_first shuffles addresses",
+			balancerName: pickfirst.Name,
+			pickFirst:    configoptional.Some(PickFirstConfig{ShuffleAddressList: true}),
+			expected:     `{"loadBalancingConfig":[{"pick_first":{"shuffleAddressList":true}}]}`,
+		},
+		{
+			name:         "pick_first with shuffle_address_list false",
+			balancerName: pickfirst.Name,
+			pickFirst:    configoptional.Some(PickFirstConfig{}),
+			expected:     `{"loadBalancingConfig":[{"pick_first":{"shuffleAddressList":false}}]}`,
+		},
+		{
+			name:         "empty balancer_name uses pick_first",
+			balancerName: "",
+			pickFirst:    configoptional.Some(PickFirstConfig{ShuffleAddressList: true}),
+			expected:     `{"loadBalancingConfig":[{"pick_first":{"shuffleAddressList":true}}]}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := NewDefaultClientConfig()
+			cfg.Endpoint = "localhost:4317"
+			cfg.BalancerName = tt.balancerName
+			cfg.PickFirst = tt.pickFirst
+			require.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg.defaultServiceConfig())
+
+			// grpc.NewClient rejects a service config that the balancer cannot parse.
+			conn, err := cfg.ToClientConn(context.Background(), nil, componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+			require.NoError(t, conn.Close())
+		})
+	}
+}
+
+func TestUnmarshalPickFirst(t *testing.T) {
+	cm := confmap.NewFromStringMap(map[string]any{
+		"endpoint":      "localhost:4317",
+		"balancer_name": "pick_first",
+		"pick_first": map[string]any{
+			"shuffle_address_list": true,
+		},
+	})
+	cfg := NewDefaultClientConfig()
+	require.NoError(t, cm.Unmarshal(&cfg))
+	require.NoError(t, cfg.Validate())
+	require.True(t, cfg.PickFirst.HasValue())
+	assert.True(t, cfg.PickFirst.Get().ShuffleAddressList)
+}
+
+func TestValidatePickFirstRequiresPickFirstBalancer(t *testing.T) {
+	cfg := NewDefaultClientConfig()
+	cfg.Endpoint = "localhost:4317"
+	cfg.PickFirst = configoptional.Some(PickFirstConfig{ShuffleAddressList: true})
+	assert.ErrorContains(t, cfg.Validate(), `pick_first can only be set when balancer_name is pick_first or empty, got "round_robin"`)
+}
+
 func TestGrpcDialTarget(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -393,7 +483,7 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 			Endpoint: "0.0.0.0:1234",
 		},
 	}
-	opts, err := gss.getGrpcServerOptions(context.Background(), nil, componenttest.NewNopTelemetrySettings(), []ToServerOption{})
+	opts, err := gss.getGrpcServerOptions(context.Background(), nil, componenttest.NewNopTelemetrySettings(), []ToServerOption{}, nil)
 	require.NoError(t, err)
 	assert.Len(t, opts, 3)
 }
@@ -410,6 +500,7 @@ func TestGrpcServerExtraOption(t *testing.T) {
 		nil,
 		componenttest.NewNopTelemetrySettings(),
 		[]ToServerOption{WithGrpcServerOption(extraOpt)},
+		nil,
 	)
 	require.NoError(t, err)
 	assert.Len(t, opts, 4)
@@ -496,7 +587,7 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 			}),
 		}),
 	}
-	opts, err := gss.getGrpcServerOptions(context.Background(), nil, componenttest.NewNopTelemetrySettings(), []ToServerOption{})
+	opts, err := gss.getGrpcServerOptions(context.Background(), nil, componenttest.NewNopTelemetrySettings(), []ToServerOption{}, nil)
 	require.NoError(t, err)
 	assert.Len(t, opts, 10)
 }
@@ -511,7 +602,7 @@ func TestGrpcServerMaxRecvMsgSizeReachesZstdDecoder(t *testing.T) {
 		},
 		MaxRecvMsgSizeMiB: 64,
 	}
-	_, err := gss.getGrpcServerOptions(context.Background(), nil, componenttest.NewNopTelemetrySettings(), nil)
+	_, err := gss.getGrpcServerOptions(context.Background(), nil, componenttest.NewNopTelemetrySettings(), nil, nil)
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, zstd.DecoderMaxWindow(), uint64(64*1024*1024))
 }
@@ -1344,6 +1435,63 @@ func TestDefaultStreamInterceptorMissingMetadata(t *testing.T) {
 	assert.Equal(t, errMetadataNotFound, err)
 }
 
+func TestServerInstrumentsOnlyRegisteredMethods(t *testing.T) {
+	telemetry := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, telemetry.Shutdown(context.Background())) })
+
+	cfg := ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
+	}
+	listener, err := cfg.NetAddr.Listen(context.Background())
+	require.NoError(t, err)
+	srv, err := cfg.ToServer(context.Background(), nil, telemetry.NewTelemetrySettings())
+	require.NoError(t, err)
+	ptraceotlp.RegisterGRPCServer(srv, &grpcTraceServer{})
+	go func() {
+		_ = srv.Serve(listener)
+	}()
+	defer srv.Stop()
+
+	clientCfg := ClientConfig{
+		Endpoint: listener.Addr().String(),
+		TLS: configtls.ClientConfig{
+			Insecure: true,
+		},
+	}
+	conn, err := clientCfg.ToClientConn(context.Background(), nil, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	defer func() { assert.NoError(t, conn.Close()) }()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	// A registered method is traced, and its span ends with the call.
+	_, err = ptraceotlp.NewGRPCClient(conn).Export(ctx, ptraceotlp.NewExportRequest(), grpc.WaitForReady(true))
+	require.NoError(t, err)
+	require.Len(t, telemetry.SpanRecorder.Started(), 1)
+	// grpc-go ends the span in a deferred function that runs after the response
+	// is sent, so the client can return before the server has ended the span.
+	require.Eventually(t, func() bool {
+		return len(telemetry.SpanRecorder.Ended()) == 1
+	}, 5*time.Second, 10*time.Millisecond)
+	assert.Equal(t, "opentelemetry.proto.collector.trace.v1.TraceService/Export", telemetry.SpanRecorder.Ended()[0].Name())
+
+	// grpc-go answers an unknown service or method without ever ending the
+	// span the stats handler would start for it, so no span must be started.
+	for _, method := range []string{
+		"/unknown.Service/Export",
+		"/opentelemetry.proto.collector.trace.v1.TraceService/Unknown",
+	} {
+		err = conn.Invoke(ctx, method, &emptypb.Empty{}, &emptypb.Empty{})
+		assert.Equal(t, codes.Unimplemented, status.Code(err), method)
+	}
+	assert.Len(t, telemetry.SpanRecorder.Started(), 1)
+	assert.Len(t, telemetry.SpanRecorder.Ended(), 1)
+}
+
 type mockServerStream struct {
 	grpc.ServerStream
 	ctx context.Context
@@ -1367,12 +1515,14 @@ func (gts *grpcTraceServer) startTestServer(t *testing.T, gss configoptional.Opt
 	return gts.startTestServerWithExtensions(t, gss, nil)
 }
 
-func (gts *grpcTraceServer) startTestServerWithExtensions(t *testing.T, gss configoptional.Optional[ServerConfig], extensions map[component.ID]component.Component, opts ...ToServerOption) (*grpc.Server, string) {
+func (gts *grpcTraceServer) startTestServerWithExtensions(t *testing.T, gss configoptional.Optional[ServerConfig], extensions map[component.ID]component.Component, _ ...ToServerOption) (*grpc.Server, string) {
 	listener, err := gss.Get().NetAddr.Listen(context.Background())
 	require.NoError(t, err)
-	server, err := gss.Get().ToServer(context.Background(), extensions, componenttest.NewNopTelemetrySettings(), opts...)
+	server, err := gss.Get().ToServer(context.Background(), extensions, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
-	ptraceotlp.RegisterGRPCServer(server, gts)
+	registrar, err := gss.Get().ServiceRegistrar(context.Background(), extensions, server)
+	require.NoError(t, err)
+	ptraceotlp.RegisterGRPCService(registrar, gts)
 	go func() {
 		_ = server.Serve(listener)
 	}()
@@ -1444,4 +1594,195 @@ func TestGrpcClientUserAgent(t *testing.T) {
 	 * - WithUserAgent (from UserAgent field)
 	 */
 	assert.Len(t, opts, 4)
+}
+
+// countingGzipName is the name of a gzip compressor that counts decompressions.
+const countingGzipName = "counting-gzip"
+
+var (
+	countingGzipOnce         sync.Once
+	countingGzipDecompresses atomic.Int64
+)
+
+type countingGzip struct {
+	encoding.Compressor
+}
+
+func (countingGzip) Name() string { return countingGzipName }
+
+func (c countingGzip) Decompress(r io.Reader) (io.Reader, error) {
+	countingGzipDecompresses.Add(1)
+	return c.Compressor.Decompress(r)
+}
+
+// TestSlowAuthDoesNotBlockOtherRPCs verifies that an authenticator that takes a long time
+// only delays its own RPC, and not the others sharing the connection.
+func TestSlowAuthDoesNotBlockOtherRPCs(t *testing.T) {
+	release := make(chan struct{})
+	started := make(chan struct{})
+	mock := &grpcTraceServer{}
+	srv, addr := mock.startTestServerWithExtensions(t, configoptional.Some(ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
+		Auth: configoptional.Some(configauth.Config{AuthenticatorID: mockID}),
+	}), map[component.ID]component.Component{
+		mockID: struct {
+			component.StartFunc
+			component.ShutdownFunc
+			extensionauth.Server
+		}{
+			Server: newMockAuthServer(func(ctx context.Context, headers map[string][]string) (context.Context, error) {
+				if len(headers["slow"]) > 0 {
+					close(started)
+					<-release
+				}
+				return ctx, nil
+			}),
+		},
+	})
+	defer srv.Stop()
+
+	conn, err := (&ClientConfig{
+		Endpoint: addr,
+		TLS:      configtls.ClientConfig{Insecure: true},
+	}).ToClientConn(context.Background(), nil, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	defer func() { assert.NoError(t, conn.Close()) }()
+	client := ptraceotlp.NewGRPCClient(conn)
+
+	slowDone := make(chan error, 1)
+	go func() {
+		ctx, cancel := context.WithTimeout(metadata.AppendToOutgoingContext(context.Background(), "slow", "1"), 10*time.Second)
+		defer cancel()
+		_, inErr := client.Export(ctx, ptraceotlp.NewExportRequest(), grpc.WaitForReady(true))
+		slowDone <- inErr
+	}()
+	<-started
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	_, err = client.Export(ctx, ptraceotlp.NewExportRequest())
+	require.NoError(t, err, "an RPC on the same connection was blocked by a slow authenticator")
+
+	close(release)
+	require.NoError(t, <-slowDone)
+}
+
+// TestAuthRejectsBeforeDecompressionAllSignals verifies, for every OTLP signal, that a
+// request the authenticator rejects is not decompressed first.
+func TestAuthRejectsBeforeDecompressionAllSignals(t *testing.T) {
+	countingGzipOnce.Do(func() {
+		encoding.RegisterCompressor(countingGzip{Compressor: encoding.GetCompressor("gzip")})
+	})
+	// An empty message is never compressed, so the requests need a body.
+	body := strings.Repeat("a", 1024)
+	callOpts := []grpc.CallOption{grpc.UseCompressor(countingGzipName), grpc.WaitForReady(true)}
+
+	tests := []struct {
+		name     string
+		register func(grpc.ServiceRegistrar)
+		export   func(context.Context, *grpc.ClientConn) error
+	}{
+		{
+			name: "traces",
+			register: func(r grpc.ServiceRegistrar) {
+				ptraceotlp.RegisterGRPCService(r, &ptraceotlp.UnimplementedGRPCServer{})
+			},
+			export: func(ctx context.Context, conn *grpc.ClientConn) error {
+				td := ptrace.NewTraces()
+				td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName(body)
+				_, err := ptraceotlp.NewGRPCClient(conn).Export(ctx, ptraceotlp.NewExportRequestFromTraces(td), callOpts...)
+				return err
+			},
+		},
+		{
+			name: "metrics",
+			register: func(r grpc.ServiceRegistrar) {
+				pmetricotlp.RegisterGRPCService(r, &pmetricotlp.UnimplementedGRPCServer{})
+			},
+			export: func(ctx context.Context, conn *grpc.ClientConn) error {
+				md := pmetric.NewMetrics()
+				md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName(body)
+				_, err := pmetricotlp.NewGRPCClient(conn).Export(ctx, pmetricotlp.NewExportRequestFromMetrics(md), callOpts...)
+				return err
+			},
+		},
+		{
+			name: "logs",
+			register: func(r grpc.ServiceRegistrar) {
+				plogotlp.RegisterGRPCService(r, &plogotlp.UnimplementedGRPCServer{})
+			},
+			export: func(ctx context.Context, conn *grpc.ClientConn) error {
+				ld := plog.NewLogs()
+				ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr(body)
+				_, err := plogotlp.NewGRPCClient(conn).Export(ctx, plogotlp.NewExportRequestFromLogs(ld), callOpts...)
+				return err
+			},
+		},
+		{
+			name: "profiles",
+			register: func(r grpc.ServiceRegistrar) {
+				pprofileotlp.RegisterGRPCService(r, &pprofileotlp.UnimplementedGRPCServer{})
+			},
+			export: func(ctx context.Context, conn *grpc.ClientConn) error {
+				pd := pprofile.NewProfiles()
+				pd.Dictionary().StringTable().Append("", body)
+				_, err := pprofileotlp.NewGRPCClient(conn).Export(ctx, pprofileotlp.NewExportRequestFromProfiles(pd), callOpts...)
+				return err
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			countingGzipDecompresses.Store(0)
+			var authCalls atomic.Int64
+
+			sc := ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
+				Auth: configoptional.Some(configauth.Config{AuthenticatorID: mockID}),
+			}
+			listener, err := sc.NetAddr.Listen(context.Background())
+			require.NoError(t, err)
+			extensions := map[component.ID]component.Component{
+				mockID: struct {
+					component.StartFunc
+					component.ShutdownFunc
+					extensionauth.Server
+				}{
+					Server: newMockAuthServer(func(context.Context, map[string][]string) (context.Context, error) {
+						authCalls.Add(1)
+						return nil, errors.New("not authenticated")
+					}),
+				},
+			}
+			srv, err := sc.ToServer(context.Background(), extensions, componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+			registrar, err := sc.ServiceRegistrar(context.Background(), extensions, srv)
+			require.NoError(t, err)
+			tt.register(registrar)
+			go func() { _ = srv.Serve(listener) }()
+			defer srv.Stop()
+
+			conn, err := (&ClientConfig{
+				Endpoint: listener.Addr().String(),
+				TLS:      configtls.ClientConfig{Insecure: true},
+			}).ToClientConn(context.Background(), nil, componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+			defer func() { assert.NoError(t, conn.Close()) }()
+
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			err = tt.export(ctx, conn)
+
+			assert.Equal(t, codes.Unauthenticated, status.Code(err))
+			assert.EqualValues(t, 1, authCalls.Load(), "the authenticator should run exactly once")
+			assert.Zero(t, countingGzipDecompresses.Load(), "the request was decompressed before it was authenticated")
+		})
+	}
 }

@@ -177,7 +177,7 @@
               "properties": {
                 "ca_file": {
                   "type": "string",
-                  "description": "Path to the CA cert. For a client this verifies the server certificate. \nFor a server this verifies client certificates. If empty uses system root CA. (optional)\n"
+                  "description": "Path to the CA cert. For a client this verifies the server certificate.\nIf empty uses system root CA. Not used by servers: to verify client certificates\na server must set client_ca_file instead. (optional)\n"
                 },
                 "ca_pem": {
                   "type": "string",
@@ -415,6 +415,16 @@
           },
           "description": "Controls HTTP keep-alives.\nBy default, keep-alives are always enabled. Only very resource-constrained environments should disable them.\nUnmarshal folds this section into the deprecated fields below, which\nremain the source of truth during their deprecation window, and always\nresets it to None. A value visible to ToServer was therefore set\nprogrammatically after unmarshaling (or the config was never unmarshaled)\nand takes precedence over the deprecated fields.\n"
         },
+        "listener_middleware": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Specifies the name of the extension to use."
+            }
+          },
+          "description": "Listener middleware is a handler customizing how the server will listen for connections over TCP."
+        },
         "max_request_body_size": {
           "type": "integer",
           "description": "Sets the maximum request body size in bytes. Default: 20MiB.\nThe limit is enforced on the bytes received and, when the request has a\nsupported Content-Encoding (for example gzip), again on the decompressed\nbody. Set it to the maximum expected decompressed payload size.\n"
@@ -470,7 +480,7 @@
               "properties": {
                 "ca_file": {
                   "type": "string",
-                  "description": "Path to the CA cert. For a client this verifies the server certificate. \nFor a server this verifies client certificates. If empty uses system root CA. (optional)\n"
+                  "description": "Path to the CA cert. For a client this verifies the server certificate.\nIf empty uses system root CA. Not used by servers: to verify client certificates\na server must set client_ca_file instead. (optional)\n"
                 },
                 "ca_pem": {
                   "type": "string",

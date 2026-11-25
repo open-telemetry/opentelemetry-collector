@@ -196,6 +196,9 @@ type ServerConfig struct {
 	// Auth is the authentication configuration for this receiver.
 	Auth configoptional.Optional[AuthConfig] `mapstructure:"auth,omitempty"`
 
+	// ListenerMiddleware listener middleware is a handler customizing how the server will listen for connections over TCP.
+	ListenerMiddleware configoptional.Optional[configmiddleware.Config] `mapstructure:"listener_middleware,omitempty"`
+
 	// MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.
 	// The limit is enforced on the bytes received and, when the request has a
 	// supported Content-Encoding (for example gzip), again on the decompressed

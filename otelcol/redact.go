@@ -27,7 +27,9 @@ var redactedMask = func() string {
 // in the redacted view is copied over, unless the corresponding pre-expansion leaf
 // is exactly a ${...} provider reference that does not embed a non-empty env-provider
 // literal default. A default such as ${env:NAME:-literal} is masked because the
-// fallback is configuration text, not a provider lookup.
+// fallback is configuration text, not a provider lookup. A raw subtree with no
+// counterpart in the redacted view, such as a section disabled with `enabled: false`,
+// has no type information to mirror and is masked by maskUnmirrored.
 func redactByMirroring(raw, redacted *confmap.Conf) *confmap.Conf {
 	if raw == nil || redacted == nil {
 		return raw
@@ -40,19 +42,26 @@ func redactByMirroring(raw, redacted *confmap.Conf) *confmap.Conf {
 // It mutates raw and returns it.
 func applyMask(raw, redacted any) any {
 	switch redVal := redacted.(type) {
+	case nil:
+		// The redacted view has nothing to mirror, e.g. a configoptional section
+		// disabled with `enabled: false` or an `omitempty` field that decoded to
+		// its zero value. Fail closed.
+		return maskUnmirrored(raw)
 	case map[string]any:
 		if rawMap, ok := raw.(map[string]any); ok {
 			for k, rawMapVal := range rawMap {
-				if redMapVal, ok := redVal[k]; ok {
-					rawMap[k] = applyMask(rawMapVal, redMapVal)
-				}
+				rawMap[k] = applyMask(rawMapVal, redVal[k])
 			}
 		}
 	case []any:
 		switch rawVal := raw.(type) {
 		case []any:
-			for i := 0; i < min(len(rawVal), len(redVal)); i++ {
-				rawVal[i] = applyMask(rawVal[i], redVal[i])
+			for i := range rawVal {
+				var redItem any
+				if i < len(redVal) {
+					redItem = redVal[i]
+				}
+				rawVal[i] = applyMask(rawVal[i], redItem)
 			}
 		case map[string]any:
 			// configopaque.MapList accepts a map as input but marshals as a list
@@ -84,6 +93,32 @@ func applyMask(raw, redacted any) any {
 		}
 	}
 	return raw
+}
+
+// maskUnmirrored masks a raw subtree that has no counterpart in the redacted view.
+// Since it is unknown which of its leaves are opaque, every leaf that can hold a
+// literal is masked; nulls, booleans and provider references that
+// preserveUnexpandedProviderReference accepts are kept. It mutates raw and returns it.
+func maskUnmirrored(raw any) any {
+	switch rawVal := raw.(type) {
+	case nil, bool:
+		return raw
+	case map[string]any:
+		for k, v := range rawVal {
+			rawVal[k] = maskUnmirrored(v)
+		}
+		return rawVal
+	case []any:
+		for i, v := range rawVal {
+			rawVal[i] = maskUnmirrored(v)
+		}
+		return rawVal
+	case string:
+		if preserveUnexpandedProviderReference(rawVal) {
+			return raw
+		}
+	}
+	return redactedMask
 }
 
 // providerReferenceRegexp matches a leaf that is only a ${...} provider reference.

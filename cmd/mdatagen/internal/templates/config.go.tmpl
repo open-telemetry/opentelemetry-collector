@@ -38,7 +38,7 @@ const (
 )
 {{- end }}
 
-// {{ $name.Render }}MetricConfig provides config for the {{ $name }} metric.
+// {{ $name.Render }}MetricConfig provides config for the {{ metricConfigKey $name }} metric.
 type {{ $name.Render }}MetricConfig struct {
 	Enabled          bool `mapstructure:"enabled"`
 	enabledSetByUser bool
@@ -59,14 +59,14 @@ func (ms *{{ $name.Render }}MetricConfig) Validate() error {
 		switch val {
 		case {{ range $index, $element := $metric.Attributes -}}{{ if $index }}, {{ end }}{{ $name.Render }}MetricAttributeKey{{ $element.Render }}{{ end }}:
 		default:
-			return fmt.Errorf("metric {{ $name }} doesn't have an attribute %v, valid attributes: [{{ range $index, $element := $metric.Attributes -}}{{ if $index }}, {{ end }}{{ (attributeInfo $element).Name }}{{ end }}]", val)
+			return fmt.Errorf("metric {{ metricConfigKey $name }} doesn't have an attribute %v, valid attributes: [{{ range $index, $element := $metric.Attributes -}}{{ if $index }}, {{ end }}{{ (attributeInfo $element).Name }}{{ end }}]", val)
 		}
 	}
 
 	{{- range $element := $metric.Attributes }}
 	{{- if (attributeInfo $element).IsRequired }}
 	if !slices.Contains(ms.EnabledAttributes, {{ $name.Render }}MetricAttributeKey{{ $element.Render }}) {
-		return fmt.Errorf("{{ (attributeInfo $element).Name }} is a required attribute for {{ $name }} metric and must be included")
+		return fmt.Errorf("{{ (attributeInfo $element).Name }} is a required attribute for {{ metricConfigKey $name }} metric and must be included")
 	}
 	{{- end }}
 	{{- end }}
@@ -85,7 +85,7 @@ func (ms *{{ $name.Render }}MetricConfig) Validate() error {
 // MetricsConfig provides config for {{ .Type }} metrics.
 type MetricsConfig struct {
 	{{- range $name, $metric := .Metrics }}
-	{{ $name.Render }} {{ $name.Render }}MetricConfig `mapstructure:"{{ $name }}"`
+	{{ $name.Render }} {{ $name.Render }}MetricConfig `mapstructure:"{{ metricConfigKey $name }}"`
 	{{- end }}
 }
 

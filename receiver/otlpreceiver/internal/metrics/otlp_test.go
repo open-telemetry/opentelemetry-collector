@@ -8,6 +8,7 @@ import (
 	"errors"
 	"net"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -79,6 +80,58 @@ func TestExport_InvalidUTF8(t *testing.T) {
 	// Rejected data points must be visible in the receiver telemetry, not only in the response.
 	assertReceiverSum(t, tt, "otelcol_receiver_refused_metric_points", 1)
 	assertReceiverSum(t, tt, "otelcol_receiver_accepted_metric_points", int64(dataPointCount-1))
+}
+
+func TestExport_SanitizeInvalidUTF8(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpSanitizeInvalidUTF8FeatureGate.ID(), true)
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.ID(), false)
+
+	md := testdata.GenerateMetrics(1)
+	dataPointCount := md.DataPointCount()
+	md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().PutStr("bad", "bad\xffvalue")
+	req := pmetricotlp.NewExportRequestFromMetrics(md)
+
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	metricSink := new(consumertest.MetricsSink)
+	metricsClient := makeMetricsServiceClientWithTelemetry(t, metricSink, tt)
+	resp, err := metricsClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Zero(t, resp.PartialSuccess().RejectedDataPoints())
+	assert.Empty(t, resp.PartialSuccess().ErrorMessage())
+
+	mds := metricSink.AllMetrics()
+	require.Len(t, mds, 1)
+	assert.Equal(t, dataPointCount, mds[0].DataPointCount())
+
+	got, ok := mds[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().Get("bad")
+	require.True(t, ok)
+	assert.Equal(t, "bad\uFFFDvalue", got.Str())
+	assert.True(t, utf8.ValidString(got.Str()))
+
+	assertReceiverSum(t, tt, "otelcol_receiver_accepted_metric_points", int64(dataPointCount))
+}
+
+func TestExport_SanitizeInvalidUTF8RejectTakesPrecedence(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpSanitizeInvalidUTF8FeatureGate.ID(), true)
+	testutil.SetFeatureGate(t, metadata.ReceiverOtlpRejectInvalidUTF8FeatureGate.ID(), true)
+
+	md := testdata.GenerateMetrics(1)
+	dataPointCount := md.DataPointCount()
+	md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().PutStr("bad", "bad\xffvalue")
+	req := pmetricotlp.NewExportRequestFromMetrics(md)
+
+	metricSink := new(consumertest.MetricsSink)
+	metricsClient := makeMetricsServiceClient(t, metricSink)
+	resp, err := metricsClient.Export(context.Background(), req)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), resp.PartialSuccess().RejectedDataPoints())
+	assert.Equal(t, invalidUTF8Message, resp.PartialSuccess().ErrorMessage())
+
+	mds := metricSink.AllMetrics()
+	require.Len(t, mds, 1)
+	assert.Equal(t, dataPointCount-1, mds[0].DataPointCount())
 }
 
 func TestExport_NonPermanentErrorConsumer(t *testing.T) {

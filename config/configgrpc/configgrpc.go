@@ -13,11 +13,13 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
+	"google.golang.org/grpc/balancer/pickfirst"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -25,6 +27,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/stats"
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/client"
@@ -33,8 +36,10 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/snappy"
 	"go.opentelemetry.io/collector/config/configgrpc/internal/grpccompression/zstd"
 	"go.opentelemetry.io/collector/config/configmiddleware"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 )
 
 // DefaultBalancerName is the name of the default load balancer.
@@ -70,6 +75,10 @@ func validateClientConfig(cc *ClientConfig) error {
 		if balancer.Get(cc.BalancerName) == nil {
 			return fmt.Errorf("invalid balancer_name: %s", cc.BalancerName)
 		}
+	}
+
+	if cc.PickFirst.HasValue() && !cc.usesPickFirst() {
+		return fmt.Errorf("pick_first can only be set when balancer_name is %s or empty, got %q", pickfirst.Name, cc.BalancerName)
 	}
 
 	if cc.DialerMiddleware.HasValue() && !configmiddleware.IsCustomTCPRoutingEnabled() {
@@ -120,6 +129,22 @@ func (cc *ClientConfig) grpcDialTarget() string {
 	default:
 		return cc.Endpoint
 	}
+}
+
+// defaultServiceConfig returns the gRPC service config for the configured balancer.
+// loadBalancingPolicy cannot carry policy options, so the pick_first block is passed
+// through loadBalancingConfig instead.
+func (cc *ClientConfig) defaultServiceConfig() string {
+	if cc.PickFirst.HasValue() && cc.usesPickFirst() {
+		return fmt.Sprintf(`{"loadBalancingConfig":[{%q:{"shuffleAddressList":%t}}]}`, pickfirst.Name, cc.PickFirst.Get().ShuffleAddressList)
+	}
+	return fmt.Sprintf(`{"loadBalancingPolicy":%q}`, cc.BalancerName)
+}
+
+// usesPickFirst treats an empty balancer_name as pick_first because gRPC
+// defaults to pick_first when no load balancing policy is set.
+func (cc *ClientConfig) usesPickFirst() bool {
+	return cc.BalancerName == "" || cc.BalancerName == pickfirst.Name
 }
 
 func (cc *ClientConfig) isSchemeHTTP() bool {
@@ -260,8 +285,8 @@ func (cc *ClientConfig) getGrpcDialOptions(
 		opts = append(opts, grpc.WithPerRPCCredentials(perRPCCredentials))
 	}
 
-	if cc.BalancerName != "" {
-		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":%q}`, cc.BalancerName)))
+	if cc.BalancerName != "" || cc.PickFirst.HasValue() {
+		opts = append(opts, grpc.WithDefaultServiceConfig(cc.defaultServiceConfig()))
 	}
 
 	if cc.Authority != "" {
@@ -320,6 +345,13 @@ func validateMaxRecvMsgSizeMiB(maxRecvMsgSizeMiB int) error {
 	return nil
 }
 
+func validateListenerMiddleware(middleware configoptional.Optional[configmiddleware.Config]) error {
+	if middleware.HasValue() && !configmiddleware.IsCustomTCPRoutingEnabled() {
+		return errors.New("use of the listener_middleware feature requires to enable the feature gate 'pkg.configmiddleware.CustomTCPRouting'")
+	}
+	return nil
+}
+
 // ToServerOption is a sealed interface wrapping options for [ServerConfig.ToServer].
 type ToServerOption interface {
 	isToServerOption()
@@ -327,6 +359,23 @@ type ToServerOption interface {
 
 type grpcServerOptionWrapper struct {
 	opt grpc.ServerOption
+}
+
+// ToListener creates a net.Listener for the gRPC server.
+func (sc *ServerConfig) ToListener(ctx context.Context, extensions map[component.ID]component.Component) (net.Listener, error) {
+	if !sc.ListenerMiddleware.HasValue() {
+		return sc.NetAddr.Listen(ctx)
+	}
+	var listen extensionmiddleware.ListenContextFunc
+	listen, err := sc.ListenerMiddleware.Get().GetListener(ctx, extensions)
+	if err != nil {
+		return nil, err
+	}
+	listener, err := listen(ctx, string(sc.NetAddr.Transport), sc.NetAddr.Endpoint)
+	if err != nil {
+		return nil, err
+	}
+	return listener, nil
 }
 
 // WithGrpcServerOption wraps a [grpc.ServerOption] into a [ToServerOption].
@@ -346,11 +395,107 @@ func (sc *ServerConfig) ToServer(
 	settings component.TelemetrySettings,
 	extraOpts ...ToServerOption,
 ) (*grpc.Server, error) {
-	grpcOpts, err := sc.getGrpcServerOptions(ctx, extensions, settings, extraOpts)
+	var srv *grpc.Server
+	grpcOpts, err := sc.getGrpcServerOptions(ctx, extensions, settings, extraOpts, registeredMethodsFilter(func() *grpc.Server { return srv }))
 	if err != nil {
 		return nil, err
 	}
-	return grpc.NewServer(grpcOpts...), nil
+	srv = grpc.NewServer(grpcOpts...)
+	return srv, nil
+}
+
+// registeredMethodsFilter returns an [otelgrpc.Filter] that only instruments
+// calls to methods registered on the server that getServer returns. The server
+// is created from the options that include this filter, so it is looked up lazily.
+//
+// grpc-go tags an incoming RPC with the stats handler, which starts the server
+// span, before it looks the method up. A call to a service or method that is
+// not registered is answered with Unimplemented without running the
+// interceptors (so without authentication) and without a stats.End event, so
+// its span would never be ended and the peer-chosen method name would be
+// recorded as a span name and a metric attribute. Services can only be
+// registered before Serve, so the set of methods is built on the first RPC.
+func registeredMethodsFilter(getServer func() *grpc.Server) otelgrpc.Filter {
+	registeredMethods := sync.OnceValue(func() map[string]struct{} {
+		methods := make(map[string]struct{})
+		for service, info := range getServer().GetServiceInfo() {
+			for _, method := range info.Methods {
+				methods["/"+service+"/"+method.Name] = struct{}{}
+			}
+		}
+		return methods
+	})
+	return func(info *stats.RPCTagInfo) bool {
+		_, ok := registeredMethods()[info.FullMethodName]
+		return ok
+	}
+}
+
+// ServiceRegistrar returns the registrar services should use to register themselves on a
+// server created by [ServerConfig.ToServer] with the same extensions. When authentication
+// is configured, unary RPCs are authenticated before their request is decompressed and
+// decoded, which gRPC interceptors cannot do. Otherwise it returns the server itself.
+func (sc *ServerConfig) ServiceRegistrar(
+	ctx context.Context,
+	extensions map[component.ID]component.Component,
+	server *grpc.Server,
+) (grpc.ServiceRegistrar, error) {
+	if !sc.Auth.HasValue() {
+		return server, nil
+	}
+	authenticator, err := sc.Auth.Get().GetServerAuthenticator(ctx, extensions)
+	if err != nil {
+		return nil, err
+	}
+	return &preAuthRegistrar{
+		ServiceRegistrar: server,
+		authenticator:    authenticator,
+		includeMetadata:  sc.IncludeMetadata,
+	}, nil
+}
+
+// preAuthRegistrar wraps the handler of every unary method registered through it, so
+// that the RPC is authenticated before the generated handler reads the request message.
+type preAuthRegistrar struct {
+	grpc.ServiceRegistrar
+	authenticator   extensionauth.Server
+	includeMetadata bool
+}
+
+func (r *preAuthRegistrar) RegisterService(desc *grpc.ServiceDesc, impl any) {
+	wrapped := *desc
+	wrapped.Methods = make([]grpc.MethodDesc, len(desc.Methods))
+	for i, md := range desc.Methods {
+		handler := md.Handler
+		md.Handler = func(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+			headers, ok := metadata.FromIncomingContext(ctx)
+			if !ok {
+				return nil, errMetadataNotFound
+			}
+			ctx, err := r.authenticator.Authenticate(contextWithClient(ctx, r.includeMetadata), headers)
+			if err != nil {
+				return nil, authStatusError(err)
+			}
+			return handler(srv, context.WithValue(ctx, authenticatedEarlyKey{}, true), dec, interceptor)
+		}
+		wrapped.Methods[i] = md
+	}
+	r.ServiceRegistrar.RegisterService(&wrapped, impl)
+}
+
+// authenticatedEarlyKey marks contexts of RPCs already authenticated before their request
+// was read, so the auth interceptors do not authenticate them a second time.
+type authenticatedEarlyKey struct{}
+
+func authenticatedEarly(ctx context.Context) bool {
+	return ctx.Value(authenticatedEarlyKey{}) != nil
+}
+
+func authStatusError(err error) error {
+	if s, ok := status.FromError(err); ok {
+		return s.Err()
+	}
+	return status.Error(codes.Unauthenticated, err.Error())
 }
 
 func (sc *ServerConfig) getGrpcServerOptions(
@@ -358,6 +503,7 @@ func (sc *ServerConfig) getGrpcServerOptions(
 	extensions map[component.ID]component.Component,
 	settings component.TelemetrySettings,
 	extraOpts []ToServerOption,
+	filter otelgrpc.Filter,
 ) ([]grpc.ServerOption, error) {
 	var opts []grpc.ServerOption
 
@@ -439,6 +585,7 @@ func (sc *ServerConfig) getGrpcServerOptions(
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
 		otelgrpc.WithMeterProvider(settings.MeterProvider),
+		otelgrpc.WithFilter(filter),
 	}
 
 	// Enable OpenTelemetry observability plugin.
@@ -511,6 +658,10 @@ func contextWithClient(ctx context.Context, includeMetadata bool) context.Contex
 
 func authUnaryServerInterceptor(server extensionauth.Server) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		if authenticatedEarly(ctx) {
+			return handler(ctx, req)
+		}
+
 		headers, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
 			return nil, errMetadataNotFound
@@ -518,11 +669,7 @@ func authUnaryServerInterceptor(server extensionauth.Server) grpc.UnaryServerInt
 
 		ctx, err := server.Authenticate(ctx, headers)
 		if err != nil {
-			if s, ok := status.FromError(err); ok {
-				return nil, s.Err()
-			}
-
-			return nil, status.Error(codes.Unauthenticated, err.Error())
+			return nil, authStatusError(err)
 		}
 
 		return handler(ctx, req)

@@ -7,6 +7,45 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.72.0/v0.166.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/exporterhelper`: Change the storageID to use optional and use the new configstorage module (#13822)
+
+### 💡 Enhancements 💡
+
+- `cmd/builder`: Added `ocbplugin` package. (#16409)
+  This package will be used in the [upcoming OCB hooks feature](https://github.com/open-telemetry/opentelemetry-collector/issues/16066).
+- `cmd/mdatagen`: Add `independent_value` and `emitted_name_config_key` options to metric migrations. (#16318)
+  `independent_value` generates a separate Record function for the migration target, for metrics
+  whose new definition is calculated differently from the legacy one.
+  `emitted_name_config_key` configures and documents the migration target by its emitted name instead
+  of its `@vN` key, for renames where the legacy and target names map to the same Go identifier.
+  With `emitted_name_config_key`, generated config validation errors and log warnings also refer
+  to the target by its emitted name, so the `@vN` suffix is never shown to users.
+  
+- `cmd/mdatagen`: Added new _internal_ status.class (#16313)
+- `pkg/configgrpc`: Add the `pick_first.shuffle_address_list` option to shuffle the resolved address list for gRPC clients that use the `pick_first` balancer. (#16235)
+  When enabled, clients that receive the same address list no longer all connect to the first address (gRFC A62).
+  The option is disabled by default.
+  
+- `pkg/configopaque`: Add an `Equal` method to `configopaque.String` that compares its contents with a string using `subtle.ConstantTimeCompare`. (#16463)
+- `pkg/pdata`: Add `ValidateUTF8` and `RejectInvalidUTF8` methods to the OTLP `ExportRequest` types (#11449)
+  The methods are available on `ptraceotlp.ExportRequest`, `pmetricotlp.ExportRequest`, `plogotlp.ExportRequest` and `pprofileotlp.ExportRequest`.
+  `ValidateUTF8` reports whether every string in the request is valid UTF-8.
+  `RejectInvalidUTF8` removes the smallest signal units (spans, data points, log records, profiles) that contain invalid UTF-8 and returns how many were removed.
+  
+- `pkg/pdata`: Add `SanitizeUTF8` to the OTLP `ExportRequest` types to replace invalid UTF-8 byte sequences in all string fields with `U+FFFD` (#11449)
+- `pkg/processor`: Added `PipelineID` to `processor.Settings`. (#16398)
+  The service graph will now populate this field so a processor will know what pipeline its current instance belongs to.
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/configtls`: Update `tpm::auth` and `tpm::owner_auth` fields as opaque so they are redacted like `key_pem`. (#16435)
+
+<!-- previous-version -->
+
 ## v1.71.0/v0.165.0
 
 ### 🚩 Deprecations 🚩

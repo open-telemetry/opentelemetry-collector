@@ -19,7 +19,7 @@ $defs:
     type: object
     properties:
       ca_file:
-        description: Path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty uses system root CA. (optional)
+        description: Path to the CA cert. For a client this verifies the server certificate. If empty uses system root CA. Not used by servers: to verify client certificates a server must set client_ca_file instead. (optional)
         type: string
       ca_pem:
         description: In memory PEM encoded cert. (optional)
