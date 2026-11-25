@@ -26,6 +26,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -482,7 +483,7 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 			Endpoint: "0.0.0.0:1234",
 		},
 	}
-	opts, err := gss.getGrpcServerOptions(context.Background(), nil, componenttest.NewNopTelemetrySettings(), []ToServerOption{})
+	opts, err := gss.getGrpcServerOptions(context.Background(), nil, componenttest.NewNopTelemetrySettings(), []ToServerOption{}, nil)
 	require.NoError(t, err)
 	assert.Len(t, opts, 3)
 }
@@ -499,6 +500,7 @@ func TestGrpcServerExtraOption(t *testing.T) {
 		nil,
 		componenttest.NewNopTelemetrySettings(),
 		[]ToServerOption{WithGrpcServerOption(extraOpt)},
+		nil,
 	)
 	require.NoError(t, err)
 	assert.Len(t, opts, 4)
@@ -585,7 +587,7 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 			}),
 		}),
 	}
-	opts, err := gss.getGrpcServerOptions(context.Background(), nil, componenttest.NewNopTelemetrySettings(), []ToServerOption{})
+	opts, err := gss.getGrpcServerOptions(context.Background(), nil, componenttest.NewNopTelemetrySettings(), []ToServerOption{}, nil)
 	require.NoError(t, err)
 	assert.Len(t, opts, 10)
 }
@@ -600,7 +602,7 @@ func TestGrpcServerMaxRecvMsgSizeReachesZstdDecoder(t *testing.T) {
 		},
 		MaxRecvMsgSizeMiB: 64,
 	}
-	_, err := gss.getGrpcServerOptions(context.Background(), nil, componenttest.NewNopTelemetrySettings(), nil)
+	_, err := gss.getGrpcServerOptions(context.Background(), nil, componenttest.NewNopTelemetrySettings(), nil, nil)
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, zstd.DecoderMaxWindow(), uint64(64*1024*1024))
 }
@@ -1431,6 +1433,63 @@ func TestDefaultStreamInterceptorMissingMetadata(t *testing.T) {
 
 	// verify
 	assert.Equal(t, errMetadataNotFound, err)
+}
+
+func TestServerInstrumentsOnlyRegisteredMethods(t *testing.T) {
+	telemetry := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, telemetry.Shutdown(context.Background())) })
+
+	cfg := ServerConfig{
+		NetAddr: confignet.AddrConfig{
+			Endpoint:  "localhost:0",
+			Transport: confignet.TransportTypeTCP,
+		},
+	}
+	listener, err := cfg.NetAddr.Listen(context.Background())
+	require.NoError(t, err)
+	srv, err := cfg.ToServer(context.Background(), nil, telemetry.NewTelemetrySettings())
+	require.NoError(t, err)
+	ptraceotlp.RegisterGRPCServer(srv, &grpcTraceServer{})
+	go func() {
+		_ = srv.Serve(listener)
+	}()
+	defer srv.Stop()
+
+	clientCfg := ClientConfig{
+		Endpoint: listener.Addr().String(),
+		TLS: configtls.ClientConfig{
+			Insecure: true,
+		},
+	}
+	conn, err := clientCfg.ToClientConn(context.Background(), nil, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	defer func() { assert.NoError(t, conn.Close()) }()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	// A registered method is traced, and its span ends with the call.
+	_, err = ptraceotlp.NewGRPCClient(conn).Export(ctx, ptraceotlp.NewExportRequest(), grpc.WaitForReady(true))
+	require.NoError(t, err)
+	require.Len(t, telemetry.SpanRecorder.Started(), 1)
+	// grpc-go ends the span in a deferred function that runs after the response
+	// is sent, so the client can return before the server has ended the span.
+	require.Eventually(t, func() bool {
+		return len(telemetry.SpanRecorder.Ended()) == 1
+	}, 5*time.Second, 10*time.Millisecond)
+	assert.Equal(t, "opentelemetry.proto.collector.trace.v1.TraceService/Export", telemetry.SpanRecorder.Ended()[0].Name())
+
+	// grpc-go answers an unknown service or method without ever ending the
+	// span the stats handler would start for it, so no span must be started.
+	for _, method := range []string{
+		"/unknown.Service/Export",
+		"/opentelemetry.proto.collector.trace.v1.TraceService/Unknown",
+	} {
+		err = conn.Invoke(ctx, method, &emptypb.Empty{}, &emptypb.Empty{})
+		assert.Equal(t, codes.Unimplemented, status.Code(err), method)
+	}
+	assert.Len(t, telemetry.SpanRecorder.Started(), 1)
+	assert.Len(t, telemetry.SpanRecorder.Ended(), 1)
 }
 
 type mockServerStream struct {

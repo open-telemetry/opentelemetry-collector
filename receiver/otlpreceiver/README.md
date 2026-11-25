@@ -74,8 +74,9 @@ Several helper files are leveraged to provide additional capabilities automatica
 ## Writing with HTTP/JSON
 
 The OTLP receiver can receive trace export calls via HTTP/JSON in addition to
-gRPC. The HTTP/JSON address is the same as gRPC as the protocol is recognized
-and processed accordingly. Note the serialization format needs to be [OTLP JSON](https://opentelemetry.io/docs/specs/otlp/#json-protobuf-encoding).
+gRPC. The HTTP/JSON endpoint is the same as the HTTP/protobuf one, as the
+encoding is chosen from the `Content-Type` header. Note the serialization
+format needs to be [OTLP JSON](https://opentelemetry.io/docs/specs/otlp/#json-protobuf-encoding).
 
 The HTTP/JSON configuration also provides `traces_url_path`,
 `metrics_url_path`, and `logs_url_path` configurations to allow the URL paths
