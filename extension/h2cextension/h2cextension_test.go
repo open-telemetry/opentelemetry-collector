@@ -5,8 +5,11 @@ package h2cextension
 
 import (
 	"bufio"
+	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -122,6 +125,56 @@ func TestConfighttpPriorKnowledgeStreamsHaveIndependentClientInfo(t *testing.T) 
 		require.Nil(t, got.auth)
 		require.True(t, got.hasAddr, "client info must be populated for every stream")
 	}
+}
+
+func TestConfighttpLimitsRequestBodySizePerStream(t *testing.T) {
+	t.Parallel()
+
+	const limit = 1024
+	srv := startConfighttpServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, err := io.ReadAll(r.Body); err != nil {
+			if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+				w.WriteHeader(http.StatusRequestEntityTooLarge)
+				return
+			}
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}), func(cfg *confighttp.ServerConfig) {
+		cfg.MaxRequestBodySize = limit
+	})
+
+	var compressed bytes.Buffer
+	gz := gzip.NewWriter(&compressed)
+	_, err := gz.Write(make([]byte, 2*limit))
+	require.NoError(t, err)
+	require.NoError(t, gz.Close())
+	require.Less(t, compressed.Len(), limit, "the compressed body must pass the raw limit")
+
+	httpClient := priorKnowledgeClient(t)
+	for _, tc := range []struct {
+		name     string
+		body     []byte
+		encoding string
+		status   int
+	}{
+		{name: "at_limit", body: make([]byte, limit), status: http.StatusNoContent},
+		{name: "over_limit", body: make([]byte, limit+1), status: http.StatusRequestEntityTooLarge},
+		{name: "decompressed_over_limit", body: compressed.Bytes(), encoding: "gzip", status: http.StatusRequestEntityTooLarge},
+	} {
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, srv.url, bytes.NewReader(tc.body))
+		require.NoError(t, err)
+		if tc.encoding != "" {
+			req.Header.Set("Content-Encoding", tc.encoding)
+		}
+		resp, err := httpClient.Do(req)
+		require.NoError(t, err, tc.name)
+		require.NoError(t, resp.Body.Close())
+		require.Equal(t, 2, resp.ProtoMajor, tc.name)
+		require.Equal(t, tc.status, resp.StatusCode, tc.name)
+	}
+	require.Equal(t, int64(1), srv.connections.Load(), "all streams must share one h2c connection")
 }
 
 // The HTTP/1.1 Upgrade to h2c is optional (RFC 7540 Section 3.2) and is not

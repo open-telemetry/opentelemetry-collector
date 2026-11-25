@@ -9,7 +9,7 @@ status:
     development: [extension]
   distributions: []
   warnings:
-    - Request body limits, decompression and draining connections on server shutdown are not verified yet for h2c streams.
+    - Decompression and draining connections on server shutdown are not verified yet for h2c streams.
     - h2c is unencrypted and should only be used behind a TLS-terminating proxy on a trusted network.
 
 tests:
