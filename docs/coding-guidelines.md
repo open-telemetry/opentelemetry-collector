@@ -563,6 +563,38 @@ the deprecated function to help with the migration.
 3. On `v0.N+2`, we change `func GetFoo() Foo` to `func GetFoo(context.Context) Foo` if desired or remove it entirely if
    needed.
 
+#### Example #4 - Replacing a module
+
+The same two-stage process applies when a whole Go module is replaced by another one, for example because a component
+is renamed or superseded. A module path cannot be aliased, so the new module is added first and the old one is kept
+around, deprecated, until it is removed. The replacement of the `loggingexporter` module by the `debugexporter` module
+(deprecated in `v0.86.0`, removed in `v0.111.0`) is an example.
+
+1. Current version `v0.N` has the module `go.opentelemetry.io/collector/exporter/fooexporter`.
+1. On `v0.N+1`, in the same PR:
+   - Add the new module `go.opentelemetry.io/collector/exporter/barexporter`, following the steps in [Module
+     organization](#module-organization). Code that both modules need can temporarily live in an `internal` package.
+   - Deprecate the old module by adding a `// Deprecated: [v0.N+1] Use barexporter instead.` comment above the
+     `module` line of its `go.mod` and, for components, setting the stability level to `deprecated` in its
+     `metadata.yaml`.
+   - Add a `deprecation` changelog entry for the old module and a `new_component` entry for the new one, both
+     referencing the same tracking issue.
+1. Modules that are not user-configurable components (for example internal or library-only modules) MAY be removed
+   after two releases, i.e. on `v0.N+3`, with no further steps beyond those under "Removing the old module" below.
+1. If the module is a component that end users configure, the following additional steps apply, as users need more time
+   and notice to migrate:
+   - Note the planned removal date in the deprecation comment and in the component's README.
+   - Log a warning on startup of the deprecated component that points users to the replacement.
+   - Notify downstream consumers (for example distributions, Helm charts, the Operator and the documentation website)
+     in advance, so references to the old module are updated before it is removed.
+   - Do not remove the module before the announced removal date has passed.
+1. Removing the old module:
+   - Delete the module directory and remove it from `versions.yaml`, the Makefile, the otelcorecol manifest and
+     `components.go`, the builder defaults and tests, and any `replace` directives.
+   - Add a `breaking` changelog entry referencing the replacement.
+   - For components that end users configure, make the error for the removed type in the configuration loader mention
+     the replacement instead of reporting a generic "unknown type" error.
+
 #### Exceptions
 
 For changes to modules that do not have a version of `v1` or higher, we may skip the deprecation process described above
