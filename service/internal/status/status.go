@@ -104,12 +104,21 @@ var ErrStatusNotReady = errors.New("report component status is not ready until s
 type Reporter interface {
 	ReportStatus(id *componentstatus.InstanceID, ev *componentstatus.Event)
 	ReportOKIfStarting(id *componentstatus.InstanceID)
+	// RemoveInstance drops the state machine of an instance that is no longer
+	// part of the service, such as a component removed or rebuilt by a partial
+	// reload. Afterwards the instance is unknown again, and only a
+	// StatusStarting event registers it.
+	RemoveInstance(id *componentstatus.InstanceID)
 }
 
 var _ Reporter = (*reporter)(nil)
 
 type reporter struct {
-	mu                  sync.Mutex
+	mu sync.Mutex
+	// fsmMap holds a state machine for every instance that has reported
+	// StatusStarting and has not been removed with RemoveInstance. The graph
+	// removes the instances of the nodes it drops, so instances replaced by a
+	// partial reload do not accumulate for the lifetime of the service.
 	fsmMap              map[*componentstatus.InstanceID]*fsm
 	onStatusChange      NotifyStatusFunc
 	onInvalidTransition InvalidTransitionFunc
@@ -133,30 +142,40 @@ func (r *reporter) ReportStatus(
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if err := r.componentFSM(id).transition(ev); err != nil {
+	fsm, known := r.fsmMap[id]
+	if !known {
+		fsm = newFSM(func(ev *componentstatus.Event) { r.onStatusChange(id, ev) })
+	}
+	if err := fsm.transition(ev); err != nil {
+		// An unknown instance is only registered by a valid first transition,
+		// which newFSM restricts to StatusStarting. Any other late event for a
+		// removed instance therefore reports an invalid transition without
+		// creating a new entry.
 		r.onInvalidTransition(err)
+		return
+	}
+	if !known {
+		r.fsmMap[id] = fsm
 	}
 }
 
 func (r *reporter) ReportOKIfStarting(id *componentstatus.InstanceID) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	fsm := r.componentFSM(id)
-	if fsm.current.Status() == componentstatus.StatusStarting {
-		if err := fsm.transition(componentstatus.NewEvent(componentstatus.StatusOK)); err != nil {
-			r.onInvalidTransition(err)
-		}
+	fsm, known := r.fsmMap[id]
+	if !known || fsm.current.Status() != componentstatus.StatusStarting {
+		return
+	}
+	if err := fsm.transition(componentstatus.NewEvent(componentstatus.StatusOK)); err != nil {
+		r.onInvalidTransition(err)
 	}
 }
 
-// Note: a lock must be acquired before calling this method.
-func (r *reporter) componentFSM(id *componentstatus.InstanceID) *fsm {
-	fsm, ok := r.fsmMap[id]
-	if !ok {
-		fsm = newFSM(func(ev *componentstatus.Event) { r.onStatusChange(id, ev) })
-		r.fsmMap[id] = fsm
-	}
-	return fsm
+// RemoveInstance drops the state machine of the given instance, if there is one.
+func (r *reporter) RemoveInstance(id *componentstatus.InstanceID) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.fsmMap, id)
 }
 
 // NewReportStatusFunc returns a function to be used as ReportStatus for componentstatus.TelemetrySettings

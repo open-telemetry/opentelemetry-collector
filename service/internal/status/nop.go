@@ -18,3 +18,5 @@ func (r *nopStatusReporter) Ready() {}
 func (r *nopStatusReporter) ReportStatus(*componentstatus.InstanceID, *componentstatus.Event) {}
 
 func (r *nopStatusReporter) ReportOKIfStarting(*componentstatus.InstanceID) {}
+
+func (r *nopStatusReporter) RemoveInstance(*componentstatus.InstanceID) {}

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -252,12 +253,16 @@ func TestStatusFuncsConcurrent(t *testing.T) {
 				compFn(componentstatus.NewEvent(componentstatus.StatusRecoverableError))
 				compFn(componentstatus.NewEvent(componentstatus.StatusOK))
 			}
+			compFn(componentstatus.NewEvent(componentstatus.StatusStopping))
+			compFn(componentstatus.NewEvent(componentstatus.StatusStopped))
+			rep.RemoveInstance(id)
 			wg.Done()
 		}()
 	}
 
 	wg.Wait()
-	require.Equal(t, 8004, count)
+	require.Equal(t, 8012, count)
+	assert.Empty(t, rep.(*reporter).fsmMap, "removed instances must not be retained")
 }
 
 func TestReportComponentOKIfStarting(t *testing.T) {
@@ -332,4 +337,113 @@ func TestReportComponentOKIfStarting(t *testing.T) {
 			require.Equal(t, tt.expectedStatuses, receivedStatuses)
 		})
 	}
+}
+
+// TestReporterRemoveInstance verifies that RemoveInstance drops only the given
+// instance, both when it is in StatusStopped and when an error reported while
+// stopping left it in StatusRecoverableError. StatusStopped alone does not drop
+// an entry. After removal the instance is unknown: a late StatusOK is an
+// invalid transition that leaves no entry, and StatusStarting registers the
+// instance again.
+func TestReporterRemoveInstance(t *testing.T) {
+	var invalid []error
+	rep := NewReporter(
+		func(*componentstatus.InstanceID, *componentstatus.Event) {},
+		func(err error) { invalid = append(invalid, err) },
+	)
+	r := rep.(*reporter)
+
+	stopped := &componentstatus.InstanceID{}
+	for _, st := range []componentstatus.Status{
+		componentstatus.StatusStarting,
+		componentstatus.StatusOK,
+		componentstatus.StatusStopping,
+		componentstatus.StatusStopped,
+	} {
+		rep.ReportStatus(stopped, componentstatus.NewEvent(st))
+	}
+	failed := &componentstatus.InstanceID{}
+	for _, st := range []componentstatus.Status{
+		componentstatus.StatusStarting,
+		componentstatus.StatusOK,
+		componentstatus.StatusStopping,
+		componentstatus.StatusRecoverableError,
+		componentstatus.StatusStopped,
+	} {
+		rep.ReportStatus(failed, componentstatus.NewEvent(st))
+	}
+	require.Len(t, invalid, 1, "StatusStopped right after an error reported while stopping is an invalid transition")
+	require.Len(t, r.fsmMap, 2)
+
+	// Removing an instance the reporter does not know changes nothing.
+	rep.RemoveInstance(&componentstatus.InstanceID{})
+	require.Len(t, r.fsmMap, 2)
+
+	rep.RemoveInstance(stopped)
+	_, ok := r.fsmMap[failed]
+	require.True(t, ok, "removing one instance must keep the others")
+	require.Len(t, r.fsmMap, 1)
+	rep.RemoveInstance(failed)
+	assert.Empty(t, r.fsmMap)
+
+	rep.ReportStatus(failed, componentstatus.NewEvent(componentstatus.StatusOK))
+	assert.Empty(t, r.fsmMap)
+	require.Len(t, invalid, 2)
+	for _, err := range invalid {
+		require.ErrorIs(t, err, errInvalidStateTransition)
+	}
+
+	// No trace of a removed instance is kept, so StatusStarting registers it again.
+	rep.ReportStatus(stopped, componentstatus.NewEvent(componentstatus.StatusStarting))
+	assert.Len(t, r.fsmMap, 1)
+}
+
+// TestReporterUnknownInstanceFirstEvent verifies that an event other than
+// StatusStarting for an instance the reporter has never seen is an invalid
+// transition that leaves no entry behind.
+func TestReporterUnknownInstanceFirstEvent(t *testing.T) {
+	var notified []componentstatus.Status
+	var invalid []error
+	rep := NewReporter(
+		func(_ *componentstatus.InstanceID, ev *componentstatus.Event) {
+			notified = append(notified, ev.Status())
+		},
+		func(err error) { invalid = append(invalid, err) },
+	)
+	r := rep.(*reporter)
+
+	id := &componentstatus.InstanceID{}
+	for _, st := range []componentstatus.Status{
+		componentstatus.StatusOK,
+		componentstatus.StatusRecoverableError,
+		componentstatus.StatusStopping,
+		componentstatus.StatusStopped,
+	} {
+		rep.ReportStatus(id, componentstatus.NewEvent(st))
+	}
+	assert.Empty(t, r.fsmMap)
+	assert.Empty(t, notified)
+	require.Len(t, invalid, 4)
+	for _, err := range invalid {
+		require.ErrorIs(t, err, errInvalidStateTransition)
+	}
+
+	// StatusStarting is the only valid first event and is what creates the entry.
+	rep.ReportStatus(id, componentstatus.NewEvent(componentstatus.StatusStarting))
+	assert.Len(t, r.fsmMap, 1)
+	assert.Equal(t, []componentstatus.Status{componentstatus.StatusStarting}, notified)
+}
+
+func TestReportOKIfStartingUnknownInstance(t *testing.T) {
+	var notified []componentstatus.Status
+	rep := NewReporter(
+		func(_ *componentstatus.InstanceID, ev *componentstatus.Event) {
+			notified = append(notified, ev.Status())
+		},
+		func(err error) { require.NoError(t, err) },
+	)
+
+	rep.ReportOKIfStarting(&componentstatus.InstanceID{})
+	assert.Empty(t, notified)
+	assert.Empty(t, rep.(*reporter).fsmMap, "an unknown instance must not be registered")
 }
