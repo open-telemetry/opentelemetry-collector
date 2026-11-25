@@ -11,5 +11,5 @@ var PkgConfigtlsValidateServerCAFileFeatureGate = featuregate.GlobalRegistry().M
 	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, a server TLS configuration that sets ca_file or ca_pem without client_ca_file is rejected at config validation. When disabled, ca_file and ca_pem are silently ignored by servers."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/16445"),
-	featuregate.WithRegisterFromVersion("v0.166.0"),
+	featuregate.WithRegisterFromVersion("v0.167.0"),
 )

@@ -120,7 +120,7 @@ func (c ServerConfig) Validate() error {
 	// ca_file/ca_pem only populate RootCAs, which a TLS server never consults. Fail fast
 	// instead of silently serving a listener that does not verify client certificates.
 	if metadata.PkgConfigtlsValidateServerCAFileFeatureGate.IsEnabled() && c.hasCA() && c.ClientCAFile == "" {
-		return errors.New("since v0.166.0, ca_file/ca_pem are not used by server connections; set client_ca_file to verify client certificates. Previous behavior was unintended; temporarily revert to the old behavior by disabling the pkg.configtls.ValidateServerCAFile feature gate")
+		return errors.New("since v0.167.0, ca_file/ca_pem are not used by server connections; set client_ca_file to verify client certificates. Previous behavior was unintended; temporarily revert to the old behavior by disabling the pkg.configtls.ValidateServerCAFile feature gate")
 	}
 	return nil
 }

@@ -10,6 +10,6 @@ This component has the following feature gates:
 
 | Feature Gate | Stage | Description | From Version | To Version | Reference |
 | ------------ | ----- | ----------- | ------------ | ---------- | --------- |
-| `pkg.configtls.ValidateServerCAFile` | beta | When enabled, a server TLS configuration that sets ca_file or ca_pem without client_ca_file is rejected at config validation. When disabled, ca_file and ca_pem are silently ignored by servers. | v0.166.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/16445) |
+| `pkg.configtls.ValidateServerCAFile` | beta | When enabled, a server TLS configuration that sets ca_file or ca_pem without client_ca_file is rejected at config validation. When disabled, ca_file and ca_pem are silently ignored by servers. | v0.167.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/16445) |
 
 For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.
