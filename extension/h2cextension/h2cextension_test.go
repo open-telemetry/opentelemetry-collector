@@ -177,6 +177,55 @@ func TestConfighttpLimitsRequestBodySizePerStream(t *testing.T) {
 	require.Equal(t, int64(1), srv.connections.Load(), "all streams must share one h2c connection")
 }
 
+func TestConfighttpDecompressesEachStream(t *testing.T) {
+	t.Parallel()
+
+	type received struct {
+		encoding string
+		body     []byte
+	}
+	bodies := make(chan received, 2)
+	srv := startConfighttpServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		bodies <- received{encoding: r.Header.Get("Content-Encoding"), body: body}
+		w.WriteHeader(http.StatusNoContent)
+	}), nil)
+
+	payload := []byte(strings.Repeat("otlp payload ", 64))
+	var compressed bytes.Buffer
+	gz := gzip.NewWriter(&compressed)
+	_, err := gz.Write(payload)
+	require.NoError(t, err)
+	require.NoError(t, gz.Close())
+
+	httpClient := priorKnowledgeClient(t)
+	for _, encoding := range []string{"gzip", ""} {
+		body := payload
+		if encoding != "" {
+			body = compressed.Bytes()
+		}
+		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, srv.url, bytes.NewReader(body))
+		require.NoError(t, err)
+		if encoding != "" {
+			req.Header.Set("Content-Encoding", encoding)
+		}
+		resp, err := httpClient.Do(req)
+		require.NoError(t, err)
+		require.NoError(t, resp.Body.Close())
+		require.Equal(t, 2, resp.ProtoMajor)
+		require.Equal(t, http.StatusNoContent, resp.StatusCode)
+
+		got := <-bodies
+		require.Empty(t, got.encoding, "the handler must see a decoded body")
+		require.Equal(t, payload, got.body)
+	}
+	require.Equal(t, int64(1), srv.connections.Load(), "all streams must share one h2c connection")
+}
+
 func TestConfighttpShutdownDrainsStreams(t *testing.T) {
 	t.Parallel()
 
