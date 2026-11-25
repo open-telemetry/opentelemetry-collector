@@ -287,6 +287,36 @@ func TestEqualityDefault(t *testing.T) {
 	assert.Equal(t, defaultOne, defaultTwo)
 }
 
+// maskedString mimics configopaque.String: fmt prints it as [REDACTED]
+// as long as it gets to call its methods.
+type maskedString string
+
+func (maskedString) String() string   { return "[REDACTED]" }
+func (maskedString) GoString() string { return `"[REDACTED]"` }
+
+type maskedConfig struct {
+	Secret maskedString
+}
+
+func TestFormat(t *testing.T) {
+	type parent struct {
+		Opt Optional[maskedConfig]
+	}
+	some := parent{Opt: Some(maskedConfig{Secret: "s3cret"})}
+	def := parent{Opt: Default(maskedConfig{Secret: "s3cret"})}
+
+	for _, verb := range []string{"%v", "%+v", "%#v", "%s"} {
+		assert.NotContains(t, fmt.Sprintf(verb, some), "s3cret", verb)
+		assert.NotContains(t, fmt.Sprintf(verb, def), "s3cret", verb)
+		assert.NotContains(t, fmt.Sprintf(verb, &some), "s3cret", verb)
+	}
+	assert.Equal(t, "{Opt:Some({Secret:[REDACTED]})}", fmt.Sprintf("%+v", some))
+	assert.Equal(t, "{Opt:Default({Secret:[REDACTED]})}", fmt.Sprintf("%+v", def))
+	assert.Equal(t, "{Opt:None}", fmt.Sprintf("%+v", parent{}))
+	assert.Equal(t, "Some(5)", fmt.Sprintf("%d", Some(5)))
+	assert.Equal(t, "Some(\"foo\")", fmt.Sprintf("%q", Some("foo")))
+}
+
 func TestNoneZeroVal(t *testing.T) {
 	var none Optional[Sub]
 	require.False(t, none.HasValue())
