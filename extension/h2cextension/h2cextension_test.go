@@ -380,14 +380,19 @@ func TestConfighttpShutdownDrainsStreams(t *testing.T) {
 
 	require.Never(t, func() bool { return len(shutdown) > 0 }, 200*time.Millisecond, 10*time.Millisecond,
 		"shutdown must wait for the in-flight stream")
-	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, srv.url, http.NoBody)
+	// The client may see GOAWAY and fail the request without sending it, so
+	// this proves that requests fail and never run, not how the server
+	// treats a late stream. The timeout keeps a regression from hanging.
+	lateCtx, lateCancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer lateCancel()
+	req, err := http.NewRequestWithContext(lateCtx, http.MethodGet, srv.url, http.NoBody)
 	require.NoError(t, err)
 	resp, err := httpClient.Do(req)
 	if err == nil {
 		require.NoError(t, resp.Body.Close())
 	}
-	require.Error(t, err, "new streams must be refused after shutdown starts")
-	require.Equal(t, int64(1), entries.Load(), "a new stream reached the handler after shutdown started")
+	require.Error(t, err, "new requests must fail after shutdown starts")
+	require.Equal(t, int64(1), entries.Load(), "a new request reached the handler after shutdown started")
 
 	releaseHandler()
 	var ok bool
