@@ -34,13 +34,15 @@ service:
 The extension asks the `confighttp` server to accept unencrypted HTTP/2 through
 `http.Server.Protocols`. It does not wrap or replace the request handler. The Go
 standard library serves each HTTP/2 stream through the server's full handler
-chain, so every stream is authenticated like an HTTP/1.1 request. Streams do not
-share context values, such as the authenticated identity, with other streams on
-the same connection. With `include_metadata`, each stream's client metadata comes
-from that stream's headers, and the server records a separate HTTP server span
-for each stream. Each stream's body is decompressed according to its
-`Content-Encoding`, and `max_request_body_size` applies both to the received
-body and to the body after decompression.
+chain, the same way it serves an HTTP/1.1 request. For each stream:
+
+- Authentication runs on its own. A stream does not inherit the authenticated
+  identity or other context values from other streams on the connection.
+- With `include_metadata`, client metadata comes from that stream's headers.
+- The body is decompressed according to its `Content-Encoding`, and
+  `max_request_body_size` applies to the received and decompressed body.
+- The server records a separate HTTP server span.
+- CORS and configured `response_headers` apply.
 
 h2c connections belong to the receiver's server. When that server shuts down,
 it sends HTTP/2 GOAWAY, refuses new streams, waits for in-flight streams and
@@ -54,7 +56,6 @@ The server keeps accepting HTTP/1.1 and, with TLS, HTTP/2.
   (RFC 9113 Section 3.3). The HTTP/1.1 `Upgrade: h2c` mechanism is deprecated by
   RFC 9113 and is not supported by the Go standard library. An upgrade request
   is served as a normal HTTP/1.1 request and the connection stays on HTTP/1.1.
-- **Not yet verified for h2c streams:** CORS and response headers.
 
 h2c is plaintext. Use it only on a trusted network behind a TLS-terminating
 proxy. Do not expose the listener directly to untrusted networks.

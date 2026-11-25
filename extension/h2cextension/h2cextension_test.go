@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmiddleware"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
@@ -192,6 +193,45 @@ func TestConfighttpRecordsSpanPerStream(t *testing.T) {
 		traceIDs[span.SpanContext().TraceID()] = struct{}{}
 	}
 	require.Len(t, traceIDs, streams, "each stream must start its own trace")
+}
+
+func TestConfighttpAppliesCORSAndResponseHeadersPerStream(t *testing.T) {
+	t.Parallel()
+
+	const allowed = "https://allowed.example"
+	srv := startConfighttpServer(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}), func(cfg *confighttp.ServerConfig) {
+		cfg.CORS = configoptional.Some(confighttp.CORSConfig{AllowedOrigins: []string{allowed}})
+		cfg.ResponseHeaders = configopaque.MapList{{Name: "X-Served-By", Value: "collector"}}
+	})
+
+	httpClient := priorKnowledgeClient(t)
+	for _, tc := range []struct {
+		name        string
+		method      string
+		origin      string
+		allowOrigin string
+	}{
+		{name: "preflight", method: http.MethodOptions, origin: allowed, allowOrigin: allowed},
+		{name: "allowed_origin", method: http.MethodPost, origin: allowed, allowOrigin: allowed},
+		{name: "other_origin", method: http.MethodPost, origin: "https://other.example"},
+	} {
+		req, err := http.NewRequestWithContext(t.Context(), tc.method, srv.url, http.NoBody)
+		require.NoError(t, err)
+		req.Header.Set("Origin", tc.origin)
+		if tc.method == http.MethodOptions {
+			req.Header.Set("Access-Control-Request-Method", http.MethodPost)
+		}
+		resp, err := httpClient.Do(req)
+		require.NoError(t, err, tc.name)
+		require.NoError(t, resp.Body.Close())
+		require.Equal(t, 2, resp.ProtoMajor, tc.name)
+		require.Equal(t, http.StatusNoContent, resp.StatusCode, tc.name)
+		require.Equal(t, tc.allowOrigin, resp.Header.Get("Access-Control-Allow-Origin"), tc.name)
+		require.Equal(t, "collector", resp.Header.Get("X-Served-By"), tc.name)
+	}
+	require.Equal(t, int64(1), srv.connections.Load(), "all streams must share one h2c connection")
 }
 
 func TestConfighttpLimitsRequestBodySizePerStream(t *testing.T) {
