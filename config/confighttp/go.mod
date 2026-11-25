@@ -4,8 +4,8 @@ go 1.26.0
 
 require (
 	github.com/golang/snappy v1.0.0
-	github.com/klauspost/compress v1.20.4
-	github.com/pierrec/lz4/v4 v4.1.33
+	github.com/klauspost/compress v1.20.5
+	github.com/pierrec/lz4/v4 v4.1.34
 	github.com/rs/cors v1.11.1
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/collector/client v1.72.0
