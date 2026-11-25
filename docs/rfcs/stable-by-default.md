@@ -244,7 +244,7 @@ flowchart TD
   Note that this does not apply to the initial stable release of a component.
 
 - While the Collector service will enforce stability requirements for service-instantiated components,
-  it is the responsibility of a component to enforce them for programatically instantiated subcomponents
+  it is the responsibility of a component to enforce them for programmatically instantiated subcomponents
   (e.g. receiver instances created by the
   [receiver_creator](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/receivercreator/README.md)).
 
