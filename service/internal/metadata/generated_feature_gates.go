@@ -27,7 +27,7 @@ var ServicePartialReloadProcessorsFeatureGate = featuregate.GlobalRegistry().Mus
 	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("Controls whether processor-only configuration changes restart only the affected processors and the receivers feeding them."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/partial-reload.md"),
-	featuregate.WithRegisterFromVersion("v0.164.0"),
+	featuregate.WithRegisterFromVersion("v0.167.0"),
 )
 
 var ServicePartialReloadReceiversFeatureGate = featuregate.GlobalRegistry().MustRegister(
