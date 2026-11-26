@@ -173,7 +173,7 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | Date       | Version  | Core Release manager  | Contrib release manager | 'Releases' release manager |
 |------------|----------|-----------------------|-------------------------|----------------------------|
 | 2026-11-09 | v0.165.0 | [@codeboten][8]       | [@codeboten][8]         | [@MovieStoreGuy][17]       |
-| 2025-11-23 | v0.166.0 | [@atoulme][5]         | [@atoulme][5]           | [@atoulme][5]              |
+| 2026-11-23 | v0.166.0 | [@atoulme][5]         | [@atoulme][5]           | [@atoulme][5]              |
 | 2026-12-07 | v0.167.0 | [@jmacd][1]           | [@ArthurSens][11]       | [@TylerHelmuth][3]         |
 | 2026-12-21 | v0.168.0 | [@mx-psi][14]         | [@mx-psi][14]           | [@mx-psi][14]              |
 | 2027-01-04 | v0.169.0 | [@evan-bradley][2]    | [@evan-bradley][2]      | [@mowies][15]              |
