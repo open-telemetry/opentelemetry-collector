@@ -63,6 +63,7 @@ type MemoryLimiter struct {
 	// testing different values.
 	readMemStatsFn func(m *runtime.MemStats)
 	runGCFn        func()
+	getMemoryFn    func() (uint64, error)
 
 	// currentSoftGCInterval and currentHardGCInterval are per-path dynamic GC
 	// intervals that grow when forced GCs on that path fail to reclaim memory
@@ -101,19 +102,27 @@ type MemoryLimiter struct {
 
 	host component.Host
 
-	// Fields for the periodic cgroup limit refresh. A non-nil refreshCheckerFn
-	// is what enables the loop
-	refreshInterval  time.Duration
-	refreshCheckerFn func() (*memUsageChecker, error)
-	refreshTicker    *time.Ticker
-	refreshClosed    chan struct{}
+	// refreshInterval is the period for re-reading a cgroup-derived limit.
+	// Zero disables the loop. limitPercentage and spikePercentage are the
+	// snapshot that loop uses.
+	refreshInterval time.Duration
+	limitPercentage uint32
+	spikePercentage uint32
+	refreshTicker   *time.Ticker
+	refreshClosed   chan struct{}
 }
 
 // NewMemoryLimiter returns a new memory limiter component
 func NewMemoryLimiter(cfg *Config, logger *zap.Logger) (*MemoryLimiter, error) {
-	usageChecker, err := getMemUsageChecker(cfg, logger)
+	usageChecker, totalMemory, err := getMemUsageChecker(cfg, GetMemoryFn)
 	if err != nil {
 		return nil, err
+	}
+	if cfg.MemoryLimitMiB == 0 {
+		logger.Info("Using percentage memory limiter",
+			zap.Uint64("total_memory_mib", totalMemory/mibBytes),
+			zap.Uint32("limit_percentage", cfg.MemoryLimitPercentage),
+			zap.Uint32("spike_limit_percentage", cfg.MemorySpikePercentage))
 	}
 
 	// Periodic refresh only applies to a cgroup-derived percentage limit.
@@ -139,6 +148,7 @@ func NewMemoryLimiter(cfg *Config, logger *zap.Logger) (*MemoryLimiter, error) {
 		gcDisabled:                   !cfg.GarbageCollector.HasValue(),
 		readMemStatsFn:               ReadMemStatsFn,
 		runGCFn:                      runtime.GC,
+		getMemoryFn:                  GetMemoryFn,
 		logger:                       logger,
 		mustRefuse:                   &atomic.Bool{},
 	}
@@ -146,12 +156,8 @@ func NewMemoryLimiter(cfg *Config, logger *zap.Logger) (*MemoryLimiter, error) {
 
 	if refreshEnabled {
 		ml.refreshInterval = cfg.RefreshInterval
-		ml.refreshCheckerFn = func() (*memUsageChecker, error) {
-			// Pass a nop logger: the startup "Using percentage memory limiter"
-			// line is logged once by NewMemoryLimiter; refreshes report changes
-			// via the Debug line in refreshCgroupLimits instead of repeating it.
-			return getMemUsageChecker(cfg, zap.NewNop())
-		}
+		ml.limitPercentage = cfg.MemoryLimitPercentage
+		ml.spikePercentage = cfg.MemorySpikePercentage
 	}
 
 	return ml, nil
@@ -177,7 +183,7 @@ func (ml *MemoryLimiter) Start(_ context.Context, host component.Host) error {
 			}
 		})
 
-		if ml.refreshCheckerFn != nil {
+		if ml.refreshInterval > 0 {
 			ml.refreshTicker = time.NewTicker(ml.refreshInterval)
 			ml.refreshClosed = make(chan struct{})
 			ml.waitGroup.Go(func() {
@@ -199,11 +205,12 @@ func (ml *MemoryLimiter) Start(_ context.Context, host component.Host) error {
 // swaps usageChecker when it changes, so percentage-based thresholds track
 // in-place memory limit resizes. A failed read keeps the previous thresholds.
 func (ml *MemoryLimiter) refreshCgroupLimits() {
-	newChecker, err := ml.refreshCheckerFn()
+	totalMemory, err := ml.getMemoryFn()
 	if err != nil {
 		ml.logger.Warn("Failed to refresh cgroup memory limit; keeping previous thresholds.", zap.Error(err))
 		return
 	}
+	newChecker := newPercentageMemUsageChecker(totalMemory, uint64(ml.limitPercentage), uint64(ml.spikePercentage))
 	prev := ml.usageChecker.Load()
 	if prev != nil && *prev == *newChecker {
 		return
@@ -240,22 +247,20 @@ func (ml *MemoryLimiter) MustRefuse() bool {
 	return ml.mustRefuse.Load()
 }
 
-func getMemUsageChecker(cfg *Config, logger *zap.Logger) (*memUsageChecker, error) {
-	memAllocLimit := uint64(cfg.MemoryLimitMiB) * mibBytes
-	memSpikeLimit := uint64(cfg.MemorySpikeLimitMiB) * mibBytes
+// getMemUsageChecker returns the thresholds for cfg and, for a percentage
+// limit, the total memory those thresholds were derived from. The total is
+// zero for a fixed limit.
+func getMemUsageChecker(cfg *Config, getMemory func() (uint64, error)) (*memUsageChecker, uint64, error) {
 	if cfg.MemoryLimitMiB != 0 {
-		return newFixedMemUsageChecker(memAllocLimit, memSpikeLimit), nil
+		memAllocLimit := uint64(cfg.MemoryLimitMiB) * mibBytes
+		memSpikeLimit := uint64(cfg.MemorySpikeLimitMiB) * mibBytes
+		return newFixedMemUsageChecker(memAllocLimit, memSpikeLimit), 0, nil
 	}
-	totalMemory, err := GetMemoryFn()
+	totalMemory, err := getMemory()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get total memory, use fixed memory settings (limit_mib): %w", err)
+		return nil, 0, fmt.Errorf("failed to get total memory, use fixed memory settings (limit_mib): %w", err)
 	}
-	logger.Info("Using percentage memory limiter",
-		zap.Uint64("total_memory_mib", totalMemory/mibBytes),
-		zap.Uint32("limit_percentage", cfg.MemoryLimitPercentage),
-		zap.Uint32("spike_limit_percentage", cfg.MemorySpikePercentage))
-	return newPercentageMemUsageChecker(totalMemory, uint64(cfg.MemoryLimitPercentage),
-		uint64(cfg.MemorySpikePercentage)), nil
+	return newPercentageMemUsageChecker(totalMemory, uint64(cfg.MemoryLimitPercentage), uint64(cfg.MemorySpikePercentage)), totalMemory, nil
 }
 
 func (ml *MemoryLimiter) readMemStats() *runtime.MemStats {

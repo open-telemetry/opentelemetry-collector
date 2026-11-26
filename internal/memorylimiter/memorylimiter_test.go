@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
-	"go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
 )
 
 type mockHost struct {
@@ -87,7 +86,7 @@ func TestMemoryPressureResponse(t *testing.T) {
 
 func TestGetDecision(t *testing.T) {
 	t.Run("fixed_limit", func(t *testing.T) {
-		d, err := getMemUsageChecker(&Config{MemoryLimitMiB: 100, MemorySpikeLimitMiB: 20}, zap.NewNop())
+		d, _, err := getMemUsageChecker(&Config{MemoryLimitMiB: 100, MemorySpikeLimitMiB: 20}, nil)
 		require.NoError(t, err)
 		assert.Equal(t, &memUsageChecker{
 			memAllocLimit: 100 * mibBytes,
@@ -95,14 +94,10 @@ func TestGetDecision(t *testing.T) {
 		}, d)
 	})
 
-	t.Cleanup(func() {
-		GetMemoryFn = iruntime.TotalMemory
-	})
-	GetMemoryFn = func() (uint64, error) {
-		return 100 * mibBytes, nil
-	}
 	t.Run("percentage_limit", func(t *testing.T) {
-		d, err := getMemUsageChecker(&Config{MemoryLimitPercentage: 50, MemorySpikePercentage: 10}, zap.NewNop())
+		d, _, err := getMemUsageChecker(&Config{MemoryLimitPercentage: 50, MemorySpikePercentage: 10}, func() (uint64, error) {
+			return 100 * mibBytes, nil
+		})
 		require.NoError(t, err)
 		assert.Equal(t, &memUsageChecker{
 			memAllocLimit: 50 * mibBytes,
@@ -1004,17 +999,16 @@ func TestMemLimitRefreshes(t *testing.T) {
 	}
 	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
 	require.NoError(t, err)
-	require.NotNil(t, ml.refreshCheckerFn, "refresh loop should be enabled for percentage limit")
+	require.Equal(t, 5*time.Millisecond, ml.refreshInterval, "refresh loop should be enabled for percentage limit")
 
 	// Pin a known starting threshold, then simulate an in-place memory limit
-	// resize by having the refresher return a different checker.
+	// resize by having this limiter's memory read return a different total.
 	ml.usageChecker.Store(newPercentageMemUsageChecker(1000*mibBytes, 50, 10))
-	ml.refreshCheckerFn = func() (*memUsageChecker, error) {
-		return newPercentageMemUsageChecker(2000*mibBytes, 50, 10), nil
+	ml.getMemoryFn = func() (uint64, error) {
+		return 2000 * mibBytes, nil
 	}
-
-	// 50% of 1000 MiB = 500 MiB before refresh
 	require.Equal(t, uint64(500*mibBytes), ml.usageChecker.Load().memAllocLimit, "pinned starting limit")
+
 	require.NoError(t, ml.Start(context.Background(), host))
 	t.Cleanup(func() { require.NoError(t, ml.Shutdown(context.Background())) })
 
@@ -1035,15 +1029,12 @@ func TestMemLimitRefreshStopsOnShutdown(t *testing.T) {
 	}
 	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
 	require.NoError(t, err)
+	require.Equal(t, 5*time.Millisecond, ml.refreshInterval, "refresh loop should be enabled for percentage limit")
 
-	// Inject a fake refresher so the test does not depend on cgroups. The
-	// percentage config above makes NewMemoryLimiter enable the refresh loop;
-	// overriding the fn only swaps what the loop re-derives on each tick.
-	require.NotNil(t, ml.refreshCheckerFn, "refresh loop should be enabled for percentage limit")
 	var calls atomic.Int64
-	ml.refreshCheckerFn = func() (*memUsageChecker, error) {
+	ml.getMemoryFn = func() (uint64, error) {
 		calls.Add(1)
-		return newPercentageMemUsageChecker(1000*mibBytes, 50, 10), nil
+		return 1000 * mibBytes, nil
 	}
 
 	require.NoError(t, ml.Start(context.Background(), host))
@@ -1051,7 +1042,7 @@ func TestMemLimitRefreshStopsOnShutdown(t *testing.T) {
 	// The refresh loop must actually run.
 	require.Eventually(t, func() bool {
 		return calls.Load() > 0
-	}, time.Second, 5*time.Millisecond, "refresh loop never called refreshCheckerFn")
+	}, time.Second, 5*time.Millisecond, "refresh loop never re-read the memory limit")
 
 	require.NoError(t, ml.Shutdown(context.Background()))
 
@@ -1072,5 +1063,4 @@ func TestMemLimitRefreshDisabledForFixedLimit(t *testing.T) {
 	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
 	require.NoError(t, err)
 	assert.Zero(t, ml.refreshInterval, "refresh must be disabled when a fixed limit_mib is set")
-	assert.Nil(t, ml.refreshCheckerFn)
 }
