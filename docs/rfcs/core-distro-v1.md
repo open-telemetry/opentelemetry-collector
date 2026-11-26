@@ -19,7 +19,7 @@ We propose to
 by [KubeCon Europe 2027](https://events.linuxfoundation.org/kubecon-cloudnativecon-europe/) (March
 2027).
 
-We target the **2027-03-15 release**, the week before KubeCon Europe 2027, as the v1 release. This
+We target the **2027-03-15 release**, the week of KubeCon Europe 2027, as the v1 release. This
 release is currently listed as v0.173.0 in the [release
 schedule](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/release.md#release-schedule).
 In that release we will tag as v1:
