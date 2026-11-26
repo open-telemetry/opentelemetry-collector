@@ -80,14 +80,28 @@ func (p *Parser) ParsePattern(pattern string) (*Schema, error) {
 }
 
 func (p *Parser) processPackages(set *token.FileSet, pkgs []*packages.Package) {
+	var textTypes []string
 	for _, pkg := range pkgs {
 		for _, file := range pkg.Syntax {
-			p.collectTypesAndImports(file, pkg.PkgPath, ast.NewCommentMap(set, file, file.Comments))
+			textTypes = append(textTypes,
+				p.collectTypesAndImports(file, pkg.PkgPath, ast.NewCommentMap(set, file, file.Comments))...)
+		}
+	}
+	// A type that implements encoding.TextUnmarshaler is written as a string
+	// in a configuration file whatever its Go representation is, so it is
+	// stored as a string type. The method can be declared before the type or
+	// in another file, so this runs after all the types are collected.
+	for _, name := range textTypes {
+		if info, ok := p.types[name]; ok {
+			info.spec = &ast.TypeSpec{Name: info.spec.Name, Type: ast.NewIdent("string")}
 		}
 	}
 }
 
-func (p *Parser) collectTypesAndImports(file *ast.File, pkgPath string, cmap ast.CommentMap) {
+// collectTypesAndImports stores the exported types of the file and returns the
+// names of the types that have an UnmarshalText method.
+func (p *Parser) collectTypesAndImports(file *ast.File, pkgPath string, cmap ast.CommentMap) []string {
+	var textTypes []string
 	target := p.types
 	// collect imports from current file, distinguish internal vs external
 	imports := make(map[string]string)
@@ -101,6 +115,12 @@ func (p *Parser) collectTypesAndImports(file *ast.File, pkgPath string, cmap ast
 	}
 	// collect exported type specs
 	for _, decl := range file.Decls {
+		if funcDecl, isFunc := decl.(*ast.FuncDecl); isFunc {
+			if name, isText := textUnmarshalerReceiver(funcDecl); isText {
+				textTypes = append(textTypes, name)
+			}
+			continue
+		}
 		genDecl, ok := decl.(*ast.GenDecl)
 		if !ok || genDecl.Tok != token.TYPE {
 			continue
@@ -117,6 +137,50 @@ func (p *Parser) collectTypesAndImports(file *ast.File, pkgPath string, cmap ast
 			}
 		}
 	}
+	return textTypes
+}
+
+// textUnmarshalerReceiver returns the receiver type name when decl is the
+// UnmarshalText([]byte) error method of encoding.TextUnmarshaler.
+func textUnmarshalerReceiver(decl *ast.FuncDecl) (string, bool) {
+	if decl.Name.Name != "UnmarshalText" || decl.Recv == nil || len(decl.Recv.List) != 1 {
+		return "", false
+	}
+	if !isSingleParam(decl.Type.Params, isByteSlice) || !isSingleParam(decl.Type.Results, isErrorType) {
+		return "", false
+	}
+	recv := decl.Recv.List[0].Type
+	if star, ok := recv.(*ast.StarExpr); ok {
+		recv = star.X
+	}
+	ident, ok := recv.(*ast.Ident)
+	if !ok {
+		return "", false
+	}
+	return ident.Name, true
+}
+
+// isSingleParam reports whether fields declares exactly one parameter or
+// result and its type satisfies match.
+func isSingleParam(fields *ast.FieldList, match func(ast.Expr) bool) bool {
+	if fields == nil || len(fields.List) != 1 || len(fields.List[0].Names) > 1 {
+		return false
+	}
+	return match(fields.List[0].Type)
+}
+
+func isByteSlice(expr ast.Expr) bool {
+	arr, ok := expr.(*ast.ArrayType)
+	if !ok || arr.Len != nil {
+		return false
+	}
+	elem, ok := arr.Elt.(*ast.Ident)
+	return ok && elem.Name == "byte"
+}
+
+func isErrorType(expr ast.Expr) bool {
+	ident, ok := expr.(*ast.Ident)
+	return ok && ident.Name == "error"
 }
 
 func (p *Parser) feedProcessQueue(pattern string) error {
@@ -165,7 +229,7 @@ func (p *Parser) processTypes() error {
 		}
 
 		if obj, ok := schemaElement.(*ObjectSchemaElement); ok {
-			isEmpty := len(obj.Properties) == 0 && len(obj.AllOf) == 0
+			isEmpty := len(obj.Properties) == 0 && len(obj.AllOf) == 0 && obj.AdditionalProperties == nil
 			if isEmpty {
 				continue // skip struct types with no exported fields
 			}
@@ -196,10 +260,10 @@ func (p *Parser) isConfigType(typeInfo *TypeInfo) bool {
 
 func (p *Parser) parseType(typeInfo *TypeInfo) (SchemaElement, error) {
 	typeSpec := typeInfo.spec
-	// skip non-struct types at the top level
-	switch typeSpec.Type.(type) {
-	case *ast.InterfaceType, *ast.FuncType:
-		// skip these types
+	// A func type has no configuration representation. A named interface type
+	// is kept: it becomes a definition that accepts any value, so that a
+	// reference to it resolves, from this package or from another one.
+	if _, isFunc := typeSpec.Type.(*ast.FuncType); isFunc {
 		return nil, nil
 	}
 	schemaElement, err := p.parseExpr(typeSpec.Type)
@@ -231,17 +295,23 @@ func (p *Parser) parseExpr(expr ast.Expr) (SchemaElement, error) {
 		return p.parseSelector(t)
 	case *ast.IndexExpr:
 		return p.parseOptional(t)
+	case *ast.InterfaceType:
+		return CreateSimpleField(SchemaTypeAny, ""), nil
 	}
 
 	return nil, errors.New("unrecognized field type" + fmt.Sprintf(" (%T)", expr))
 }
 
 func (p *Parser) parseStruct(structType *ast.StructType) (SchemaElement, error) {
-	var schemaObject SchemaObject = CreateObjectField("")
+	schemaObject := CreateObjectField("")
 
 	for _, field := range structType.Fields.List {
 		tag, ok := ParseTag(field.Tag)
 		if !ok {
+			continue
+		}
+		if tag.Remain {
+			p.addRemainField(field, schemaObject)
 			continue
 		}
 		if len(field.Names) == 0 || tag.Squash {
@@ -253,7 +323,27 @@ func (p *Parser) parseStruct(structType *ast.StructType) (SchemaElement, error) 
 		p.addNamedFields(field, schemaObject)
 	}
 
-	return schemaObject.(SchemaElement), nil
+	return schemaObject, nil
+}
+
+// addRemainField handles a field tagged with mapstructure ",remain". Such a
+// field collects every key that no other field of the struct claims, so it is
+// not a property: it describes the additional properties of the object.
+func (p *Parser) addRemainField(field *ast.Field, object *ObjectSchemaElement) {
+	fieldType := field.Type
+	if ident, isIdent := fieldType.(*ast.Ident); isIdent {
+		// Look through a named map type to its value schema.
+		if info, exists := p.types[ident.Name]; exists {
+			fieldType = info.spec.Type
+		}
+	}
+	var values SchemaElement = CreateSimpleField(SchemaTypeAny, "")
+	if element, err := p.parseExpr(fieldType); err == nil {
+		if m, isMap := element.(*ObjectSchemaElement); isMap && m.AdditionalProperties != nil {
+			values = m.AdditionalProperties
+		}
+	}
+	object.AdditionalProperties = values
 }
 
 func (p *Parser) addEmbeddedField(field *ast.Field, schemaObject SchemaObject) error {

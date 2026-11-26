@@ -1,0 +1,32 @@
+$defs:
+  groups:
+    description: Groups is a named map of a named slice type.
+    type: object
+    additionalProperties:
+      $ref: names
+  handler:
+    description: Handler is a named interface type.
+  names:
+    description: Names is a named slice of strings.
+    type: array
+    items:
+      type: string
+  tree:
+    description: Tree is a named slice type that refers to itself.
+    type: array
+    items:
+      $ref: tree
+type: object
+properties:
+  codec:
+    $ref: ./internal.codec
+  groups:
+    $ref: groups
+  handler:
+    $ref: handler
+  names:
+    $ref: names
+  tree:
+    $ref: tree
+additionalProperties:
+  $ref: names

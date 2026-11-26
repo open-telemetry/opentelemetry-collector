@@ -160,6 +160,7 @@ func TestParseTagInfo(t *testing.T) {
 		expectedName string
 		omitEmpty    bool
 		squash       bool
+		remain       bool
 	}{
 		{
 			name:         "named field with omitempty",
@@ -176,6 +177,21 @@ func TestParseTagInfo(t *testing.T) {
 			expectedName: "",
 			omitEmpty:    false,
 			squash:       true,
+		},
+		{
+			name:         "remain field",
+			tagContent:   `mapstructure:",remain"`,
+			ok:           true,
+			expectedName: "",
+			remain:       true,
+		},
+		{
+			name:         "remain field with name and omitempty",
+			tagContent:   `mapstructure:"extra,omitempty,remain"`,
+			ok:           true,
+			expectedName: "extra",
+			omitEmpty:    true,
+			remain:       true,
 		},
 		{
 			name:         "json tag ignored",
@@ -205,6 +221,7 @@ func TestParseTagInfo(t *testing.T) {
 				assert.Equal(t, tc.expectedName, tagValue.Name)
 				assert.Equal(t, tc.omitEmpty, tagValue.OmitEmpty)
 				assert.Equal(t, tc.squash, tagValue.Squash)
+				assert.Equal(t, tc.remain, tagValue.Remain)
 			}
 		})
 	}

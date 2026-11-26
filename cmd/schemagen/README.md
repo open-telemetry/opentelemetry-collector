@@ -168,6 +168,12 @@ Each package is loaded at most once; subsequent refs to the same package reuse
 the cached result. References that cannot be resolved (missing type, unlisted
 package) are dropped from the output with a log warning rather than aborting.
 
+An inlined schema cannot express recursion. When a type contains itself,
+directly or through a slice, a map or another struct, the nested occurrence is
+replaced by an element with no type, which accepts any value. This also applies
+to the `$defs` that stay in the output in `package` mode, and to named slice
+and map types such as `type Tree []Tree`.
+
 In `component` mode the `$defs` section is removed after resolution because all
 types have been inlined.
 
@@ -186,6 +192,19 @@ types have been inlined.
 - Anonymous embedded structs are added via `allOf` with the referenced `$defs`.
 - Struct fields must expose a `mapstructure` tag; the tag value becomes the
   property name so only documented configuration knobs make it into the schema.
+- A field tagged `mapstructure:",remain"` is not a property. It sets the
+  `additionalProperties` of the enclosing object: the value schema of the map
+  when the field is a map or a named map type, otherwise any value.
+- A named type that has an `UnmarshalText([]byte) error` method (value or
+  pointer receiver) is emitted as `type: string`, whatever its underlying Go
+  type.
+- Fields of type `interface{}` and inline interface types produce an element
+  with no type, which accepts any value.
+- A named interface type is kept as a definition with no type, which accepts
+  any value. A field of that type refers to it, from the same package or from
+  another one.
+- Named map types such as `type Headers map[string]string` are kept as
+  definitions.
 - Selectors that match entries under `mappings` produce
   primitive properties that retain the original Go type under `x-customType`.
 - Optional wrapper types (e.g. `Optional[FooConfig]`) set the `x-optional`
@@ -204,6 +223,6 @@ The current parser intentionally skips or errors on:
 - Channels
 - Function-typed fields
 - Generic type parameters
-- Interface fields without concrete type information
+- Interface fields without concrete type information (they accept any value)
 - Standard JSON Schema `required` arrays (beyond the `x-optional` marker)
 - Exported fields without `mapstructure` tags (ignored)

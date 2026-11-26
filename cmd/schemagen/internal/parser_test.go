@@ -98,6 +98,42 @@ func TestComponentParser(t *testing.T) {
 			expectedSchemaFile: "testdata/test11/external_refs_config.schema.yaml",
 			rootType:           "ExternalRefsConfig",
 		},
+		{
+			title:              "Test interface fields Parsing",
+			inputFile:          "testdata/test12/InterfaceFieldConfig.go",
+			expectedSchemaFile: "testdata/test12/interface_field_config.schema.yaml",
+			rootType:           "InterfaceFieldConfig",
+		},
+		{
+			title:              "Test named map types Parsing",
+			inputFile:          "testdata/test13/NamedMapConfig.go",
+			expectedSchemaFile: "testdata/test13/named_map_config.schema.yaml",
+			rootType:           "NamedMapConfig",
+		},
+		{
+			title:              "Test remain field with map type Parsing",
+			inputFile:          "testdata/test14/RemainMapConfig.go",
+			expectedSchemaFile: "testdata/test14/remain_map_config.schema.yaml",
+			rootType:           "RemainMapConfig",
+		},
+		{
+			title:              "Test remain field with non-map type Parsing",
+			inputFile:          "testdata/test15/RemainAnyConfig.go",
+			expectedSchemaFile: "testdata/test15/remain_any_config.schema.yaml",
+			rootType:           "RemainAnyConfig",
+		},
+		{
+			title:              "Test UnmarshalText types Parsing",
+			inputFile:          "testdata/test16/TextUnmarshalerConfig.go",
+			expectedSchemaFile: "testdata/test16/text_unmarshaler_config.schema.yaml",
+			rootType:           "TextUnmarshalerConfig",
+		},
+		{
+			title:              "Test named interface, slice and map types Parsing",
+			inputFile:          "testdata/test17/NamedTypesConfig.go",
+			expectedSchemaFile: "testdata/test17/named_types_config.schema.yaml",
+			rootType:           "NamedTypesConfig",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -280,4 +316,106 @@ type MyConfig pkg.Unknown[string]
 	elem, err := p.parseType(typeInfo)
 	require.NoError(t, err)
 	require.Nil(t, elem)
+}
+
+func TestTextUnmarshalerReceiver(t *testing.T) {
+	src := `package test
+
+func (l *Level) UnmarshalText(_ []byte) error { return nil }
+
+func (m Mode) UnmarshalText(_ []byte) error { return nil }
+
+func (l Level) String() string { return "" }
+
+func UnmarshalText(_ []byte) error { return nil }
+
+func (g *Generic[T]) UnmarshalText(_ []byte) error { return nil }
+
+func (n NoParam) UnmarshalText() error { return nil }
+
+func (s StringParam) UnmarshalText(_ string) error { return nil }
+
+func (t TwoParams) UnmarshalText(_, _ []byte) error { return nil }
+
+func (a ArrayParam) UnmarshalText(_ [4]byte) error { return nil }
+
+func (n NoResult) UnmarshalText(_ []byte) {}
+
+func (b BoolResult) UnmarshalText(_ []byte) bool { return true }
+
+func (t TwoResults) UnmarshalText(_ []byte) (int, error) { return 0, nil }
+`
+	file, err := parser.ParseFile(token.NewFileSet(), "test.go", src, 0)
+	require.NoError(t, err)
+
+	var got []string
+	for _, decl := range file.Decls {
+		funcDecl, ok := decl.(*ast.FuncDecl)
+		require.True(t, ok)
+		if name, isText := textUnmarshalerReceiver(funcDecl); isText {
+			got = append(got, name)
+		}
+	}
+	// A method with another name, a function with no receiver, a method on a
+	// generic type and a method whose signature is not UnmarshalText([]byte)
+	// error are not reported.
+	assert.Equal(t, []string{"Level", "Mode"}, got)
+}
+
+func TestParseTypeUnsupportedNamedType(t *testing.T) {
+	src := `package test
+
+type Events chan string
+`
+	file, err := parser.ParseFile(token.NewFileSet(), "test.go", src, 0)
+	require.NoError(t, err)
+	typeSpec := file.Decls[0].(*ast.GenDecl).Specs[0].(*ast.TypeSpec)
+
+	p := NewParser(&Config{})
+	_, err = p.parseType(&TypeInfo{spec: typeSpec, typeName: "Events", imports: map[string]string{}})
+	require.ErrorContains(t, err, "unrecognized field type")
+}
+
+// The resolver walks the definitions in map order. The output must not depend
+// on that order and must not keep any reference.
+func TestResolveNamedTypesIsStable(t *testing.T) {
+	dir, err := filepath.Abs("testdata/test17")
+	require.NoError(t, err)
+
+	for _, mode := range []RunMode{Component, Package} {
+		t.Run(string(mode), func(t *testing.T) {
+			var first string
+			for range 20 {
+				cfg := &Config{
+					Mode:        mode,
+					DirPath:     dir,
+					Mappings:    testMappings(),
+					Namespace:   "go.opentelemetry.io/collector",
+					Pattern:     ".",
+					ConfigType:  "NamedTypesConfig",
+					ResolveRefs: true,
+				}
+				schema, err := NewParser(cfg).Parse()
+				require.NoError(t, err)
+				schema, err = NewRefResolver(cfg).Resolve(schema)
+				require.NoError(t, err)
+
+				_, err = schema.ToJSON()
+				require.NoError(t, err)
+				raw, err := schema.ToYAML()
+				require.NoError(t, err)
+				got := string(raw)
+				require.NotContains(t, got, "$ref")
+				if first == "" {
+					first = got
+				}
+				require.Equal(t, first, got)
+			}
+			if mode == Component {
+				expected, err := os.ReadFile("testdata/test17/named_types_config.resolved.schema.yaml")
+				require.NoError(t, err)
+				require.YAMLEq(t, string(expected), first)
+			}
+		})
+	}
 }

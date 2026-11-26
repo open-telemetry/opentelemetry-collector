@@ -1,0 +1,23 @@
+type: object
+properties:
+  codec: {}
+  groups:
+    type: object
+    additionalProperties:
+      type: array
+      items:
+        type: string
+  handler: {}
+  names:
+    type: array
+    items:
+      type: string
+  tree:
+    type: array
+    items:
+      type: array
+      items: {}
+additionalProperties:
+  type: array
+  items:
+    type: string

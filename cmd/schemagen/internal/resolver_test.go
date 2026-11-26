@@ -383,3 +383,181 @@ func TestResolveArrayRef(t *testing.T) {
 	require.True(t, ok)
 	assert.Contains(t, itemObj.Properties, "name")
 }
+
+func isAny(e SchemaElement) bool {
+	f, ok := e.(*FieldSchemaElement)
+	return ok && f.ElementType == SchemaTypeAny
+}
+
+func localCfg() *Config {
+	return &Config{Mode: Component, Namespace: "example.com/mod", AllowedRefs: []string{"example.com/mod"}, ResolveRefs: true}
+}
+
+func TestResolveBreaksDirectCycle(t *testing.T) {
+	root := CreateSchema()
+	node := CreateObjectField("")
+	node.AddProperty("name", CreateSimpleField(SchemaTypeString, ""))
+	node.AddProperty("child", CreateRefField("node", ""))
+	root.Defs["node"] = node
+	root.AddProperty("tree", CreateRefField("node", ""))
+
+	got, err := resolverWithStub(localCfg(), nil).Resolve(root)
+	require.NoError(t, err)
+
+	_, err = got.ToJSON()
+	require.NoError(t, err)
+
+	tree, ok := got.Properties["tree"].(*ObjectSchemaElement)
+	require.True(t, ok)
+	assert.Contains(t, tree.Properties, "name")
+	assert.True(t, isAny(tree.Properties["child"]), "nested occurrence should be any, got %T", tree.Properties["child"])
+}
+
+func TestResolveBreaksCycleThroughSlice(t *testing.T) {
+	root := CreateSchema()
+	node := CreateObjectField("")
+	node.AddProperty("children", CreateArrayField(CreateRefField("node", ""), ""))
+	root.Defs["node"] = node
+	root.AddProperty("tree", CreateRefField("node", ""))
+
+	got, err := resolverWithStub(localCfg(), nil).Resolve(root)
+	require.NoError(t, err)
+
+	_, err = got.ToJSON()
+	require.NoError(t, err)
+
+	tree := got.Properties["tree"].(*ObjectSchemaElement)
+	children, ok := tree.Properties["children"].(*ArraySchemaElement)
+	require.True(t, ok)
+	assert.True(t, isAny(children.Items), "nested occurrence should be any, got %T", children.Items)
+}
+
+func TestResolveBreaksCycleThroughMap(t *testing.T) {
+	root := CreateSchema()
+	node := CreateObjectField("")
+	node.AddProperty("children", CreateMapField(CreateRefField("node", ""), ""))
+	root.Defs["node"] = node
+	root.AddProperty("tree", CreateRefField("node", ""))
+
+	got, err := resolverWithStub(localCfg(), nil).Resolve(root)
+	require.NoError(t, err)
+
+	_, err = got.ToJSON()
+	require.NoError(t, err)
+
+	tree := got.Properties["tree"].(*ObjectSchemaElement)
+	children, ok := tree.Properties["children"].(*ObjectSchemaElement)
+	require.True(t, ok)
+	assert.True(t, isAny(children.AdditionalProperties), "nested occurrence should be any, got %T", children.AdditionalProperties)
+}
+
+func TestResolveBreaksCycleThroughNestedStruct(t *testing.T) {
+	root := CreateSchema()
+	a := CreateObjectField("")
+	a.AddProperty("b", CreateRefField("b", ""))
+	b := CreateObjectField("")
+	b.AddProperty("name", CreateSimpleField(SchemaTypeString, ""))
+	b.AddProperty("a", CreateRefField("a", ""))
+	root.Defs["a"] = a
+	root.Defs["b"] = b
+	root.AddProperty("a", CreateRefField("a", ""))
+
+	got, err := resolverWithStub(localCfg(), nil).Resolve(root)
+	require.NoError(t, err)
+
+	_, err = got.ToJSON()
+	require.NoError(t, err)
+
+	resolvedA := got.Properties["a"].(*ObjectSchemaElement)
+	resolvedB := resolvedA.Properties["b"].(*ObjectSchemaElement)
+	assert.Contains(t, resolvedB.Properties, "name")
+	assert.True(t, isAny(resolvedB.Properties["a"]), "nested occurrence should be any, got %T", resolvedB.Properties["a"])
+}
+
+func TestResolveBreaksCycleInPackageDefs(t *testing.T) {
+	root := CreateSchema()
+	node := CreateObjectField("")
+	node.AddProperty("name", CreateSimpleField(SchemaTypeString, ""))
+	node.AddProperty("child", CreateRefField("node", ""))
+	node.AddProperty("children", CreateArrayField(CreateRefField("node", ""), ""))
+	root.Defs["node"] = node
+
+	cfg := localCfg()
+	cfg.Mode = Package
+	got, err := resolverWithStub(cfg, nil).Resolve(root)
+	require.NoError(t, err)
+
+	_, err = got.ToJSON()
+	require.NoError(t, err)
+	_, err = got.ToYAML()
+	require.NoError(t, err)
+
+	resolved, ok := got.Defs["node"].(*ObjectSchemaElement)
+	require.True(t, ok)
+	assert.Contains(t, resolved.Properties, "name")
+	assert.True(t, isAny(resolved.Properties["child"]), "nested occurrence should be any, got %T", resolved.Properties["child"])
+	children, ok := resolved.Properties["children"].(*ArraySchemaElement)
+	require.True(t, ok)
+	assert.True(t, isAny(children.Items), "nested occurrence should be any, got %T", children.Items)
+}
+
+func TestBreakCyclesSelfReferencingElements(t *testing.T) {
+	// An array that is its own item.
+	arr := CreateArrayField(nil, "list")
+	arr.Items = arr
+	gotArr, ok := breakCycles(arr, map[uintptr]bool{}).(*ArraySchemaElement)
+	require.True(t, ok)
+	assert.True(t, isAny(gotArr.Items), "nested occurrence should be any, got %T", gotArr.Items)
+
+	// An object with no properties that is its own value type.
+	obj := CreateMapField(nil, "dict")
+	obj.AdditionalProperties = obj
+	gotObj, ok := breakCycles(obj, map[uintptr]bool{}).(*ObjectSchemaElement)
+	require.True(t, ok)
+	assert.True(t, isAny(gotObj.AdditionalProperties), "nested occurrence should be any, got %T", gotObj.AdditionalProperties)
+}
+
+func TestResolveDropsDefWithMissingRef(t *testing.T) {
+	root := CreateSchema()
+	broken := CreateArrayField(CreateRefField("missing", ""), "")
+	root.Defs["broken"] = broken
+	root.AddProperty("list", CreateRefField("broken", ""))
+	root.AddProperty("name", CreateSimpleField(SchemaTypeString, ""))
+
+	cfg := localCfg()
+	cfg.Mode = Package
+	got, err := resolverWithStub(cfg, nil).Resolve(root)
+	require.NoError(t, err)
+
+	// The definition cannot be resolved, so it is dropped together with the
+	// property that refers to it.
+	assert.NotContains(t, got.Defs, "broken")
+	assert.NotContains(t, got.Properties, "list")
+	assert.Contains(t, got.Properties, "name")
+}
+
+func TestCompleteCopyKeepsAnnotations(t *testing.T) {
+	item := CreateSimpleField(SchemaTypeString, "")
+	arr := CreateArrayField(CreateRefField("item", ""), "copy")
+	completeCopy(arr, CreateArrayField(item, "definition"))
+	assert.Same(t, item, arr.Items)
+	assert.Equal(t, "copy", arr.Description)
+
+	value := CreateSimpleField(SchemaTypeInteger, "")
+	obj := CreateMapField(CreateRefField("value", ""), "copy")
+	completeCopy(obj, CreateMapField(value, "definition"))
+	assert.Same(t, value, obj.AdditionalProperties)
+	assert.Equal(t, "copy", obj.Description)
+
+	// A copy of another kind is left alone.
+	completeCopy(arr, obj)
+	assert.Same(t, item, arr.Items)
+}
+
+func TestResolveDefLoadErrorIsReturned(t *testing.T) {
+	root := CreateSchema()
+	root.Defs["outer"] = CreateArrayField(CreateRefField("example.com/mod/other.Thing", ""), "")
+
+	_, err := resolverWithStub(localCfg(), nil).Resolve(root)
+	require.ErrorContains(t, err, "failed to load ref schema")
+}

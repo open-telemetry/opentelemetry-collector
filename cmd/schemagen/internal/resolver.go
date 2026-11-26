@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"reflect"
 	"strings"
 )
 
@@ -44,28 +45,110 @@ type RefResolver struct {
 	rootCfg      *Config
 	loader       schemaLoader
 	packageCache map[string]*Schema
+	// defStates tracks which definitions are resolved or being resolved.
+	defStates map[defKey]defState
+	// pending holds the copies taken from a definition while it was being
+	// resolved. They are completed when the definition is done.
+	pending map[defKey][]SchemaElement
 }
 
+type defKey struct {
+	schema *Schema
+	name   string
+}
+
+type defState int
+
+const (
+	defPending defState = iota
+	defResolving
+	defResolved
+)
+
 func NewRefResolver(cfg *Config) *RefResolver {
-	return &RefResolver{rootCfg: cfg, loader: parserLoader{}, packageCache: make(map[string]*Schema)}
+	return &RefResolver{
+		rootCfg:      cfg,
+		loader:       parserLoader{},
+		packageCache: make(map[string]*Schema),
+		defStates:    make(map[defKey]defState),
+		pending:      make(map[defKey][]SchemaElement),
+	}
 }
 
 func (r *RefResolver) Resolve(schema *Schema) (*Schema, error) {
-	return r.resolveSchema(schema, r.rootCfg, r.rootCfg.Pattern)
+	resolved, err := r.resolveSchema(schema, r.rootCfg, r.rootCfg.Pattern)
+	if err != nil {
+		return nil, err
+	}
+	root := breakCycles(&resolved.ObjectSchemaElement, map[uintptr]bool{}).(*ObjectSchemaElement)
+	resolved.ObjectSchemaElement = *root
+	// In package mode the definitions stay in the output, so they are cut too.
+	for name, def := range resolved.Defs {
+		resolved.Defs[name] = breakCycles(def, map[uintptr]bool{})
+	}
+	return resolved, nil
+}
+
+// breakCycles returns a copy of element in which a recursive type is cut at
+// the point where it would contain itself. Inlined schemas cannot express
+// recursion, so the nested occurrence accepts any value.
+func breakCycles(element SchemaElement, path map[uintptr]bool) SchemaElement {
+	switch e := element.(type) {
+	case *ArraySchemaElement:
+		self := reflect.ValueOf(e).Pointer()
+		if path[self] {
+			return CreateSimpleField(SchemaTypeAny, e.Description)
+		}
+		path[self] = true
+		defer delete(path, self)
+		c := *e
+		if e.Items != nil {
+			c.Items = breakCycles(e.Items, path)
+		}
+		return &c
+	case *ObjectSchemaElement:
+		self := reflect.ValueOf(e).Pointer()
+		if path[self] {
+			return CreateSimpleField(SchemaTypeAny, e.Description)
+		}
+		path[self] = true
+		defer delete(path, self)
+		c := *e
+		var id uintptr
+		if e.Properties != nil {
+			id = reflect.ValueOf(e.Properties).Pointer()
+			if path[id] {
+				return CreateSimpleField(SchemaTypeAny, e.Description)
+			}
+			path[id] = true
+			defer delete(path, id)
+			c.Properties = make(map[string]SchemaElement, len(e.Properties))
+			for name, prop := range e.Properties {
+				c.Properties[name] = breakCycles(prop, path)
+			}
+		}
+		if e.AdditionalProperties != nil {
+			c.AdditionalProperties = breakCycles(e.AdditionalProperties, path)
+		}
+		if e.AllOf != nil {
+			c.AllOf = make([]SchemaElement, len(e.AllOf))
+			for i, a := range e.AllOf {
+				c.AllOf[i] = breakCycles(a, path)
+			}
+		}
+		return &c
+	}
+	return element
 }
 
 func (r *RefResolver) resolveSchema(schema *Schema, cfg *Config, pkgName string) (*Schema, error) {
-	for defName, def := range schema.Defs {
-		e, err := r.resolveElement(schema, def, cfg, pkgName)
-		if nf, ok := isNotFound(err); ok {
-			log.Printf("schemagen: dropping def %q: %v", defName, nf)
-			delete(schema.Defs, defName)
-			continue
-		}
-		if err != nil {
+	for defName := range schema.Defs {
+		if err := r.resolveDef(schema, defName, cfg, pkgName); err != nil {
+			if _, ok := isNotFound(err); ok {
+				continue
+			}
 			return nil, err
 		}
-		schema.Defs[defName] = e
 	}
 
 	object, err := r.resolveObject(schema, schema.ObjectSchemaElement, cfg, pkgName)
@@ -80,6 +163,75 @@ func (r *RefResolver) resolveSchema(schema *Schema, cfg *Config, pkgName string)
 	}
 
 	return schema, nil
+}
+
+// resolveDef resolves the definition defName of schema once. A reference can
+// reach a definition before the loop in resolveSchema does, so the definition
+// is resolved on demand. Otherwise the caller would copy a definition that
+// still holds references, and the output would depend on map iteration order.
+func (r *RefResolver) resolveDef(schema *Schema, defName string, cfg *Config, pkgName string) error {
+	def, found := schema.Defs[defName]
+	if !found {
+		return &NotFoundError{TypeName: defName, PackageName: pkgName}
+	}
+	key := defKey{schema: schema, name: defName}
+	if r.defStates[key] != defPending {
+		return nil
+	}
+
+	r.defStates[key] = defResolving
+	resolved, err := r.resolveElement(schema, def, cfg, pkgName)
+	r.defStates[key] = defResolved
+	copies := r.pending[key]
+	delete(r.pending, key)
+	if nf, ok := isNotFound(err); ok {
+		log.Printf("schemagen: dropping def %q: %v", defName, nf)
+		delete(schema.Defs, defName)
+		return err
+	}
+	if err != nil {
+		return err
+	}
+	schema.Defs[defName] = resolved
+	for _, c := range copies {
+		completeCopy(c, resolved)
+	}
+	return nil
+}
+
+// copyDef returns a copy of the resolved definition defName of schema.
+//
+// When the definition is still being resolved, the type contains itself. The
+// copy is taken anyway and completed when the definition is done, so the result
+// does not depend on where the resolution started. breakCycles cuts the cycle
+// later.
+func (r *RefResolver) copyDef(schema *Schema, defName string, cfg *Config, pkgName string) (SchemaElement, error) {
+	if err := r.resolveDef(schema, defName, cfg, pkgName); err != nil {
+		return nil, err
+	}
+	c := schema.Defs[defName].clone()
+	key := defKey{schema: schema, name: defName}
+	if r.defStates[key] == defResolving {
+		r.pending[key] = append(r.pending[key], c)
+	}
+	return c, nil
+}
+
+// completeCopy gives a copy taken from an unresolved definition the resolved
+// content of that definition. The annotations of the copy are kept.
+func completeCopy(c, resolved SchemaElement) {
+	switch e := c.(type) {
+	case *ArraySchemaElement:
+		if r, ok := resolved.(*ArraySchemaElement); ok {
+			e.Items = r.Items
+		}
+	case *ObjectSchemaElement:
+		if r, ok := resolved.(*ObjectSchemaElement); ok {
+			e.Properties = r.Properties
+			e.AdditionalProperties = r.AdditionalProperties
+			e.AllOf = r.AllOf
+		}
+	}
 }
 
 func (r *RefResolver) resolveObject(schema *Schema, object ObjectSchemaElement, cfg *Config, pkgName string) (*ObjectSchemaElement, error) {
@@ -147,13 +299,16 @@ func (r *RefResolver) resolveRef(schema *Schema, refObj *RefSchemaElement, confi
 	cfg := config.Fork(Package, ref.namespace)
 
 	var typeSchema SchemaElement
-	def, isLocal := schema.Defs[refObj.Ref]
 
 	if ref.packageName == "" {
-		if !isLocal {
+		if _, isLocal := schema.Defs[refObj.Ref]; !isLocal {
 			return nil, &NotFoundError{TypeName: ref.typeName, PackageName: ref.packageName}
 		}
-		typeSchema = def.clone()
+		def, err := r.copyDef(schema, refObj.Ref, config, parentPkg)
+		if err != nil {
+			return nil, err
+		}
+		typeSchema = def
 	} else {
 		innerSchema, cached := r.packageCache[ref.packageName]
 		if !cached {
@@ -169,11 +324,11 @@ func (r *RefResolver) resolveRef(schema *Schema, refObj *RefSchemaElement, confi
 			}
 		}
 
-		cachedSchema, found := innerSchema.Defs[ref.typeName]
-		if !found {
-			return nil, &NotFoundError{TypeName: ref.typeName, PackageName: ref.packageName}
+		def, err := r.copyDef(innerSchema, ref.typeName, cfg, ref.packageName)
+		if err != nil {
+			return nil, err
 		}
-		typeSchema = cachedSchema.clone()
+		typeSchema = def
 	}
 	// copy custom annotations from original element
 	base := refObj.BaseSchemaElement
