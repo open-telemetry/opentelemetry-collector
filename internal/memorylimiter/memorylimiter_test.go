@@ -5,6 +5,7 @@ package memorylimiter
 
 import (
 	"context"
+	"errors"
 	"runtime"
 	"sync/atomic"
 	"testing"
@@ -1063,4 +1064,85 @@ func TestMemLimitRefreshDisabledForFixedLimit(t *testing.T) {
 	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
 	require.NoError(t, err)
 	assert.Zero(t, ml.refreshInterval, "refresh must be disabled when a fixed limit_mib is set")
+}
+
+func TestGetMemUsageCheckerMemoryReadError(t *testing.T) {
+	_, _, err := getMemUsageChecker(&Config{
+		MemoryLimitPercentage: 50,
+		MemorySpikePercentage: 10,
+	}, func() (uint64, error) {
+		return 0, errors.New("no cgroup")
+	})
+	require.ErrorContains(t, err, "failed to get total memory, use fixed memory settings (limit_mib)")
+}
+
+func TestNewMemoryLimiterMemoryReadError(t *testing.T) {
+	original := GetMemoryFn
+	t.Cleanup(func() { GetMemoryFn = original })
+	GetMemoryFn = func() (uint64, error) {
+		return 0, errors.New("no cgroup")
+	}
+
+	_, err := NewMemoryLimiter(&Config{
+		CheckInterval:         time.Second,
+		MemoryLimitPercentage: 50,
+		MemorySpikePercentage: 10,
+	}, zap.NewNop())
+	require.ErrorContains(t, err, "failed to get total memory, use fixed memory settings (limit_mib)")
+}
+
+func TestMemLimitRefreshKeepsPreviousOnReadError(t *testing.T) {
+	ml, err := NewMemoryLimiter(&Config{
+		CheckInterval:         time.Minute,
+		MemoryLimitPercentage: 50,
+		MemorySpikePercentage: 10,
+		RefreshInterval:       5 * time.Millisecond,
+	}, zap.NewNop())
+	require.NoError(t, err)
+	ml.usageChecker.Store(newPercentageMemUsageChecker(1000*mibBytes, 50, 10))
+	ml.getMemoryFn = func() (uint64, error) {
+		return 0, errors.New("read failed")
+	}
+
+	ml.refreshCgroupLimits()
+
+	require.Equal(t, uint64(500*mibBytes), ml.usageChecker.Load().memAllocLimit)
+}
+func TestMemLimitRefreshKeepsPreviousWhenUnchanged(t *testing.T) {
+	ml, err := NewMemoryLimiter(&Config{
+		CheckInterval:         time.Minute,
+		MemoryLimitPercentage: 50,
+		MemorySpikePercentage: 10,
+		RefreshInterval:       5 * time.Millisecond,
+	}, zap.NewNop())
+	require.NoError(t, err)
+	ml.usageChecker.Store(newPercentageMemUsageChecker(1000*mibBytes, 50, 10))
+	ml.getMemoryFn = func() (uint64, error) {
+		return 1000 * mibBytes, nil
+	}
+
+	ml.refreshCgroupLimits()
+
+	require.Equal(t, uint64(500*mibBytes), ml.usageChecker.Load().memAllocLimit)
+	require.Equal(t, uint64(100*mibBytes), ml.usageChecker.Load().memSpikeLimit)
+}
+
+func TestCheckLoopRunsAndShutdownTwice(t *testing.T) {
+	ml, err := NewMemoryLimiter(&Config{
+		CheckInterval:       5 * time.Millisecond,
+		MemoryLimitMiB:      50,
+		MemorySpikeLimitMiB: 10,
+	}, zap.NewNop())
+	require.NoError(t, err)
+
+	var calls atomic.Int64
+	ml.readMemStatsFn = func(ms *runtime.MemStats) {
+		calls.Add(1)
+	}
+	require.NoError(t, ml.Start(context.Background(), componenttest.NewNopHost()))
+	require.Eventually(t, func() bool {
+		return calls.Load() > 0
+	}, time.Second, 5*time.Millisecond, "check loop never read memory stats")
+	require.NoError(t, ml.Shutdown(context.Background()))
+	require.NoError(t, ml.Shutdown(context.Background()))
 }

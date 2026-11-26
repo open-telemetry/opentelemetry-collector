@@ -174,6 +174,16 @@ func TestConfigValidate(t *testing.T) {
 			},
 			err: nil,
 		},
+		{
+			name: "negative refresh interval",
+			cfg: &Config{
+				CheckInterval:       100 * time.Millisecond,
+				MemoryLimitMiB:      5722,
+				MemorySpikeLimitMiB: 1907,
+				RefreshInterval:     -1 * time.Second,
+			},
+			err: errNegativeRefreshInterval,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
