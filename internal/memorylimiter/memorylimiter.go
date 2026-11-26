@@ -101,8 +101,8 @@ type MemoryLimiter struct {
 
 	host component.Host
 
-	// Fields for the periodic cgroup limit refresh. The refresh loop runs only
-	// when refreshInterval > 0 and the limit is percentage-based.
+	// Fields for the periodic cgroup limit refresh. A non-nil refreshCheckerFn
+	// is what enables the loop
 	refreshInterval  time.Duration
 	refreshCheckerFn func() (*memUsageChecker, error)
 	refreshTicker    *time.Ticker
@@ -116,7 +116,10 @@ func NewMemoryLimiter(cfg *Config, logger *zap.Logger) (*MemoryLimiter, error) {
 		return nil, err
 	}
 
-	if cfg.RefreshInterval > 0 && cfg.MemoryLimitMiB > 0 {
+	// Periodic refresh only applies to a cgroup-derived percentage limit.
+	// A fixed limit_mib never changes, so the interval has no effect there.
+	refreshEnabled := cfg.RefreshInterval > 0 && cfg.MemoryLimitMiB == 0
+	if cfg.RefreshInterval > 0 && !refreshEnabled {
 		logger.Warn("Both 'refresh_interval' and 'limit_mib' are set; 'refresh_interval' has no effect because the fixed 'limit_mib' is used instead of a cgroup-derived percentage limit")
 	}
 
@@ -141,9 +144,7 @@ func NewMemoryLimiter(cfg *Config, logger *zap.Logger) (*MemoryLimiter, error) {
 	}
 	ml.usageChecker.Store(usageChecker)
 
-	// Periodic refresh only makes sense for a cgroup-derived (percentage-based)
-	// limit; a fixed limit_mib never changes.
-	if cfg.RefreshInterval > 0 && cfg.MemoryLimitMiB == 0 {
+	if refreshEnabled {
 		ml.refreshInterval = cfg.RefreshInterval
 		ml.refreshCheckerFn = func() (*memUsageChecker, error) {
 			// Pass a nop logger: the startup "Using percentage memory limiter"
@@ -176,8 +177,7 @@ func (ml *MemoryLimiter) Start(_ context.Context, host component.Host) error {
 			}
 		})
 
-		// Start the cgroup limit refresher only when enabled.
-		if ml.refreshInterval > 0 {
+		if ml.refreshCheckerFn != nil {
 			ml.refreshTicker = time.NewTicker(ml.refreshInterval)
 			ml.refreshClosed = make(chan struct{})
 			ml.waitGroup.Go(func() {
