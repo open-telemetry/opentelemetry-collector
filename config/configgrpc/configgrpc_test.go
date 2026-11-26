@@ -561,7 +561,6 @@ func TestGrpcServerValidate(t *testing.T) {
 }
 
 func TestValidateMaxRecvMsgSizeMiB(t *testing.T) {
-
 	tests := []struct {
 		name    string
 		input   int
