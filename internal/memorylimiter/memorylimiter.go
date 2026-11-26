@@ -127,7 +127,6 @@ func NewMemoryLimiter(cfg *Config, logger *zap.Logger) (*MemoryLimiter, error) {
 
 	ml := &MemoryLimiter{
 		memCheckWait:                 cfg.CheckInterval,
-		ticker:                       time.NewTicker(cfg.CheckInterval),
 		minGCIntervalWhenSoftLimited: cfg.MinGCIntervalWhenSoftLimited,
 		minGCIntervalWhenHardLimited: cfg.MinGCIntervalWhenHardLimited,
 		maxGCIntervalWhenSoftLimited: cfg.MaxGCIntervalWhenSoftLimited,
@@ -164,6 +163,7 @@ func (ml *MemoryLimiter) Start(_ context.Context, host component.Host) error {
 
 	ml.refCounter++
 	if ml.refCounter == 1 {
+		ml.ticker = time.NewTicker(ml.memCheckWait)
 		ml.closed = make(chan struct{})
 		ml.waitGroup.Go(func() {
 			for {
