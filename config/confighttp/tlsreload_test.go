@@ -23,6 +23,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -161,4 +164,38 @@ func TestClientReloadCAFileVerifiesIPAddress(t *testing.T) {
 	require.NoError(t, err)
 
 	require.ErrorContains(t, get(t, client, url), "certificate is valid for 127.0.0.2, not 127.0.0.1")
+}
+
+func TestClientReloadCAFileWarnsWithProxy(t *testing.T) {
+	ca, _ := newTestCA(t, "127.0.0.1")
+	caFile := filepath.Join(t.TempDir(), "ca.crt")
+	require.NoError(t, os.WriteFile(caFile, ca, 0o600))
+
+	core, logs := observer.New(zapcore.WarnLevel)
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zap.New(core)
+
+	cfg := NewDefaultClientConfig()
+	cfg.ProxyURL = "http://proxy.invalid:8080"
+	cfg.TLS = configtls.ClientConfig{ReloadCAFile: true, Config: configtls.Config{CAFile: caFile}}
+	_, err := cfg.ToClient(t.Context(), nil, set)
+	require.NoError(t, err)
+	assert.Equal(t, 1, logs.FilterMessageSnippet("ca_file_reload has no effect").Len())
+}
+
+func TestDialTLSWithReloadedRootCAsErrors(t *testing.T) {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSClientConfig = &tls.Config{MinVersion: tls.VersionTLS12}
+	dial := dialTLSWithReloadedRootCAs(transport, x509.NewCertPool)
+
+	_, err := dial(t.Context(), "tcp", "missing-port")
+	require.ErrorContains(t, err, "missing port in address")
+
+	// Nothing listens on a port that was just released.
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	addr := ln.Addr().String()
+	require.NoError(t, ln.Close())
+	_, err = dial(t.Context(), "tcp", addr)
+	require.Error(t, err)
 }

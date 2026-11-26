@@ -34,10 +34,8 @@ func dialTLSWithReloadedRootCAs(transport *http.Transport, rootCAs configtls.Roo
 
 		// Clone at dial time rather than once up front: net/http adds the
 		// HTTP/2 ALPN protocol to TLSClientConfig when configuring HTTP/2.
+		// TLSClientConfig is always set when this dialer is installed.
 		cfg := transport.TLSClientConfig.Clone()
-		if cfg == nil {
-			cfg = &tls.Config{}
-		}
 		cfg.RootCAs = rootCAs()
 		if cfg.ServerName == "" {
 			cfg.ServerName = host
