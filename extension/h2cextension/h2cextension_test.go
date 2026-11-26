@@ -31,11 +31,15 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 )
 
 var (
-	h2cID  = component.MustNewID("h2c")
-	authID = component.MustNewID("testauth")
+	h2cID     = component.MustNewID("h2c")
+	authID    = component.MustNewID("testauth")
+	firstID   = component.MustNewID("first")
+	secondID  = component.MustNewID("second")
+	readingID = component.MustNewID("reading")
 )
 
 func TestGetHTTPServerProtocols(t *testing.T) {
@@ -285,6 +289,56 @@ func TestConfighttpLimitsRequestBodySizePerStream(t *testing.T) {
 	require.Equal(t, int64(1), srv.connections.Load(), "all streams must share one h2c connection")
 }
 
+// Middlewares read the same size-limited, decoded body the receiver does.
+func TestConfighttpMiddlewareReadsLimitedBody(t *testing.T) {
+	t.Parallel()
+
+	const limit = 1024
+	var reached atomic.Int64
+	srv := startConfighttpServer(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		reached.Add(1)
+		w.WriteHeader(http.StatusNoContent)
+	}), func(cfg *confighttp.ServerConfig) {
+		cfg.MaxRequestBodySize = limit
+		cfg.Middlewares = append(cfg.Middlewares, configmiddleware.Config{ID: readingID})
+	})
+
+	var compressed bytes.Buffer
+	gz := gzip.NewWriter(&compressed)
+	_, err := gz.Write(make([]byte, 2*limit))
+	require.NoError(t, err)
+	require.NoError(t, gz.Close())
+	require.Less(t, compressed.Len(), limit, "the compressed body must pass the raw limit")
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	httpClient := priorKnowledgeClient(t)
+	for _, tc := range []struct {
+		name     string
+		body     []byte
+		encoding string
+		status   int
+	}{
+		{name: "at_limit", body: make([]byte, limit), status: http.StatusNoContent},
+		{name: "over_limit", body: make([]byte, limit+1), status: http.StatusRequestEntityTooLarge},
+		{name: "decompressed_over_limit", body: compressed.Bytes(), encoding: "gzip", status: http.StatusRequestEntityTooLarge},
+	} {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.url, bytes.NewReader(tc.body))
+		require.NoError(t, err)
+		if tc.encoding != "" {
+			req.Header.Set("Content-Encoding", tc.encoding)
+		}
+		resp, err := httpClient.Do(req)
+		require.NoError(t, err, tc.name)
+		require.NoError(t, resp.Body.Close())
+		require.Equal(t, 2, resp.ProtoMajor, tc.name)
+		require.Equal(t, tc.status, resp.StatusCode, tc.name)
+		limited := tc.status == http.StatusRequestEntityTooLarge
+		require.Equal(t, limited, resp.Header.Get("X-Middleware-Limited") == "true", "%s: the middleware must hit the limit while reading", tc.name)
+	}
+	require.Equal(t, int64(1), reached.Load(), "only the request within the limit may reach the receiver")
+}
+
 func TestConfighttpDecompressesEachStream(t *testing.T) {
 	t.Parallel()
 
@@ -410,6 +464,203 @@ func TestConfighttpShutdownDrainsStreams(t *testing.T) {
 	require.Equal(t, int64(1), srv.connections.Load())
 }
 
+// h2c only changes the server's protocols, so its position in the list does
+// not change the request path. Other middlewares keep their configured order
+// and run after authentication and decompression.
+func TestConfighttpMiddlewareOrderIgnoresH2CPosition(t *testing.T) {
+	t.Parallel()
+
+	payload := []byte(strings.Repeat("otlp payload ", 64))
+	var compressed bytes.Buffer
+	gz := gzip.NewWriter(&compressed)
+	_, err := gz.Write(payload)
+	require.NoError(t, err)
+	require.NoError(t, gz.Close())
+
+	for name, ids := range map[string][]component.ID{
+		"h2c_first":  {h2cID, firstID, secondID},
+		"h2c_middle": {firstID, h2cID, secondID},
+		"h2c_last":   {firstID, secondID, h2cID},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			saw := make(chan []string, 2)
+			srv := startConfighttpServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, err := io.ReadAll(r.Body)
+				if err != nil || !bytes.Equal(payload, body) {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				saw <- r.Header.Values("X-Middleware-Saw")
+				w.WriteHeader(http.StatusNoContent)
+			}), func(cfg *confighttp.ServerConfig) {
+				withAuth(cfg)
+				cfg.Middlewares = nil
+				for _, id := range ids {
+					cfg.Middlewares = append(cfg.Middlewares, configmiddleware.Config{ID: id})
+				}
+			})
+
+			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+			defer cancel()
+			httpClient := priorKnowledgeClient(t)
+			for _, authorization := range []string{"", "Bearer alice"} {
+				req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.url, bytes.NewReader(compressed.Bytes()))
+				require.NoError(t, err)
+				req.Header.Set("Content-Encoding", "gzip")
+				if authorization != "" {
+					req.Header.Set("Authorization", authorization)
+				}
+				resp, err := httpClient.Do(req)
+				require.NoError(t, err)
+				require.NoError(t, resp.Body.Close())
+				require.Equal(t, 2, resp.ProtoMajor)
+
+				if authorization == "" {
+					require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+					require.Empty(t, resp.Header.Values("X-Middleware"), "auth must reject before middlewares run")
+					continue
+				}
+				require.Equal(t, http.StatusNoContent, resp.StatusCode)
+				require.Equal(t, []string{"first", "second"}, resp.Header.Values("X-Middleware"))
+				// The receiver records before it responds, so a 204 without a
+				// record means something answered in its place.
+				select {
+				case got := <-saw:
+					require.Equal(t, []string{
+						"first subject=alice encoding=",
+						"second subject=alice encoding=",
+					}, got, "middlewares must see the authenticated client and the decoded body")
+				default:
+					require.FailNow(t, "the request did not reach the receiver")
+				}
+			}
+			require.Empty(t, saw, "rejected streams must not reach the receiver")
+			require.Equal(t, int64(1), srv.connections.Load(), "all streams must share one h2c connection")
+		})
+	}
+}
+
+// CORS wraps authentication, so allowed preflight requests are answered
+// without credentials, and rejected requests still get the outer headers.
+func TestConfighttpCORSPreflightRunsBeforeAuth(t *testing.T) {
+	t.Parallel()
+
+	const allowed = "https://allowed.example"
+	var reached atomic.Int64
+	srv := startConfighttpServer(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		reached.Add(1)
+		w.WriteHeader(http.StatusNoContent)
+	}), func(cfg *confighttp.ServerConfig) {
+		withAuth(cfg)
+		cfg.CORS = configoptional.Some(confighttp.CORSConfig{AllowedOrigins: []string{allowed}})
+		cfg.ResponseHeaders = configopaque.MapList{{Name: "X-Served-By", Value: "collector"}}
+	})
+
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	httpClient := priorKnowledgeClient(t)
+	for _, tc := range []struct {
+		name   string
+		method string
+		status int
+	}{
+		{name: "preflight", method: http.MethodOptions, status: http.StatusNoContent},
+		{name: "request", method: http.MethodPost, status: http.StatusUnauthorized},
+	} {
+		req, err := http.NewRequestWithContext(ctx, tc.method, srv.url, http.NoBody)
+		require.NoError(t, err)
+		req.Header.Set("Origin", allowed)
+		if tc.method == http.MethodOptions {
+			req.Header.Set("Access-Control-Request-Method", http.MethodPost)
+		}
+		resp, err := httpClient.Do(req)
+		require.NoError(t, err, tc.name)
+		require.NoError(t, resp.Body.Close())
+		require.Equal(t, 2, resp.ProtoMajor, tc.name)
+		require.Equal(t, tc.status, resp.StatusCode, tc.name)
+		require.Equal(t, allowed, resp.Header.Get("Access-Control-Allow-Origin"), tc.name)
+		require.Equal(t, "collector", resp.Header.Get("X-Served-By"), tc.name)
+	}
+	require.Zero(t, reached.Load(), "neither request may reach the receiver")
+	require.Equal(t, int64(1), srv.connections.Load(), "all streams must share one h2c connection")
+}
+
+func TestConfighttpStreamsCompleteIndependently(t *testing.T) {
+	t.Parallel()
+
+	slowStarted := make(chan struct{})
+	var startOnce sync.Once
+	release := make(chan struct{})
+	var releaseOnce sync.Once
+	releaseSlow := func() { releaseOnce.Do(func() { close(release) }) }
+	srv := startConfighttpServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/slow" {
+			startOnce.Do(func() { close(slowStarted) })
+			select {
+			case <-release:
+			case <-r.Context().Done():
+				return
+			}
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}), nil)
+	// Registered after the server, so it runs before the server is closed.
+	t.Cleanup(releaseSlow)
+
+	type result struct {
+		proto  int
+		status int
+		err    error
+	}
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	httpClient := priorKnowledgeClient(t)
+	get := func(path string) result {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, srv.url+path, http.NoBody)
+		if err != nil {
+			return result{err: err}
+		}
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			return result{err: err}
+		}
+		return result{proto: resp.ProtoMajor, status: resp.StatusCode, err: resp.Body.Close()}
+	}
+
+	slowDone := make(chan result, 1)
+	go func() { slowDone <- get("/slow") }()
+	select {
+	case <-slowStarted:
+	case res := <-slowDone:
+		require.FailNow(t, "the slow stream ended before reaching the handler", "%+v", res)
+	case <-ctx.Done():
+		require.FailNow(t, "the slow stream never reached the handler")
+	}
+
+	fast := get("/fast")
+	require.NoError(t, fast.err, "the fast stream must complete while the slow stream is held")
+	require.Equal(t, 2, fast.proto)
+	require.Equal(t, http.StatusNoContent, fast.status)
+	select {
+	case res := <-slowDone:
+		require.FailNow(t, "the slow stream completed before it was released", "%+v", res)
+	default:
+	}
+
+	releaseSlow()
+	select {
+	case res := <-slowDone:
+		require.NoError(t, res.err)
+		require.Equal(t, 2, res.proto)
+		require.Equal(t, http.StatusNoContent, res.status)
+	case <-ctx.Done():
+		require.FailNow(t, "the slow stream never completed")
+	}
+	require.Equal(t, int64(1), srv.connections.Load(), "all streams must share one h2c connection")
+}
+
 // The HTTP/1.1 Upgrade to h2c is optional (RFC 7540 Section 3.2) and is not
 // supported by net/http, so the request is served as HTTP/1.1.
 func TestConfighttpUpgradeServedAsHTTP1(t *testing.T) {
@@ -463,8 +714,11 @@ func startConfighttpServerWithSettings(t *testing.T, handler http.Handler, confi
 	t.Helper()
 
 	extensions := map[component.ID]component.Component{
-		authID: subjectAuthenticator{},
-		h2cID:  &h2cExtension{},
+		authID:    subjectAuthenticator{},
+		h2cID:     &h2cExtension{},
+		firstID:   recordingMiddleware{name: "first"},
+		secondID:  recordingMiddleware{name: "second"},
+		readingID: readingMiddleware{},
 	}
 	cfg := confighttp.NewDefaultServerConfig()
 	cfg.NetAddr.Endpoint = "127.0.0.1:0"
@@ -513,6 +767,58 @@ func priorKnowledgeClient(t *testing.T) *http.Client {
 	transport := &http.Transport{Protocols: protocols}
 	t.Cleanup(transport.CloseIdleConnections)
 	return &http.Client{Transport: transport}
+}
+
+// recordingMiddleware marks the response with its name and records on the
+// request what it saw, so tests can check where it runs in the chain.
+type recordingMiddleware struct {
+	component.StartFunc
+	component.ShutdownFunc
+	name string
+}
+
+var _ extensionmiddleware.HTTPServer = recordingMiddleware{}
+
+func (m recordingMiddleware) GetHTTPHandler(context.Context) (extensionmiddleware.WrapHTTPHandlerFunc, error) {
+	return func(_ context.Context, next http.Handler) (http.Handler, error) {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("X-Middleware", m.name)
+			var subject string
+			if auth := client.FromContext(r.Context()).Auth; auth != nil {
+				subject, _ = auth.GetAttribute("subject").(string)
+			}
+			r.Header.Add("X-Middleware-Saw", m.name+" subject="+subject+" encoding="+r.Header.Get("Content-Encoding"))
+			next.ServeHTTP(w, r)
+		}), nil
+	}, nil
+}
+
+// readingMiddleware reads the whole body before the receiver does and
+// answers 413 itself when the body is over the limit.
+type readingMiddleware struct {
+	component.StartFunc
+	component.ShutdownFunc
+}
+
+var _ extensionmiddleware.HTTPServer = readingMiddleware{}
+
+func (readingMiddleware) GetHTTPHandler(context.Context) (extensionmiddleware.WrapHTTPHandlerFunc, error) {
+	return func(_ context.Context, next http.Handler) (http.Handler, error) {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+					w.Header().Set("X-Middleware-Limited", "true")
+					w.WriteHeader(http.StatusRequestEntityTooLarge)
+					return
+				}
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			r.Body = io.NopCloser(bytes.NewReader(body))
+			next.ServeHTTP(w, r)
+		}), nil
+	}, nil
 }
 
 type subjectAuthenticator struct {
