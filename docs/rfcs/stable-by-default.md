@@ -20,14 +20,14 @@ Feedback that the Collector SIG has received over the years,
 has shown that we must place greater importance on the stability of the Collector,
 especially [as we approach the release of version 1](core-distro-v1.md) of the Core and OTLP distributions.
 
-This must of course include the stability of Collector APIs as part of semantic versioning,
+This must include the stability of Collector APIs as part of semantic versioning,
 but also the stability of the Collector's _behavior_ as experienced by end users.
 
 Development is too active to completely freeze the Collector's behavior,
 and it is impossible to get every new feature right on the first try,
 leading to potentially breaking changes.
-This means that to avoid bad surprises, we must draw a distinction between
-features we guarantee the stability of, and those which remain experimental.
+To avoid bad surprises, we must thus draw a distinction between
+stable and experimental features.
 
 This distinction must be crystal clear to end users.
 We believe that the best way to accomplish this is to make such experimental features _opt-in_.
@@ -35,7 +35,7 @@ We believe that the best way to accomplish this is to make such experimental fea
 On the other hand, making experimental features opt-in comes with a risk of too few users trying them,
 which prevents contributors from getting the very feedback which would determine when the feature is ready to be considered stable.
 
-Thus, we would like incentivize users with lesser stability requirements to enable more experimental features by packaging them together:
+Thus, we would like to incentivize users with lesser stability requirements to enable more experimental features by packaging them together:
 in other words, provide a simple way to experiment with the future state of the Collector,
 instead of enabling experimental features on a case-by-case basis,
 as is currently the case with feature gates.
@@ -44,7 +44,7 @@ as is currently the case with feature gates.
 
 ### What will be stable
 
-We distinguish two broad scopes of Collector features:
+We distinguish two kinds of Collector features:
 - Collector components;
 - individual features of components.
 
@@ -59,15 +59,14 @@ Collector components [have a concept of stability](../component-stability.md), w
 | Deprecated   |
 | Unmaintained |
 
-Currently, components of all stability levels are available to end users
-as long as they are included in a distribution of the Collector.
+Currently, components of all stability levels are available to end users.
 
 Stability levels are specified per-signal. This means:
 - Extensions have a single stability level;
 - Receivers, processors, and exporters have one stability level per signal;
 - Connectors have one stability level per pair of input and output signals.
 
-New features within a component are often controlled by a [feature gate](../../featuregate/README.md), with the following stages:
+New features are often controlled by a [feature gate](../../featuregate/README.md), with the following stages:
 
 | Level      | Default | Configurable |
 |------------|---------|--------------|
@@ -85,9 +84,9 @@ with the exception of "Deprecated" and "Unmaintained", which are separate from t
 The mechanisms for controlling stability will be built into the Collector service,
 the Collector builder (OCB), and `mdatagen`.
 
-However, the ultimate decision on which stability level to guarantee by default will be left to distribution maintainers.
+However, distribution maintainers will be the ones to decide which stability level to guarantee by default.
 
-We aim to make the Core and OTLP distributions default to stable features only as part of their v1 release.
+We aim to make the Core and OTLP distributions default to stable features as part of their v1 release.
 Other distributions maintained by the Collector SIG may follow suit, but this is left as a future decision.
 
 ## Proposed solution
@@ -111,7 +110,7 @@ in order to be instantiable in this distribution by default.
 
 The valid values will be `development`, `alpha`, `beta`, and `stable`.
 
-In this context, a component will be considered "instantiated" when:
+A component is "instantiated" when:
 - the `service` section of the Collector config references its config,
   either in a pipeline or in `extensions`;
 - a component creates instances of another component programmatically
@@ -143,10 +142,9 @@ via a new field in `otelcol.CollectorSettings`.
 in order to be enabled by default.
 
 Currently, `alpha` feature gates can only be enabled on a case-by-case basis.
-For this reason, they are necessarily sometimes used as a form of configuration,
-meant to be enabled only in certain circumstances.
-They are not necessarily meant to represent "the future defaults of the Collector",
-and enabling all of them at once could have unpredictable consequences.
+Additionally, some of them are used as a form of configuration,
+and are not meant to represent "the future defaults of the Collector".
+Thus, enabling all of them at once could have unpredictable consequences.
 
 Additionally, `deprecated` feature gates simply cannot be enabled by end users currently.
 
@@ -206,24 +204,24 @@ These restrictions only apply to stable components and features:
 
 ```mermaid
 flowchart TD
-  A{{A. Is the change meant to affect the Collector's stable behavior in currently valid configurations?}}
+  A{{Does the change affect stable behavior?}}
   A -->|Yes| B
   A -->|No| C
 
-  B{{B. Is the current stable behavior intended and documented?}}
-  B -->|Yes| Omm(A feature gate is MANDATORY, and waiting until a major release to stabilize it is MANDATORY.)
+  B{{Is the stable behavior intended and documented?}}
+  B -->|Yes| Omm(MUST gate until next major release.)
   B -->|"No (bug or implementation detail)"| D
 
-  C{{C. Is the change meant to affect the Collector's stable behavior only when explicitly requested by the end user?}}
-  C -->|"No (transparent internal change)"| D
+  C{{Does the change introduce new opt-in behavior?}}
+  C -->|"No (transparent change)"| D
   C -->|"Yes (new feature)"| E
 
-  D{{D. Is there significant risk of breaking the setup of stable channel users, however strange the setup may be?}}
-  D -->|Yes| Orr(A feature gate is RECOMMENDED, and waiting until a major release to stabilize it is RECOMMENDED.)
+  D{{Is there significant risk of breaking stable channel users?}}
+  D -->|Yes| Orr(SHOULD gate until next major release.)
   D -->|No| Onn(No gating requirements.)
 
-  E{{E. Is the behavior of the new feature finalized, and will not change after its first release?}}
-  E -->|No| Omr(A feature gate is MANDATORY, but may be stabilized in a minor release once the behavior is finalized.)
+  E{{Is the feature ready to be stabilized?}}
+  E -->|No| Omr(MUST gate until behavior is finalized.)
   E -->|Yes| Onn(No gating requirements.)
 ```
 
