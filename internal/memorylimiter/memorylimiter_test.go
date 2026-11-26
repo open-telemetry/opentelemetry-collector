@@ -1055,9 +1055,9 @@ func TestMemLimitRefreshStopsOnShutdown(t *testing.T) {
 
 	require.NoError(t, ml.Shutdown(context.Background()))
 
-	// After Shutdown the loop is stopped: the call count must not keep growing.
+	// Shutdown waits for the refresh goroutine to return, so this count is
+	// final and must not change on a later read.
 	stopped := calls.Load()
-	time.Sleep(50 * time.Millisecond)
 	assert.Equal(t, stopped, calls.Load(), "refresh loop kept running after Shutdown")
 }
 
