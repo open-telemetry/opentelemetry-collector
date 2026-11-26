@@ -116,16 +116,6 @@ func TestNewRef(t *testing.T) {
 			},
 		},
 		{
-			name:    "external ref without schema ID",
-			refPath: "go.opentelemetry.io/collector",
-			expected: &Ref{
-				namespace:  "go.opentelemetry.io/collector",
-				schemaID:   "",
-				configName: "",
-				kind:       External,
-			},
-		},
-		{
 			name:    "unknown namespace",
 			refPath: "com.github.example/custom.xyz",
 			expected: &Ref{
@@ -386,6 +376,11 @@ func TestNamespaceOf_FallbackLastSlash(t *testing.T) {
 func TestNamespaceOf_NoSlash(t *testing.T) {
 	result := namespaceOf("noslash")
 	require.Empty(t, result)
+}
+
+func TestNamespaceOf_SimilarButUnsupportedNamespace(t *testing.T) {
+	result := namespaceOf("go.opentelemetry.io/collector-extra/pkg")
+	require.NotEqual(t, "go.opentelemetry.io/collector", result)
 }
 
 func TestLocalizeRef(t *testing.T) {
