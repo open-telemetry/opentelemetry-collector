@@ -66,6 +66,9 @@ $defs:
       endpoint:
         description: 'The target URL to send data to (e.g.: http://some.url:9411/v1/traces).'
         type: string
+      error_on_max_response_body_size:
+        description: ErrorOnMaxResponseBodySize makes reading a response body that exceeds max_response_body_size return an error instead of truncating the body. Default is false.
+        type: boolean
       force_attempt_http2:
         description: 'Enabling ForceAttemptHTTP2 forces the HTTP transport to use the HTTP/2 protocol. By default, this is set to true. NOTE: HTTP/2 does not support settings such as MaxConnsPerHost, MaxIdleConnsPerHost and MaxIdleConns.'
         type: boolean
@@ -89,6 +92,10 @@ $defs:
       max_conns_per_host:
         description: MaxConnsPerHost limits the total number of connections per host, including connections in the dialing, active, and idle states. Default is 0 (unlimited).
         type: integer
+      max_response_body_size:
+        description: MaxResponseBodySize sets the maximum response body size in bytes that the client will read. By default, the rest of a larger body is ignored and the reader sees a shorter body without an error. Set error_on_max_response_body_size to return an error instead. Default is 0 (unlimited).
+        type: integer
+        x-customType: int64
       middlewares:
         description: Middlewares are used to add custom functionality to the HTTP client. Middleware handlers are called in the order they appear in this list, with the first middleware becoming the outermost handler.
         type: array

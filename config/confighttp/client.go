@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"slices"
@@ -190,6 +191,14 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 		}
 	}
 
+	if cc.MaxResponseBodySize > 0 {
+		clientTransport = &maxResponseBodyRoundTripper{
+			transport:   clientTransport,
+			maxSize:     cc.MaxResponseBodySize,
+			errOnExceed: cc.ErrorOnMaxResponseBodySize,
+		}
+	}
+
 	// Compress the body using specified compression methods if non-empty string is provided.
 	// Supporting gzip, zlib, deflate, snappy, and zstd; none is treated as uncompressed.
 	if cc.Compression.IsCompressed() {
@@ -248,4 +257,93 @@ func (interceptor *headerRoundTripper) RoundTrip(req *http.Request) (*http.Respo
 
 	// Send the request to next transport.
 	return interceptor.transport.RoundTrip(req)
+}
+
+// maxResponseBodyRoundTripper limits the number of bytes that can be read from a response body.
+type maxResponseBodyRoundTripper struct {
+	transport   http.RoundTripper
+	maxSize     int64
+	errOnExceed bool
+}
+
+// RoundTrip wraps the response body so that at most maxSize bytes can be read from it.
+func (r *maxResponseBodyRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp, err := r.transport.RoundTrip(req)
+	if err != nil || resp == nil || resp.Body == nil || resp.Body == http.NoBody {
+		return resp, err
+	}
+	if r.errOnExceed {
+		resp.Body = &errorOnMaxReadCloser{rc: resp.Body, remaining: r.maxSize, maxSize: r.maxSize}
+	} else {
+		resp.Body = &truncatingReadCloser{rc: resp.Body, remaining: r.maxSize}
+	}
+	return resp, nil
+}
+
+// truncatingReadCloser reads at most remaining bytes and then reports io.EOF,
+// ignoring the rest of the body.
+type truncatingReadCloser struct {
+	rc        io.ReadCloser
+	remaining int64
+}
+
+func (t *truncatingReadCloser) Read(p []byte) (int, error) {
+	if t.remaining <= 0 {
+		return 0, io.EOF
+	}
+	if int64(len(p)) > t.remaining {
+		p = p[:t.remaining]
+	}
+	n, err := t.rc.Read(p)
+	t.remaining -= int64(n)
+	return n, err
+}
+
+func (t *truncatingReadCloser) Close() error { return t.rc.Close() }
+
+// errorOnMaxReadCloser reads at most maxSize bytes and returns a
+// *MaxResponseBodySizeError if the body is larger.
+type errorOnMaxReadCloser struct {
+	rc        io.ReadCloser
+	remaining int64
+	maxSize   int64
+	err       error
+}
+
+func (e *errorOnMaxReadCloser) Read(p []byte) (int, error) {
+	if e.err != nil {
+		return 0, e.err
+	}
+	if len(p) == 0 {
+		return 0, nil
+	}
+	// Read one byte past the limit to detect an oversized body.
+	if int64(len(p))-1 > e.remaining {
+		p = p[:e.remaining+1]
+	}
+	n, err := e.rc.Read(p)
+	if int64(n) <= e.remaining {
+		e.remaining -= int64(n)
+		return n, err
+	}
+	n = int(e.remaining)
+	e.remaining = 0
+	e.err = &MaxResponseBodySizeError{Limit: e.maxSize}
+	return n, e.err
+}
+
+func (e *errorOnMaxReadCloser) Close() error { return e.rc.Close() }
+
+// MaxResponseBodySizeError is returned when reading a response body exceeds
+// max_response_body_size and error_on_max_response_body_size is set.
+type MaxResponseBodySizeError struct {
+	// Limit is the configured maximum size in bytes.
+	Limit int64
+
+	// prevent unkeyed literal initialization
+	_ struct{}
+}
+
+func (e *MaxResponseBodySizeError) Error() string {
+	return fmt.Sprintf("http: response body too large, limit is %d bytes", e.Limit)
 }
