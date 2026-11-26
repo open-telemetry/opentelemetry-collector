@@ -57,5 +57,7 @@ The server keeps accepting HTTP/1.1 and, with TLS, HTTP/2.
   RFC 9113 and is not supported by the Go standard library. An upgrade request
   is served as a normal HTTP/1.1 request and the connection stays on HTTP/1.1.
 
+## Warnings
+
 h2c is plaintext. Use it only on a trusted network behind a TLS-terminating
 proxy. Do not expose the listener directly to untrusted networks.
