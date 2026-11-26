@@ -103,6 +103,9 @@ func NewMountPointFromLine(line string) (*MountPoint, error) {
 		}
 		fsTypeStart := _miFieldIDOptionalFields + i + 1
 
+		// Re-split so that the last field (super options) may contain spaces,
+		// e.g. Docker Desktop's 9p mounts with "path=C:\Program Files\...".
+		fields = strings.SplitN(line, _mountInfoSep, fsTypeStart+_miFieldCountSecondHalf)
 		if len(fields) != fsTypeStart+_miFieldCountSecondHalf {
 			return nil, mountPointFormatInvalidError{line}
 		}
