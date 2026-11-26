@@ -16,7 +16,7 @@ sending_queue:
     storage: null              # default
     num_consumers: 10          # default
     batch:
-        enabled: true          # FEATURE(pkg.exporterhelper.queueBatchEnabled)
+        enabled: false         # true if enabling the pkg.exporterhelper.queueBatchEnabled feature gate
         flush_timeout: 200ms   # default
         sizer: items           # default
         min_size: 8192         # default
