@@ -185,7 +185,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2027-05-10 | v0.177.0 | [@codeboten][8]       | [@braydonk][13]         | [@MovieStoreGuy][17]       |
 | 2027-05-24 | v0.178.0 | [@atoulme][5]         | [@atoulme][5]           | [@atoulme][5]              |
 
-
 [1]: https://github.com/jmacd
 [2]: https://github.com/evan-bradley
 [3]: https://github.com/TylerHelmuth
