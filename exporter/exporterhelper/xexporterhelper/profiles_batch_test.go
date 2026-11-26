@@ -325,6 +325,7 @@ func TestMergeSplitManySmallProfiles(t *testing.T) {
 }
 
 func BenchmarkSplittingBasedOnByteSizeManySmallProfiles(b *testing.B) {
+	limit := profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(11000))
 	// All requests merge into a single batch.
 	b.ReportAllocs()
 	for b.Loop() {
@@ -333,7 +334,7 @@ func BenchmarkSplittingBasedOnByteSizeManySmallProfiles(b *testing.B) {
 			pr2 := newProfilesRequest(testdata.GenerateProfiles(10))
 			res, _ := merged[len(merged)-1].MergeSplit(
 				context.Background(),
-				profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(11000)),
+				limit,
 				exporterhelper.RequestSizerTypeBytes,
 				pr2,
 			)
@@ -344,6 +345,7 @@ func BenchmarkSplittingBasedOnByteSizeManySmallProfiles(b *testing.B) {
 }
 
 func BenchmarkSplittingBasedOnByteSizeManyProfilesSlightlyAboveLimit(b *testing.B) {
+	limit := profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(10000))
 	// Every incoming request results in a split.
 	b.ReportAllocs()
 	for b.Loop() {
@@ -352,7 +354,7 @@ func BenchmarkSplittingBasedOnByteSizeManyProfilesSlightlyAboveLimit(b *testing.
 			pr2 := newProfilesRequest(testdata.GenerateProfiles(10001))
 			res, _ := merged[len(merged)-1].MergeSplit(
 				context.Background(),
-				profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(10000)),
+				limit,
 				exporterhelper.RequestSizerTypeBytes,
 				pr2,
 			)
@@ -364,6 +366,7 @@ func BenchmarkSplittingBasedOnByteSizeManyProfilesSlightlyAboveLimit(b *testing.
 }
 
 func BenchmarkSplittingBasedOnByteSizeHugeProfiles(b *testing.B) {
+	limit := profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(10010))
 	// One request splits into many batches.
 	b.ReportAllocs()
 	for b.Loop() {
@@ -371,7 +374,7 @@ func BenchmarkSplittingBasedOnByteSizeHugeProfiles(b *testing.B) {
 		pr2 := newProfilesRequest(testdata.GenerateProfiles(100000))
 		res, _ := merged[len(merged)-1].MergeSplit(
 			context.Background(),
-			profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(10010)),
+			limit,
 			exporterhelper.RequestSizerTypeBytes,
 			pr2,
 		)

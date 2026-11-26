@@ -344,13 +344,14 @@ func BenchmarkSplittingBasedOnItemCountManySmallLogs(b *testing.B) {
 
 func BenchmarkSplittingBasedOnByteSizeManySmallLogs(b *testing.B) {
 	testutil.SkipGCHeavyBench(b)
+	limit := logsMarshaler.LogsSize(testdata.GenerateLogs(11000))
 	// All requests merge into a single batch.
 	b.ReportAllocs()
 	for b.Loop() {
 		merged := []request.Request{newLogsRequest(testdata.GenerateLogs(10))}
 		for range 1000 {
 			lr2 := newLogsRequest(testdata.GenerateLogs(10))
-			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), logsMarshaler.LogsSize(testdata.GenerateLogs(11000)), request.SizerTypeBytes, lr2)
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), limit, request.SizerTypeBytes, lr2)
 			merged = append(merged[0:len(merged)-1], res...)
 		}
 		assert.Len(b, merged, 1)
@@ -396,13 +397,14 @@ func BenchmarkSplittingBasedOnItemCountManyLogsSlightlyAboveLimit(b *testing.B) 
 
 func BenchmarkSplittingBasedOnByteSizeManyLogsSlightlyAboveLimit(b *testing.B) {
 	testutil.SkipGCHeavyBench(b)
+	limit := logsMarshaler.LogsSize(testdata.GenerateLogs(10000))
 	// Every incoming request results in a split.
 	b.ReportAllocs()
 	for b.Loop() {
 		merged := []request.Request{newLogsRequest(testdata.GenerateLogs(0))}
 		for range 10 {
 			lr2 := newLogsRequest(testdata.GenerateLogs(10001))
-			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), logsMarshaler.LogsSize(testdata.GenerateLogs(10000)), request.SizerTypeBytes, lr2)
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), limit, request.SizerTypeBytes, lr2)
 			assert.Len(b, res, 2)
 			merged = append(merged[0:len(merged)-1], res...)
 		}
@@ -425,12 +427,13 @@ func BenchmarkSplittingBasedOnItemCountHugeLogs(b *testing.B) {
 
 func BenchmarkSplittingBasedOnByteSizeHugeLogs(b *testing.B) {
 	testutil.SkipGCHeavyBench(b)
+	limit := logsMarshaler.LogsSize(testdata.GenerateLogs(10010))
 	// One request splits into many batches.
 	b.ReportAllocs()
 	for b.Loop() {
 		merged := []request.Request{newLogsRequest(testdata.GenerateLogs(0))}
 		lr2 := newLogsRequest(testdata.GenerateLogs(100000))
-		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), logsMarshaler.LogsSize(testdata.GenerateLogs(10010)), request.SizerTypeBytes, lr2)
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), limit, request.SizerTypeBytes, lr2)
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
 	}
