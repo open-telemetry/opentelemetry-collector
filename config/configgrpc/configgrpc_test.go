@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"math"
 	"net"
 	"os"
 	"path/filepath"
@@ -555,6 +556,54 @@ func TestGrpcServerValidate(t *testing.T) {
 			err := tt.gss.Validate()
 			require.Error(t, err)
 			assert.ErrorContains(t, err, tt.err)
+		})
+	}
+}
+
+func TestValidateMaxRecvMsgSizeMiB(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   int
+		wantErr bool
+	}{
+		{
+			name:  "zero is valid",
+			input: 0,
+		},
+		{
+			name:  "one MiB is valid",
+			input: 1,
+		},
+		{
+			name:  "maximum valid MiB",
+			input: maxRecvMsgSizeMiBLimit,
+		},
+		{
+			name:    "negative value",
+			input:   -1,
+			wantErr: true,
+		},
+		{
+			name:    "value exceeding maximum",
+			input:   maxRecvMsgSizeMiBLimit + 1,
+			wantErr: true,
+		},
+		{
+			name:    "minimum integer",
+			input:   math.MinInt,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateMaxRecvMsgSizeMiB(tt.input)
+
+			if tt.wantErr {
+				require.ErrorContains(t, err, "invalid max_recv_msg_size_mib")
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
 }
