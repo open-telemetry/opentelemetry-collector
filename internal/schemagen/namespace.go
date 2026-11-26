@@ -93,6 +93,9 @@ func WithOrigin(refPath string, origin *Ref) *Ref {
 }
 
 func namespaceOf(path string) string {
+	if _, ok := namespaceToURL[path]; ok {
+		return path
+	}
 	if ns, ok := matchSupportedNamespace(path); ok {
 		return ns
 	}
@@ -104,7 +107,7 @@ func namespaceOf(path string) string {
 
 func matchSupportedNamespace(path string) (string, bool) {
 	for _, ns := range supportedNamespaces {
-		if path == ns || strings.HasPrefix(path, ns+"/") {
+		if strings.HasPrefix(path, ns+"/") {
 			return ns, true
 		}
 	}
@@ -112,7 +115,7 @@ func matchSupportedNamespace(path string) (string, bool) {
 }
 
 func (r *Ref) Namespace() (string, bool) {
-	_, ok := matchSupportedNamespace(r.namespace)
+	_, ok := namespaceToURL[r.namespace]
 	return r.namespace, ok
 }
 
