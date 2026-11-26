@@ -181,7 +181,7 @@ func run(ymlPath string) error {
 			err = inlineReplaceWithFns(
 				filepath.Join(tmplDir, "readme.md.tmpl"),
 				filepath.Join(ymlDir, "README.md"),
-				md, statusStart, statusEnd, md.GeneratedPackageName, importRootPath, nil,
+				md, statusStart, statusEnd, md.GeneratedPackageName, importRootPath, nil, true,
 			)
 			if err != nil {
 				return err
@@ -589,7 +589,7 @@ func generateFile(tmplFile, outputFile string, md Metadata, goPackage, importRoo
 	return generateFileWithFns(tmplFile, outputFile, md, goPackage, importRootPath, getTemplateFuncMap(md, importRootPath))
 }
 
-func inlineReplaceWithFns(tmplFile, outputFile string, md Metadata, start, end, goPackage, importRootPath string, fns template.FuncMap) error {
+func inlineReplaceWithFns(tmplFile, outputFile string, md Metadata, start, end, goPackage, importRootPath string, fns template.FuncMap, required bool) error {
 	if fns == nil {
 		fns = getTemplateFuncMap(md, importRootPath)
 	}
@@ -601,7 +601,21 @@ func inlineReplaceWithFns(tmplFile, outputFile string, md Metadata, start, end, 
 
 	re := regexp.MustCompile(fmt.Sprintf("%s[\\s\\S]*%s", start, end))
 	if !re.Match(readmeContents) {
-		return nil
+		if !required {
+			return nil
+		}
+		hasStart := bytes.Contains(readmeContents, []byte(start))
+		hasEnd := bytes.Contains(readmeContents, []byte(end))
+		switch {
+		case !hasStart && !hasEnd:
+			return fmt.Errorf("cannot update %s: README has no %q / %q pair; add both markers with the start marker first", outputFile, start, end)
+		case !hasStart:
+			return fmt.Errorf("cannot update %s: README is missing the start marker %q", outputFile, start)
+		case !hasEnd:
+			return fmt.Errorf("cannot update %s: README is missing the end marker %q", outputFile, end)
+		default:
+			return fmt.Errorf("cannot update %s: %q must appear before %q", outputFile, start, end)
+		}
 	}
 
 	if md.GithubProject == "" {
@@ -837,7 +851,7 @@ func injectConfigDocsToReadme(md Metadata, mdDir, importRootPath string) error {
 			filepath.Join("templates", "config_doc.md.tmpl"),
 			readmePath,
 			md, configDocStart, configDocEnd,
-			md.GeneratedPackageName, rootPkg, fns,
+			md.GeneratedPackageName, rootPkg, fns, false,
 		); err != nil {
 			return fmt.Errorf("failed to inject config doc into README: %w", err)
 		}

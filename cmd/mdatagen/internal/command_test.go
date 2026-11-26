@@ -9,6 +9,7 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -1407,6 +1408,153 @@ func TestRun(t *testing.T) {
 	}
 }
 
+func TestRunReadmeStatus(t *testing.T) {
+	tests := []struct {
+		name        string
+		readme      string
+		statusClass string
+		noReadme    bool
+		noStatus    bool
+		wantErr     string
+	}{
+		{
+			name:   "valid status section",
+			readme: "# Component\n\n" + statusStart + "\nstale status\n" + statusEnd + "\n\nComponent documentation\n",
+		},
+		{
+			name:    "missing status section",
+			readme:  "# Component\n\nComponent documentation\n",
+			wantErr: fmt.Sprintf("README has no %q / %q pair; add both markers with the start marker first", statusStart, statusEnd),
+		},
+		{
+			name:    "empty readme",
+			wantErr: fmt.Sprintf("README has no %q / %q pair; add both markers with the start marker first", statusStart, statusEnd),
+		},
+		{
+			name:        "package missing status section",
+			readme:      "# Package\n",
+			statusClass: "pkg",
+			wantErr:     fmt.Sprintf("README has no %q / %q pair; add both markers with the start marker first", statusStart, statusEnd),
+		},
+		{
+			name:    "missing start marker",
+			readme:  "# Component\n\n" + statusEnd + "\n",
+			wantErr: fmt.Sprintf("README is missing the start marker %q", statusStart),
+		},
+		{
+			name:    "missing end marker",
+			readme:  "# Component\n\n" + statusStart + "\n",
+			wantErr: fmt.Sprintf("README is missing the end marker %q", statusEnd),
+		},
+		{
+			name:    "reversed markers",
+			readme:  "# Component\n\n" + statusEnd + "\n" + statusStart + "\n",
+			wantErr: fmt.Sprintf("%q must appear before %q", statusStart, statusEnd),
+		},
+		{
+			name:    "config markers only",
+			readme:  "# Component\n\n" + configDocStart + "\n" + configDocEnd + "\n",
+			wantErr: fmt.Sprintf("README has no %q / %q pair; add both markers with the start marker first", statusStart, statusEnd),
+		},
+		{
+			name:     "missing readme",
+			noReadme: true,
+		},
+		{
+			name:     "subcomponent without status",
+			readme:   "# Component\n\nComponent documentation\n",
+			noStatus: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := newTestModuleDir(t)
+			metadataFile := filepath.Join(dir, "metadata.yaml")
+			metadata, err := os.ReadFile(filepath.Join("testdata", "status_only.yaml"))
+			require.NoError(t, err)
+			if tt.statusClass != "" {
+				metadata = []byte(strings.Replace(string(metadata), "class: exporter", "class: "+tt.statusClass, 1))
+			}
+			if tt.noStatus {
+				metadata = []byte("type: subcomponent\nparent: parent\n")
+			}
+			require.NoError(t, os.WriteFile(metadataFile, metadata, 0o600)) // #nosec G703 -- path is inside the test's temporary module.
+			require.NoError(t, os.WriteFile(filepath.Join(dir, "empty.go"), []byte("package shortname\n"), 0o600))
+			readmeFile := filepath.Join(dir, "README.md")
+			if !tt.noReadme {
+				require.NoError(t, os.WriteFile(readmeFile, []byte(tt.readme), 0o600))
+			}
+
+			err = run(metadataFile)
+			if tt.wantErr != "" {
+				require.EqualError(t, err, "cannot update "+readmeFile+": "+tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+
+			if tt.noReadme {
+				require.NoFileExists(t, readmeFile)
+				return
+			}
+			contents, err := os.ReadFile(filepath.Clean(readmeFile))
+			require.NoError(t, err)
+			if tt.wantErr != "" || tt.noStatus {
+				assert.Equal(t, tt.readme, string(contents))
+				return
+			}
+			assert.Contains(t, string(contents), "| Stability")
+			assert.NotContains(t, string(contents), "stale status")
+			assert.Contains(t, string(contents), "# Component\n\n"+statusStart)
+			assert.Contains(t, string(contents), statusEnd+"\n\nComponent documentation\n")
+		})
+	}
+}
+
+func TestInjectConfigDocsToReadmeOptionalMarkers(t *testing.T) {
+	tests := []struct {
+		name     string
+		readme   string
+		noReadme bool
+		wantDocs bool
+	}{
+		{name: "missing readme", noReadme: true},
+		{name: "missing markers", readme: "# Component\n"},
+		{name: "missing start marker", readme: configDocEnd + "\n"},
+		{name: "missing end marker", readme: configDocStart + "\n"},
+		{name: "reversed markers", readme: configDocEnd + "\n" + configDocStart + "\n"},
+		{name: "valid markers", readme: configDocStart + "\nstale config\n" + configDocEnd + "\n", wantDocs: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			readmeFile := filepath.Join(dir, "README.md")
+			if !tt.noReadme {
+				require.NoError(t, os.WriteFile(readmeFile, []byte(tt.readme), 0o600))
+			}
+			md := Metadata{
+				Type: "test",
+				ConfigsMetadata: &cfggen.ConfigsMetadata{
+					Config: &cfggen.ConfigMetadata{Type: "object"},
+				},
+			}
+			require.NoError(t, injectConfigDocsToReadme(md, dir, "go.opentelemetry.io/collector"))
+
+			if tt.noReadme {
+				require.NoFileExists(t, readmeFile)
+				return
+			}
+			contents, err := os.ReadFile(filepath.Clean(readmeFile))
+			require.NoError(t, err)
+			if tt.wantDocs {
+				assert.Contains(t, string(contents), "## Configuration")
+				assert.NotContains(t, string(contents), "stale config")
+			} else {
+				assert.Equal(t, tt.readme, string(contents))
+			}
+		})
+	}
+}
+
 func TestInlineReplace(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -1422,6 +1570,7 @@ func TestInlineReplace(t *testing.T) {
 		semConvVersion string
 		semConvURL     string
 		githubLabel    string
+		wantErr        bool
 	}{
 		{
 			name: "readme with empty status",
@@ -1564,6 +1713,7 @@ Some info about a component
 `,
 			outputFile: "readme_without_status.md",
 			distros:    []string{"contrib"},
+			wantErr:    true,
 		},
 		{
 			name: "component with warnings",
@@ -1689,7 +1839,14 @@ Some info about a component
 			readmeFile := filepath.Join(tmpdir, "README.md")
 			require.NoError(t, os.WriteFile(readmeFile, []byte(tt.markdown), 0o600))
 
-			err := inlineReplaceWithFns("templates/readme.md.tmpl", readmeFile, md, statusStart, statusEnd, "metadata", "go.opentelemetry.io/collector", nil)
+			err := inlineReplaceWithFns("templates/readme.md.tmpl", readmeFile, md, statusStart, statusEnd, "metadata", "go.opentelemetry.io/collector", nil, true)
+			if tt.wantErr {
+				require.Error(t, err)
+				got, readErr := os.ReadFile(filepath.Clean(readmeFile))
+				require.NoError(t, readErr)
+				assert.Equal(t, tt.markdown, string(got))
+				return
+			}
 			require.NoError(t, err)
 
 			require.FileExists(t, filepath.Join(tmpdir, "README.md"))
@@ -2298,7 +2455,7 @@ func TestGenerateConfigFiles_ReadmeIncludesExportedConfigs(t *testing.T) {
 
 			contents, err := os.ReadFile(filepath.Clean(readmePath))
 			require.NoError(t, err)
-			require.Contains(t, string(contents), "### <a id=\"exported_configs.sample_def\"></a>exported_configs.sample_def")
+			require.Contains(t, string(contents), "### <a id=\"exported_configs.sample_def\"></a>sample_def")
 			require.Contains(t, string(contents), "| `host_name` | string |  | no | The host name. |")
 			if tt.withConfig {
 				require.Contains(t, string(contents), "| `endpoint` | string |  | no | The endpoint. |")
@@ -2344,10 +2501,67 @@ func TestGenerateConfigFiles_ReadmeLinksObjectRefToExportedSection(t *testing.T)
 	require.NoError(t, err)
 	readme := string(contents)
 	// the referenced definition has its own section ...
-	require.Contains(t, readme, "### <a id=\"exported_configs.inner\"></a>exported_configs.inner")
+	require.Contains(t, readme, "### <a id=\"exported_configs.inner\"></a>inner")
 	// ... and the referencing property links to it instead of expanding it again
-	require.Contains(t, readme, "| `child` | object (see [exported_configs.inner](#exported_configs.inner)) |")
+	require.Contains(t, readme, "| `child` | object (see [inner](#exported_configs.inner)) |")
 	require.NotContains(t, readme, "exported_configs.outer.child")
+}
+
+func TestGenerateConfigFiles_ReadmeExpandsNestedRefFromExternalSchema(t *testing.T) {
+	root := t.TempDir()
+	tmpdir := filepath.Join(root, "shortname")
+	sharedDir := filepath.Join(root, "shared")
+	require.NoError(t, os.MkdirAll(tmpdir, 0o700))
+	require.NoError(t, os.MkdirAll(sharedDir, 0o700))
+	// the schema loader locates the repository root through git
+	require.NoError(t, exec.CommandContext(t.Context(), "git", "init", root).Run()) //nolint:gosec // G204: root is a test temp dir
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module testmodule\n"), 0o600))
+	sharedMetadata := `type: shared
+status:
+  class: pkg
+  stability:
+    development: [receiver]
+exported_configs:
+  server_config:
+    type: object
+    properties:
+      auth:
+        $ref: auth_config
+  auth_config:
+    type: object
+    properties:
+      token:
+        type: string
+`
+	require.NoError(t, os.WriteFile(filepath.Join(sharedDir, "metadata.yaml"), []byte(sharedMetadata), 0o600))
+
+	readmePath := filepath.Join(tmpdir, "README.md")
+	readmeContent := "<!-- config autogenerated section -->\n<!-- end config autogenerated section -->\n"
+	require.NoError(t, os.WriteFile(readmePath, []byte(readmeContent), 0o600))
+
+	md := Metadata{
+		Type:        "test",
+		PackageName: "shortname",
+		Status:      &Status{Class: "receiver"},
+		ConfigsMetadata: &cfggen.ConfigsMetadata{
+			Config: &cfggen.ConfigMetadata{
+				Type: "object",
+				Properties: map[string]*cfggen.ConfigMetadata{
+					"http": {Ref: "../shared.server_config", Embed: true},
+				},
+			},
+		},
+	}
+	require.NoError(t, generateConfigFiles(md, tmpdir, "testmodule"))
+
+	contents, err := os.ReadFile(filepath.Clean(readmePath))
+	require.NoError(t, err)
+	readme := string(contents)
+	// auth_config is defined in the external schema only, so there is no section to link to ...
+	require.NotContains(t, readme, "(#exported_configs.auth_config)")
+	// ... and it is expanded in place instead
+	require.Contains(t, readme, "### <a id=\"auth\"></a>auth")
+	require.Contains(t, readme, "| `token` | string |")
 }
 
 func TestUniqueMigrationGates(t *testing.T) {
