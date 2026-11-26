@@ -17,7 +17,20 @@ We propose to
    v1](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/44130)
 
 by [KubeCon Europe 2027](https://events.linuxfoundation.org/kubecon-cloudnativecon-europe/) (March
-2027). This means some items on the original [v1 OTLP distro
+2027).
+
+We target the **2027-03-15 release**, the week of KubeCon Europe 2027, as the v1 release. This
+release is currently listed as v0.173.0 in the [release
+schedule](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/release.md#release-schedule).
+In that release we will tag as v1:
+
+1. the core distro and the OTLP distro,
+2. the Phase 1 high priority Collector components, and
+3. the Collector core modules listed in [Some parts of the v1 OTLP distro
+   roadmap](#some-parts-of-the-v1-otlp-distro-roadmap), unless we remove the dependencies on them
+   instead.
+
+This means some items on the original [v1 OTLP distro
 roadmap](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/ga-roadmap.md) and
 on the original vision for stability of these components will be postponed for a future major
 version of the Collector or of these components.
@@ -127,8 +140,8 @@ Other parts (see below) are deprioritized.
 
 ## What we are **not** prioritizing after this RFC
 
-Completing this by KubeCon Europe 2027 means not prioritizing some things, especially those items
-that have been contentious or difficult to get consensus on or those that we can justifiably
+Completing this by the 2027-03-15 release means not prioritizing some things, especially those
+items that have been contentious or difficult to get consensus on or those that we can justifiably
 postpone. In a general sense, we should aim to postpone anything that can be justified by the goals
 above.
 
