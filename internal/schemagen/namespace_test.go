@@ -116,16 +116,6 @@ func TestNewRef(t *testing.T) {
 			},
 		},
 		{
-			name:    "external ref without schema ID",
-			refPath: "go.opentelemetry.io/collector",
-			expected: &Ref{
-				namespace:  "go.opentelemetry.io/collector",
-				schemaID:   "",
-				configName: "",
-				kind:       External,
-			},
-		},
-		{
 			name:    "unknown namespace",
 			refPath: "com.github.example/custom.xyz",
 			expected: &Ref{

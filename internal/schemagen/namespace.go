@@ -93,9 +93,6 @@ func WithOrigin(refPath string, origin *Ref) *Ref {
 }
 
 func namespaceOf(path string) string {
-	if _, ok := namespaceToURL[path]; ok {
-		return path
-	}
 	if ns, ok := matchSupportedNamespace(path); ok {
 		return ns
 	}
