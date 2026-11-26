@@ -163,6 +163,7 @@ func memoryQuotaV2(cgroupv2MountPoint, cgroupv2MemoryMax string) (int64, bool, e
 		}
 		return -1, false, err
 	}
+	defer memoryMaxParams.Close()
 	scanner := bufio.NewScanner(memoryMaxParams)
 	if scanner.Scan() {
 		value := strings.TrimSpace(scanner.Text())
