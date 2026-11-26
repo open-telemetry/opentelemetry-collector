@@ -173,15 +173,15 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | Date       | Version  | Core Release manager  | Contrib release manager | 'Releases' release manager |
 |------------|----------|-----------------------|-------------------------|----------------------------|
 | 2026-12-07 | v0.167.0 | [@jmacd][1]           | [@ArthurSens][11]       | [@TylerHelmuth][3]         |
-| 2027-01-04 | v0.169.0 | [@evan-bradley][2]    | [@evan-bradley][2]      | [@mowies][15]              |
-| 2027-01-18 | v0.170.0 | [@TylerHelmuth][3]    | [@TylerHelmuth][3]      | [@TylerHelmuth][3]         |
-| 2027-02-01 | v0.171.0 | [@songy23][6]         | [@songy23][6]           | [@songy23][6]              |
-| 2027-02-15 | v0.172.0 | [@dmitryax][7]        | [@dmitryax][7]          | [@dmitryax][7]             |
-| 2027-03-01 | v0.173.0 | [@codeboten][8]       | [@braydonk][13]         | [@codeboten][8]            |
-| 2027-03-15 | v0.174.0 | [@dmathieu][12]       | [@andrzej-stencel][4]   | [@dehaansa][16]            |
-| 2027-03-29 | v0.175.0 | [@bogdandrutu][9]     | [@bogdandrutu][9]       | [@bogdandrutu][9]          |
-| 2027-04-12 | v0.176.0 | [@jade-guiton-dd][10] | [@ChrsMark][18]         | [@crobert-1][19]           |
-| 2027-04-26 | v0.177.0 | [@mx-psi][14]         | [@mx-psi][14]           | [@mx-psi][14]              |
+| 2027-01-04 | v0.168.0 | [@evan-bradley][2]    | [@evan-bradley][2]      | [@mowies][15]              |
+| 2027-01-18 | v0.169.0 | [@TylerHelmuth][3]    | [@TylerHelmuth][3]      | [@TylerHelmuth][3]         |
+| 2027-02-01 | v0.170.0 | [@songy23][6]         | [@songy23][6]           | [@songy23][6]              |
+| 2027-02-15 | v0.171.0 | [@dmitryax][7]        | [@dmitryax][7]          | [@dmitryax][7]             |
+| 2027-03-01 | v0.172.0 | [@codeboten][8]       | [@braydonk][13]         | [@codeboten][8]            |
+| 2027-03-15 | v0.173.0 | [@dmathieu][12]       | [@andrzej-stencel][4]   | [@dehaansa][16]            |
+| 2027-03-29 | v0.174.0 | [@bogdandrutu][9]     | [@bogdandrutu][9]       | [@bogdandrutu][9]          |
+| 2027-04-12 | v0.175.0 | [@jade-guiton-dd][10] | [@ChrsMark][18]         | [@crobert-1][19]           |
+| 2027-04-26 | v0.176.0 | [@mx-psi][14]         | [@mx-psi][14]           | [@mx-psi][14]              |
 
 [1]: https://github.com/jmacd
 [2]: https://github.com/evan-bradley
