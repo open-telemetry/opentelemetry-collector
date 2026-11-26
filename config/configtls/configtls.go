@@ -346,20 +346,40 @@ func (c ClientConfig) LoadTLSConfig(_ context.Context) (*tls.Config, error) {
 	}
 	tlsCfg.ServerName = c.ServerName
 	tlsCfg.InsecureSkipVerify = c.InsecureSkipVerify
-	// In FIPS 140 mode the built-in verification also rejects chains using
-	// algorithms that are not FIPS-approved. That filter is not available to
-	// a custom verifier, so keep the built-in verification and do not reload
-	// the CA file.
-	if c.ReloadInterval > 0 && c.hasCAFile() && !c.InsecureSkipVerify && !fipsEnabled() {
-		// crypto/tls cannot swap RootCAs on a live config, so take over server
-		// certificate verification to verify against the reloaded CA pool.
-		// The built-in verification is disabled only because verifyConnection
-		// performs the equivalent chain and hostname checks.
-		reloader := newRootCAsReloader(c.Config, tlsCfg.RootCAs)
-		tlsCfg.InsecureSkipVerify = true
-		tlsCfg.VerifyConnection = reloader.verifyConnection
-	}
 	return tlsCfg, nil
+}
+
+// RootCAsFunc returns the CA pool to verify a server certificate against when
+// establishing a new connection.
+type RootCAsFunc func() *x509.CertPool
+
+// LoadRootCAsFunc returns a function that reports the current CA pool loaded
+// from ca_file, reloading the file when it is modified. It returns nil if
+// ca_file_reload is not enabled or no ca_file is set, in which case the RootCAs
+// set by LoadTLSConfig never change.
+//
+// crypto/tls cannot change RootCAs on a *tls.Config that is in use, so callers
+// apply the returned pool to a clone of the config for each new connection.
+// Server certificate verification is left to crypto/tls.
+func (c ClientConfig) LoadRootCAsFunc(_ context.Context) (RootCAsFunc, error) {
+	if !c.ReloadCAFile || !c.hasCAFile() {
+		return nil, nil
+	}
+	reloader, err := newClientCAsReloader(c.CAFile, caFileLoader{c.Config})
+	if err != nil {
+		return nil, fmt.Errorf("failed to load CA file: %w", err)
+	}
+	return reloader.getCertPool, nil
+}
+
+// caFileLoader loads the CA pool from ca_file, including the system pool if
+// include_system_ca_certs_pool is set, the same way LoadTLSConfig does.
+type caFileLoader struct {
+	cfg Config
+}
+
+func (l caFileLoader) loadClientCAFile() (*x509.CertPool, error) {
+	return l.cfg.loadCertFile(l.cfg.CAFile)
 }
 
 // LoadTLSConfig loads the TLS configuration.

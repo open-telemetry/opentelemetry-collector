@@ -21,6 +21,13 @@ exported_configs:
       insecure_skip_verify:
         description: Enables TLS but not verify the certificate.
         type: bool
+      ca_file_reload:
+        description: |
+          Reload the CA file (ca_file) when it is modified, so new connections trust a rotated CA without a restart.
+          Only applied by confighttp and configgrpc clients. (optional, default false)
+        type: bool
+        go_struct:
+          field_name: ReloadCAFile
       server_name_override:
         description: |
           Server name requested by client for virtual hosting. This sets the ServerName in the TLSConfig. 
@@ -90,7 +97,7 @@ exported_configs:
         description: Sets the minimum TLS version that is acceptable. If not set, TLS 1.2 will be used. (optional)
         type: string
       reload_interval:
-        description: Specifies the duration after which the certificate and key will be reloaded. For clients, the CA file (ca_file) is reloaded too. If not set, they will never be reloaded (optional)
+        description: Specifies the duration after which the certificate will be reloaded If not set, it will never be reloaded (optional)
         type: duration
       tpm:
         description: Trusted platform module configuration

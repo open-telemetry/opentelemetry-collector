@@ -19,6 +19,10 @@ type ClientConfig struct {
 	// InsecureSkipVerify enables TLS but not verify the certificate.
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify,omitempty"`
 
+	// ReloadCAFile reload the CA file (ca_file) when it is modified, so new connections trust a rotated CA without a restart.
+	// Only applied by confighttp and configgrpc clients. (optional, default false)
+	ReloadCAFile bool `mapstructure:"ca_file_reload,omitempty"`
+
 	// ServerName server name requested by client for virtual hosting. This sets the ServerName in the TLSConfig.
 	// Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)
 	ServerName string `mapstructure:"server_name_override,omitempty"`
@@ -85,7 +89,7 @@ type Config struct {
 	// MinVersion sets the minimum TLS version that is acceptable. If not set, TLS 1.2 will be used. (optional)
 	MinVersion string `mapstructure:"min_version,omitempty"`
 
-	// ReloadInterval specifies the duration after which the certificate and key will be reloaded. For clients, the CA file (ca_file) is reloaded too. If not set, they will never be reloaded (optional)
+	// ReloadInterval specifies the duration after which the certificate will be reloaded If not set, it will never be reloaded (optional)
 	ReloadInterval time.Duration `mapstructure:"reload_interval,omitempty"`
 
 	// TPMConfig trusted platform module configuration

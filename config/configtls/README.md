@@ -88,10 +88,6 @@ Additionally certificates may be reloaded by setting the below configuration.
    If not set, it will never be reloaded.
    Accepts a [duration string](https://pkg.go.dev/time#ParseDuration),
    valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
-   For clients, `reload_interval` also reloads the CA certificate set in `ca_file`,
-   so a rotated CA is trusted without restarting the collector.
-   CA reloading is not available when Go runs in FIPS 140 mode; the CA file is
-   then loaded only at startup.
 
 How TLS/mTLS is configured depends on whether configuring the client or server.
 See below for examples.
@@ -123,6 +119,13 @@ Beyond TLS configuration, the following setting can optionally be configured:
 - `server_name_override`: If set to a non-empty string, it will override the
   virtual host name of authority (e.g. :authority header field) in requests
   (typically used for testing).
+- `ca_file_reload` (default = false): Reload the CA file set in `ca_file` when it
+  is modified, so new connections trust a rotated CA without restarting the
+  collector. The file is checked for changes at most once per second, on new
+  connections only; existing connections keep the CA they were established with.
+  If the modified file cannot be loaded, the previously loaded CA is kept.
+  Only supported by clients built with `confighttp` and `configgrpc`, and not
+  for `confighttp` clients that use `proxy_url`.
 
 Example:
 

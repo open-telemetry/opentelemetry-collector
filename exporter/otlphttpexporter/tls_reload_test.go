@@ -7,7 +7,6 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"crypto/fips140"
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
@@ -98,12 +97,9 @@ func newTestPKI(t *testing.T, name string) testPKI {
 // TestExportAfterCARotation reproduces
 // https://github.com/open-telemetry/opentelemetry-collector/issues/11265:
 // the server rotates to a certificate issued by a new CA and the CA file
-// referenced by tls::ca_file is updated on disk. With reload_interval set, the
+// referenced by tls::ca_file is updated on disk. With tls::ca_file_reload set, the
 // exporter must pick up the new CA without being restarted.
 func TestExportAfterCARotation(t *testing.T) {
-	if fips140.Enabled() {
-		t.Skip("CA reloading is disabled in FIPS 140 mode")
-	}
 	oldPKI, newPKI := newTestPKI(t, "old"), newTestPKI(t, "new")
 
 	var serverCert atomic.Pointer[tls.Certificate]
@@ -116,6 +112,8 @@ func TestExportAfterCARotation(t *testing.T) {
 	// client sends no SNI, which is the case when dialing an IP address.
 	srv.Listener = tls.NewListener(srv.Listener, &tls.Config{
 		MinVersion: tls.VersionTLS12,
+		// P-256 keeps the handshake valid under GODEBUG=fips140=only.
+		CurvePreferences: []tls.CurveID{tls.CurveP256},
 		GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
 			return serverCert.Load(), nil
 		},
@@ -127,15 +125,15 @@ func TestExportAfterCARotation(t *testing.T) {
 	caFile := filepath.Join(t.TempDir(), "ca.crt")
 	require.NoError(t, os.WriteFile(caFile, oldPKI.rootPEM, 0o600))
 
-	const reloadInterval = 10 * time.Millisecond
 	cfg := &Config{
 		Encoding:     EncodingProto,
 		LogsEndpoint: endpoint,
 		ClientConfig: confighttp.ClientConfig{
 			TLS: configtls.ClientConfig{
+				ReloadCAFile: true,
 				Config: configtls.Config{
-					CAFile:         caFile,
-					ReloadInterval: reloadInterval,
+					CAFile:           caFile,
+					CurvePreferences: []string{"P256"},
 				},
 			},
 		},
@@ -158,10 +156,12 @@ func TestExportAfterCARotation(t *testing.T) {
 	require.ErrorContains(t, export(), "certificate signed by unknown authority",
 		"export must fail while the client still trusts only the old CA")
 
-	// The CA file is rotated on disk; after reload_interval the exporter must
-	// trust the new CA.
+	// The CA file is rotated on disk; the exporter must pick it up for new
+	// connections.
 	require.NoError(t, os.WriteFile(caFile, newPKI.rootPEM, 0o600))
-	time.Sleep(2 * reloadInterval)
-	srv.CloseClientConnections()
-	require.NoError(t, export(), "export must succeed after the CA file was reloaded")
+	require.Eventually(t, func() bool {
+		srv.CloseClientConnections()
+		return export() == nil
+	}, 10*time.Second, 50*time.Millisecond,
+		"export must succeed after the CA file was reloaded")
 }

@@ -244,7 +244,15 @@ func (cc *ClientConfig) getGrpcDialOptions(
 	}
 	cred := insecure.NewCredentials()
 	if tlsCfg != nil {
-		cred = credentials.NewTLS(tlsCfg)
+		rootCAs, rerr := cc.TLS.LoadRootCAsFunc(ctx)
+		if rerr != nil {
+			return nil, rerr
+		}
+		if rootCAs != nil {
+			cred = newReloadingRootCAsCredentials(tlsCfg, rootCAs)
+		} else {
+			cred = credentials.NewTLS(tlsCfg)
+		}
 	} else if cc.isSchemeHTTPS() {
 		cred = credentials.NewTLS(&tls.Config{})
 	}

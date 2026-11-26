@@ -106,6 +106,16 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 	}
 	if tlsCfg != nil {
 		transport.TLSClientConfig = tlsCfg
+		rootCAs, rerr := cc.TLS.LoadRootCAsFunc(ctx)
+		if rerr != nil {
+			return nil, rerr
+		}
+		if rootCAs != nil {
+			if cc.ProxyURL != "" {
+				settings.Logger.Warn("tls::ca_file_reload has no effect on connections through proxy_url; the CA file is loaded only at startup")
+			}
+			transport.DialTLSContext = dialTLSWithReloadedRootCAs(transport, rootCAs)
+		}
 	}
 	if cc.ReadBufferSize > 0 {
 		transport.ReadBufferSize = cc.ReadBufferSize

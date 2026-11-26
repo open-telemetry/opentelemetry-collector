@@ -130,6 +130,17 @@ func (r *clientCAsFileReloader) reloadIfModified(now time.Time) {
 	r.lastReloadError = nil
 }
 
+// getCertPool returns the CA CertPool, reloading it first if the file has
+// changed.
+func (r *clientCAsFileReloader) getCertPool() *x509.CertPool {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	r.reloadIfModified(time.Now())
+
+	return r.certPool
+}
+
 func (r *clientCAsFileReloader) getLastError() error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
