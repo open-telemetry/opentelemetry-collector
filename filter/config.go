@@ -7,7 +7,7 @@ import "go.opentelemetry.io/collector/strmatch"
 
 // Config configures the matching behavior of a Filter.
 //
-// Deprecated: [v0.166.0] Use go.opentelemetry.io/collector/strmatch.Config instead.
+// Deprecated: [v0.167.0] Use go.opentelemetry.io/collector/strmatch.Config instead.
 //
 //go:fix inline
 type Config = strmatch.Config

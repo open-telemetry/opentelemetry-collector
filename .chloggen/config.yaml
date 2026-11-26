@@ -54,6 +54,7 @@ components:
     - pkg/extensionmiddlewaretest
     - pkg/extensiontest
     - pkg/featuregate
+    - pkg/filter
     - pkg/graph
     - pkg/hostcapabilities
     - pkg/otelcol

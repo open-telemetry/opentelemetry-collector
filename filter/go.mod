@@ -1,4 +1,4 @@
-// Deprecated: Use go.opentelemetry.io/collector/strmatch instead.
+// Deprecated: [v0.167.0] Use go.opentelemetry.io/collector/strmatch instead.
 module go.opentelemetry.io/collector/filter
 
 go 1.26.0
