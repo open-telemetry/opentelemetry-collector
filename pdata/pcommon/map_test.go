@@ -796,7 +796,7 @@ func BenchmarkMapGetOrPutExisting(b *testing.B) {
 	for _, size := range []int{1, 8, 32, 128} {
 		b.Run(strconv.Itoa(size), func(b *testing.B) {
 			m := newBenchmarkMap(size)
-			key := fmt.Sprintf("attribute.%03d", size-1)
+			key := "attribute." + strconv.Itoa(size-1)
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
