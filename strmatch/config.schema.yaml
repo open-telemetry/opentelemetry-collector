@@ -1,9 +1,10 @@
 $defs:
   config:
-    description: Config configures the matching behavior of a Filter.
+    description: Config configures the matching behavior of a Matcher.
     type: object
     properties:
       regexp:
         type: string
       strict:
         type: string
+

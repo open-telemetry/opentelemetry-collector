@@ -397,15 +397,15 @@ func TestLocalizeRef(t *testing.T) {
 	}{
 		{
 			name:           "same root collector ref becomes local absolute",
-			refPath:        "go.opentelemetry.io/collector/filter.config",
+			refPath:        "go.opentelemetry.io/collector/strmatch.config",
 			importRootPath: "go.opentelemetry.io/collector",
-			expected:       "/filter.config",
+			expected:       "/strmatch.config",
 		},
 		{
 			name:           "different root ref stays external",
-			refPath:        "go.opentelemetry.io/collector/filter.config",
+			refPath:        "go.opentelemetry.io/collector/strmatch.config",
 			importRootPath: "github.com/open-telemetry/opentelemetry-collector-contrib",
-			expected:       "go.opentelemetry.io/collector/filter.config",
+			expected:       "go.opentelemetry.io/collector/strmatch.config",
 		},
 	}
 

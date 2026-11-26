@@ -57,6 +57,30 @@ func TestMetricValidateUnit(t *testing.T) {
 	}
 }
 
+func TestMetricValidateSemConvVersionedMetric(t *testing.T) {
+	unit := "By"
+	newMetric := func(ref string) *Metric {
+		return &Metric{
+			Signal: Signal{
+				Description:        "a metric",
+				Stability:          component.StabilityLevelBeta,
+				SemanticConvention: &SemanticConvention{SemanticConventionRef: ref},
+			},
+			Unit: &unit,
+			Sum: &Sum{
+				MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeInt},
+			},
+		}
+	}
+	const base = "https://github.com/open-telemetry/semantic-conventions/blob/v1.44.0/docs/system/container-metrics.md#"
+
+	require.NoError(t, newMetric(base+"metric-containermemoryusage").validate("container.memory.usage@v1", "1.44.0"))
+	require.NoError(t, newMetric(base+"metric-containermemoryusage").validate("container.memory.usage", "1.44.0"))
+	require.ErrorContains(t,
+		newMetric(base+"metric-containermemoryusagev1").validate("container.memory.usage@v1", "1.44.0"),
+		"invalid semantic-conventions URL")
+}
+
 func TestValidateSemConvMetricURL(t *testing.T) {
 	validURL := "https://github.com/open-telemetry/semantic-conventions/blob/v1.37.2/docs/system/system-metrics.md#metric-systemcputime"
 	tests := []struct {

@@ -404,7 +404,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
                 },
@@ -420,7 +420,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
                 },
@@ -436,7 +436,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
                 },
@@ -452,7 +452,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
                 }
@@ -478,7 +478,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
                 },
@@ -494,7 +494,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
                 },
@@ -510,7 +510,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
                 },
@@ -526,7 +526,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
                 }
@@ -552,7 +552,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
                 },
@@ -568,7 +568,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
                 },
@@ -584,7 +584,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
                 },
@@ -600,7 +600,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
                 }
@@ -626,7 +626,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
                 },
@@ -642,7 +642,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
                 },
@@ -658,7 +658,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
                 },
@@ -674,7 +674,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
                 }
@@ -700,7 +700,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
                 },
@@ -716,7 +716,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
                 },
@@ -732,7 +732,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
                 },
@@ -748,7 +748,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
                 }
@@ -774,7 +774,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
                 },
@@ -790,7 +790,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
                 },
@@ -806,7 +806,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
                 },
@@ -822,7 +822,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
                 }
@@ -848,7 +848,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
                 },
@@ -864,7 +864,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
                 },
@@ -880,7 +880,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
                 },
@@ -896,7 +896,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
                 }
@@ -922,7 +922,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
                 },
@@ -938,7 +938,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
                 },
@@ -954,7 +954,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
                 },
@@ -970,7 +970,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
                 }
@@ -996,7 +996,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
                 },
@@ -1012,7 +1012,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
                 },
@@ -1028,7 +1028,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
                 },
@@ -1044,7 +1044,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
                 }
@@ -1070,7 +1070,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: EventsExclude defines a list of filters for attribute values. If the list is not empty, events with matching resource attribute values will not be emitted. EventsInclude has higher priority than EventsExclude."
                 },
@@ -1086,7 +1086,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: EventsInclude defines a list of filters for attribute values. If the list is not empty, only events with matching resource attribute values will be emitted."
                 },
@@ -1102,7 +1102,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: MetricsExclude defines a list of filters for attribute values. If the list is not empty, metrics with matching resource attribute values will not be emitted. MetricsInclude has higher priority than MetricsExclude."
                 },
@@ -1118,7 +1118,7 @@
                         "type": "string"
                       }
                     },
-                    "description": "Config configures the matching behavior of a Filter."
+                    "description": "Config configures the matching behavior of a Matcher."
                   },
                   "description": "Experimental: MetricsInclude defines a list of filters for attribute values. If the list is not empty, only metrics with matching resource attribute values will be emitted."
                 }

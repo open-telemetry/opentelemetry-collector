@@ -33,7 +33,7 @@ import (
 	conventions "go.opentelemetry.io/otel/semconv/v{{ .SemConvVersion }}"
 	{{- end }}
 	{{ if .ResourceAttributes -}}
-	"go.opentelemetry.io/collector/filter"
+	"go.opentelemetry.io/collector/strmatch"
 	{{- end }}
 )
 
@@ -337,8 +337,8 @@ type MetricsBuilder struct {
 	metricsBuffer   pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo       component.BuildInfo  // contains version information.
 	{{- if .ResourceAttributes }}
-	resourceAttributeIncludeFilter map[string]filter.Filter
-	resourceAttributeExcludeFilter map[string]filter.Filter
+	resourceAttributeIncludeFilter map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter map[string]strmatch.Matcher
 	{{- end }}
 	{{- range $name, $metric := .Metrics }}
 	metric{{ $name.Render }} metric{{ $name.Render }}
@@ -408,16 +408,16 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings {{ .Status.Class }}.Se
 		metric{{ $name.Render }}: newMetric{{ $name.Render }}(mbc.Metrics.{{ $name.Render }}),
 		{{- end }}
 		{{ if .ResourceAttributes -}}
-		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter: make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter: make(map[string]strmatch.Matcher),
 		{{- end }}
 	}
 	{{- range $name, $attr := .ResourceAttributes }}
 	if mbc.ResourceAttributes.{{ $name.Render }}.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["{{ $name }}"] = filter.CreateFilter(mbc.ResourceAttributes.{{ $name.Render }}.MetricsInclude)
+		mb.resourceAttributeIncludeFilter["{{ $name }}"] = strmatch.New(mbc.ResourceAttributes.{{ $name.Render }}.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.{{ $name.Render }}.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["{{ $name }}"] = filter.CreateFilter(mbc.ResourceAttributes.{{ $name.Render }}.MetricsExclude)
+		mb.resourceAttributeExcludeFilter["{{ $name }}"] = strmatch.New(mbc.ResourceAttributes.{{ $name.Render }}.MetricsExclude)
 	}
 	{{- end }}
 

@@ -17,6 +17,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -60,6 +62,24 @@ func TestProcessorShutdown(t *testing.T) {
 			_ = lProc.Shutdown(ctx)
 		})
 	}
+}
+
+func TestDeprecationWarningOnStart(t *testing.T) {
+	factory := NewFactory()
+	set := processortest.NewNopSettings(factory.Type())
+	core, logs := observer.New(zap.WarnLevel)
+	set.Logger = zap.New(core)
+	proc, err := factory.CreateTraces(t.Context(), set, factory.CreateDefaultConfig(), consumertest.NewNop())
+	require.NoError(t, err)
+	assert.Zero(t, logs.Len())
+
+	require.NoError(t, proc.Start(t.Context(), componenttest.NewNopHost()))
+	require.NoError(t, proc.Shutdown(t.Context()))
+	entries := logs.All()
+	require.Len(t, entries, 1)
+	assert.Equal(t, zap.WarnLevel, entries[0].Level)
+	assert.Contains(t, entries[0].Message, "batch processor is deprecated")
+	assert.Contains(t, entries[0].Message, "https://opentelemetry.io/blog/2026/collector-batching-migration/")
 }
 
 func TestProcessorLifecycle(t *testing.T) {
