@@ -230,7 +230,13 @@ func (qb *partitionBatcher) Start(context.Context, component.Host) error {
 }
 
 // shutdownInternal ensures that queue and all Batcher are stopped.
-func (qb *partitionBatcher) shutdownInternal() {
+//
+// flushInline controls how the pending batch is exported. Callers that already
+// run on a worker-pool goroutine (the LRU eviction path) must flush on that same
+// goroutine: acquiring another worker while holding one blocks forever once
+// every worker is busy, which wedges the pool. Callers that do not hold a
+// worker (Shutdown) flush through the pool as usual.
+func (qb *partitionBatcher) shutdownInternal(flushInline bool) {
 	qb.currentBatchMu.Lock()
 	if !qb.active {
 		qb.currentBatchMu.Unlock()
@@ -242,13 +248,30 @@ func (qb *partitionBatcher) shutdownInternal() {
 	qb.currentBatchMu.Unlock()
 	close(qb.shutdownCh)
 	// Make sure execute one last flush if necessary.
-	qb.flushCurrentBatchOrRemovePartition()
+	if flushInline {
+		qb.flushCurrentBatchInline()
+	} else {
+		qb.flushCurrentBatchOrRemovePartition()
+	}
 	qb.stopWG.Wait()
+}
+
+// flushCurrentBatchInline exports the pending batch on the calling goroutine.
+// Only safe when the caller is not waiting on the worker pool itself.
+func (qb *partitionBatcher) flushCurrentBatchInline() {
+	qb.currentBatchMu.Lock()
+	batchToFlush := qb.currentBatch
+	qb.currentBatch = nil
+	qb.currentBatchMu.Unlock()
+	if batchToFlush == nil {
+		return
+	}
+	batchToFlush.done.OnDone(qb.consumeFunc(batchToFlush.ctx, batchToFlush.req))
 }
 
 // Shutdown ensures that queue and all Batcher are stopped.
 func (qb *partitionBatcher) Shutdown(context.Context) error {
-	qb.shutdownInternal()
+	qb.shutdownInternal(false)
 	return nil
 }
 
@@ -285,9 +308,14 @@ func (qb *partitionBatcher) flushCurrentBatchOrRemovePartition() {
 }
 
 // flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
+//
+// If shutdown starts while the flush is still waiting for a worker, the export
+// runs inline on the calling goroutine instead: the goroutine running the
+// shutdown may be holding the pool's last worker while it waits on stopWG for
+// this very flush, so blocking on the pool at that point would deadlock both.
 func (qb *partitionBatcher) flush(ctx context.Context, req request.Request, done queue.Done) {
 	qb.stopWG.Add(1)
-	qb.wp.execute(func() {
+	qb.wp.executeOrInline(qb.shutdownCh, func() {
 		defer qb.stopWG.Done()
 		done.OnDone(qb.consumeFunc(ctx, req))
 	})
@@ -313,6 +341,24 @@ func (wp *workerPool) execute(f func()) {
 		}()
 		f()
 	}()
+}
+
+// executeOrInline is like execute, but runs f inline on the calling goroutine
+// if abort is closed before a worker becomes available. It is used by shutdown
+// paths where the goroutine waiting for a worker may itself be waited on by
+// the pool's last busy worker, so blocking on the pool would deadlock.
+func (wp *workerPool) executeOrInline(abort <-chan struct{}, f func()) {
+	select {
+	case <-wp.workers:
+		go func() {
+			defer func() {
+				wp.workers <- struct{}{}
+			}()
+			f()
+		}()
+	case <-abort:
+		f()
+	}
 }
 
 type multiDone []queue.Done
