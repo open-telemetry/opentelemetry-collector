@@ -3,9 +3,11 @@
 
 package filter // import "go.opentelemetry.io/collector/filter"
 
+import "go.opentelemetry.io/collector/strmatch"
+
 // Filter is an interface for matching values against a set of filters.
-type Filter interface {
-	// Matches returns true if the given value matches at least one
-	// of the filters encapsulated by the Filter.
-	Matches(any) bool
-}
+//
+// Deprecated: [v0.167.0] Use go.opentelemetry.io/collector/strmatch.Matcher instead.
+//
+//go:fix inline
+type Filter = strmatch.Matcher

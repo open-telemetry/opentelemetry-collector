@@ -15,7 +15,7 @@ import (
 	{{- if .Events }}
 	"context"
 	"go.opentelemetry.io/otel/trace"
-	"go.opentelemetry.io/collector/filter"
+	"go.opentelemetry.io/collector/strmatch"
 	{{- end }}
 )
 
@@ -100,8 +100,8 @@ type LogsBuilder struct {
 	logRecordsBuffer    plog.LogRecordSlice
 	buildInfo           component.BuildInfo  // contains version information.
 	{{- if and .Events .ResourceAttributes }}
-	resourceAttributeIncludeFilter map[string]filter.Filter
-	resourceAttributeExcludeFilter map[string]filter.Filter
+	resourceAttributeIncludeFilter map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter map[string]strmatch.Matcher
 	{{- end }}
 	{{- range $name, $event := .Events }}
 	event{{ $name.Render }} event{{ $name.Render }}
@@ -162,17 +162,17 @@ func NewLogsBuilder({{ if .Events }}lbc LogsBuilderConfig, {{ end }}settings {{ 
 		event{{ $name.Render }}: newEvent{{ $name.Render }}(lbc.Events.{{ $name.Render }}),
 		{{- end }}
 		{{ if and .Events .ResourceAttributes -}}
-		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter: make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter: make(map[string]strmatch.Matcher),
 		{{- end }}
 	}
 	{{- if .Events }}
 	{{- range $name, $attr := .ResourceAttributes }}
 	if lbc.ResourceAttributes.{{ $name.Render }}.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["{{ $name }}"] = filter.CreateFilter(lbc.ResourceAttributes.{{ $name.Render }}.EventsInclude)
+		lb.resourceAttributeIncludeFilter["{{ $name }}"] = strmatch.New(lbc.ResourceAttributes.{{ $name.Render }}.EventsInclude)
 	}
 	if lbc.ResourceAttributes.{{ $name.Render }}.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["{{ $name }}"] = filter.CreateFilter(lbc.ResourceAttributes.{{ $name.Render }}.EventsExclude)
+		lb.resourceAttributeExcludeFilter["{{ $name }}"] = strmatch.New(lbc.ResourceAttributes.{{ $name.Render }}.EventsExclude)
 	}
 	{{- end }}
 	{{- end }}

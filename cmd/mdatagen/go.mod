@@ -39,6 +39,7 @@ require (
 	go.opentelemetry.io/collector/scraper/scrapertest v0.166.0
 	go.opentelemetry.io/collector/scraper/xscraper v0.166.0
 	go.opentelemetry.io/collector/service/hostcapabilities v0.166.0
+	go.opentelemetry.io/collector/strmatch v0.166.0
 	go.opentelemetry.io/otel v1.47.0
 	go.opentelemetry.io/otel/metric v1.47.0
 	go.opentelemetry.io/otel/sdk/metric v1.47.0
@@ -113,7 +114,7 @@ replace go.opentelemetry.io/collector/internal/schemagen => ../../internal/schem
 
 replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../confmap/provider/fileprovider
 
-replace go.opentelemetry.io/collector/filter => ../../filter
+replace go.opentelemetry.io/collector/strmatch => ../../strmatch
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
@@ -240,3 +241,5 @@ replace go.opentelemetry.io/collector/receiver/receiverhelper => ../../receiver/
 replace go.opentelemetry.io/collector/scraper/scraperhelper => ../../scraper/scraperhelper
 
 replace go.opentelemetry.io/collector/config/configstorage => ../../config/configstorage
+
+replace go.opentelemetry.io/collector/filter => ../../filter

@@ -15,8 +15,8 @@ import (
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/cfggen"
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/helpers"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 const semConvURL = "https://github.com/open-telemetry/semantic-conventions/blob"
@@ -734,9 +734,9 @@ type Attribute struct {
 	// EnabledPtr defines whether the attribute is enabled by default.
 	EnabledPtr *bool `mapstructure:"enabled"`
 	// Include can be used to filter attributes.
-	Include []filter.Config `mapstructure:"include"`
+	Include []strmatch.Config `mapstructure:"include"`
 	// Include can be used to filter attributes.
-	Exclude []filter.Config `mapstructure:"exclude"`
+	Exclude []strmatch.Config `mapstructure:"exclude"`
 	// Enum can optionally describe the set of values to which the attribute can belong.
 	Enum []string `mapstructure:"enum"`
 	// Type is an attribute type.

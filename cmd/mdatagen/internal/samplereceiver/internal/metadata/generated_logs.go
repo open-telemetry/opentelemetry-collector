@@ -9,10 +9,10 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 type EventAttributeOption interface {
@@ -169,8 +169,8 @@ type LogsBuilder struct {
 	logsBuffer                     plog.Logs
 	logRecordsBuffer               plog.LogRecordSlice
 	buildInfo                      component.BuildInfo // contains version information.
-	resourceAttributeIncludeFilter map[string]filter.Filter
-	resourceAttributeExcludeFilter map[string]filter.Filter
+	resourceAttributeIncludeFilter map[string]strmatch.Matcher
+	resourceAttributeExcludeFilter map[string]strmatch.Matcher
 	eventDefaultEvent              eventDefaultEvent
 	eventDefaultEventToBeRemoved   eventDefaultEventToBeRemoved
 	eventDefaultEventToBeRenamed   eventDefaultEventToBeRenamed
@@ -211,68 +211,68 @@ func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuil
 		eventDefaultEvent:              newEventDefaultEvent(lbc.Events.DefaultEvent),
 		eventDefaultEventToBeRemoved:   newEventDefaultEventToBeRemoved(lbc.Events.DefaultEventToBeRemoved),
 		eventDefaultEventToBeRenamed:   newEventDefaultEventToBeRenamed(lbc.Events.DefaultEventToBeRenamed),
-		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+		resourceAttributeIncludeFilter: make(map[string]strmatch.Matcher),
+		resourceAttributeExcludeFilter: make(map[string]strmatch.Matcher),
 	}
 	if lbc.ResourceAttributes.HostArch.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["host.arch"] = filter.CreateFilter(lbc.ResourceAttributes.HostArch.EventsInclude)
+		lb.resourceAttributeIncludeFilter["host.arch"] = strmatch.New(lbc.ResourceAttributes.HostArch.EventsInclude)
 	}
 	if lbc.ResourceAttributes.HostArch.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["host.arch"] = filter.CreateFilter(lbc.ResourceAttributes.HostArch.EventsExclude)
+		lb.resourceAttributeExcludeFilter["host.arch"] = strmatch.New(lbc.ResourceAttributes.HostArch.EventsExclude)
 	}
 	if lbc.ResourceAttributes.MapResourceAttr.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["map.resource.attr"] = filter.CreateFilter(lbc.ResourceAttributes.MapResourceAttr.EventsInclude)
+		lb.resourceAttributeIncludeFilter["map.resource.attr"] = strmatch.New(lbc.ResourceAttributes.MapResourceAttr.EventsInclude)
 	}
 	if lbc.ResourceAttributes.MapResourceAttr.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["map.resource.attr"] = filter.CreateFilter(lbc.ResourceAttributes.MapResourceAttr.EventsExclude)
+		lb.resourceAttributeExcludeFilter["map.resource.attr"] = strmatch.New(lbc.ResourceAttributes.MapResourceAttr.EventsExclude)
 	}
 	if lbc.ResourceAttributes.OptionalResourceAttr.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["optional.resource.attr"] = filter.CreateFilter(lbc.ResourceAttributes.OptionalResourceAttr.EventsInclude)
+		lb.resourceAttributeIncludeFilter["optional.resource.attr"] = strmatch.New(lbc.ResourceAttributes.OptionalResourceAttr.EventsInclude)
 	}
 	if lbc.ResourceAttributes.OptionalResourceAttr.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["optional.resource.attr"] = filter.CreateFilter(lbc.ResourceAttributes.OptionalResourceAttr.EventsExclude)
+		lb.resourceAttributeExcludeFilter["optional.resource.attr"] = strmatch.New(lbc.ResourceAttributes.OptionalResourceAttr.EventsExclude)
 	}
 	if lbc.ResourceAttributes.SliceResourceAttr.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["slice.resource.attr"] = filter.CreateFilter(lbc.ResourceAttributes.SliceResourceAttr.EventsInclude)
+		lb.resourceAttributeIncludeFilter["slice.resource.attr"] = strmatch.New(lbc.ResourceAttributes.SliceResourceAttr.EventsInclude)
 	}
 	if lbc.ResourceAttributes.SliceResourceAttr.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["slice.resource.attr"] = filter.CreateFilter(lbc.ResourceAttributes.SliceResourceAttr.EventsExclude)
+		lb.resourceAttributeExcludeFilter["slice.resource.attr"] = strmatch.New(lbc.ResourceAttributes.SliceResourceAttr.EventsExclude)
 	}
 	if lbc.ResourceAttributes.StringEnumResourceAttr.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["string.enum.resource.attr"] = filter.CreateFilter(lbc.ResourceAttributes.StringEnumResourceAttr.EventsInclude)
+		lb.resourceAttributeIncludeFilter["string.enum.resource.attr"] = strmatch.New(lbc.ResourceAttributes.StringEnumResourceAttr.EventsInclude)
 	}
 	if lbc.ResourceAttributes.StringEnumResourceAttr.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["string.enum.resource.attr"] = filter.CreateFilter(lbc.ResourceAttributes.StringEnumResourceAttr.EventsExclude)
+		lb.resourceAttributeExcludeFilter["string.enum.resource.attr"] = strmatch.New(lbc.ResourceAttributes.StringEnumResourceAttr.EventsExclude)
 	}
 	if lbc.ResourceAttributes.StringResourceAttr.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["string.resource.attr"] = filter.CreateFilter(lbc.ResourceAttributes.StringResourceAttr.EventsInclude)
+		lb.resourceAttributeIncludeFilter["string.resource.attr"] = strmatch.New(lbc.ResourceAttributes.StringResourceAttr.EventsInclude)
 	}
 	if lbc.ResourceAttributes.StringResourceAttr.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["string.resource.attr"] = filter.CreateFilter(lbc.ResourceAttributes.StringResourceAttr.EventsExclude)
+		lb.resourceAttributeExcludeFilter["string.resource.attr"] = strmatch.New(lbc.ResourceAttributes.StringResourceAttr.EventsExclude)
 	}
 	if lbc.ResourceAttributes.StringResourceAttrDisableWarning.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["string.resource.attr_disable_warning"] = filter.CreateFilter(lbc.ResourceAttributes.StringResourceAttrDisableWarning.EventsInclude)
+		lb.resourceAttributeIncludeFilter["string.resource.attr_disable_warning"] = strmatch.New(lbc.ResourceAttributes.StringResourceAttrDisableWarning.EventsInclude)
 	}
 	if lbc.ResourceAttributes.StringResourceAttrDisableWarning.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["string.resource.attr_disable_warning"] = filter.CreateFilter(lbc.ResourceAttributes.StringResourceAttrDisableWarning.EventsExclude)
+		lb.resourceAttributeExcludeFilter["string.resource.attr_disable_warning"] = strmatch.New(lbc.ResourceAttributes.StringResourceAttrDisableWarning.EventsExclude)
 	}
 	if lbc.ResourceAttributes.StringResourceAttrRemoveWarning.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["string.resource.attr_remove_warning"] = filter.CreateFilter(lbc.ResourceAttributes.StringResourceAttrRemoveWarning.EventsInclude)
+		lb.resourceAttributeIncludeFilter["string.resource.attr_remove_warning"] = strmatch.New(lbc.ResourceAttributes.StringResourceAttrRemoveWarning.EventsInclude)
 	}
 	if lbc.ResourceAttributes.StringResourceAttrRemoveWarning.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["string.resource.attr_remove_warning"] = filter.CreateFilter(lbc.ResourceAttributes.StringResourceAttrRemoveWarning.EventsExclude)
+		lb.resourceAttributeExcludeFilter["string.resource.attr_remove_warning"] = strmatch.New(lbc.ResourceAttributes.StringResourceAttrRemoveWarning.EventsExclude)
 	}
 	if lbc.ResourceAttributes.StringResourceAttrToBeRemoved.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["string.resource.attr_to_be_removed"] = filter.CreateFilter(lbc.ResourceAttributes.StringResourceAttrToBeRemoved.EventsInclude)
+		lb.resourceAttributeIncludeFilter["string.resource.attr_to_be_removed"] = strmatch.New(lbc.ResourceAttributes.StringResourceAttrToBeRemoved.EventsInclude)
 	}
 	if lbc.ResourceAttributes.StringResourceAttrToBeRemoved.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["string.resource.attr_to_be_removed"] = filter.CreateFilter(lbc.ResourceAttributes.StringResourceAttrToBeRemoved.EventsExclude)
+		lb.resourceAttributeExcludeFilter["string.resource.attr_to_be_removed"] = strmatch.New(lbc.ResourceAttributes.StringResourceAttrToBeRemoved.EventsExclude)
 	}
 	if lbc.ResourceAttributes.StringResourceDisabledAttrToBeRemoved.EventsInclude != nil {
-		lb.resourceAttributeIncludeFilter["string.resource.disabled_attr_to_be_removed"] = filter.CreateFilter(lbc.ResourceAttributes.StringResourceDisabledAttrToBeRemoved.EventsInclude)
+		lb.resourceAttributeIncludeFilter["string.resource.disabled_attr_to_be_removed"] = strmatch.New(lbc.ResourceAttributes.StringResourceDisabledAttrToBeRemoved.EventsInclude)
 	}
 	if lbc.ResourceAttributes.StringResourceDisabledAttrToBeRemoved.EventsExclude != nil {
-		lb.resourceAttributeExcludeFilter["string.resource.disabled_attr_to_be_removed"] = filter.CreateFilter(lbc.ResourceAttributes.StringResourceDisabledAttrToBeRemoved.EventsExclude)
+		lb.resourceAttributeExcludeFilter["string.resource.disabled_attr_to_be_removed"] = strmatch.New(lbc.ResourceAttributes.StringResourceDisabledAttrToBeRemoved.EventsExclude)
 	}
 
 	return lb
