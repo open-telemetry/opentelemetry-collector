@@ -149,3 +149,14 @@ func TestToClientConnReloadCAFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, conn.Close())
 }
+
+func TestToClientConnReloadCAFileInvalidFile(t *testing.T) {
+	caFile := filepath.Join(t.TempDir(), "ca.crt")
+	require.NoError(t, os.WriteFile(caFile, []byte("not a certificate"), 0o600))
+
+	cfg := NewDefaultClientConfig()
+	cfg.Endpoint = "localhost:1234"
+	cfg.TLS = configtls.ClientConfig{ReloadCAFile: true, Config: configtls.Config{CAFile: caFile}}
+	_, err := cfg.ToClientConn(t.Context(), nil, componenttest.NewNopTelemetrySettings())
+	require.ErrorContains(t, err, "failed to load CA file")
+}

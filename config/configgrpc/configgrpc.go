@@ -238,16 +238,18 @@ func (cc *ClientConfig) getGrpcDialOptions(
 	}
 	opts = append(opts, grpc.WithDefaultCallOptions(callOpts...))
 
+	// Load the reloadable CA pool first, so that an unloadable CA file is
+	// reported from here rather than from LoadTLSConfig.
+	rootCAs, err := cc.TLS.LoadRootCAsFunc(ctx)
+	if err != nil {
+		return nil, err
+	}
 	tlsCfg, err := cc.TLS.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
 	cred := insecure.NewCredentials()
 	if tlsCfg != nil {
-		rootCAs, rerr := cc.TLS.LoadRootCAsFunc(ctx)
-		if rerr != nil {
-			return nil, rerr
-		}
 		if rootCAs != nil {
 			cred = newReloadingRootCAsCredentials(tlsCfg, rootCAs)
 		} else {

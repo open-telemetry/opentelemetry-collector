@@ -199,3 +199,13 @@ func TestDialTLSWithReloadedRootCAsErrors(t *testing.T) {
 	_, err = dial(t.Context(), "tcp", addr)
 	require.Error(t, err)
 }
+
+func TestClientReloadCAFileInvalidFile(t *testing.T) {
+	caFile := filepath.Join(t.TempDir(), "ca.crt")
+	require.NoError(t, os.WriteFile(caFile, []byte("not a certificate"), 0o600))
+
+	cfg := NewDefaultClientConfig()
+	cfg.TLS = configtls.ClientConfig{ReloadCAFile: true, Config: configtls.Config{CAFile: caFile}}
+	_, err := cfg.ToClient(t.Context(), nil, componenttest.NewNopTelemetrySettings())
+	require.ErrorContains(t, err, "failed to load CA file")
+}
