@@ -3,7 +3,7 @@
 
 //go:generate mdatagen metadata.yaml
 
-package h2cextension
+package h2cextension // import "go.opentelemetry.io/collector/extension/h2cextension"
 
 import (
 	"context"

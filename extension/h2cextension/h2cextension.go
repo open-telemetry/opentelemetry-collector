@@ -3,7 +3,7 @@
 
 // Package h2cextension provides an HTTP server middleware extension for serving
 // cleartext HTTP/2 connections.
-package h2cextension
+package h2cextension // import "go.opentelemetry.io/collector/extension/h2cextension"
 
 import (
 	"context"

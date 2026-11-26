@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package h2cextension
+package h2cextension // import "go.opentelemetry.io/collector/extension/h2cextension"
 
 import "go.opentelemetry.io/collector/component"
 
