@@ -1,12 +1,28 @@
 display_name: Batch Processor
 type: batch
+description: |
+  > [!WARNING]
+  > **The `batch` processor is deprecated for traces, metrics, and logs.**
+  > For most pipelines, enable [exporter-level batching (`sending_queue.batch`)](../../exporter/exporterhelper/README.md#sending-queue-batch-settings)
+  > on each exporter that supports it and remove `batch` from the pipeline.
+  > If you need to batch before another processor or share batches across multiple exporters,
+  > use the [`queue_batch` processor](../queuebatchprocessor/README.md) instead.
+  >
+  > See the [migration blog post](https://opentelemetry.io/blog/2026/collector-batching-migration/) for configuration examples
+  > and the [migration RFC](../../docs/rfcs/batching-migration.md) for the rationale and rollout plan.
 github_project: open-telemetry/opentelemetry-collector
 
 status:
   disable_codecov_badge: true
   class: processor
   stability:
-    beta: [traces, metrics, logs]
+    deprecated: [traces, metrics, logs]
+  deprecation:
+    traces: &batch_deprecation
+      date: "2026-11-24"
+      migration: "Use exporter-level batching or the `queue_batch` processor. See the [migration guide](https://opentelemetry.io/blog/2026/collector-batching-migration/)."
+    metrics: *batch_deprecation
+    logs: *batch_deprecation
   distributions: [core, contrib, k8s]
 
 tests:

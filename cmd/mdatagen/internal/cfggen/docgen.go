@@ -30,16 +30,26 @@ type DocSection struct {
 	// Scalar is true for non-object definitions (type aliases such as an enum
 	// string or a bounded int), which render as a single summary row.
 	Scalar bool
+	// Exported holds the definitions rendered in the "Exported configs" part of
+	// the same document; only references to these can be linked to.
+	Exported map[string]*ConfigMetadata
 }
 
 // CfgRootSection wraps a schema for the top-level configSection call.
-func CfgRootSection(cfg *ConfigMetadata) DocSection {
-	return DocSection{Schema: cfg}
+func CfgRootSection(md *ConfigsMetadata) DocSection {
+	return DocSection{Schema: md.Config, Exported: md.ExportedConfigs}
 }
 
-// CfgSubSection wraps a schema for a recursive configSection call.
-func CfgSubSection(cfg *ConfigMetadata, anchor, title string) DocSection {
-	return DocSection{Schema: cfg, Anchor: anchor, Title: title}
+// Sub wraps the schema of the property called name for a recursive configSection
+// call. The anchor and title extend those of s, and the exported definitions
+// are inherited.
+func (s DocSection) Sub(cfg *ConfigMetadata, name string) DocSection {
+	return DocSection{
+		Schema:   cfg,
+		Anchor:   CfgAnchor(s.Anchor, name),
+		Title:    CfgAnchor(s.Title, name),
+		Exported: s.Exported,
+	}
 }
 
 // CfgPropDocs returns a slice of PropDoc, in declaration order, for all YAML-visible
@@ -221,7 +231,6 @@ func NewCfgDocFns() map[string]any {
 		"cfgDocType":          CfgDocType,
 		"cfgDocDefault":       CfgDocDefault,
 		"cfgRootSection":      CfgRootSection,
-		"cfgSubSection":       CfgSubSection,
 		"cfgExportedSections": CfgExportedSections,
 		"cfgDocConstraints":   CfgDocConstraints,
 		"cfgExportedRef":      CfgExportedRef,
@@ -242,8 +251,14 @@ func CfgExportedSections(md *ConfigsMetadata) []DocSection {
 		if cfg == nil || cfg.InternalOnly {
 			continue
 		}
-		anchor := CfgAnchor("exported_configs", name)
-		sec := CfgSubSection(cfg, anchor, anchor)
+		// the prefix keeps anchors of exported definitions apart from those of
+		// the root config properties, it is not displayed
+		sec := DocSection{
+			Schema:   cfg,
+			Anchor:   CfgAnchor("exported_configs", name),
+			Title:    name,
+			Exported: md.ExportedConfigs,
+		}
 		sec.Scalar = !CfgIsObject(cfg)
 		sections = append(sections, sec)
 	}
@@ -255,7 +270,9 @@ func CfgExportedSections(md *ConfigsMetadata) []DocSection {
 // or "" if there is none. Such a property is documented by linking to that
 // definition's own section instead of expanding its table a second time.
 // InternalOnly definitions have no section of their own, so they are skipped.
-func CfgExportedRef(cfg *ConfigMetadata) string {
+// So are references that are not defined in the document's own exported_configs,
+// such as ones inherited from an external schema, which would be dead links.
+func CfgExportedRef(sec DocSection, cfg *ConfigMetadata) string {
 	if !CfgIsObject(cfg) || cfg.Ref == "" || cfg.InternalOnly {
 		return ""
 	}
@@ -263,5 +280,9 @@ func CfgExportedRef(cfg *ConfigMetadata) string {
 	if !ref.IsInternal() {
 		return ""
 	}
-	return ref.ConfigName()
+	name := ref.ConfigName()
+	if def, ok := sec.Exported[name]; !ok || def.InternalOnly {
+		return ""
+	}
+	return name
 }

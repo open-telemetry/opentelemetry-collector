@@ -109,7 +109,7 @@ func (m *Metric) validate(metricName MetricName, semConvVersion string) error {
 		errs = errors.Join(errs, m.Gauge.Validate())
 	}
 	if m.SemanticConvention != nil {
-		if err := validateSemConvMetricURL(m.SemanticConvention.SemanticConventionRef, semConvVersion, string(metricName)); err != nil {
+		if err := validateSemConvMetricURL(m.SemanticConvention.SemanticConventionRef, semConvVersion, metricName.EmittedName()); err != nil {
 			errs = errors.Join(errs, err)
 		}
 	}

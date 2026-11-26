@@ -130,7 +130,7 @@
               "properties": {
                 "ca_file": {
                   "type": "string",
-                  "description": "Path to the CA cert. For a client this verifies the server certificate. \nFor a server this verifies client certificates. If empty uses system root CA. (optional)\n"
+                  "description": "Path to the CA cert. For a client this verifies the server certificate.\nIf empty uses system root CA. Not used by servers: to verify client certificates\na server must set client_ca_file instead. (optional)\n"
                 },
                 "ca_pem": {
                   "type": "string",
@@ -468,7 +468,7 @@
               "properties": {
                 "ca_file": {
                   "type": "string",
-                  "description": "Path to the CA cert. For a client this verifies the server certificate. \nFor a server this verifies client certificates. If empty uses system root CA. (optional)\n"
+                  "description": "Path to the CA cert. For a client this verifies the server certificate.\nIf empty uses system root CA. Not used by servers: to verify client certificates\na server must set client_ca_file instead. (optional)\n"
                 },
                 "ca_pem": {
                   "type": "string",

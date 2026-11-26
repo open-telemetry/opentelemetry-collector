@@ -274,7 +274,7 @@ func BenchmarkProfilesUsage(b *testing.B) {
 }
 
 func BenchmarkProfilesMarshalJSON(b *testing.B) {
-	pd := generateTestProfiles()
+	pd := generateProfiles(b, 1, 1, 1, 100)
 	encoder := &JSONMarshaler{}
 
 	b.ReportAllocs()
