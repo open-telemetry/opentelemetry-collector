@@ -88,6 +88,12 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 		settings.Logger.Warn(warning)
 	}
 
+	// Load the reloadable CA pool first, so that an unloadable CA file is
+	// reported from here rather than from LoadTLSConfig.
+	rootCAs, err := cc.TLS.LoadRootCAsFunc(ctx)
+	if err != nil {
+		return nil, err
+	}
 	tlsCfg, err := cc.TLS.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, err
@@ -106,6 +112,12 @@ func (cc *ClientConfig) ToClient(ctx context.Context, extensions map[component.I
 	}
 	if tlsCfg != nil {
 		transport.TLSClientConfig = tlsCfg
+		if rootCAs != nil {
+			if cc.ProxyURL != "" {
+				settings.Logger.Warn("tls::ca_file_reload has no effect on connections through proxy_url; the CA file is loaded only at startup")
+			}
+			transport.DialTLSContext = dialTLSWithReloadedRootCAs(transport, rootCAs)
+		}
 	}
 	if cc.ReadBufferSize > 0 {
 		transport.ReadBufferSize = cc.ReadBufferSize

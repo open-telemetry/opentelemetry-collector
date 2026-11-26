@@ -119,6 +119,13 @@ Beyond TLS configuration, the following setting can optionally be configured:
 - `server_name_override`: If set to a non-empty string, it will override the
   virtual host name of authority (e.g. :authority header field) in requests
   (typically used for testing).
+- `ca_file_reload` (default = false): Reload the CA file set in `ca_file` when it
+  is modified, so new connections trust a rotated CA without restarting the
+  collector. The file is checked for changes at most once per second, on new
+  connections only; existing connections keep the CA they were established with.
+  If the modified file cannot be loaded, the previously loaded CA is kept.
+  Only supported by clients built with `confighttp` and `configgrpc`, and not
+  for `confighttp` clients that use `proxy_url`.
 
 Example:
 

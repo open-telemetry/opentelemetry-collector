@@ -110,6 +110,10 @@
         "tls": {
           "type": "object",
           "properties": {
+            "ca_file_reload": {
+              "type": "boolean",
+              "description": "Reload the CA file (ca_file) when it is modified, so new connections trust a rotated CA without a restart.\nOnly applied by confighttp and configgrpc clients. (optional, default false)\n"
+            },
             "insecure": {
               "type": "boolean",
               "description": "In gRPC and HTTP when set to true, this is used to disable the client transport security. \nSee https://godoc.org/google.golang.org/grpc#WithInsecure for gRPC. \nPlease refer to https://godoc.org/crypto/tls#Config for more information. (optional, default false)\n"

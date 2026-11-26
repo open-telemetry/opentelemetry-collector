@@ -19,6 +19,10 @@ type ClientConfig struct {
 	// InsecureSkipVerify enables TLS but not verify the certificate.
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify,omitempty"`
 
+	// ReloadCAFile reload the CA file (ca_file) when it is modified, so new connections trust a rotated CA without a restart.
+	// Only applied by confighttp and configgrpc clients. (optional, default false)
+	ReloadCAFile bool `mapstructure:"ca_file_reload,omitempty"`
+
 	// ServerName server name requested by client for virtual hosting. This sets the ServerName in the TLSConfig.
 	// Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)
 	ServerName string `mapstructure:"server_name_override,omitempty"`

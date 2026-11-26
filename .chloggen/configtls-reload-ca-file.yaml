@@ -1,0 +1,27 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
+component: pkg/configtls
+
+# A brief description of the change. Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add `ca_file_reload` client option to reload the CA file when it is modified, so exporters trust a rotated CA without a restart.
+
+# One or more tracking issues or pull requests related to the change
+issues: [11265]
+
+# (Optional) One or more lines of additional information to render under the main note that will be added to the release notes.
+# Use pipe (|) to keep your text on a single line, i.e. a two-line note: |
+subtext: |
+  Supported by clients built with `confighttp` and `configgrpc`. The new CA applies to new connections;
+  server certificate verification is still done by crypto/tls. Not applied to `confighttp` connections
+  through a proxy.
+
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user, api]
