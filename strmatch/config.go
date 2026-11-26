@@ -16,6 +16,7 @@ type Config struct {
 	_ struct{}
 }
 
+// Validate checks that exactly one of Strict or Regex is set and that Regex compiles
 func (c Config) Validate() error {
 	if c.Strict == "" && c.Regex == "" {
 		return errors.New("must specify either strict or regex")
