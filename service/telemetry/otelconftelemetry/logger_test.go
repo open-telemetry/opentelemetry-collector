@@ -516,6 +516,68 @@ func TestCreateLoggerSetsOpenTelemetryErrorHandler(t *testing.T) {
 	assert.Contains(t, entries[0].ContextMap()["error"], "failed to upload metrics")
 }
 
+func TestCreateLoggerErrorHandlerDoesNotRecurse(t *testing.T) {
+	core, observedLogs := observer.New(zapcore.DebugLevel)
+
+	// A log backend that rejects every export: the SDK reports each failure
+	// through the global error handler.
+	exports := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		exports++
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+	t.Cleanup(srv.Close)
+
+	cfg := &Config{
+		Logs: LogsConfig{
+			Level:    zapcore.InfoLevel,
+			Encoding: "json",
+			// No sampling: nothing else limits how often the handler logs.
+			Sampling: &LogsSamplingConfig{Enabled: false},
+			// A simple processor exports synchronously, on the logging goroutine.
+			Processors: []config.LogRecordProcessor{{
+				Simple: &config.SimpleLogRecordProcessor{
+					Exporter: config.LogRecordExporter{
+						OTLP: &config.OTLP{
+							Endpoint: new(srv.URL),
+							Protocol: new("http/protobuf"),
+							Insecure: new(true),
+						},
+					},
+				},
+			}},
+		},
+	}
+
+	resource, _, err := createResource(t.Context(), telemetry.Settings{}, cfg)
+	require.NoError(t, err)
+
+	set := telemetry.LoggerSettings{
+		Settings: telemetry.Settings{Resource: &resource},
+		BuildZapLogger: func(zap.Config, ...zap.Option) (*zap.Logger, error) {
+			return zap.New(core), nil
+		},
+	}
+
+	logger, shutdown, err := createLogger(t.Context(), set, cfg)
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, shutdown.Shutdown(t.Context()))
+	}()
+
+	// The export of this record fails and is reported by the error handler.
+	// The handler's own record must not be exported through the same
+	// LoggerProvider, or it would fail and re-enter the handler indefinitely.
+	logger.Info("Test log message")
+
+	assert.Equal(t, 1, exports)
+	entries := observedLogs.All()
+	require.Len(t, entries, 2)
+	assert.Equal(t, "Test log message", entries[0].Message)
+	assert.Equal(t, zapcore.ErrorLevel, entries[1].Level)
+	assert.Equal(t, "OpenTelemetry internal telemetry error", entries[1].Message)
+}
+
 func TestLogger_OTLP(t *testing.T) {
 	// Create a backend to receive the logs and assert the content
 	receivedLogs := 0

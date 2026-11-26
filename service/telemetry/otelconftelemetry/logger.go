@@ -61,14 +61,6 @@ func createLogger(
 		return nil, nil, err
 	}
 
-	// Route OpenTelemetry SDK-internal errors (e.g. failed metric/log/trace
-	// exports) through the collector's logger, so they follow the same
-	// configured encoding and outputs instead of always going to stderr
-	// via the OTel SDK's default global error handler.
-	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
-		logger.Error("OpenTelemetry internal telemetry error", zap.Error(err))
-	}))
-
 	if cfg.Logs.MigratedFromV02 {
 		logger.Warn("Telemetry logs configuration is using the deprecated v0.2.0 Declarative Configuration format, please migrate to the v0.3.0 format",
 			zap.String("url", "https://opentelemetry.io/docs/specs/otel/configuration/#declarative-configuration"))
@@ -103,6 +95,20 @@ func createLogger(
 			)
 		}))
 	}
+
+	// Route OpenTelemetry SDK-internal errors (e.g. failed metric/log/trace
+	// exports) through the collector's logger, so they follow the same
+	// configured encoding and outputs instead of always going to stderr
+	// via the OTel SDK's default global error handler.
+	//
+	// The handler must use the logger as it is here, before it is teed into
+	// the LoggerProvider below: if a failed log export were reported through
+	// the LoggerProvider, it would be exported again, fail again and re-enter
+	// this handler. With a simple processor that recursion is unbounded.
+	sdkErrorLogger := logger
+	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
+		sdkErrorLogger.Error("OpenTelemetry internal telemetry error", zap.Error(err))
+	}))
 
 	sdk, err := otelconf.NewSDK(otelconf.WithContext(ctx), otelconf.WithOpenTelemetryConfiguration(otelconf.OpenTelemetryConfiguration{
 		Resource: resourceConfig,
