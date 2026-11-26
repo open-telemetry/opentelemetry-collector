@@ -49,6 +49,10 @@ var (
 type profilesRequest struct {
 	pd         pprofile.Profiles
 	cachedSize int
+	// merger dedups dictionary entries of every request merged into this one.
+	// It is built lazily on the first merge and dropped after a split, which
+	// mutates the underlying profiles; the next merge rebuilds it.
+	merger *pprofile.Merger
 }
 
 func newProfilesRequest(pd pprofile.Profiles) Request {
