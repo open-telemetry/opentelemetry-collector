@@ -388,6 +388,11 @@ func TestNamespaceOf_NoSlash(t *testing.T) {
 	require.Empty(t, result)
 }
 
+func TestNamespaceOf_SimilarButUnsupportedNamespace(t *testing.T) {
+	result := namespaceOf("go.opentelemetry.io/collector-extra/pkg")
+	require.NotEqual(t, "go.opentelemetry.io/collector", result)
+}
+
 func TestLocalizeRef(t *testing.T) {
 	tests := []struct {
 		name           string

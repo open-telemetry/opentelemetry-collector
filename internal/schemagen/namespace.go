@@ -104,7 +104,7 @@ func namespaceOf(path string) string {
 
 func matchSupportedNamespace(path string) (string, bool) {
 	for _, ns := range supportedNamespaces {
-		if strings.HasPrefix(path, ns) {
+		if path == ns || strings.HasPrefix(path, ns+"/") {
 			return ns, true
 		}
 	}
