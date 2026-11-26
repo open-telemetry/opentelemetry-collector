@@ -338,13 +338,14 @@ func (cc *ClientConfig) getGrpcDialOptions(
 	return opts, nil
 }
 
-func validateMaxRecvMsgSizeMiB(maxRecvMsgSizeMiB int) error {
-	maxMiB := math.MaxInt / (1024 * 1024)
+const maxRecvMsgSizeMiBLimit = math.MaxInt / (1024 * 1024)
 
-	if maxRecvMsgSizeMiB < 0 || maxRecvMsgSizeMiB > maxMiB {
+func validateMaxRecvMsgSizeMiB(maxRecvMsgSizeMiB int) error {
+
+	if maxRecvMsgSizeMiB < 0 || maxRecvMsgSizeMiB > maxRecvMsgSizeMiBLimit {
 		return fmt.Errorf(
 			"invalid max_recv_msg_size_mib value, must be between 0 and %d: %d",
-			maxMiB,
+			maxRecvMsgSizeMiBLimit,
 			maxRecvMsgSizeMiB,
 		)
 	}
@@ -522,7 +523,7 @@ func (sc *ServerConfig) getGrpcServerOptions(
 		opts = append(opts, grpc.Creds(credentials.NewTLS(tlsCfg)))
 	}
 
-	if sc.MaxRecvMsgSizeMiB > 0 && sc.MaxRecvMsgSizeMiB*1024*1024 > 0 {
+	if sc.MaxRecvMsgSizeMiB > 0 {
 		opts = append(opts, grpc.MaxRecvMsgSize(sc.MaxRecvMsgSizeMiB*1024*1024))
 		// The zstd decoder allocates a window as large as the frame declares
 		// before it produces any output, so it has to know what this server

@@ -561,7 +561,6 @@ func TestGrpcServerValidate(t *testing.T) {
 }
 
 func TestValidateMaxRecvMsgSizeMiB(t *testing.T) {
-	maxMiB := math.MaxInt / (1024 * 1024)
 
 	tests := []struct {
 		name    string
@@ -578,7 +577,7 @@ func TestValidateMaxRecvMsgSizeMiB(t *testing.T) {
 		},
 		{
 			name:  "maximum valid MiB",
-			input: maxMiB,
+			input: maxRecvMsgSizeMiBLimit,
 		},
 		{
 			name:    "negative value",
@@ -587,7 +586,7 @@ func TestValidateMaxRecvMsgSizeMiB(t *testing.T) {
 		},
 		{
 			name:    "value exceeding maximum",
-			input:   maxMiB + 1,
+			input:   maxRecvMsgSizeMiBLimit + 1,
 			wantErr: true,
 		},
 		{
@@ -602,7 +601,7 @@ func TestValidateMaxRecvMsgSizeMiB(t *testing.T) {
 			err := validateMaxRecvMsgSizeMiB(tt.input)
 
 			if tt.wantErr {
-				require.Error(t, err)
+				require.ErrorContains(t, err, "invalid max_recv_msg_size_mib")
 				return
 			}
 			require.NoError(t, err)

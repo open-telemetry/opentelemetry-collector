@@ -1,6 +1,6 @@
 change_type: bug_fix
 component: pkg/configgrpc
-note: Prevent integer overflow when validating max_recv_msg_size_mib.
+note: Prevent integer overflow when validating max_recv_msg_size_mib. Values larger than math.MaxInt/1MiB are now rejected at validation time.
 issues: [16498]
 subtext:
 change_logs: [user]
