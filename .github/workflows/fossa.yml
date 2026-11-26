@@ -11,6 +11,6 @@ jobs:
   fossa:
     permissions:
       contents: read # for actions/checkout
-    uses: open-telemetry/shared-workflows/.github/workflows/fossa.yml@f73c28e3be66444181acb54f07ada23f144c0c39 # v0.25.0
+    uses: open-telemetry/shared-workflows/.github/workflows/fossa.yml@22c6d43ead71f463aa2b16ddb7081e94d2ad6a0e # v0.26.0
     secrets:
       FOSSA_API_KEY: ${{ secrets.FOSSA_API_KEY }}

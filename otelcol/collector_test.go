@@ -272,7 +272,7 @@ func TestCollectorPartialReceiverReload(t *testing.T) {
 	// partial reload path was taken instead of a full restart.
 	assert.Eventually(t, func() bool {
 		for _, entry := range observedLogs.All() {
-			if entry.Message == "Config updated, performing partial receiver reload" {
+			if entry.Message == "Config updated, performing partial reload" {
 				return true
 			}
 		}
@@ -358,7 +358,7 @@ func TestCollectorPartialReceiverReloadNormalizingConfig(t *testing.T) {
 
 	assert.Eventually(t, func() bool {
 		for _, entry := range observedLogs.All() {
-			if entry.Message == "Config updated, performing partial receiver reload" {
+			if entry.Message == "Config updated, performing partial reload" {
 				return true
 			}
 		}
@@ -486,7 +486,7 @@ func TestCollectorPartialReloadIgnoresStartupMutation(t *testing.T) {
 
 	assert.Eventually(t, func() bool {
 		for _, entry := range observedLogs.All() {
-			if entry.Message == "Config updated, performing partial receiver reload" {
+			if entry.Message == "Config updated, performing partial reload" {
 				return true
 			}
 		}
@@ -644,7 +644,7 @@ func TestCollectorPartialReceiverReloadAddRemove(t *testing.T) {
 	watcher(&confmap.ChangeEvent{})
 
 	assert.Eventually(t, func() bool {
-		return observedLogs.FilterMessage("Config updated, performing partial receiver reload").Len() >= 1
+		return observedLogs.FilterMessage("Config updated, performing partial reload").Len() >= 1
 	}, 2*time.Second, 50*time.Millisecond)
 	assert.Equal(t, StateRunning, col.GetState())
 	assertRunning("tracking/a", "tracking/b")
@@ -654,7 +654,7 @@ func TestCollectorPartialReceiverReloadAddRemove(t *testing.T) {
 	watcher(&confmap.ChangeEvent{})
 
 	assert.Eventually(t, func() bool {
-		return observedLogs.FilterMessage("Config updated, performing partial receiver reload").Len() >= 2
+		return observedLogs.FilterMessage("Config updated, performing partial reload").Len() >= 2
 	}, 2*time.Second, 50*time.Millisecond)
 	assert.Equal(t, StateRunning, col.GetState())
 	assertRunning("tracking/a")
@@ -670,7 +670,7 @@ func TestCollectorPartialReceiverReloadAddRemove(t *testing.T) {
 }
 
 // TestCollectorNonReceiverChangeFullReload verifies that when a config change is
-// not receiver-only (here an exporter changes), tryPartialReceiverReload reports
+// not receiver-only (here an exporter changes), tryPartialReload reports
 // it cannot handle the change and the collector falls back to a full restart.
 func TestCollectorNonReceiverChangeFullReload(t *testing.T) {
 	require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", true))
@@ -743,9 +743,9 @@ func TestCollectorNonReceiverChangeFullReload(t *testing.T) {
 		return false
 	}, 2*time.Second, 50*time.Millisecond)
 
-	// The partial receiver reload path must not have been taken.
+	// The partial reload path must not have been taken.
 	for _, entry := range observedLogs.All() {
-		assert.NotEqual(t, "Config updated, performing partial receiver reload", entry.Message)
+		assert.NotEqual(t, "Config updated, performing partial reload", entry.Message)
 	}
 
 	col.Shutdown()
@@ -873,13 +873,13 @@ func TestCollectorPartialReceiverReloadFallsBackOnFailure(t *testing.T) {
 	require.EqualValues(t, 1, startCalls.Load())
 
 	// Change the receiver config to force a rebuild. The rebuild's Start call
-	// is the forced failure, so tryPartialReceiverReload reports a failure.
+	// is the forced failure, so tryPartialReload reports a failure.
 	generation.Store(1)
 	watcher(&confmap.ChangeEvent{})
 
 	assert.Eventually(t, func() bool {
 		for _, entry := range observedLogs.All() {
-			if entry.Message == "Partial receiver reload failed, falling back to full reload" {
+			if entry.Message == "Partial reload failed, falling back to full reload" {
 				return true
 			}
 		}
@@ -1019,7 +1019,7 @@ func TestCollectorPartialReceiverReloadFallsBackOnBuildFailure(t *testing.T) {
 	watcher(&confmap.ChangeEvent{})
 
 	assert.Eventually(t, func() bool {
-		return observedLogs.FilterMessage("Partial receiver reload failed, falling back to full reload").Len() == 1
+		return observedLogs.FilterMessage("Partial reload failed, falling back to full reload").Len() == 1
 	}, 2*time.Second, 50*time.Millisecond)
 
 	// The collector must fall back to, and complete, a full reload.
@@ -1084,7 +1084,7 @@ func validatingFactories(t *testing.T) Factories {
 // TestCollectorInvalidConfigOnReload verifies that when the config fetched during
 // a partial-reload attempt fails validation, the reload reports the error rather
 // than proceeding. The config served on reload sets the receiver endpoint to the
-// sentinel "invalid", so confmap.Validate fails in tryPartialReceiverReload.
+// sentinel "invalid", so confmap.Validate fails in tryPartialReload.
 func TestCollectorInvalidConfigOnReload(t *testing.T) {
 	require.NoError(t, featuregate.GlobalRegistry().Set("service.partialReload", true))
 	defer func() {

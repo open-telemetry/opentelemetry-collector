@@ -201,19 +201,28 @@ func TestCfgDocDefault(t *testing.T) {
 func TestCfgRootSection(t *testing.T) {
 	t.Parallel()
 	cfg := &ConfigMetadata{Type: "object"}
-	sec := CfgRootSection(cfg)
+	exported := map[string]*ConfigMetadata{"inner": {Type: "object"}}
+	sec := CfgRootSection(&ConfigsMetadata{Config: cfg, ExportedConfigs: exported})
 	assert.Equal(t, cfg, sec.Schema)
+	assert.Equal(t, exported, sec.Exported)
 	assert.Empty(t, sec.Anchor)
 	assert.Empty(t, sec.Title)
 }
 
-func TestCfgSubSection(t *testing.T) {
+func TestDocSection_Sub(t *testing.T) {
 	t.Parallel()
 	cfg := &ConfigMetadata{Type: "object"}
-	sec := CfgSubSection(cfg, "tls", "tls")
+	exported := map[string]*ConfigMetadata{"inner": {Type: "object"}}
+	root := DocSection{Exported: exported}
+	sec := root.Sub(cfg, "tls")
 	assert.Equal(t, cfg, sec.Schema)
+	assert.Equal(t, exported, sec.Exported)
 	assert.Equal(t, "tls", sec.Anchor)
 	assert.Equal(t, "tls", sec.Title)
+
+	nested := DocSection{Anchor: "exported_configs.outer", Title: "outer"}.Sub(cfg, "tls")
+	assert.Equal(t, "exported_configs.outer.tls", nested.Anchor)
+	assert.Equal(t, "outer.tls", nested.Title)
 }
 
 func TestCfgExportedSections(t *testing.T) {
@@ -243,7 +252,7 @@ func TestCfgExportedSections(t *testing.T) {
 	require.Len(t, sections, 3, "internal and nil definitions must be skipped")
 	// sorted by name for stable README output
 	assert.Equal(t, "exported_configs.alpha", sections[0].Anchor)
-	assert.Equal(t, "exported_configs.alpha", sections[0].Title)
+	assert.Equal(t, "alpha", sections[0].Title)
 	assert.False(t, sections[0].Scalar)
 	assert.Equal(t, "exported_configs.scalar", sections[1].Anchor)
 	assert.True(t, sections[1].Scalar, "scalar aliases must be flagged for scalar rendering")
@@ -268,11 +277,18 @@ func TestCfgExportedRef(t *testing.T) {
 			Properties:   map[string]*ConfigMetadata{"host": {Type: "string"}},
 		}
 	}
-	assert.Equal(t, "inner", CfgExportedRef(obj("inner", false)))
-	assert.Empty(t, CfgExportedRef(nil))
-	assert.Empty(t, CfgExportedRef(obj("", false)), "no $ref")
-	assert.Empty(t, CfgExportedRef(obj("inner", true)), "internal-only definitions have no section")
-	assert.Empty(t, CfgExportedRef(obj("../samplepkg.sample_config", false)), "local ref")
-	assert.Empty(t, CfgExportedRef(obj("go.opentelemetry.io/collector/config/confignet.addr_config", false)), "external ref")
-	assert.Empty(t, CfgExportedRef(&ConfigMetadata{Type: "string", Ref: "inner"}), "scalar")
+	sec := DocSection{Exported: map[string]*ConfigMetadata{
+		"inner":    obj("", false),
+		"internal": obj("", true),
+	}}
+	assert.Equal(t, "inner", CfgExportedRef(sec, obj("inner", false)))
+	assert.Empty(t, CfgExportedRef(sec, nil))
+	assert.Empty(t, CfgExportedRef(sec, obj("", false)), "no $ref")
+	assert.Empty(t, CfgExportedRef(sec, obj("inner", true)), "internal-only definitions have no section")
+	assert.Empty(t, CfgExportedRef(sec, obj("internal", false)), "internal-only definition has no section")
+	assert.Empty(t, CfgExportedRef(sec, obj("auth_config", false)), "defined only in an external schema")
+	assert.Empty(t, CfgExportedRef(DocSection{}, obj("inner", false)), "no exported definitions")
+	assert.Empty(t, CfgExportedRef(sec, obj("../samplepkg.sample_config", false)), "local ref")
+	assert.Empty(t, CfgExportedRef(sec, obj("go.opentelemetry.io/collector/config/confignet.addr_config", false)), "external ref")
+	assert.Empty(t, CfgExportedRef(sec, &ConfigMetadata{Type: "string", Ref: "inner"}), "scalar")
 }

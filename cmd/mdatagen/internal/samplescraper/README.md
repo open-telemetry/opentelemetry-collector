@@ -168,7 +168,7 @@ This scraper is used for testing purposes to check the output of mdatagen.
 
 ## Exported configs
 
-### <a id="exported_configs.sample_pkg"></a>exported_configs.sample_pkg
+### <a id="exported_configs.sample_pkg"></a>sample_pkg
 | Setting | Type | Default | Required | Description |
 | ------- | ---- | ------- | -------- | ----------- |
 | `host_name` | string | localhost | **yes** | The host name to connect to. |
