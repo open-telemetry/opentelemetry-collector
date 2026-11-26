@@ -39,6 +39,7 @@ func NewTraces(cons consumer.Traces, set Settings, opts ...Option) consumer.Trac
 	return obsTraces{
 		consumer:        cons,
 		set:             consumerSet,
+		options:         o,
 		compiledOptions: o.compile(),
 	}
 }
@@ -46,6 +47,7 @@ func NewTraces(cons consumer.Traces, set Settings, opts ...Option) consumer.Trac
 type obsTraces struct {
 	consumer consumer.Traces
 	set      Settings
+	options
 	compiledOptions
 }
 
@@ -68,10 +70,13 @@ func (c obsTraces) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 
 	err := c.consumer.ConsumeTraces(ctx, td)
 	if err != nil {
+		errorType := classifyError(err)
 		if consumererror.IsDownstream(err) {
-			attrs = &c.withRefusedAttrs
+			errorAttrs := c.attrsForError("refused", errorType)
+			attrs = &errorAttrs
 		} else {
-			attrs = &c.withFailureAttrs
+			errorAttrs := c.attrsForError("failure", errorType)
+			attrs = &errorAttrs
 			err = consumererror.NewDownstream(err)
 		}
 		if c.set.Logger.Core().Enabled(zap.DebugLevel) {
