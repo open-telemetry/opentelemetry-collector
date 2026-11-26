@@ -1,0 +1,11 @@
+change_type: bug_fix
+
+component: cmd/mdatagen
+
+note: Validate `semantic_convention.ref` against the emitted metric name so versioned metrics (e.g. `container.memory.usage@v1`) are accepted.
+
+issues: [16288]
+
+subtext:
+
+change_logs: [user]
