@@ -434,49 +434,81 @@ func registeredMethodsFilter(getServer func() *grpc.Server) otelgrpc.Filter {
 // ServiceRegistrar returns the registrar services should use to register themselves on a
 // server created by [ServerConfig.ToServer] with the same extensions. When authentication
 // is configured, unary RPCs are authenticated before their request is decompressed and
-// decoded, which gRPC interceptors cannot do. Otherwise it returns the server itself.
+// decoded, which gRPC interceptors cannot do. The middlewares that implement
+// [extensionmiddleware.GRPCServerPreDecode] then check them, also before their request is
+// decompressed and decoded, and so before the unary interceptors of all middlewares.
+// When there is nothing to run, it returns the server itself.
 func (sc *ServerConfig) ServiceRegistrar(
 	ctx context.Context,
 	extensions map[component.ID]component.Component,
 	server *grpc.Server,
 ) (grpc.ServiceRegistrar, error) {
-	if !sc.Auth.HasValue() {
+	registrar := &preDecodeRegistrar{
+		ServiceRegistrar: server,
+		includeMetadata:  sc.IncludeMetadata,
+	}
+	if sc.Auth.HasValue() {
+		authenticator, err := sc.Auth.Get().GetServerAuthenticator(ctx, extensions)
+		if err != nil {
+			return nil, err
+		}
+		registrar.authenticator = authenticator
+	}
+	for _, middleware := range sc.Middlewares {
+		// ToServer already reported the middleware extensions that do not exist.
+		preDecode, ok := extensions[middleware.ID].(extensionmiddleware.GRPCServerPreDecode)
+		if !ok {
+			continue
+		}
+		check, err := preDecode.GetGRPCServerPreDecodeCheck(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get gRPC server pre-decode check from middleware %q: %w", middleware.ID, err)
+		}
+		if check != nil {
+			registrar.checks = append(registrar.checks, check)
+		}
+	}
+	if registrar.authenticator == nil && len(registrar.checks) == 0 {
 		return server, nil
 	}
-	authenticator, err := sc.Auth.Get().GetServerAuthenticator(ctx, extensions)
-	if err != nil {
-		return nil, err
-	}
-	return &preAuthRegistrar{
-		ServiceRegistrar: server,
-		authenticator:    authenticator,
-		includeMetadata:  sc.IncludeMetadata,
-	}, nil
+	return registrar, nil
 }
 
-// preAuthRegistrar wraps the handler of every unary method registered through it, so
-// that the RPC is authenticated before the generated handler reads the request message.
-type preAuthRegistrar struct {
+// preDecodeRegistrar wraps the handler of every unary method registered through it, so
+// that the RPC is authenticated and then checked by the middlewares before the generated
+// handler reads the request message.
+type preDecodeRegistrar struct {
 	grpc.ServiceRegistrar
+	// authenticator is nil when authentication is not configured.
 	authenticator   extensionauth.Server
 	includeMetadata bool
+	// checks are the pre-decode checks of the middlewares, in the configured order.
+	checks []extensionmiddleware.GRPCPreDecodeCheckFunc
 }
 
-func (r *preAuthRegistrar) RegisterService(desc *grpc.ServiceDesc, impl any) {
+func (r *preDecodeRegistrar) RegisterService(desc *grpc.ServiceDesc, impl any) {
 	wrapped := *desc
 	wrapped.Methods = make([]grpc.MethodDesc, len(desc.Methods))
 	for i, md := range desc.Methods {
 		handler := md.Handler
 		md.Handler = func(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
-			headers, ok := metadata.FromIncomingContext(ctx)
-			if !ok {
-				return nil, errMetadataNotFound
+			if r.authenticator != nil {
+				headers, ok := metadata.FromIncomingContext(ctx)
+				if !ok {
+					return nil, errMetadataNotFound
+				}
+				authCtx, err := r.authenticator.Authenticate(contextWithClient(ctx, r.includeMetadata), headers)
+				if err != nil {
+					return nil, authStatusError(err)
+				}
+				ctx = context.WithValue(authCtx, authenticatedEarlyKey{}, true)
 			}
-			ctx, err := r.authenticator.Authenticate(contextWithClient(ctx, r.includeMetadata), headers)
-			if err != nil {
-				return nil, authStatusError(err)
+			for _, check := range r.checks {
+				if err := check(ctx); err != nil {
+					return nil, err
+				}
 			}
-			return handler(srv, context.WithValue(ctx, authenticatedEarlyKey{}, true), dec, interceptor)
+			return handler(srv, ctx, dec, interceptor)
 		}
 		wrapped.Methods[i] = md
 	}

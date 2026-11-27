@@ -13,6 +13,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestGetHTTPHandlerFunc(t *testing.T) {
@@ -121,6 +123,49 @@ func TestGetGRPCServerOptionsFunc(t *testing.T) {
 		opts, err := f.GetGRPCServerOptions(testctx)
 		require.Equal(t, expectedErr, err)
 		require.Nil(t, opts)
+	})
+}
+
+func TestGetGRPCServerPreDecodeCheckFunc(t *testing.T) {
+	type testCtx struct{}
+	var (
+		key   = testCtx{}
+		value = "testval"
+	)
+	testctx := context.WithValue(context.Background(), key, value)
+
+	t.Run("nil_function", func(t *testing.T) {
+		var f GetGRPCServerPreDecodeCheckFunc
+		check, err := f.GetGRPCServerPreDecodeCheck(testctx)
+		require.NoError(t, err)
+		require.Nil(t, check)
+	})
+
+	t.Run("returns_check", func(t *testing.T) {
+		expectedErr := status.Error(codes.ResourceExhausted, "test")
+		f := GetGRPCServerPreDecodeCheckFunc(func(ctx context.Context) (GRPCPreDecodeCheckFunc, error) {
+			require.Equal(t, ctx.Value(key), value)
+			return func(context.Context) error {
+				return expectedErr
+			}, nil
+		})
+
+		check, err := f.GetGRPCServerPreDecodeCheck(testctx)
+		require.NoError(t, err)
+		require.NotNil(t, check)
+		require.Equal(t, expectedErr, check(testctx))
+	})
+
+	t.Run("returns_error", func(t *testing.T) {
+		expectedErr := errors.New("test error")
+		f := GetGRPCServerPreDecodeCheckFunc(func(ctx context.Context) (GRPCPreDecodeCheckFunc, error) {
+			require.Equal(t, ctx.Value(key), value)
+			return nil, expectedErr
+		})
+
+		check, err := f.GetGRPCServerPreDecodeCheck(testctx)
+		require.Equal(t, expectedErr, err)
+		require.Nil(t, check)
 	})
 }
 

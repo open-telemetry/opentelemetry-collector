@@ -6,6 +6,8 @@ package memorylimiterextension
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"runtime"
@@ -23,15 +25,20 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/extension/memorylimiterextension/internal/metadata"
 	"go.opentelemetry.io/collector/extension/memorylimiterextension/internal/metadatatest"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
 	"go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
+	"go.opentelemetry.io/collector/internal/testutil"
 )
 
 type errorMeter struct {
@@ -423,4 +430,129 @@ func TestGetGRPCServerOptions(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Len(t, opts, 2)
+}
+
+// TestGRPCServerOptions_Refused verifies that the interceptors refuse unary and streaming
+// RPCs whether or not the pre-decode check is enabled, because servers that do not run
+// pre-decode checks rely on them.
+func TestGRPCServerOptions_Refused(t *testing.T) {
+	for _, gateEnabled := range []bool{false, true} {
+		t.Run(fmt.Sprintf("gate_enabled_%t", gateEnabled), func(t *testing.T) {
+			testutil.SetFeatureGate(t, metadata.ExtensionMemoryLimiterRejectGRPCBeforeDecodeFeatureGate.ID(), gateEnabled)
+
+			testTel := componenttest.NewTelemetry()
+			defer func() {
+				require.NoError(t, testTel.Shutdown(context.Background()))
+			}()
+
+			ml := newRefusingMemoryLimiter(t, testTel.NewTelemetrySettings())
+
+			opts, err := ml.GetGRPCServerOptions(context.Background())
+			require.NoError(t, err)
+
+			listener, err := net.Listen("tcp", "localhost:0")
+			require.NoError(t, err)
+			srv := grpc.NewServer(opts...)
+			// The health service has unary and streaming methods.
+			healthpb.RegisterHealthServer(srv, health.NewServer())
+			go func() { _ = srv.Serve(listener) }()
+			defer srv.Stop()
+
+			conn, err := grpc.NewClient(listener.Addr().String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+			require.NoError(t, err)
+			defer func() { assert.NoError(t, conn.Close()) }()
+			healthClient := healthpb.NewHealthClient(conn)
+
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			_, err = healthClient.Check(ctx, &healthpb.HealthCheckRequest{}, grpc.WaitForReady(true))
+			assert.Equal(t, codes.ResourceExhausted, status.Code(err))
+
+			stream, err := healthClient.Watch(ctx, &healthpb.HealthCheckRequest{})
+			require.NoError(t, err)
+			_, err = stream.Recv()
+			assert.Equal(t, codes.ResourceExhausted, status.Code(err))
+
+			metadatatest.AssertEqualMemorylimiterRefusedRequests(
+				t,
+				testTel,
+				[]metricdata.DataPoint[int64]{
+					{
+						Value: 2,
+						Attributes: attribute.NewSet(
+							attribute.String("transport", "grpc"),
+						),
+					},
+				},
+				metricdatatest.IgnoreTimestamp(),
+			)
+		})
+	}
+}
+
+func TestGetGRPCServerPreDecodeCheck_GateDisabled(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ExtensionMemoryLimiterRejectGRPCBeforeDecodeFeatureGate.ID(), false)
+
+	ml := newRefusingMemoryLimiter(t, componenttest.NewNopTelemetrySettings())
+
+	check, err := ml.GetGRPCServerPreDecodeCheck(context.Background())
+
+	require.NoError(t, err)
+	assert.Nil(t, check)
+}
+
+func TestGRPCPreDecodeCheck_Normal(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ExtensionMemoryLimiterRejectGRPCBeforeDecodeFeatureGate.ID(), true)
+	ctx := context.Background()
+
+	cfg := &Config{
+		CheckInterval:         time.Second,
+		MemoryLimitPercentage: 99,
+		MemorySpikePercentage: 99,
+	}
+
+	ml, err := newMemoryLimiter(cfg, zap.NewNop(), componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	check, err := ml.GetGRPCServerPreDecodeCheck(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, check)
+
+	require.NoError(t, check(ctx))
+}
+
+func TestGRPCPreDecodeCheck_Refused(t *testing.T) {
+	testutil.SetFeatureGate(t, metadata.ExtensionMemoryLimiterRejectGRPCBeforeDecodeFeatureGate.ID(), true)
+	ctx := context.Background()
+
+	testTel := componenttest.NewTelemetry()
+	defer func() {
+		require.NoError(t, testTel.Shutdown(ctx))
+	}()
+
+	ml := newRefusingMemoryLimiter(t, testTel.NewTelemetrySettings())
+
+	check, err := ml.GetGRPCServerPreDecodeCheck(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, check)
+
+	err = check(ctx)
+
+	require.Error(t, err)
+	assert.Equal(t, codes.ResourceExhausted, status.Code(err))
+
+	metadatatest.AssertEqualMemorylimiterRefusedRequests(
+		t,
+		testTel,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value: 1,
+				Attributes: attribute.NewSet(
+					attribute.String("transport", "grpc"),
+				),
+			},
+		},
+		metricdatatest.IgnoreTimestamp(),
+	)
 }

@@ -46,3 +46,29 @@ otelcol_memorylimiter_refused_requests: Number of requests refused by the memory
 Payloads refused by the extension never reach the receiver, so use `otelcol_memorylimiter_refused_requests` instead of `otelcol_receiver_refused_*` to track refused requests.
 
 see [memorylimiterprocessor](../../processor/memorylimiterprocessor/README.md) for additional details
+
+## Feature Gates
+
+See [documentation.md](./documentation.md) for the complete list of feature gates supported by this extension.
+
+### `extension.memory_limiter.RejectGRPCBeforeDecode`
+
+The gRPC interceptors only run after the server has decompressed and decoded
+the request message, so a refused unary request still allocates the memory of
+the decoded payload. When this feature gate is enabled, the extension also
+checks unary gRPC requests before the server decompresses and decodes the
+request message. Refused requests receive the same `ResourceExhausted` response
+and are counted in `otelcol_memorylimiter_refused_requests`.
+
+The check applies to the gRPC services that receivers register through
+`configgrpc`'s `ServerConfig.ServiceRegistrar`, as the OTLP receiver does. Other
+gRPC servers keep using the interceptors only. Streaming RPCs are not affected,
+because the stream interceptor already runs before any message is read.
+
+The check runs after authentication and before the gRPC interceptors of all
+configured middlewares. With the gate enabled, a request that this extension
+refuses no longer reaches the interceptors of the middlewares listed before
+`memory_limiter`.
+
+This feature gate is disabled by default. To enable it, use the flag:
+`--feature-gates=extension.memory_limiter.RejectGRPCBeforeDecode`

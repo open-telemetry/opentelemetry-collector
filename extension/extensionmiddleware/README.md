@@ -38,6 +38,8 @@ by adding new interfaces.  Note that for each interface, there is a
 corresponding method to locate a named middleware extension that
 satisfies the interface in
 [the `configmiddleware` package](../../config/configmiddleware/README.md) .
+The optional `GRPCServerPreDecode` interface is the exception: `configgrpc`
+checks for it directly on the middleware extensions it resolves.
 
 ### HTTP
 
@@ -54,6 +56,15 @@ server-side middleware object.
 
 - **GRPCClient**: The extension returns `[]grpc.DialOption`.
 - **GRPCServer**: The extension returns `[]grpc.ServerOption`.
+- **GRPCServerPreDecode**: Optional interface for gRPC server middleware,
+  implemented in addition to `GRPCServer`. The extension returns a function
+  that checks each unary RPC before the server decompresses and decodes the
+  request message, which gRPC unary interceptors cannot do. `configgrpc`
+  runs the checks for the services registered through
+  `ServerConfig.ServiceRegistrar`, after authentication and before all
+  unary interceptors, including the interceptors of the middlewares
+  configured earlier. The checks run in the configured order, and the first
+  error rejects the RPC.
 
 ### Network listeners
 

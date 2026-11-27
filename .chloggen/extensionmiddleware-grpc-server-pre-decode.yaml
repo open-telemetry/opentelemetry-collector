@@ -1,0 +1,5 @@
+change_type: enhancement
+component: pkg/extensionmiddleware
+note: Add the optional `GRPCServerPreDecode` interface for gRPC server middleware that checks unary RPCs before the server decompresses and decodes the request message.
+issues: [16184]
+change_logs: [api]

@@ -19,3 +19,13 @@ Number of requests refused by the memory limiter extension.
 | Name | Description | Values | Semantic Convention |
 | ---- | ----------- | ------ | ------------------- |
 | transport | The transport protocol used for the request (e.g., grpc, http). | Any Str | - |
+
+## Feature Gates
+
+This component has the following feature gates:
+
+| Feature Gate | Stage | Description | From Version | To Version | Reference |
+| ------------ | ----- | ----------- | ------------ | ---------- | --------- |
+| `extension.memory_limiter.RejectGRPCBeforeDecode` | alpha | Reject unary gRPC requests before they are decompressed and decoded when the memory limiter refuses requests. | v0.167.0 | N/A | [Link](https://github.com/open-telemetry/opentelemetry-collector/issues/16184) |
+
+For more information about feature gates, see the [Feature Gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md) documentation.

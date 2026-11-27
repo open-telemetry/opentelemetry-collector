@@ -1,0 +1,10 @@
+change_type: enhancement
+component: extension/memory_limiter
+note: Add the Alpha feature gate `extension.memory_limiter.RejectGRPCBeforeDecode` to reject unary gRPC requests before they are decompressed and decoded under memory pressure.
+issues: [16184]
+subtext: |
+  The gate is disabled by default and applies to the existing gRPC middleware configuration.
+  The check runs after authentication for the services registered through `configgrpc`'s `ServerConfig.ServiceRegistrar`, such as the OTLP receiver.
+  It runs before the gRPC interceptors of all configured middlewares, including the ones listed before `memory_limiter`.
+  Refusals use the same response and metric as the gRPC interceptors, which stay installed.
+change_logs: [user]
