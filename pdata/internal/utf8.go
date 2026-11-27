@@ -4,7 +4,6 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
-	"reflect"
 	"strings"
 	"unicode/utf8"
 )
@@ -80,36 +79,87 @@ func SanitizeUTF8InstrumentationScope(s *InstrumentationScope) {
 	SanitizeUTF8KeyValueSlice(s.Attributes)
 }
 
-// ValidateUTF8 returns false when any string in v contains invalid UTF-8.
-func ValidateUTF8(v any) bool {
-	return validateUTF8(reflect.ValueOf(v))
+func validUTF8AnyValue(v *AnyValue) bool {
+	switch val := v.Value.(type) {
+	case *AnyValue_StringValue:
+		return utf8.ValidString(val.StringValue)
+	case *AnyValue_ArrayValue:
+		return val.ArrayValue == nil || validUTF8AnyValueSlice(val.ArrayValue.Values)
+	case *AnyValue_KvlistValue:
+		return val.KvlistValue == nil || validUTF8KeyValueSlice(val.KvlistValue.Values)
+	}
+	return true
 }
 
-func validateUTF8(v reflect.Value) bool {
-	if !v.IsValid() {
-		return true
-	}
-	switch v.Kind() {
-	case reflect.Pointer, reflect.Interface:
-		if v.IsNil() {
-			return true
-		}
-		return validateUTF8(v.Elem())
-	case reflect.String:
-		return utf8.ValidString(v.String())
-	case reflect.Struct:
-		// reflect.Value.Fields allocates an iterator per struct, so keep the index loop.
-		for i := 0; i < v.NumField(); i++ { //nolint:modernize
-			if !validateUTF8(v.Field(i)) {
-				return false
-			}
-		}
-	case reflect.Slice, reflect.Array:
-		for i := 0; i < v.Len(); i++ {
-			if !validateUTF8(v.Index(i)) {
-				return false
-			}
+func validUTF8AnyValueSlice(s []AnyValue) bool {
+	for i := range s {
+		if !validUTF8AnyValue(&s[i]) {
+			return false
 		}
 	}
 	return true
+}
+
+func validUTF8KeyValueSlice(s []KeyValue) bool {
+	for i := range s {
+		if !utf8.ValidString(s[i].Key) || !validUTF8AnyValue(&s[i].Value) {
+			return false
+		}
+	}
+	return true
+}
+
+func validUTF8StringSlice(s []string) bool {
+	for _, str := range s {
+		if !utf8.ValidString(str) {
+			return false
+		}
+	}
+	return true
+}
+
+func validUTF8Resource(r *Resource) bool {
+	if !validUTF8KeyValueSlice(r.Attributes) {
+		return false
+	}
+	for _, ref := range r.EntityRefs {
+		if ref == nil {
+			continue
+		}
+		if !utf8.ValidString(ref.SchemaUrl) || !utf8.ValidString(ref.Type) ||
+			!validUTF8StringSlice(ref.IdKeys) || !validUTF8StringSlice(ref.DescriptionKeys) {
+			return false
+		}
+	}
+	return true
+}
+
+func validUTF8InstrumentationScope(s *InstrumentationScope) bool {
+	return utf8.ValidString(s.Name) && utf8.ValidString(s.Version) && validUTF8KeyValueSlice(s.Attributes)
+}
+
+func validUTF8Exemplars(s []Exemplar) bool {
+	for i := range s {
+		if !validUTF8KeyValueSlice(s[i].FilteredAttributes) {
+			return false
+		}
+	}
+	return true
+}
+
+func removeIf[T any](s []*T, del func(*T, bool), remove func(*T) bool) []*T {
+	newLen := 0
+	for i := range s {
+		if remove(s[i]) {
+			del(s[i], true)
+			s[i] = nil
+			continue
+		}
+		if newLen != i {
+			s[newLen] = s[i]
+			s[i] = nil
+		}
+		newLen++
+	}
+	return s[:newLen]
 }
