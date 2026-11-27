@@ -6,7 +6,7 @@ properties:
     type: integer
     x-customType: uint32
   metadata_keys:
-    description: MetadataKeys is a list of client.Metadata keys that will be used to form distinct batchers.  If this setting is empty, a single batcher instance will be used.  When this setting is not empty, one batcher will be used per distinct combination of values for the listed metadata keys. Empty value and unset metadata are treated as distinct cases. Entries are case-insensitive.  Duplicated entries will trigger a validation error.
+    description: MetadataKeys is a list of client.Metadata keys that will be used to form distinct batchers. If this setting is empty, a single batcher instance will be used. When this setting is not empty, one batcher will be used per distinct combination of values for the listed metadata keys. Empty value and unset metadata are treated as distinct cases. Entries are case-insensitive. Duplicated entries will trigger a validation error.
     type: array
     items:
       type: string
