@@ -24,6 +24,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.166.0
 	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.166.0
 	go.opentelemetry.io/collector/featuregate v1.72.0
+	go.opentelemetry.io/collector/internal/statusutil v0.166.0
 	go.opentelemetry.io/collector/internal/testutil v0.166.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0
 	go.opentelemetry.io/otel v1.47.0
@@ -115,3 +116,5 @@ replace go.opentelemetry.io/collector/confmap => ../../confmap
 replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
 
 replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
+
+replace go.opentelemetry.io/collector/internal/statusutil => ../../internal/statusutil

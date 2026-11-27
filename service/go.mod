@@ -141,6 +141,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.72.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.166.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.166.0 // indirect
+	go.opentelemetry.io/collector/internal/statusutil v0.166.0 // indirect
 	go.opentelemetry.io/contrib/detectors/aws/ec2/v2 v2.6.0 // indirect
 	go.opentelemetry.io/contrib/detectors/aws/ecs v1.47.0 // indirect
 	go.opentelemetry.io/contrib/detectors/aws/eks v1.47.0 // indirect
@@ -306,3 +307,5 @@ replace go.opentelemetry.io/collector/internal/componentalias => ../internal/com
 replace go.opentelemetry.io/collector/config/confignet => ../config/confignet
 
 replace go.opentelemetry.io/collector/config/configstorage => ../config/configstorage
+
+replace go.opentelemetry.io/collector/internal/statusutil => ../internal/statusutil

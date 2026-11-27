@@ -20,7 +20,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/http2"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
@@ -32,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
+	"go.opentelemetry.io/collector/internal/statusutil"
 )
 
 const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
@@ -355,31 +355,15 @@ func authInterceptor(next http.Handler, server extensionauth.Server, requestPara
 // authErrorResponse returns the HTTP status code and the message used to answer a request
 // that the server authenticator rejected with err.
 //
-// An error that carries a gRPC status is answered with the HTTP status code that matches the
-// gRPC code, as the gRPC server does by returning the status to the client. The conversion is
-// the one the OTLP receiver uses for errors returned by the pipeline. Any other error is
-// answered with 401 Unauthorized.
+// An error that carries a gRPC status is answered with the HTTP status code that corresponds
+// to the gRPC code, as the gRPC server does by returning the status to the client. Any other
+// error is answered with 401 Unauthorized.
 func authErrorResponse(err error) (int, string) {
 	s, ok := status.FromError(err)
 	if !ok {
 		return http.StatusUnauthorized, err.Error()
 	}
-	switch s.Code() {
-	case codes.Canceled, codes.DeadlineExceeded, codes.Aborted, codes.OutOfRange, codes.Unavailable, codes.DataLoss:
-		return http.StatusServiceUnavailable, s.Message()
-	case codes.ResourceExhausted:
-		return http.StatusTooManyRequests, s.Message()
-	case codes.InvalidArgument:
-		return http.StatusBadRequest, s.Message()
-	case codes.Unauthenticated:
-		return http.StatusUnauthorized, s.Message()
-	case codes.PermissionDenied:
-		return http.StatusForbidden, s.Message()
-	case codes.Unimplemented:
-		return http.StatusNotFound, s.Message()
-	default:
-		return http.StatusInternalServerError, s.Message()
-	}
+	return statusutil.GetHTTPStatusCodeFromStatus(s), s.Message()
 }
 
 func maxRequestBodySizeInterceptor(next http.Handler, maxRecvSize int64) http.Handler {
