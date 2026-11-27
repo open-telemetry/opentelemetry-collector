@@ -157,7 +157,7 @@ The release manager of a minor version is responsible for releasing any bugfix v
     4. Create another pull request to the `main` branch from the new branch to replace the pull request from the `release/<release-series>` branch.
 5. Disable the merge queue. An admin of the repo needs to be available for this.
 6. Enable the **Merge pull request** setting in the repository's **Settings** tab.
-7. Make sure you are on `release/<release-series>`. Push the new release version tags for a target module set by running `make push-tags MODSET=<beta|stable>`. Wait for the new tag build to pass successfully.
+7. Make sure you are on `release/<release-series>`. Push the new release version tags for a target module set by running `make push-tags MODSET=beta`. Wait for the new tag build to pass successfully.
 8. **IMPORTANT**: The pull request to bring the changes from the release branch *MUST* be merged using the **Merge pull request** method, and *NOT* squashed using “**Squash and merge**”. This is important as it allows us to ensure the commit SHA from the release branch is also on the main branch. **Not following this step will cause much go dependency sadness.**
 9. If the pull request was created from the `release/<release-series>` branch, it will be auto-deleted. Restore the release branch via GitHub.
 10. Once the patch is released, disable the **Merge pull request** setting and re-enable the merge queue.
