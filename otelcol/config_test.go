@@ -34,6 +34,30 @@ func (c *errConfig) Validate() error {
 	return c.validateErr
 }
 
+type receiverConfigWithReferences struct {
+	validate func(component.ExtensionConfigResolver) error
+}
+
+func (c receiverConfigWithReferences) ValidateWithExtensions(resolve component.ExtensionConfigResolver) error {
+	return c.validate(resolve)
+}
+
+func TestConfigValidateReceiverExtensionReferences(t *testing.T) {
+	cfg := generateConfig()
+	id := component.MustNewIDWithName("nop", "named")
+	ext := &errConfig{}
+	cfg.Extensions[id] = ext
+	cfg.Receivers[component.MustNewID("nop")] = receiverConfigWithReferences{validate: func(resolve component.ExtensionConfigResolver) error {
+		got, ok := resolve(id)
+		require.True(t, ok)
+		require.Same(t, ext, got)
+		return errInvalidRecvConfig
+	}}
+	err := confmap.Validate(cfg)
+	require.ErrorIs(t, err, errInvalidRecvConfig)
+	require.ErrorContains(t, err, "receivers::nop")
+}
+
 func TestConfigValidate(t *testing.T) {
 	testCases := []struct {
 		name     string // test case name (also file name containing config yaml)

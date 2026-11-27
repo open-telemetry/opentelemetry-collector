@@ -11,3 +11,13 @@ package component // import "go.opentelemetry.io/collector/component"
 //
 // A valid implementation MUST pass the check componenttest.CheckConfigStruct (return nil error).
 type Config any
+
+// ExtensionConfigResolver looks up a configured extension by its full ID.
+// Callers must not modify the returned configuration.
+type ExtensionConfigResolver func(ID) (Config, bool)
+
+// ExtensionConfigValidator is an optional interface for receiver configurations
+// that need to validate references to extension configurations before startup.
+type ExtensionConfigValidator interface {
+	ValidateWithExtensions(ExtensionConfigResolver) error
+}

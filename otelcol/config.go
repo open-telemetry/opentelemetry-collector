@@ -86,6 +86,18 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	resolve := func(id component.ID) (component.Config, bool) {
+		ext, ok := cfg.Extensions[id]
+		return ext, ok
+	}
+	for id, recv := range cfg.Receivers {
+		if validator, ok := recv.(component.ExtensionConfigValidator); ok {
+			if err := validator.ValidateWithExtensions(resolve); err != nil {
+				return fmt.Errorf("receivers::%s: %w", id, err)
+			}
+		}
+	}
+
 	// Check that all pipelines reference only configured components.
 	for pipelineID, pipeline := range cfg.Service.Pipelines {
 		// Validate pipeline receiver name references.
