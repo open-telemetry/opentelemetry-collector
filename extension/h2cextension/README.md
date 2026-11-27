@@ -4,7 +4,7 @@
 | ------------- |-----------|
 | Stability     | [development]  |
 | Distributions | [] |
-| Warnings      | [h2c is unencrypted and should only be used behind a TLS-terminating proxy on a trusted network., mTLS must be enforced at the TLS-terminating proxy; the Collector cannot verify client certificates over h2c.](#warnings) |
+| Warnings      | [h2c is unencrypted and should only be used behind a TLS-terminating proxy on a trusted network., mTLS must be enforced at the TLS-terminating proxy; the Collector cannot verify client certificates over h2c., Build with Go 1.26.7 or later; earlier Go 1.26 releases mishandle read_header_timeout on h2c connections.](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fh2c%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fh2c) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fh2c%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fh2c) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@arielvalentin](https://www.github.com/arielvalentin) |
 
@@ -160,5 +160,10 @@ requests only when `auth` is configured.
 
 Enforce mTLS at the TLS-terminating proxy. The Collector cannot verify client
 certificates over h2c.
+
+Build the Collector with Go 1.26.7 or later. Go 1.26.0 through 1.26.5 do not
+apply `read_header_timeout` to h2c connections, so idle or slow clients can
+hold connections open. Go 1.26.6 closes active h2c connections every
+`read_header_timeout`, which can fail in-flight requests.
 
 [^prior-knowledge]: https://www.rfc-editor.org/rfc/rfc9113.html#section-3.3

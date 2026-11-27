@@ -18,6 +18,7 @@ subtext: |
   Do not configure h2c and TLS on the same server. OTLP reports this conflict during `otelcol validate`; other `confighttp` servers reject it at startup.
   h2c does not authenticate or encrypt. Enforce mTLS at the TLS-terminating proxy, and configure Collector `auth` or authenticate clients at a trusted proxy.
   HTTP/1.1 `Upgrade: h2c` is not supported. See the component README for remaining limitations.
+  Build with Go 1.26.7 or later. Earlier Go 1.26 releases mishandle `read_header_timeout` on h2c connections.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

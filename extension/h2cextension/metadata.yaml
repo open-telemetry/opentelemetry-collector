@@ -13,6 +13,7 @@ status:
   warnings:
     - h2c is unencrypted and should only be used behind a TLS-terminating proxy on a trusted network.
     - mTLS must be enforced at the TLS-terminating proxy; the Collector cannot verify client certificates over h2c.
+    - Build with Go 1.26.7 or later; earlier Go 1.26 releases mishandle read_header_timeout on h2c connections.
 
 tests:
   config: {}
