@@ -18,7 +18,7 @@ The [Conf](confmap.go) represents the raw configuration for a service (e.g. Open
 
 ## Provider
 
-The [Provider](provider.go) provides configuration, and allows to watch/monitor for changes. Any `Provider`
+The [Provider](provider.go) provides configuration, and allows watching/monitoring for changes. Any `Provider`
 has a `<scheme>` associated with it, and will provide configs for `configURI` that follow the "<scheme>:<opaque_data>" format.
 This format is compatible with the URI definition (see [RFC 3986](https://datatracker.ietf.org/doc/html/rfc3986)).
 The `<scheme>` MUST be always included in the `configURI`. The scheme for any `Provider` MUST be at least 2
