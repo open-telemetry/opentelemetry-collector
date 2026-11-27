@@ -21,6 +21,7 @@ func TestSetupTelemetry(t *testing.T) {
 	defer tb.Shutdown()
 	tb.ScraperErroredLogRecords.Add(context.Background(), 1)
 	tb.ScraperErroredMetricPoints.Add(context.Background(), 1)
+	tb.ScraperScrapeDuration.Record(context.Background(), 1)
 	tb.ScraperScrapedLogRecords.Add(context.Background(), 1)
 	tb.ScraperScrapedMetricPoints.Add(context.Background(), 1)
 	AssertEqualScraperErroredLogRecords(t, testTel,
@@ -28,6 +29,9 @@ func TestSetupTelemetry(t *testing.T) {
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualScraperErroredMetricPoints(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualScraperScrapeDuration(t, testTel,
+		[]metricdata.HistogramDataPoint[float64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualScraperScrapedLogRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
