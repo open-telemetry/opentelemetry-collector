@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/strmatch"
 )
 
 // K8sPodCPUTimeMetricConfig provides config for the k8s.pod.cpu_time metric.
@@ -128,11 +128,11 @@ type K8sNamespaceNameResourceAttributeConfig struct {
 	OverrideValue *string `mapstructure:"override_value"`
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
-	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	MetricsInclude []strmatch.Config `mapstructure:"metrics_include"`
 	// Experimental: MetricsExclude defines a list of filters for attribute values.
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
-	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	MetricsExclude []strmatch.Config `mapstructure:"metrics_exclude"`
 
 	enabledSetByUser bool
 }
@@ -156,11 +156,11 @@ type K8sPodNameResourceAttributeConfig struct {
 	OverrideValue *string `mapstructure:"override_value"`
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
-	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	MetricsInclude []strmatch.Config `mapstructure:"metrics_include"`
 	// Experimental: MetricsExclude defines a list of filters for attribute values.
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
-	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	MetricsExclude []strmatch.Config `mapstructure:"metrics_exclude"`
 
 	enabledSetByUser bool
 }
@@ -184,11 +184,11 @@ type K8sPodUIDResourceAttributeConfig struct {
 	OverrideValue *string `mapstructure:"override_value"`
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
-	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	MetricsInclude []strmatch.Config `mapstructure:"metrics_include"`
 	// Experimental: MetricsExclude defines a list of filters for attribute values.
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
-	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	MetricsExclude []strmatch.Config `mapstructure:"metrics_exclude"`
 
 	enabledSetByUser bool
 }
@@ -212,11 +212,11 @@ type K8sReplicasetNameResourceAttributeConfig struct {
 	OverrideValue *string `mapstructure:"override_value"`
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
-	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	MetricsInclude []strmatch.Config `mapstructure:"metrics_include"`
 	// Experimental: MetricsExclude defines a list of filters for attribute values.
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
-	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	MetricsExclude []strmatch.Config `mapstructure:"metrics_exclude"`
 
 	enabledSetByUser bool
 }
@@ -240,11 +240,11 @@ type K8sReplicasetUIDResourceAttributeConfig struct {
 	OverrideValue *string `mapstructure:"override_value"`
 	// Experimental: MetricsInclude defines a list of filters for attribute values.
 	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
-	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	MetricsInclude []strmatch.Config `mapstructure:"metrics_include"`
 	// Experimental: MetricsExclude defines a list of filters for attribute values.
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
-	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	MetricsExclude []strmatch.Config `mapstructure:"metrics_exclude"`
 
 	enabledSetByUser bool
 }

@@ -76,6 +76,7 @@ components:
     - pkg/scrapertest
     - pkg/service
     - pkg/storage
+    - pkg/strmatch
     - pkg/telemetrytest
     - pkg/xconfighttp
     - pkg/xconfmap

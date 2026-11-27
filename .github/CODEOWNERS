@@ -119,6 +119,7 @@ service/                                               @open-telemetry/collector
 service/hostcapabilities/                              @open-telemetry/collector-approvers
 service/internal/graph/                                @open-telemetry/collector-approvers
 service/telemetry/telemetrytest/                       @open-telemetry/collector-approvers
+strmatch/                                              @open-telemetry/collector-approvers
 
 # End components list
 

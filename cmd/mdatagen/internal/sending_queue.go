@@ -212,7 +212,11 @@ func (sq *SendingQueue) HasOverride(path ...string) bool {
 }
 
 func (sq *SendingQueue) TemplateData() (SendingQueueTemplateData, error) {
-	optionalCfg, err := sq.Overrides.Apply(newPostMigrationDefaultQueueConfig())
+	base := exporterhelper.NewDefaultQueueConfig()
+	if sq.HasOverrides() {
+		base = newPostMigrationDefaultQueueConfig()
+	}
+	optionalCfg, err := sq.Overrides.Apply(base)
 	if err != nil {
 		return SendingQueueTemplateData{}, err
 	}
@@ -328,7 +332,7 @@ func annotateSendingQueueLeaves(node *yaml.Node, path []string, sq *SendingQueue
 		}
 		switch {
 		case sq.Support == SendingQueueSupportDefault && slices.Equal(overridePath, []string{"batch", "enabled"}):
-			node.LineComment = "FEATURE(pkg.exporterhelper.queueBatchEnabled)"
+			node.LineComment = "true if enabling the pkg.exporterhelper.queueBatchEnabled feature gate"
 		case hasOverride(sq.Overrides, overridePath):
 			node.LineComment = "OVERRIDE"
 		default:

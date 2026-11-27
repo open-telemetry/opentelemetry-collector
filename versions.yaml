@@ -106,6 +106,7 @@ module-sets:
       - go.opentelemetry.io/collector/service/hostcapabilities
       - go.opentelemetry.io/collector/service/telemetry/telemetrytest
       - go.opentelemetry.io/collector/filter
+      - go.opentelemetry.io/collector/strmatch
 
 excluded-modules:
   - go.opentelemetry.io/collector/cmd/otelcorecol

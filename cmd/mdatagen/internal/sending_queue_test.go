@@ -267,11 +267,9 @@ func TestSendingQueueDefaultDocumentationUsesFutureBatchDefault(t *testing.T) {
 	require.Contains(t, actual, "sending_queue:\n    enabled: true")
 	require.Contains(t, actual, "queue_size: 1000")
 	require.Contains(t, actual, "storage: null")
-	require.Contains(t, actual, "batch:\n        enabled: true")
+	require.Regexp(t, `batch:\n {8}enabled: false +# true if enabling the pkg\.exporterhelper\.queueBatchEnabled feature gate\n`, actual)
 	require.Contains(t, actual, "min_size: 8192")
 	require.Contains(t, actual, "flush_timeout: 200ms")
-	require.Contains(t, actual, "enabled: true")
-	require.Contains(t, actual, "# FEATURE(pkg.exporterhelper.queueBatchEnabled)")
 	require.NotContains(t, actual, "# OVERRIDE")
 	require.Equal(t, 12, strings.Count(actual, "# default"))
 }
