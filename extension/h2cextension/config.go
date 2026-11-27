@@ -15,8 +15,10 @@ type Config struct {
 	_ struct{}
 }
 
-var _ component.Config = (*Config)(nil)
-var _ extensionmiddleware.HTTPServerProtocolConfig = (*Config)(nil)
+var (
+	_ component.Config                             = (*Config)(nil)
+	_ extensionmiddleware.HTTPServerProtocolConfig = (*Config)(nil)
+)
 
 // RequiredHTTPServerProtocols declares the protocol the listener must accept.
 func (*Config) RequiredHTTPServerProtocols() http.Protocols {
