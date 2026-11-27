@@ -41,7 +41,9 @@ var (
 
 // MemoryLimiter is used to prevent out of memory situations on the collector.
 type MemoryLimiter struct {
-	usageChecker memUsageChecker
+	// usageChecker holds the current memory thresholds, swapped atomically by
+	// refreshCgroupLimits so the check loop reads a consistent snapshot without locking.
+	usageChecker atomic.Pointer[memUsageChecker]
 
 	memCheckWait time.Duration
 
@@ -61,6 +63,7 @@ type MemoryLimiter struct {
 	// testing different values.
 	readMemStatsFn func(m *runtime.MemStats)
 	runGCFn        func()
+	getMemoryFn    func() (uint64, error)
 
 	// currentSoftGCInterval and currentHardGCInterval are per-path dynamic GC
 	// intervals that grow when forced GCs on that path fail to reclaim memory
@@ -98,13 +101,40 @@ type MemoryLimiter struct {
 	closed         chan struct{}
 
 	host component.Host
+
+	// refreshInterval is the period for re-reading a cgroup-derived limit.
+	// Zero disables the loop. limitPercentage and spikePercentage are the
+	// snapshot that loop uses.
+	refreshInterval time.Duration
+	limitPercentage uint32
+	spikePercentage uint32
+	refreshTicker   *time.Ticker
+	refreshClosed   chan struct{}
+
+	// refreshFailing tracks whether the previous refresh read failed, so the
+	// loop warns once on the first failure and logs repeats at debug level to
+	// avoid huge log volume when the read keeps failing.
+	refreshFailing bool
 }
 
 // NewMemoryLimiter returns a new memory limiter component
 func NewMemoryLimiter(cfg *Config, logger *zap.Logger) (*MemoryLimiter, error) {
-	usageChecker, err := getMemUsageChecker(cfg, logger)
+	usageChecker, totalMemory, err := getMemUsageChecker(cfg, GetMemoryFn)
 	if err != nil {
 		return nil, err
+	}
+	if cfg.MemoryLimitMiB == 0 {
+		logger.Info("Using percentage memory limiter",
+			zap.Uint64("total_memory_mib", totalMemory/mibBytes),
+			zap.Uint32("limit_percentage", cfg.MemoryLimitPercentage),
+			zap.Uint32("spike_limit_percentage", cfg.MemorySpikePercentage))
+	}
+
+	// Periodic refresh only applies to a cgroup-derived percentage limit.
+	// A fixed limit_mib never changes, so the interval has no effect there.
+	refreshEnabled := cfg.RefreshInterval > 0 && cfg.MemoryLimitMiB == 0
+	if cfg.RefreshInterval > 0 && !refreshEnabled {
+		logger.Warn("Both 'refresh_interval' and 'limit_mib' are set; 'refresh_interval' has no effect because the fixed 'limit_mib' is used instead of a cgroup-derived percentage limit")
 	}
 
 	logger.Info("Memory limiter configured",
@@ -112,10 +142,8 @@ func NewMemoryLimiter(cfg *Config, logger *zap.Logger) (*MemoryLimiter, error) {
 		zap.Uint64("spike_limit_mib", usageChecker.memSpikeLimit/mibBytes),
 		zap.Duration("check_interval", cfg.CheckInterval))
 
-	return &MemoryLimiter{
-		usageChecker:                 *usageChecker,
+	ml := &MemoryLimiter{
 		memCheckWait:                 cfg.CheckInterval,
-		ticker:                       time.NewTicker(cfg.CheckInterval),
 		minGCIntervalWhenSoftLimited: cfg.MinGCIntervalWhenSoftLimited,
 		minGCIntervalWhenHardLimited: cfg.MinGCIntervalWhenHardLimited,
 		maxGCIntervalWhenSoftLimited: cfg.MaxGCIntervalWhenSoftLimited,
@@ -125,9 +153,19 @@ func NewMemoryLimiter(cfg *Config, logger *zap.Logger) (*MemoryLimiter, error) {
 		gcDisabled:                   !cfg.GarbageCollector.HasValue(),
 		readMemStatsFn:               ReadMemStatsFn,
 		runGCFn:                      runtime.GC,
+		getMemoryFn:                  GetMemoryFn,
 		logger:                       logger,
 		mustRefuse:                   &atomic.Bool{},
-	}, nil
+	}
+	ml.usageChecker.Store(usageChecker)
+
+	if refreshEnabled {
+		ml.refreshInterval = cfg.RefreshInterval
+		ml.limitPercentage = cfg.MemoryLimitPercentage
+		ml.spikePercentage = cfg.MemorySpikePercentage
+	}
+
+	return ml, nil
 }
 
 func (ml *MemoryLimiter) Start(_ context.Context, host component.Host) error {
@@ -137,6 +175,7 @@ func (ml *MemoryLimiter) Start(_ context.Context, host component.Host) error {
 
 	ml.refCounter++
 	if ml.refCounter == 1 {
+		ml.ticker = time.NewTicker(ml.memCheckWait)
 		ml.closed = make(chan struct{})
 		ml.waitGroup.Go(func() {
 			for {
@@ -148,8 +187,52 @@ func (ml *MemoryLimiter) Start(_ context.Context, host component.Host) error {
 				ml.CheckMemLimits()
 			}
 		})
+
+		if ml.refreshInterval > 0 {
+			ml.refreshTicker = time.NewTicker(ml.refreshInterval)
+			ml.refreshClosed = make(chan struct{})
+			ml.waitGroup.Go(func() {
+				for {
+					select {
+					case <-ml.refreshTicker.C:
+					case <-ml.refreshClosed:
+						return
+					}
+					ml.refreshCgroupLimits()
+				}
+			})
+		}
 	}
 	return nil
+}
+
+// refreshCgroupLimits re-reads the cgroup-derived memory limit and atomically
+// swaps usageChecker when it changes, so percentage-based thresholds track
+// in-place memory limit resizes. A failed read keeps the previous thresholds.
+func (ml *MemoryLimiter) refreshCgroupLimits() {
+	totalMemory, err := ml.getMemoryFn()
+	if err != nil {
+		if ml.refreshFailing {
+			ml.logger.Debug("Failed to refresh cgroup memory limit; keeping previous thresholds.", zap.Error(err))
+		} else {
+			ml.logger.Warn("Failed to refresh cgroup memory limit; keeping previous thresholds.", zap.Error(err))
+		}
+		ml.refreshFailing = true
+		return
+	}
+	if ml.refreshFailing {
+		ml.logger.Debug("Recovered reading cgroup memory limit after previous failures.")
+		ml.refreshFailing = false
+	}
+	newChecker := newPercentageMemUsageChecker(totalMemory, uint64(ml.limitPercentage), uint64(ml.spikePercentage))
+	prev := ml.usageChecker.Load()
+	if prev != nil && *prev == *newChecker {
+		return
+	}
+	ml.usageChecker.Store(newChecker)
+	ml.logger.Info("Refreshed cgroup memory limit.",
+		zap.Uint64("limit_mib", newChecker.memAllocLimit/mibBytes),
+		zap.Uint64("spike_limit_mib", newChecker.memSpikeLimit/mibBytes))
 }
 
 // Shutdown resets MemoryLimiter monitoring ticker and stop monitoring
@@ -163,6 +246,10 @@ func (ml *MemoryLimiter) Shutdown(context.Context) error {
 	case 1:
 		ml.ticker.Stop()
 		close(ml.closed)
+		if ml.refreshTicker != nil {
+			ml.refreshTicker.Stop()
+			close(ml.refreshClosed)
+		}
 		ml.waitGroup.Wait()
 	}
 	ml.refCounter--
@@ -174,22 +261,20 @@ func (ml *MemoryLimiter) MustRefuse() bool {
 	return ml.mustRefuse.Load()
 }
 
-func getMemUsageChecker(cfg *Config, logger *zap.Logger) (*memUsageChecker, error) {
-	memAllocLimit := uint64(cfg.MemoryLimitMiB) * mibBytes
-	memSpikeLimit := uint64(cfg.MemorySpikeLimitMiB) * mibBytes
+// getMemUsageChecker returns the thresholds for cfg and, for a percentage
+// limit, the total memory those thresholds were derived from. The total is
+// zero for a fixed limit.
+func getMemUsageChecker(cfg *Config, getMemory func() (uint64, error)) (*memUsageChecker, uint64, error) {
 	if cfg.MemoryLimitMiB != 0 {
-		return newFixedMemUsageChecker(memAllocLimit, memSpikeLimit), nil
+		memAllocLimit := uint64(cfg.MemoryLimitMiB) * mibBytes
+		memSpikeLimit := uint64(cfg.MemorySpikeLimitMiB) * mibBytes
+		return newFixedMemUsageChecker(memAllocLimit, memSpikeLimit), 0, nil
 	}
-	totalMemory, err := GetMemoryFn()
+	totalMemory, err := getMemory()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get total memory, use fixed memory settings (limit_mib): %w", err)
+		return nil, 0, fmt.Errorf("failed to get total memory, use fixed memory settings (limit_mib): %w", err)
 	}
-	logger.Info("Using percentage memory limiter",
-		zap.Uint64("total_memory_mib", totalMemory/mibBytes),
-		zap.Uint32("limit_percentage", cfg.MemoryLimitPercentage),
-		zap.Uint32("spike_limit_percentage", cfg.MemorySpikePercentage))
-	return newPercentageMemUsageChecker(totalMemory, uint64(cfg.MemoryLimitPercentage),
-		uint64(cfg.MemorySpikePercentage)), nil
+	return newPercentageMemUsageChecker(totalMemory, uint64(cfg.MemoryLimitPercentage), uint64(cfg.MemorySpikePercentage)), totalMemory, nil
 }
 
 func (ml *MemoryLimiter) readMemStats() *runtime.MemStats {
@@ -217,8 +302,8 @@ func (ml *MemoryLimiter) doGCandReadMemStats() *runtime.MemStats {
 // effective if it drops memory below the soft limit or reclaims at least
 // gcEffectivenessThreshold%; an effective observation resets both intervals
 // to zero because memory really did come down (a global signal).
-func (ml *MemoryLimiter) checkLimitAndBackoff(ms *runtime.MemStats, didGC bool) (aboveSoftLimit bool) {
-	aboveSoftLimit = ml.usageChecker.aboveSoftLimit(ms)
+func (ml *MemoryLimiter) checkLimitAndBackoff(uc *memUsageChecker, ms *runtime.MemStats, didGC bool) (aboveSoftLimit bool) {
+	aboveSoftLimit = uc.aboveSoftLimit(ms)
 	gcWasEffective := !aboveSoftLimit ||
 		ms.Alloc <= ml.lastStats.Alloc*(100-gcEffectivenessThreshold)/100
 	ml.lastStats = ms
@@ -259,13 +344,17 @@ func (ml *MemoryLimiter) nextBackoffInterval(current, configMin, configMax time.
 func (ml *MemoryLimiter) CheckMemLimits() {
 	ms := ml.readMemStats()
 
+	// Snapshot the checker once per tick so the soft and hard limit reads below
+	// stay consistent even if a refresh swaps usageChecker mid-tick.
+	uc := ml.usageChecker.Load()
+
 	ml.logger.Debug("Currently used memory.", memstatToZapField(ms))
 
 	// Top-of-tick classification. didGC=false because no forced GC has run
 	// yet this tick. If memory dropped on its own (Go runtime GC, queue
 	// drained), this resets both per-path currentGCIntervals so we won't
 	// suppress the next forced GC unnecessarily.
-	aboveSoftLimit := ml.checkLimitAndBackoff(ms, false)
+	aboveSoftLimit := ml.checkLimitAndBackoff(uc, ms, false)
 	if !aboveSoftLimit {
 		if ml.mustRefuse.Load() {
 			// Was previously refusing but enough memory is available now, no need to limit.
@@ -276,7 +365,7 @@ func (ml *MemoryLimiter) CheckMemLimits() {
 		return
 	}
 
-	if ml.usageChecker.aboveHardLimit(ms) {
+	if uc.aboveHardLimit(ms) {
 		gateInterval := max(ml.minGCIntervalWhenHardLimited, ml.currentHardGCInterval)
 		// We are above hard limit, do a GC if it wasn't done recently and see if
 		// it brings memory usage below the soft limit.
@@ -284,7 +373,7 @@ func (ml *MemoryLimiter) CheckMemLimits() {
 			ml.logger.Warn("Memory usage is above hard limit. Forcing a GC.", memstatToZapField(ms))
 			ms = ml.doGCandReadMemStats()
 			// Check the limit again to see if GC helped.
-			aboveSoftLimit = ml.checkLimitAndBackoff(ms, true)
+			aboveSoftLimit = ml.checkLimitAndBackoff(uc, ms, true)
 		}
 	} else {
 		gateInterval := max(ml.minGCIntervalWhenSoftLimited, ml.currentSoftGCInterval)
@@ -294,7 +383,7 @@ func (ml *MemoryLimiter) CheckMemLimits() {
 			ml.logger.Info("Memory usage is above soft limit. Forcing a GC.", memstatToZapField(ms))
 			ms = ml.doGCandReadMemStats()
 			// Check the limit again to see if GC helped.
-			aboveSoftLimit = ml.checkLimitAndBackoff(ms, true)
+			aboveSoftLimit = ml.checkLimitAndBackoff(uc, ms, true)
 		}
 	}
 

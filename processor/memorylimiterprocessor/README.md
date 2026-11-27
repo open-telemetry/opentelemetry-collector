@@ -161,6 +161,12 @@ hard-limited mode. Set to `0` to disable.
 - `garbage_collector` (optional section, enabled by default): Controls forced
 GC calls. Set `enabled: false` to disable forced garbage collection. The
 processor will still refuse data when memory limits are exceeded.
+- `refresh_interval` (default = `0s`): Interval at which the cgroup-derived
+memory limit is re-read so percentage-based thresholds track in-place memory
+limit resizes (for example a Kubernetes in-place pod resize). A value of `0`
+disables periodic refresh, computing thresholds once at startup. Only applies
+when the limit is percentage-based (`limit_mib` is unset); it has no effect
+with a fixed `limit_mib`.
 
 Examples:
 

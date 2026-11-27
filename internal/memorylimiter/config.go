@@ -25,6 +25,7 @@ var (
 	errLimitPercentageOutOfRange      = errors.New(
 		"'limit_percentage' and 'spike_limit_percentage' must be greater than zero and less than or equal to hundred",
 	)
+	errNegativeRefreshInterval = errors.New("'refresh_interval' must be non-negative")
 )
 
 // GarbageCollectorConfig defines configuration for garbage collection.
@@ -80,6 +81,15 @@ type Config struct {
 	// MemorySpikePercentage is the maximum, in percents against the total memory,
 	// spike expected between the measurements of memory usage.
 	MemorySpikePercentage uint32 `mapstructure:"spike_limit_percentage"`
+
+	// RefreshInterval configures how often the cgroup-derived memory limit is
+	// re-read so percentage-based thresholds track in-place memory limit
+	// resizes (e.g. Kubernetes in-place pod resize). Setting the duration to 0
+	// (default) disables periodic refresh and preserves the previous behavior
+	// of computing thresholds once at startup. Only applies when the limit is
+	// percentage-based (limit_mib is unset); it has no effect with a fixed
+	// limit_mib.
+	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -132,6 +142,9 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.MemoryLimitPercentage > 0 && cfg.MemoryLimitPercentage <= cfg.MemorySpikePercentage {
 		return errSpikeLimitPercentageOutOfRange
+	}
+	if cfg.RefreshInterval < 0 {
+		return errNegativeRefreshInterval
 	}
 	return nil
 }

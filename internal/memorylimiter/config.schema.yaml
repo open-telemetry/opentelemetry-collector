@@ -40,6 +40,11 @@ $defs:
         type: string
         x-customType: time.Duration
         format: duration
+      refresh_interval:
+        description: RefreshInterval configures how often the cgroup-derived memory limit is re-read so percentage-based thresholds track in-place memory limit resizes (e.g. Kubernetes in-place pod resize). Setting the duration to 0 (default) disables periodic refresh and preserves the previous behavior of computing thresholds once at startup. Only applies when the limit is percentage-based (limit_mib is unset); it has no effect with a fixed limit_mib.
+        type: string
+        x-customType: time.Duration
+        format: duration
       spike_limit_mib:
         description: MemorySpikeLimitMiB is the maximum, in MiB, spike expected between the measurements of memory usage.
         type: integer
