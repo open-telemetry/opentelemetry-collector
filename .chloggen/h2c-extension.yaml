@@ -5,7 +5,7 @@ change_type: new_component
 component: extension/h2c
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add a development-stability HTTP server middleware extension prototype for h2c.
+note: Add an HTTP server middleware extension that serves cleartext HTTP/2 (h2c).
 
 # One or more tracking issues or pull requests related to the change
 issues: [16338, 16329]
