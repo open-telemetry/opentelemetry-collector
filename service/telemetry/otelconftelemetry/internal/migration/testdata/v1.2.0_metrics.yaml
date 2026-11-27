@@ -1,0 +1,21 @@
+level: Detailed
+readers:
+  - periodic:
+      exporter:
+        otlp_http:
+          endpoint: 127.0.0.1:4317
+          headers:
+          - name: "key1"
+            value: "value1"
+  - pull:
+      exporter:
+      # both prometheus and prometheus/development are supported
+        prometheus/development:
+          host: 127.0.0.1
+          port: 8902
+  - pull:
+      exporter:
+      # both prometheus and prometheus/development are supported
+        prometheus:
+          host: 127.0.0.1
+          port: 8903

@@ -1,0 +1,25 @@
+level: "None"
+processors:
+  - batch:
+      exporter:
+        otlp_http:
+          endpoint: https://127.0.0.1:4317
+          headers:
+          - name: "key1"
+            value: "[REDACTED]"
+  - simple:
+      exporter:
+        console: {}
+  - simple:
+      exporter:
+        otlp_http:
+          endpoint: http://127.0.0.1:4317
+          headers:
+          - name: "key1"
+            value: "[REDACTED]"
+propagators: []
+sampler:
+  parent_based:
+    root:
+      trace_id_ratio_based:
+        ratio: 0.01
