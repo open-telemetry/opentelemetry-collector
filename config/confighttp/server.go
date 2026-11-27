@@ -111,7 +111,7 @@ func (sc *ServerConfig) ToListenerWithOptions(ctx context.Context, opts ...ToLis
 	return listener, nil
 }
 
-func (sc *ServerConfig) validateProtocols(i int, id component.ID, protocols http.Protocols) error {
+func (sc *ServerConfig) validateMiddlewareProtocols(i int, id component.ID, protocols http.Protocols) error {
 	if sc.TLS.HasValue() && protocols.UnencryptedHTTP2() {
 		return confmap.WithKeyPath(fmt.Errorf("middleware %q requests unencrypted HTTP/2, but this listener requires TLS", id), "middlewares", strconv.Itoa(i), "id")
 	}
@@ -134,7 +134,7 @@ func (sc *ServerConfig) ValidateWithExtensions(resolve component.ExtensionConfig
 			return confmap.WithKeyPath(fmt.Errorf("references middleware %q which is not configured", m.ID), "middlewares", strconv.Itoa(i), "id")
 		}
 		if decl, ok := cfg.(extensionmiddleware.HTTPServerProtocolConfig); ok {
-			if err := sc.validateProtocols(i, m.ID, decl.RequiredHTTPServerProtocols()); err != nil {
+			if err := sc.validateMiddlewareProtocols(i, m.ID, decl.RequiredHTTPServerProtocols()); err != nil {
 				return err
 			}
 		}
@@ -227,7 +227,7 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		if err != nil {
 			return nil, err
 		}
-		if err := sc.validateProtocols(i, m.ID, requested); err != nil {
+		if err := sc.validateMiddlewareProtocols(i, m.ID, requested); err != nil {
 			return nil, err
 		}
 		protocols = addProtocols(protocols, requested)
