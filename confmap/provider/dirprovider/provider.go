@@ -136,9 +136,8 @@ func resolveFiles(pattern string) ([]string, error) {
 // (e.g. "a/**/b/*.yaml") is not supported and will match nothing. A pattern
 // that begins with "**" walks the current working directory.
 func recursiveGlob(pattern string) ([]string, error) {
-	idx := strings.Index(pattern, "**")
-	root := pattern[:idx]
-	tail := strings.TrimLeft(pattern[idx+len("**"):], `/\`)
+	root, rest, _ := strings.Cut(pattern, "**")
+	tail := strings.TrimLeft(rest, `/\`)
 	if tail == "" {
 		// A pattern ending in "**" (e.g. dir:/folder/**) means "every file
 		// under root"; an empty tail would otherwise match nothing.
