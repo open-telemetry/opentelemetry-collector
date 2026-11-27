@@ -18,7 +18,9 @@ import (
 
 // follows drive-letter specification:
 // https://datatracker.ietf.org/doc/html/draft-kerwin-file-scheme-07.html#section-2.2
-var driverLetterRegexp = regexp.MustCompile("^[A-z]:")
+func hasWindowsDrivePrefix(s string) bool {
+	return len(s) >= 2 && s[1] == ':' && (('A' <= s[0] && s[0] <= 'Z') || ('a' <= s[0] && s[0] <= 'z'))
+}
 
 // Resolver resolves a configuration as a Conf.
 type Resolver struct {
@@ -135,8 +137,8 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 	for i, uri := range set.URIs {
 		// For backwards compatibility:
 		// - empty url scheme means "file".
-		// - "^[A-z]:" also means "file"
-		if driverLetterRegexp.MatchString(uri) || !strings.Contains(uri, ":") {
+		// - Windows drive letters (e.g. "C:") also mean "file"
+		if hasWindowsDrivePrefix(uri) || !strings.Contains(uri, ":") {
 			uris[i] = location{scheme: "file", opaqueValue: uri}
 			continue
 		}

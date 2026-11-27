@@ -130,6 +130,56 @@ func TestNewResolverDuplicateScheme(t *testing.T) {
 	assert.EqualError(t, err, `duplicate 'confmap.Provider' scheme "mock"`)
 }
 
+func TestNewResolverWindowsDriveLetter(t *testing.T) {
+	tests := []struct {
+		uri      string
+		expected location
+	}{
+		{
+			uri:      `C:\test.yaml`,
+			expected: location{scheme: "file", opaqueValue: `C:\test.yaml`},
+		},
+		{
+			uri:      `c:/test.yaml`,
+			expected: location{scheme: "file", opaqueValue: `c:/test.yaml`},
+		},
+		{
+			uri:      `Z:config.yaml`,
+			expected: location{scheme: "file", opaqueValue: `Z:config.yaml`},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.uri, func(t *testing.T) {
+			r, err := NewResolver(ResolverSettings{
+				URIs:              []string{tt.uri},
+				ProviderFactories: []ProviderFactory{newMockProvider(&mockProvider{scheme: "file"})},
+			})
+			require.NoError(t, err)
+			assert.Equal(t, []location{tt.expected}, r.uris)
+		})
+	}
+}
+
+func TestNewResolverNonDriveLetterPunctuation(t *testing.T) {
+	// Ensure characters in ASCII between 'Z' and 'a' (_, [, \, ], ^, `) are not treated as drive letters.
+	invalidURIs := []string{
+		"_:invalid",
+		"[:invalid",
+		"^:invalid",
+	}
+
+	for _, uri := range invalidURIs {
+		t.Run(uri, func(t *testing.T) {
+			_, err := NewResolver(ResolverSettings{
+				URIs:              []string{uri},
+				ProviderFactories: []ProviderFactory{newMockProvider(&mockProvider{scheme: "file"})},
+			})
+			assert.Error(t, err)
+		})
+	}
+}
+
 func TestResolverErrors(t *testing.T) {
 	tests := []struct {
 		name              string
