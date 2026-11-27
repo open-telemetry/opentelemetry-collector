@@ -15,7 +15,8 @@ issues: [16338, 16329]
 # Use pipe (|) for multiline entries.
 subtext: |
   The extension enables prior-knowledge h2c through `http.Server.Protocols`, so every stream goes through the full HTTP server handler, the same as an HTTP/1.1 request.
-  h2c does not authenticate or encrypt; configure Collector `auth` or authenticate at a trusted proxy.
+  Do not configure h2c and TLS on the same server. OTLP reports this conflict during `otelcol validate`; other `confighttp` servers reject it at startup.
+  h2c does not authenticate or encrypt. Enforce mTLS at the TLS-terminating proxy, and configure Collector `auth` or authenticate clients at a trusted proxy.
   HTTP/1.1 `Upgrade: h2c` is not supported. See the component README for remaining limitations.
 
 # Optional: The change log or logs in which this entry should be included.

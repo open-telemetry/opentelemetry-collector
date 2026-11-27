@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/confighttp
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: HTTP servers enable the protocols that their middleware extensions request through `extensionmiddleware.HTTPServerProtocols`.
+note: Validate and configure HTTP server protocols requested by middleware extensions.
 
 # One or more tracking issues or pull requests related to the change
 issues: [16338]
@@ -15,7 +15,7 @@ issues: [16338]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Servers whose middleware request no protocols beyond HTTP/1 and HTTP/2 keep the net/http defaults. Otherwise the server accepts HTTP/1, HTTP/2 and the requested protocols.
+subtext: Middleware protocol requirements are checked against the server's TLS configuration during validation and server setup. Requested protocols are added to the net/http defaults.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

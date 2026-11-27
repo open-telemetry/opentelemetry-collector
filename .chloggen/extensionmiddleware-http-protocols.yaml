@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/extensionmiddleware
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add the `HTTPServerProtocols` interface so HTTP server middleware can enable more HTTP protocols, such as unencrypted HTTP/2.
+note: Add HTTP server middleware interfaces to declare protocols at configuration validation and server setup.
 
 # One or more tracking issues or pull requests related to the change
 issues: [16338]
@@ -15,7 +15,7 @@ issues: [16338]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Protocols are added to the server's defaults. An extension cannot disable a protocol.
+subtext: "`HTTPServerProtocolConfig` declares requirements before extensions start; `HTTPServerProtocols` requests them at server setup. Protocols are added to the server's defaults, and an extension cannot disable a protocol."
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
