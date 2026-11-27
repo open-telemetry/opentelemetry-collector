@@ -9,6 +9,13 @@ status:
     beta: [extension]
   distributions: []
 
+feature_gates:
+  - id: extension.memory_limiter.RejectGRPCBeforeDecode
+    description: Reject unary gRPC requests before they are decompressed and decoded when the memory limiter refuses requests.
+    stage: alpha
+    from_version: v0.167.0
+    reference_url: https://github.com/open-telemetry/opentelemetry-collector/issues/16184
+
 telemetry:
   metrics:
     memorylimiter_refused_requests:

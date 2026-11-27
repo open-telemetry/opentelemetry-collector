@@ -30,8 +30,9 @@ var (
 )
 
 var (
-	_ extensionmiddleware.GRPCServer = (*memoryLimiterExtension)(nil)
-	_ extensionmiddleware.HTTPServer = (*memoryLimiterExtension)(nil)
+	_ extensionmiddleware.GRPCServer          = (*memoryLimiterExtension)(nil)
+	_ extensionmiddleware.GRPCServerPreDecode = (*memoryLimiterExtension)(nil)
+	_ extensionmiddleware.HTTPServer          = (*memoryLimiterExtension)(nil)
 )
 
 type memoryLimiterExtension struct {
@@ -94,36 +95,50 @@ func (ml *memoryLimiterExtension) wrapHTTPHandler(_ context.Context, base http.H
 }
 
 func (ml *memoryLimiterExtension) GetGRPCServerOptions(_ context.Context) ([]grpc.ServerOption, error) {
+	// The interceptors are installed even when the pre-decode check is enabled,
+	// because the check only applies to services registered through configgrpc's
+	// ServiceRegistrar. A request that passes the check is checked again here.
 	return []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(ml.grpcUnaryInterceptor),
 		grpc.ChainStreamInterceptor(ml.grpcStreamInterceptor),
 	}, nil
 }
 
+// GetGRPCServerPreDecodeCheck implements extensionmiddleware.GRPCServerPreDecode
+func (ml *memoryLimiterExtension) GetGRPCServerPreDecodeCheck(_ context.Context) (extensionmiddleware.GRPCPreDecodeCheckFunc, error) {
+	if !metadata.ExtensionMemoryLimiterRejectGRPCBeforeDecodeFeatureGate.IsEnabled() {
+		return nil, nil
+	}
+	return ml.refuseGRPC, nil
+}
+
 func (ml *memoryLimiterExtension) grpcUnaryInterceptor(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-	if ml.MustRefuse() {
-		ml.telemetryBuilder.MemorylimiterRefusedRequests.Add(
-			ctx,
-			1,
-			metric.WithAttributeSet(grpcTransportAttrs),
-		)
-		return nil, status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
+	if err := ml.refuseGRPC(ctx); err != nil {
+		return nil, err
 	}
 
 	return handler(ctx, req)
 }
 
 func (ml *memoryLimiterExtension) grpcStreamInterceptor(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	ctx := ss.Context()
-
-	if ml.MustRefuse() {
-		ml.telemetryBuilder.MemorylimiterRefusedRequests.Add(
-			ctx,
-			1,
-			metric.WithAttributeSet(grpcTransportAttrs),
-		)
-		return status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
+	if err := ml.refuseGRPC(ss.Context()); err != nil {
+		return err
 	}
 
 	return handler(srv, ss)
+}
+
+// refuseGRPC records the refused request and returns a ResourceExhausted
+// error if the memory limiter refuses requests.
+func (ml *memoryLimiterExtension) refuseGRPC(ctx context.Context) error {
+	if !ml.MustRefuse() {
+		return nil
+	}
+
+	ml.telemetryBuilder.MemorylimiterRefusedRequests.Add(
+		ctx,
+		1,
+		metric.WithAttributeSet(grpcTransportAttrs),
+	)
+	return status.Errorf(codes.ResourceExhausted, "RESOURCE_EXHAUSTED")
 }

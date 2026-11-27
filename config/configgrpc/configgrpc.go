@@ -434,24 +434,93 @@ func registeredMethodsFilter(getServer func() *grpc.Server) otelgrpc.Filter {
 // ServiceRegistrar returns the registrar services should use to register themselves on a
 // server created by [ServerConfig.ToServer] with the same extensions. When authentication
 // is configured, unary RPCs are authenticated before their request is decompressed and
-// decoded, which gRPC interceptors cannot do. Otherwise it returns the server itself.
+// decoded, which gRPC interceptors cannot do. The middlewares that implement
+// [extensionmiddleware.GRPCServerPreDecode] then check them, also before their request is
+// decompressed and decoded, and so before the unary interceptors of all middlewares.
+// When there is nothing to run, it returns the server itself.
 func (sc *ServerConfig) ServiceRegistrar(
 	ctx context.Context,
 	extensions map[component.ID]component.Component,
 	server *grpc.Server,
 ) (grpc.ServiceRegistrar, error) {
-	if !sc.Auth.HasValue() {
-		return server, nil
+	var registrar grpc.ServiceRegistrar = server
+	if sc.Auth.HasValue() {
+		authenticator, err := sc.Auth.Get().GetServerAuthenticator(ctx, extensions)
+		if err != nil {
+			return nil, err
+		}
+		registrar = &preAuthRegistrar{
+			ServiceRegistrar: registrar,
+			authenticator:    authenticator,
+			includeMetadata:  sc.IncludeMetadata,
+		}
 	}
-	authenticator, err := sc.Auth.Get().GetServerAuthenticator(ctx, extensions)
+
+	checks, err := sc.getPreDecodeChecks(ctx, extensions)
 	if err != nil {
 		return nil, err
 	}
-	return &preAuthRegistrar{
-		ServiceRegistrar: server,
-		authenticator:    authenticator,
-		includeMetadata:  sc.IncludeMetadata,
-	}, nil
+	if len(checks) > 0 {
+		// This registrar wraps the method handlers before passing them to the
+		// authentication one, so the checks run after authentication.
+		registrar = &preDecodeCheckRegistrar{
+			ServiceRegistrar: registrar,
+			checks:           checks,
+			includeMetadata:  sc.IncludeMetadata,
+		}
+	}
+	return registrar, nil
+}
+
+// getPreDecodeChecks returns the checks of the configured middlewares that
+// implement [extensionmiddleware.GRPCServerPreDecode], in the configured order.
+func (sc *ServerConfig) getPreDecodeChecks(
+	ctx context.Context,
+	extensions map[component.ID]component.Component,
+) ([]extensionmiddleware.GRPCPreDecodeCheckFunc, error) {
+	var checks []extensionmiddleware.GRPCPreDecodeCheckFunc
+	for _, middleware := range sc.Middlewares {
+		// ToServer already reported the middleware extensions that do not exist.
+		preDecode, ok := extensions[middleware.ID].(extensionmiddleware.GRPCServerPreDecode)
+		if !ok {
+			continue
+		}
+		check, err := preDecode.GetGRPCServerPreDecodeCheck(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get gRPC server pre-decode check from middleware: %w", err)
+		}
+		if check != nil {
+			checks = append(checks, check)
+		}
+	}
+	return checks, nil
+}
+
+// preDecodeCheckRegistrar wraps the handler of every unary method registered through it, so
+// that the middleware checks run before the generated handler reads the request message.
+type preDecodeCheckRegistrar struct {
+	grpc.ServiceRegistrar
+	checks          []extensionmiddleware.GRPCPreDecodeCheckFunc
+	includeMetadata bool
+}
+
+func (r *preDecodeCheckRegistrar) RegisterService(desc *grpc.ServiceDesc, impl any) {
+	wrapped := *desc
+	wrapped.Methods = make([]grpc.MethodDesc, len(desc.Methods))
+	for i, md := range desc.Methods {
+		handler := md.Handler
+		md.Handler = func(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+			checkCtx := contextWithClient(ctx, r.includeMetadata)
+			for _, check := range r.checks {
+				if err := check(checkCtx); err != nil {
+					return nil, err
+				}
+			}
+			return handler(srv, ctx, dec, interceptor)
+		}
+		wrapped.Methods[i] = md
+	}
+	r.ServiceRegistrar.RegisterService(&wrapped, impl)
 }
 
 // preAuthRegistrar wraps the handler of every unary method registered through it, so

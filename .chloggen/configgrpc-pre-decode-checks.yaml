@@ -1,0 +1,8 @@
+change_type: enhancement
+component: pkg/configgrpc
+note: Run the checks of the gRPC server middlewares that implement `extensionmiddleware.GRPCServerPreDecode` for the services registered through `ServerConfig.ServiceRegistrar`.
+issues: [16184]
+subtext: |
+  The checks run for unary RPCs after authentication and before the request is decompressed and decoded.
+  They run in the configured order, before the unary interceptors of all middlewares, and the first error rejects the RPC.
+change_logs: [api]

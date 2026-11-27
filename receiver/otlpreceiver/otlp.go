@@ -120,8 +120,9 @@ func (r *otlpReceiver) startGRPCServer(ctx context.Context, host component.Host)
 		return err
 	}
 
-	// Register through the server's registrar so that, when authentication is configured,
-	// requests are authenticated before they are decompressed and decoded.
+	// Register through the server's registrar so that requests are authenticated, when
+	// authentication is configured, and checked by the middlewares that support it before
+	// they are decompressed and decoded.
 	registrar, err := grpcCfg.ServiceRegistrar(ctx, host.GetExtensions(), r.serverGRPC)
 	if err != nil {
 		return err

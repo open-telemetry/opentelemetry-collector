@@ -24,6 +24,38 @@ type GRPCServer interface {
 	GetGRPCServerOptions(context.Context) ([]grpc.ServerOption, error)
 }
 
+// GRPCServerPreDecode is an optional interface for gRPC server middleware
+// extensions that need to check unary RPCs before the server decompresses
+// and decodes the request message. gRPC unary interceptors only run after
+// the request message is decoded. Extensions must also implement GRPCServer.
+//
+// The checks only apply to services registered through the registrar that
+// configgrpc's ServerConfig.ServiceRegistrar returns. They run after
+// authentication and before all unary interceptors, including the
+// interceptors of the middlewares configured before this one. Among
+// themselves, the checks run in the configured order of the middlewares,
+// and the first error rejects the RPC. Streaming RPCs are not checked,
+// because stream interceptors already run before the handler reads any
+// message.
+type GRPCServerPreDecode interface {
+	// GetGRPCServerPreDecodeCheck returns the check for a gRPC server,
+	// or nil if the extension does not need one.
+	GetGRPCServerPreDecodeCheck(context.Context) (GRPCPreDecodeCheckFunc, error)
+}
+
+// GRPCPreDecodeCheckFunc is called for each unary RPC before the server reads
+// its request message from the stream. The transport may already have
+// received part of the message, up to its flow-control window.
+//
+// The context carries the client.Info that interceptors also see, including
+// the authentication data when authentication is configured, and
+// grpc.Method returns the method name. A non-nil error rejects the RPC and
+// is returned to the client, so it should be a gRPC status error.
+//
+// The function runs for every unary RPC and is called concurrently, so it
+// should return quickly and must be safe for concurrent use.
+type GRPCPreDecodeCheckFunc = func(ctx context.Context) error
+
 var _ HTTPServer = (*GetHTTPHandlerFunc)(nil)
 
 // GetHTTPHandlerFunc is a function that implements HTTPServer.
@@ -44,6 +76,18 @@ var _ GRPCServer = (*GetGRPCServerOptionsFunc)(nil)
 type GetGRPCServerOptionsFunc func(context.Context) ([]grpc.ServerOption, error)
 
 func (f GetGRPCServerOptionsFunc) GetGRPCServerOptions(ctx context.Context) ([]grpc.ServerOption, error) {
+	if f == nil {
+		return nil, nil
+	}
+	return f(ctx)
+}
+
+var _ GRPCServerPreDecode = (*GetGRPCServerPreDecodeCheckFunc)(nil)
+
+// GetGRPCServerPreDecodeCheckFunc is a function that implements GRPCServerPreDecode.
+type GetGRPCServerPreDecodeCheckFunc func(context.Context) (GRPCPreDecodeCheckFunc, error)
+
+func (f GetGRPCServerPreDecodeCheckFunc) GetGRPCServerPreDecodeCheck(ctx context.Context) (GRPCPreDecodeCheckFunc, error) {
 	if f == nil {
 		return nil, nil
 	}
