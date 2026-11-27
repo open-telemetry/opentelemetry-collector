@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.opentelemetry.io/otel/trace/noop"
@@ -27,7 +28,9 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	queuebatchtelemetry "go.opentelemetry.io/collector/internal/telemetry/queuebatch"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
 func TestBaseExporter(t *testing.T) {
@@ -184,6 +187,66 @@ func TestBaseExporterExtraAttrs(t *testing.T) {
 			Value: int64(0),
 		},
 	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
+func TestBaseExporterStartRecordsZeroSendFailed(t *testing.T) {
+	tests := []struct {
+		name         string
+		signal       pipeline.Signal
+		assertFailed func(*testing.T, *componenttest.Telemetry, []metricdata.DataPoint[int64], ...metricdatatest.Option)
+	}{
+		{name: "traces", signal: pipeline.SignalTraces, assertFailed: metadatatest.AssertEqualExporterSendFailedSpans},
+		{name: "metrics", signal: pipeline.SignalMetrics, assertFailed: metadatatest.AssertEqualExporterSendFailedMetricPoints},
+		{name: "logs", signal: pipeline.SignalLogs, assertFailed: metadatatest.AssertEqualExporterSendFailedLogRecords},
+		{name: "profiles", signal: xpipeline.SignalProfiles, assertFailed: metadatatest.AssertEqualExporterSendFailedProfileSamples},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tt := componenttest.NewTelemetry()
+			t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+			set := exportertest.NewNopSettings(exportertest.NopType)
+			set.TelemetrySettings = tt.NewTelemetrySettings()
+
+			be, err := NewBaseExporter(set, tc.signal, noopExport)
+			require.NoError(t, err)
+			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+			t.Cleanup(func() { require.NoError(t, be.Shutdown(context.Background())) })
+
+			want := []metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(attribute.String("exporter", set.ID.String())),
+					Value:      0,
+				},
+			}
+
+			// The send_failed series exists with a value of 0 right after Start, before any send.
+			tc.assertFailed(t, tt, want, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+			// A successful send keeps it at 0, with no error attributes.
+			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 5}))
+			tc.assertFailed(t, tt, want, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		})
+	}
+}
+
+func TestBaseExporterStartSkipsZeroSendFailedForInjectedObsMetrics(t *testing.T) {
+	var recorded []queuebatchtelemetry.Metric
+	obsMetrics := ObsMetrics{
+		RecordIntFunc: func(_ context.Context, m queuebatchtelemetry.Metric, _ int64, _ ...metric.AddOption) {
+			recorded = append(recorded, m)
+		},
+	}
+
+	be, err := NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
+		WithObsMetrics(obsMetrics))
+	require.NoError(t, err)
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, be.Shutdown(context.Background())) })
+
+	// The startup 0 is only for the exporter's own send_failed metrics. A recorder set with
+	// WithObsMetrics (the queue batch processor, for example) does not get it.
+	require.NotContains(t, recorded, queuebatchtelemetry.MetricSendFailure)
 }
 
 func TestWithQueue_MetadataKeys(t *testing.T) {
