@@ -89,6 +89,14 @@ func (pe pathError) Unwrap() error {
 	return pe.err
 }
 
+// toPathError lets parent keys extend a path returned by WithKeyPath.
+func toPathError(err error) pathError {
+	if pe, ok := err.(pathError); ok { //nolint:errorlint // Flatten adjacent paths only; preserve intervening error wrappers.
+		return pathError{err: pe.err, path: slices.Clone(pe.path)}
+	}
+	return pathError{err: err}
+}
+
 func validate(v reflect.Value) []pathError {
 	errs := []pathError{}
 	// Validate the value itself.
@@ -100,7 +108,7 @@ func validate(v reflect.Value) []pathError {
 	case reflect.Struct:
 		err := callValidateIfPossible(v)
 		if err != nil {
-			errs = append(errs, pathError{err: err})
+			errs = append(errs, toPathError(err))
 		}
 
 		// Reflect on the pointed data and check each of its fields.
@@ -123,7 +131,7 @@ func validate(v reflect.Value) []pathError {
 	case reflect.Slice, reflect.Array:
 		err := callValidateIfPossible(v)
 		if err != nil {
-			errs = append(errs, pathError{err: err})
+			errs = append(errs, toPathError(err))
 		}
 
 		// Reflect on the pointed data and check each of its fields.
@@ -141,7 +149,7 @@ func validate(v reflect.Value) []pathError {
 	case reflect.Map:
 		err := callValidateIfPossible(v)
 		if err != nil {
-			errs = append(errs, pathError{err: err})
+			errs = append(errs, toPathError(err))
 		}
 
 		iter := v.MapRange()
@@ -162,7 +170,7 @@ func validate(v reflect.Value) []pathError {
 	default:
 		err := callValidateIfPossible(v)
 		if err != nil {
-			return []pathError{{err: err}}
+			return []pathError{toPathError(err)}
 		}
 
 		return nil
