@@ -7,28 +7,24 @@ import (
 	"time"
 )
 
-// BackOffConfig defines configuration for retrying batches in case of export failure.
-// The current supported strategy is exponential backoff.
+// BackOffConfig defines configuration for retrying batches in case of export failure. The current supported strategy is exponential backoff.
 type BackOffConfig struct {
-	// Enabled indicates whether to not retry sending batches in case of export failure.
+	// Enabled indicates whether to retry sending batches in case of export failure.
 	Enabled bool `mapstructure:"enabled"`
 
-	// InitialInterval the time to wait after the first failure before retrying.
+	// InitialInterval the time to wait after the first failure before retrying; ignored if enabled is false.
 	InitialInterval time.Duration `mapstructure:"initial_interval"`
 
-	// MaxElapsedTime the maximum amount of time (including retries) spent trying to send a request/batch.
-	// Once this value is reached, the data is discarded. If set to 0, the retries are never stopped.
+	// MaxElapsedTime the maximum amount of time (including retries) spent trying to send a request/batch; ignored if enabled is false. Once this value is reached, the data is discarded. If set to 0, the retries are never stopped.
 	MaxElapsedTime time.Duration `mapstructure:"max_elapsed_time"`
 
-	// MaxInterval the upper bound on backoff interval. Once this value is reached the delay
-	// between consecutive retries will always be `MaxInterval`.
+	// MaxInterval the upper bound on backoff interval; ignored if enabled is false. Once this value is reached the delay between consecutive retries will always be `MaxInterval`.
 	MaxInterval time.Duration `mapstructure:"max_interval"`
 
-	// Multiplier the value multiplied by the backoff interval bounds
+	// Multiplier the factor by which the backoff interval bounds are multiplied on each attempt; ignored if enabled is false.
 	Multiplier float64 `mapstructure:"multiplier"`
 
-	// RandomizationFactor a random factor used to calculate next backoffs
-	// Randomized interval = RetryInterval * (1 ± RandomizationFactor)
+	// RandomizationFactor a random factor between 0 and 1 used to calculate next backoffs (randomized interval = RetryInterval * (1 ± RandomizationFactor)); ignored if enabled is false.
 	RandomizationFactor float64 `mapstructure:"randomization_factor"`
 
 	// prevent unkeyed literal initialization
