@@ -27,6 +27,6 @@ func createDefaultConfig() component.Config {
 	return &Config{}
 }
 
-func create(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
-	return &h2cExtension{}, nil
+func create(_ context.Context, _ extension.Settings, cfg component.Config) (extension.Extension, error) {
+	return &h2cExtension{config: *cfg.(*Config)}, nil
 }

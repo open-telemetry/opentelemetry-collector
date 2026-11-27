@@ -24,6 +24,7 @@ var (
 // server's full handler chain and drains the connections when the server
 // shuts down.
 type h2cExtension struct {
+	config Config
 	component.StartFunc
 	component.ShutdownFunc
 }
@@ -37,8 +38,6 @@ func (*h2cExtension) GetHTTPHandler(context.Context) (extensionmiddleware.WrapHT
 }
 
 // GetHTTPServerProtocols implements extensionmiddleware.HTTPServerProtocols.
-func (*h2cExtension) GetHTTPServerProtocols(context.Context) (http.Protocols, error) {
-	var protocols http.Protocols
-	protocols.SetUnencryptedHTTP2(true)
-	return protocols, nil
+func (e *h2cExtension) GetHTTPServerProtocols(context.Context) (http.Protocols, error) {
+	return e.config.RequiredHTTPServerProtocols(), nil
 }

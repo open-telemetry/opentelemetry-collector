@@ -63,6 +63,13 @@ type HTTPServerProtocols interface {
 	GetHTTPServerProtocols(context.Context) (http.Protocols, error)
 }
 
+// HTTPServerProtocolConfig is an optional interface for middleware configuration
+// to declare protocol requirements without creating or starting the extension.
+// The declaration must match the runtime HTTPServerProtocols request.
+type HTTPServerProtocolConfig interface {
+	RequiredHTTPServerProtocols() http.Protocols
+}
+
 var _ HTTPServerProtocols = (*GetHTTPServerProtocolsFunc)(nil)
 
 // GetHTTPServerProtocolsFunc is a function that implements HTTPServerProtocols.
