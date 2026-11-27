@@ -87,7 +87,7 @@ func createResource(
 		return pcommon.Resource{}, "", err
 	}
 
-	sdkResource := sdk.Resource()
+	sdkResource := withSDKDefaultAttributes(sdk.Resource())
 	if cfg.DetectionDevelopment != nil {
 		detectionSDK, err := newDetectionResourceSDK(ctx, cfg.DetectionDevelopment)
 		if err != nil {
@@ -112,6 +112,22 @@ func createResource(
 	}
 
 	return pcommonResource, sdkResource.SchemaURL(), nil
+}
+
+// withSDKDefaultAttributes adds the OpenTelemetry SDK default resource attributes
+// (telemetry.sdk.*, and service.name when it is not configured) to the given resource.
+// Configured attributes always take precedence over the defaults.
+//
+// This matches what the OpenTelemetry declarative configuration specification requires
+// from SDKs, and what newer versions of otelconf do implicitly.
+//
+// NOTE: This function is only temporary. It makes this behavior change explicit while the
+// collector still uses the otelconf v0.3.0 schema. It will be removed when the collector
+// moves to the otelconf v1 schema, as the otelconf SDK then adds these attributes itself.
+func withSDKDefaultAttributes(res *otelsdkresource.Resource) *otelsdkresource.Resource {
+	// When the same key is present multiple times, the last value is used.
+	attrs := append(otelsdkresource.Default().Attributes(), res.Attributes()...)
+	return otelsdkresource.NewWithAttributes(res.SchemaURL(), attrs...)
 }
 
 // putSDKAttribute copies an OTel SDK attribute value into a pcommon.Map, handling every
