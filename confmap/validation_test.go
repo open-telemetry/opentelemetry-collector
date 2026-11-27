@@ -5,6 +5,7 @@ package confmap // import "go.opentelemetry.io/collector/confmap"
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,6 +15,61 @@ import (
 type configChildStruct struct {
 	Child    errValidateConfig
 	ChildPtr *errValidateConfig
+}
+
+func TestWithKeyPathPreservesErrorContext(t *testing.T) {
+	cause := errors.New("invalid value")
+	inner := WithKeyPath(cause, "items", "1")
+	err := WithKeyPath(inner, "receiver")
+	require.EqualError(t, err, "receiver::items::1: invalid value")
+	require.ErrorIs(t, err, cause)
+
+	wrapped := fmt.Errorf("invalid reference: %w", inner)
+	err = WithKeyPath(wrapped, "receiver")
+	require.EqualError(t, err, "receiver: invalid reference: items::1: invalid value")
+	require.ErrorIs(t, err, wrapped)
+}
+
+func TestValidateMergesNestedKeyPaths(t *testing.T) {
+	cause := errors.New("invalid value")
+	nested := &errValidateConfig{err: WithKeyPath(cause, "http", "endpoint")}
+
+	tests := []struct {
+		name     string
+		cfg      any
+		expected string
+	}{
+		{
+			name:     "struct field",
+			cfg:      configChildStruct{ChildPtr: nested},
+			expected: "childptr::http::endpoint: invalid value",
+		},
+		{
+			name:     "slice element",
+			cfg:      configChildSlice{ChildPtr: []*errValidateConfig{nil, nested}},
+			expected: "childptr::1::http::endpoint: invalid value",
+		},
+		{
+			name:     "map value",
+			cfg:      configChildMapValue{ChildPtr: map[string]*errValidateConfig{"otlp": nested}},
+			expected: "childptr::otlp::http::endpoint: invalid value",
+		},
+		{
+			name:     "intervening wrapper",
+			cfg:      configChildStruct{ChildPtr: &errValidateConfig{err: fmt.Errorf("invalid reference: %w", WithKeyPath(cause, "http"))}},
+			expected: "childptr: invalid reference: http: invalid value",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := Validate(tt.cfg)
+			require.EqualError(t, err, tt.expected)
+			require.ErrorIs(t, err, cause)
+		})
+	}
+
+	require.EqualError(t, nested.err, "http::endpoint: invalid value", "validation must not mutate the returned error")
 }
 
 type configChildSlice struct {

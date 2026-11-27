@@ -18,6 +18,7 @@ components:
     - exporter/nop
     - exporter/otlp_grpc
     - exporter/otlp_http
+    - extension/h2c
     - extension/memory_limiter
     - extension/zpages
     - pkg/client

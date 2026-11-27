@@ -1,0 +1,28 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: new_component
+
+# The name of the component, or a single word describing the area of concern, (e.g. receiver/otlp)
+component: extension/h2c
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add an HTTP server middleware extension that serves cleartext HTTP/2 (h2c).
+
+# One or more tracking issues or pull requests related to the change
+issues: [16338, 16329]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  The extension enables prior-knowledge h2c through `http.Server.Protocols`, so every stream goes through the full HTTP server handler, the same as an HTTP/1.1 request.
+  Do not configure h2c and TLS on the same server. OTLP reports this conflict during `otelcol validate`; other `confighttp` servers reject it at startup.
+  h2c does not authenticate or encrypt. Enforce mTLS at the TLS-terminating proxy, and configure Collector `auth` or authenticate clients at a trusted proxy.
+  HTTP/1.1 `Upgrade: h2c` is not supported. See the component README for remaining limitations.
+  Build with Go 1.26.7 or later. Earlier Go 1.26 releases mishandle `read_header_timeout` on h2c connections.
+
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: [user]

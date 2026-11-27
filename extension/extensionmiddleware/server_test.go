@@ -124,6 +124,27 @@ func TestGetGRPCServerOptionsFunc(t *testing.T) {
 	})
 }
 
+func TestGetHTTPServerProtocolsFunc(t *testing.T) {
+	var empty GetHTTPServerProtocolsFunc
+	protocols, err := empty.GetHTTPServerProtocols(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, http.Protocols{}, protocols)
+
+	var expected http.Protocols
+	expected.SetUnencryptedHTTP2(true)
+	protocols, err = GetHTTPServerProtocolsFunc(func(context.Context) (http.Protocols, error) {
+		return expected, nil
+	}).GetHTTPServerProtocols(t.Context())
+	require.NoError(t, err)
+	require.Equal(t, expected, protocols)
+
+	wantErr := errors.New("protocols failure")
+	_, err = GetHTTPServerProtocolsFunc(func(context.Context) (http.Protocols, error) {
+		return http.Protocols{}, wantErr
+	}).GetHTTPServerProtocols(t.Context())
+	require.ErrorIs(t, err, wantErr)
+}
+
 func TestGetListenerFunc(t *testing.T) {
 	var empty GetListenerFunc
 	listen, err := empty.GetListenContext(t.Context())

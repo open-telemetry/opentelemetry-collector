@@ -71,6 +71,12 @@ Several helper files are leveraged to provide additional capabilities automatica
 - [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
 - [Auth settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configauth/README.md)
 
+Run `otelcol validate --config=config.yaml` to check `protocols.http.middlewares`
+before starting the receiver. The command reports middleware that references a
+missing extension definition or that conflicts with the listener's settings.
+See the [h2c extension](../../extension/h2cextension/README.md#tls-and-validation)
+for an example.
+
 ## Writing with HTTP/JSON
 
 The OTLP receiver can receive trace export calls via HTTP/JSON in addition to

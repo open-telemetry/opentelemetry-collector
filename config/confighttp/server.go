@@ -7,10 +7,12 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -28,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 )
@@ -108,9 +111,33 @@ func (sc *ServerConfig) ToListenerWithOptions(ctx context.Context, opts ...ToLis
 	return listener, nil
 }
 
+func (sc *ServerConfig) validateMiddlewareProtocols(i int, id component.ID, protocols http.Protocols) error {
+	if sc.TLS.HasValue() && protocols.UnencryptedHTTP2() {
+		return confmap.WithKeyPath(fmt.Errorf("middleware %q requests unencrypted HTTP/2, but this listener requires TLS", id), "middlewares", strconv.Itoa(i), "id")
+	}
+	return nil
+}
+
 func (sc *ServerConfig) Validate() error {
 	if sc.ListenerMiddleware.HasValue() && !configmiddleware.IsCustomTCPRoutingEnabled() {
 		return errors.New("use of the listener_middleware feature requires to enable the feature gate 'pkg.configmiddleware.CustomTCPRouting'")
+	}
+	return nil
+}
+
+// ValidateWithExtensions checks the protocol requirements declared by this
+// server's middleware configurations without constructing the extensions.
+func (sc *ServerConfig) ValidateWithExtensions(resolve component.ExtensionConfigResolver) error {
+	for i, m := range sc.Middlewares {
+		cfg, found := resolve(m.ID)
+		if !found {
+			return confmap.WithKeyPath(fmt.Errorf("references middleware %q which is not configured or not enabled in service::extensions", m.ID), "middlewares", strconv.Itoa(i), "id")
+		}
+		if decl, ok := cfg.(extensionmiddleware.HTTPServerProtocolConfig); ok {
+			if err := sc.validateMiddlewareProtocols(i, m.ID, decl.RequiredHTTPServerProtocols()); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -184,7 +211,8 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 	if len(sc.Middlewares) > 0 && extensions == nil {
 		return nil, errors.New("middlewares were configured but this component or its host does not support extensions")
 	}
-	for _, m := range slices.Backward(sc.Middlewares) {
+	var protocols *http.Protocols
+	for i, m := range slices.Backward(sc.Middlewares) {
 		wrapper, err := m.GetHTTPServerHandler(ctx, extensions)
 		// If we failed to get the middleware
 		if err != nil {
@@ -195,6 +223,14 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		if err != nil {
 			return nil, err
 		}
+		requested, err := m.GetHTTPServerProtocols(ctx, extensions)
+		if err != nil {
+			return nil, err
+		}
+		if err := sc.validateMiddlewareProtocols(i, m.ID, requested); err != nil {
+			return nil, err
+		}
+		protocols = addProtocols(protocols, requested)
 	}
 
 	// MaxRequestBodySize is enforced twice: on the received (possibly compressed)
@@ -306,11 +342,33 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		WriteTimeout:      sc.WriteTimeout,
 		IdleTimeout:       idleTimeout,
 		ErrorLog:          errorLog,
+		Protocols:         protocols,
 	}
 
 	server.SetKeepAlivesEnabled(keepAlivesEnabled)
 
 	return server, err
+}
+
+// addProtocols adds the protocols requested by a middleware to the server's
+// protocols. HTTP/1 and HTTP/2 are net/http defaults, so requesting them
+// changes nothing. Until a middleware requests another protocol, protocols
+// stays nil and the server keeps the net/http defaults. The first such
+// request starts from HTTP/1 and HTTP/2, so a middleware can add protocols
+// but never turn one off.
+func addProtocols(protocols *http.Protocols, requested http.Protocols) *http.Protocols {
+	if !requested.UnencryptedHTTP2() {
+		return protocols
+	}
+	if protocols == nil {
+		protocols = &http.Protocols{}
+		protocols.SetHTTP1(true)
+		protocols.SetHTTP2(true)
+	}
+	if requested.UnencryptedHTTP2() {
+		protocols.SetUnencryptedHTTP2(true)
+	}
+	return protocols
 }
 
 func responseHeadersHandler(handler http.Handler, headers configopaque.MapList) http.Handler {
