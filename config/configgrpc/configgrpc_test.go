@@ -1786,3 +1786,47 @@ func TestAuthRejectsBeforeDecompressionAllSignals(t *testing.T) {
 		})
 	}
 }
+
+func TestServiceRegistrarAuthenticatorNotFound(t *testing.T) {
+	sc := ServerConfig{
+		Auth: configoptional.Some(configauth.Config{AuthenticatorID: doesntExistID}),
+	}
+	srv := grpc.NewServer()
+	defer srv.Stop()
+
+	registrar, err := sc.ServiceRegistrar(context.Background(), map[component.ID]component.Component{}, srv)
+
+	require.EqualError(t, err, "failed to resolve authenticator \"doesntexist\": authenticator not found")
+	assert.Nil(t, registrar)
+}
+
+// serviceDescRecorder is a grpc.ServiceRegistrar that records the registered service.
+type serviceDescRecorder struct {
+	desc *grpc.ServiceDesc
+}
+
+func (r *serviceDescRecorder) RegisterService(desc *grpc.ServiceDesc, _ any) {
+	r.desc = desc
+}
+
+func TestPreDecodeRegistrarMissingMetadata(t *testing.T) {
+	// prepare
+	authFunc := func(context.Context, map[string][]string) (context.Context, error) {
+		assert.FailNow(t, "the auth func should not have been called!")
+		return context.Background(), nil
+	}
+	handler := func(any, context.Context, func(any) error, grpc.UnaryServerInterceptor) (any, error) {
+		assert.FailNow(t, "the handler should not have been called!")
+		return nil, nil
+	}
+	recorder := &serviceDescRecorder{}
+	registrar := &preDecodeRegistrar{ServiceRegistrar: recorder, authenticator: newMockAuthServer(authFunc)}
+	registrar.RegisterService(&grpc.ServiceDesc{Methods: []grpc.MethodDesc{{MethodName: "Export", Handler: handler}}}, nil)
+
+	// test
+	res, err := recorder.desc.Methods[0].Handler(nil, context.Background(), nil, nil)
+
+	// verify
+	assert.Nil(t, res)
+	assert.Equal(t, errMetadataNotFound, err)
+}
