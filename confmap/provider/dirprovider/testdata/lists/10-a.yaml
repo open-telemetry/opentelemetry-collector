@@ -1,0 +1,2 @@
+service:
+  extensions: [ext1, ext2]

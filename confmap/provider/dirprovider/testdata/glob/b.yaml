@@ -1,0 +1,4 @@
+service:
+  pipelines:
+    traces:
+      exporters: [debug]

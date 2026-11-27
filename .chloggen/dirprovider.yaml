@@ -1,0 +1,14 @@
+change_type: new_component
+
+component: provider/dir
+
+note: Add a `dir` config provider that loads and merges all config files in a directory or matching a glob pattern
+
+issues: [9596]
+
+subtext: |
+  Used via the existing `--config` flag, e.g. `--config=dir:/etc/otelcol/config.d`.
+  Files are merged in lexicographical order, honoring the confmap.enableMergeAppendOption
+  feature gate. Supports bare directories, single-level globs, and recursive `**` globs.
+
+change_logs: [user]
