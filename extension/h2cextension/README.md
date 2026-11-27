@@ -123,6 +123,69 @@ The listener accepts both h2c and HTTP/1.1.
 TLS, configure `tls` without `h2c`. If you need both, use separate receivers or
 listeners.
 
+For example, define two OTLP receiver instances with different endpoints: one
+for h2c and one for TLS. Replace the certificate paths with your server
+certificate and key.
+
+```yaml
+extensions:
+  h2c:
+
+receivers:
+  otlp/h2c:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+        middlewares:
+          - id: h2c
+  otlp/tls:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4319
+        tls:
+          cert_file: /path/to/server.crt
+          key_file: /path/to/server.key
+
+exporters:
+  debug:
+
+service:
+  extensions: [h2c]
+  pipelines:
+    traces:
+      receivers: [otlp/h2c, otlp/tls]
+      exporters: [debug]
+```
+
+This configuration is invalid because the `otlp/invalid` HTTP server enables
+both `tls` and the `h2c` middleware on the same listener:
+
+```yaml
+extensions:
+  h2c:
+
+receivers:
+  otlp/invalid:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+        tls:
+          cert_file: /path/to/server.crt
+          key_file: /path/to/server.key
+        middlewares:
+          - id: h2c
+
+exporters:
+  debug:
+
+service:
+  extensions: [h2c]
+  pipelines:
+    traces:
+      receivers: [otlp/invalid]
+      exporters: [debug]
+```
+
 The Collector rejects the combination:
 
 - **Before startup:** receivers that validate middleware references, such as
