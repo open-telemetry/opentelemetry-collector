@@ -432,16 +432,23 @@ func TestConfighttpShutdownDrainsStreams(t *testing.T) {
 	shutdown := make(chan error, 1)
 	go func() { shutdown <- srv.server.Shutdown(shutdownCtx) }()
 
-	require.Never(t, func() bool { return len(shutdown) > 0 }, 200*time.Millisecond, 10*time.Millisecond,
-		"shutdown must wait for the in-flight stream")
-	// The client may see GOAWAY and fail the request without sending it, so
-	// this proves that requests fail and never run, not how the server
-	// treats a late stream. The timeout keeps a regression from hanging.
+	// Serve returns once Shutdown has closed the listener. Shutdown itself
+	// cannot return while the handler blocks the stream.
+	select {
+	case <-srv.serveDone:
+	case <-time.After(5 * time.Second):
+		require.FailNow(t, "shutdown never closed the listener")
+	}
+	require.Empty(t, shutdown, "shutdown must wait for the in-flight stream")
+	// GOAWAY is sent asynchronously, so a late stream on the existing
+	// connection could race it. A new client needs a new connection, so this
+	// proves the listener stops accepting, not how the server treats a late
+	// stream. The timeout keeps a regression from hanging.
 	lateCtx, lateCancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer lateCancel()
 	req, err := http.NewRequestWithContext(lateCtx, http.MethodGet, srv.url, http.NoBody)
 	require.NoError(t, err)
-	resp, err := httpClient.Do(req)
+	resp, err := priorKnowledgeClient(t).Do(req)
 	if err == nil {
 		require.NoError(t, resp.Body.Close())
 	}
@@ -460,7 +467,6 @@ func TestConfighttpShutdownDrainsStreams(t *testing.T) {
 	require.Equal(t, 2, resp.ProtoMajor)
 	require.Equal(t, http.StatusNoContent, resp.StatusCode)
 	require.NoError(t, <-shutdown, "shutdown must close the h2c connection")
-	<-srv.serveDone
 	require.Equal(t, int64(1), srv.connections.Load())
 }
 
