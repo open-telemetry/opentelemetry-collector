@@ -24,6 +24,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.166.0
 	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.166.0
 	go.opentelemetry.io/collector/featuregate v1.72.0
+	go.opentelemetry.io/collector/internal/statusutil v0.166.0
 	go.opentelemetry.io/collector/internal/testutil v0.166.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0
 	go.opentelemetry.io/otel v1.47.0
@@ -31,6 +32,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.28.0
 	golang.org/x/net v0.63.0
+	google.golang.org/grpc v1.85.0
 )
 
 require (
@@ -70,7 +72,6 @@ require (
 	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/text v0.44.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260817212433-ac3dfec99bb1 // indirect
-	google.golang.org/grpc v1.85.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )
 
@@ -115,3 +116,5 @@ replace go.opentelemetry.io/collector/confmap => ../../confmap
 replace go.opentelemetry.io/collector/internal/testutil => ../../internal/testutil
 
 replace go.opentelemetry.io/collector/internal/componentalias => ../../internal/componentalias
+
+replace go.opentelemetry.io/collector/internal/statusutil => ../../internal/statusutil

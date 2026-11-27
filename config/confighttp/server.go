@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/http2"
+	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp/internal"
@@ -30,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
+	"go.opentelemetry.io/collector/internal/statusutil"
 )
 
 const defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
@@ -336,10 +338,11 @@ func authInterceptor(next http.Handler, server extensionauth.Server, requestPara
 		}
 		ctx, err := server.Authenticate(r.Context(), sources)
 		if err != nil {
+			statusCode, errMsg := authErrorResponse(err)
 			if serverOpts.ErrHandler != nil {
-				serverOpts.ErrHandler(w, r, err.Error(), http.StatusUnauthorized)
+				serverOpts.ErrHandler(w, r, errMsg, statusCode)
 			} else {
-				http.Error(w, err.Error(), http.StatusUnauthorized)
+				http.Error(w, errMsg, statusCode)
 			}
 
 			return
@@ -347,6 +350,20 @@ func authInterceptor(next http.Handler, server extensionauth.Server, requestPara
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+// authErrorResponse returns the HTTP status code and the message used to answer a request
+// that the server authenticator rejected with err.
+//
+// An error that carries a gRPC status is answered with the HTTP status code that corresponds
+// to the gRPC code, as the gRPC server does by returning the status to the client. Any other
+// error is answered with 401 Unauthorized.
+func authErrorResponse(err error) (int, string) {
+	s, ok := status.FromError(err)
+	if !ok {
+		return http.StatusUnauthorized, err.Error()
+	}
+	return statusutil.GetHTTPStatusCodeFromStatus(s), s.Message()
 }
 
 func maxRequestBodySizeInterceptor(next http.Handler, maxRecvSize int64) http.Handler {

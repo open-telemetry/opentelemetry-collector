@@ -234,3 +234,5 @@ replace go.opentelemetry.io/collector/internal/componentalias => ../internal/com
 replace go.opentelemetry.io/collector/config/confignet => ../config/confignet
 
 replace go.opentelemetry.io/collector/config/configstorage => ../config/configstorage
+
+replace go.opentelemetry.io/collector/internal/statusutil => ../internal/statusutil

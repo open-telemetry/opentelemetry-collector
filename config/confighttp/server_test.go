@@ -21,6 +21,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -705,6 +707,152 @@ func TestFailedServerAuthWithErrorHandler(t *testing.T) {
 	// verify
 	assert.Equal(t, http.StatusInternalServerError, response.Result().StatusCode)
 	assert.Equal(t, fmt.Sprintf("%v %s", http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError)), response.Result().Status)
+}
+
+// okStatusError is an authentication error that wrongly carries the OK gRPC code.
+type okStatusError struct{}
+
+func (okStatusError) Error() string { return "ok status" }
+
+func (okStatusError) GRPCStatus() *status.Status { return status.New(codes.OK, "ok status") }
+
+func TestFailedServerAuthStatusCode(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		err      error
+		wantCode int
+		wantMsg  string
+	}{
+		{
+			name:     "error without a gRPC status",
+			err:      errors.New("invalid authorization"),
+			wantCode: http.StatusUnauthorized,
+			wantMsg:  "invalid authorization",
+		},
+		{
+			name:     "unauthenticated",
+			err:      status.Error(codes.Unauthenticated, "invalid token"),
+			wantCode: http.StatusUnauthorized,
+			wantMsg:  "invalid token",
+		},
+		{
+			name:     "permission denied",
+			err:      status.Error(codes.PermissionDenied, "not allowed"),
+			wantCode: http.StatusForbidden,
+			wantMsg:  "not allowed",
+		},
+		{
+			name:     "invalid argument",
+			err:      status.Error(codes.InvalidArgument, "missing tenant"),
+			wantCode: http.StatusBadRequest,
+			wantMsg:  "missing tenant",
+		},
+		{
+			name:     "unavailable",
+			err:      status.Error(codes.Unavailable, "identity provider unreachable"),
+			wantCode: http.StatusServiceUnavailable,
+			wantMsg:  "identity provider unreachable",
+		},
+		{
+			name:     "deadline exceeded",
+			err:      status.Error(codes.DeadlineExceeded, "identity provider timeout"),
+			wantCode: http.StatusServiceUnavailable,
+			wantMsg:  "identity provider timeout",
+		},
+		{
+			name:     "unimplemented",
+			err:      status.Error(codes.Unimplemented, "not supported"),
+			wantCode: http.StatusNotFound,
+			wantMsg:  "not supported",
+		},
+		{
+			name:     "resource exhausted",
+			err:      status.Error(codes.ResourceExhausted, "too many requests"),
+			wantCode: http.StatusTooManyRequests,
+			wantMsg:  "too many requests",
+		},
+		{
+			name:     "code without a specific HTTP status",
+			err:      status.Error(codes.Internal, "broken authenticator"),
+			wantCode: http.StatusInternalServerError,
+			wantMsg:  "broken authenticator",
+		},
+		{
+			name:     "wrapped gRPC status",
+			err:      fmt.Errorf("access check: %w", status.Error(codes.PermissionDenied, "not allowed")),
+			wantCode: http.StatusForbidden,
+			wantMsg:  "access check: rpc error: code = PermissionDenied desc = not allowed",
+		},
+		{
+			name:     "OK code is still a rejection",
+			err:      okStatusError{},
+			wantCode: http.StatusInternalServerError,
+			wantMsg:  "ok status",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			newServer := func(t *testing.T, opts ...ToServerOption) *http.Server {
+				sc := ServerConfig{
+					NetAddr: confignet.AddrConfig{
+						Endpoint:  "localhost:0",
+						Transport: confignet.TransportTypeTCP,
+					},
+					Auth: configoptional.Some(AuthConfig{
+						Config: configauth.Config{
+							AuthenticatorID: mockID,
+						},
+					}),
+				}
+				extensions := map[component.ID]component.Component{
+					mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
+						return ctx, tt.err
+					}),
+				}
+				next := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+					t.Error("the handler must not be called for a rejected request")
+				})
+				srv, err := sc.ToServer(context.Background(), extensions, componenttest.NewNopTelemetrySettings(), next, opts...)
+				require.NoError(t, err)
+				return srv
+			}
+
+			t.Run("default response", func(t *testing.T) {
+				t.Parallel()
+
+				srv := newServer(t)
+
+				response := httptest.NewRecorder()
+				srv.Handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/", http.NoBody))
+
+				assert.Equal(t, tt.wantCode, response.Code)
+				assert.Equal(t, tt.wantMsg+"\n", response.Body.String())
+			})
+
+			t.Run("error handler", func(t *testing.T) {
+				t.Parallel()
+
+				var gotMsg string
+				var gotCode int
+				srv := newServer(t, WithErrorHandler(func(w http.ResponseWriter, _ *http.Request, errMsg string, statusCode int) {
+					gotMsg, gotCode = errMsg, statusCode
+					http.Error(w, errMsg, statusCode)
+				}))
+
+				response := httptest.NewRecorder()
+				srv.Handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/", http.NoBody))
+
+				assert.Equal(t, tt.wantCode, gotCode)
+				assert.Equal(t, tt.wantMsg, gotMsg)
+				assert.Equal(t, tt.wantCode, response.Code)
+			})
+		})
+	}
 }
 
 func TestServerWithErrorHandler(t *testing.T) {

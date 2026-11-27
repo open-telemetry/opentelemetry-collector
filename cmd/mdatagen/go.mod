@@ -243,3 +243,5 @@ replace go.opentelemetry.io/collector/scraper/scraperhelper => ../../scraper/scr
 replace go.opentelemetry.io/collector/config/configstorage => ../../config/configstorage
 
 replace go.opentelemetry.io/collector/filter => ../../filter
+
+replace go.opentelemetry.io/collector/internal/statusutil => ../../internal/statusutil
