@@ -1,0 +1,6 @@
+change_type: enhancement
+component: receiver/otlp
+note: Mark otlpreceiver module as stable
+issues: [12979]
+subtext:
+change_logs: [api]

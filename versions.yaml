@@ -32,6 +32,7 @@ module-sets:
       - go.opentelemetry.io/collector/pipeline
       - go.opentelemetry.io/collector/processor
       - go.opentelemetry.io/collector/receiver
+      - go.opentelemetry.io/collector/receiver/otlpreceiver
   beta:
     version: v0.166.0
     modules:
@@ -93,7 +94,6 @@ module-sets:
       - go.opentelemetry.io/collector/receiver/receiverhelper
       - go.opentelemetry.io/collector/receiver/receiverhelper/xreceiverhelper
       - go.opentelemetry.io/collector/receiver/nopreceiver
-      - go.opentelemetry.io/collector/receiver/otlpreceiver
       - go.opentelemetry.io/collector/receiver/receivertest
       - go.opentelemetry.io/collector/receiver/xreceiver
       - go.opentelemetry.io/collector/scraper
