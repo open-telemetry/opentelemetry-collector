@@ -97,6 +97,7 @@ components:
     - processor/memory_limiter
     - processor/queue_batch
     - processor/sample
+    - provider/dir
     - provider/env
     - provider/file
     - provider/http

@@ -47,6 +47,7 @@ config/configstorage/                                  @open-telemetry/collector
 config/configtelemetry/                                @open-telemetry/collector-approvers
 config/configtls/                                      @open-telemetry/collector-approvers
 confmap/                                               @open-telemetry/collector-approvers @mx-psi @evan-bradley
+confmap/provider/dirprovider/                          @open-telemetry/collector-approvers
 confmap/provider/envprovider/                          @open-telemetry/collector-approvers
 confmap/provider/fileprovider/                         @open-telemetry/collector-approvers
 confmap/provider/httpprovider/                         @open-telemetry/collector-approvers

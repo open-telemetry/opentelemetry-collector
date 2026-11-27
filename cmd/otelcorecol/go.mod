@@ -7,6 +7,7 @@ go 1.26.0
 require (
 	go.opentelemetry.io/collector/component v1.72.0
 	go.opentelemetry.io/collector/confmap v1.72.0
+	go.opentelemetry.io/collector/confmap/provider/dirprovider v1.72.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.72.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.72.0
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v1.72.0
@@ -253,6 +254,8 @@ replace go.opentelemetry.io/collector/config/configtls => ../../config/configtls
 replace go.opentelemetry.io/collector/confmap => ../../confmap
 
 replace go.opentelemetry.io/collector/confmap/xconfmap => ../../confmap/xconfmap
+
+replace go.opentelemetry.io/collector/confmap/provider/dirprovider => ../../confmap/provider/dirprovider
 
 replace go.opentelemetry.io/collector/confmap/provider/envprovider => ../../confmap/provider/envprovider
 

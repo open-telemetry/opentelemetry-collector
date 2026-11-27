@@ -1,0 +1,3 @@
+exporters:
+  otlp:
+    endpoint: first:4317

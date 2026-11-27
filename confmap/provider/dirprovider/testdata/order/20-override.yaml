@@ -1,0 +1,3 @@
+exporters:
+  otlp:
+    endpoint: second:4317

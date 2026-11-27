@@ -10,6 +10,7 @@ module-sets:
       - go.opentelemetry.io/collector/pdata
       - go.opentelemetry.io/collector/component
       - go.opentelemetry.io/collector/confmap
+      - go.opentelemetry.io/collector/confmap/provider/dirprovider
       - go.opentelemetry.io/collector/confmap/provider/envprovider
       - go.opentelemetry.io/collector/confmap/provider/fileprovider
       - go.opentelemetry.io/collector/confmap/provider/httpprovider
