@@ -108,7 +108,8 @@ it sends HTTP/2 GOAWAY, refuses new streams, waits for in-flight streams and
 then closes the connection.
 
 The listener accepts both h2c and HTTP/1.1. Do not configure `h2c` and `tls`
-on the same HTTP server. The server rejects that combination at startup.
+on the same HTTP server. For the OTLP receiver, `validate` reports this
+configuration error before startup.
 For HTTP/2 over TLS, configure `tls` without `h2c`.
 
 ## Request order

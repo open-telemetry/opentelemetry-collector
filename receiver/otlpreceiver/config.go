@@ -29,7 +29,20 @@ func (s *SanitizedURLPath) UnmarshalText(text []byte) error {
 	return nil
 }
 
-var _ component.Config = (*Config)(nil)
+var (
+	_ component.Config                   = (*Config)(nil)
+	_ component.ExtensionConfigValidator = (*Config)(nil)
+)
+
+// ValidateWithExtensions checks the middleware configured on the HTTP receiver.
+func (cfg *Config) ValidateWithExtensions(resolve component.ExtensionConfigResolver) error {
+	if httpCfg := cfg.Protocols.HTTP.Get(); httpCfg != nil {
+		if err := httpCfg.ServerConfig.ValidateWithExtensions(resolve); err != nil {
+			return fmt.Errorf("protocols::http::middlewares: %w", err)
+		}
+	}
+	return nil
+}
 
 // Validate checks the receiver configuration is valid
 func validateProtocols(p *Protocols) error {

@@ -22,6 +22,20 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
+func TestValidateHTTPMiddlewareReferences(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	resolve := func(id component.ID) (component.Config, bool) {
+		require.Equal(t, "protocol/proxy", id.String())
+		return nil, false
+	}
+	require.NoError(t, cfg.ValidateWithExtensions(resolve))
+	err := confmap.NewFromStringMap(map[string]any{
+		"protocols::http::middlewares": []any{map[string]any{"id": "protocol/proxy"}},
+	}).Unmarshal(cfg)
+	require.NoError(t, err)
+	require.ErrorContains(t, cfg.ValidateWithExtensions(resolve), `protocols::http::middlewares: middleware "protocol/proxy" is not configured`)
+}
+
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "default.yaml"))
 	require.NoError(t, err)
