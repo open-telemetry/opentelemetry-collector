@@ -9,12 +9,59 @@ import (
 	"time"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	configv120 "go.opentelemetry.io/contrib/otelconf/x"
 	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 )
+
+func headersV03ToV120(in []config.NameStringValuePair) []configv120.NameStringValuePair {
+	headers := make([]configv120.NameStringValuePair, 0, len(in))
+	for _, pair := range in {
+		headers = append(headers, configv120.NameStringValuePair{
+			Name:  pair.Name,
+			Value: pair.Value,
+		})
+	}
+	return headers
+}
+
+func otlpGRPCV03ToV120(in *config.OTLP) *configv120.OTLPGrpcExporter {
+	if in == nil {
+		return nil
+	}
+	return &configv120.OTLPGrpcExporter{
+		Compression: in.Compression,
+		Endpoint:    in.Endpoint,
+		Headers:     headersV03ToV120(in.Headers),
+		Timeout:     in.Timeout,
+		Tls: &configv120.GrpcTls{
+			CaFile:   in.Certificate,
+			CertFile: in.ClientCertificate,
+			KeyFile:  in.ClientKey,
+			Insecure: in.Insecure,
+		},
+	}
+}
+
+func otlpHTTPV03ToV120(in *config.OTLP) *configv120.OTLPHttpExporter {
+	if in == nil {
+		return nil
+	}
+	return &configv120.OTLPHttpExporter{
+		Compression: in.Compression,
+		Endpoint:    in.Endpoint,
+		Headers:     headersV03ToV120(in.Headers),
+		Timeout:     in.Timeout,
+		Tls: &configv120.HttpTls{
+			CaFile:   in.Certificate,
+			CertFile: in.ClientCertificate,
+			KeyFile:  in.ClientKey,
+		},
+	}
+}
 
 type TracesConfigV030 struct {
 	// Level configures whether spans are emitted or not, the possible values are:
@@ -339,4 +386,154 @@ func (c LogsConfigV030) Marshal(conf *confmap.Conf) error {
 	sm := conf.ToStringMap()
 	redactHeaders(sm, "processors.*.simple|batch.exporter.otlp.headers.*.value")
 	return conf.Marshal(sm)
+}
+
+func metricsConfigV03ToV120(v3 *MetricsConfigV030, v120 *MetricsConfigV120) error {
+	readers := make([]configv120.MetricReader, len(v3.Readers))
+	for idx, p := range v3.Readers {
+		readers[idx] = configv120.MetricReader{}
+		if p.Periodic != nil {
+			readers[idx].Periodic = &configv120.PeriodicMetricReader{
+				Interval: p.Periodic.Interval,
+				Timeout:  p.Periodic.Timeout,
+				Exporter: configv120.PushMetricExporter{
+					// Console:              configv120.Console(p.Periodic.Exporter.Console),
+					// OTLP:                 otlpMetricV02ToV03(p.Periodic.Exporter.OTLP),
+					AdditionalProperties: p.Periodic.Exporter.AdditionalProperties,
+				},
+			}
+		}
+		if p.Pull != nil {
+			readers[idx].Pull = &configv120.PullMetricReader{
+				Exporter: configv120.PullMetricExporter{
+					// Prometheus:           prometheusV02ToV03(p.Pull.Exporter.Prometheus),
+					AdditionalProperties: p.Pull.Exporter.AdditionalProperties,
+				},
+			}
+		}
+	}
+	v120.Level = v3.Level
+	v120.Readers = readers
+	return nil
+}
+
+func logsConfigV03ToV120(v3 LogsConfigV030, v120 *LogsConfigV120) error {
+	processors := make([]configv120.LogRecordProcessor, len(v3.Processors))
+	for idx, p := range v3.Processors {
+		processors[idx] = configv120.LogRecordProcessor{}
+		if p.Batch != nil {
+			var protocol string
+			if p.Batch.Exporter.OTLP != nil && p.Batch.Exporter.OTLP.Protocol != nil {
+				protocol = *p.Batch.Exporter.OTLP.Protocol
+			}
+			processors[idx].Batch = &configv120.BatchLogRecordProcessor{
+				ExportTimeout:      p.Batch.ExportTimeout,
+				MaxExportBatchSize: p.Batch.MaxExportBatchSize,
+				MaxQueueSize:       p.Batch.MaxQueueSize,
+				ScheduleDelay:      p.Batch.ScheduleDelay,
+				Exporter: configv120.LogRecordExporter{
+					AdditionalProperties: p.Batch.Exporter.AdditionalProperties,
+				},
+			}
+			// TODO: set console if configured
+			// Console:              configv120.Console(p.Batch.Exporter.Console),
+			switch protocol {
+			case "grpc":
+				processors[idx].Batch.Exporter.OTLPGrpc = otlpGRPCV03ToV120(p.Batch.Exporter.OTLP)
+			case "http/protobuf":
+				processors[idx].Batch.Exporter.OTLPHttp = otlpHTTPV03ToV120(p.Batch.Exporter.OTLP)
+			}
+		}
+		if p.Simple != nil {
+			var protocol string
+			if p.Simple.Exporter.OTLP != nil && p.Simple.Exporter.OTLP.Protocol != nil {
+				protocol = *p.Simple.Exporter.OTLP.Protocol
+			}
+			processors[idx].Simple = &configv120.SimpleLogRecordProcessor{
+				Exporter: configv120.LogRecordExporter{
+					AdditionalProperties: p.Simple.Exporter.AdditionalProperties,
+				},
+			}
+			// TODO: set console if configured
+			// Console:              configv120.Console(p.Simple.Exporter.Console),
+			switch protocol {
+			case "grpc":
+				processors[idx].Simple.Exporter.OTLPGrpc = otlpGRPCV03ToV120(p.Simple.Exporter.OTLP)
+			case "http/protobuf":
+				processors[idx].Simple.Exporter.OTLPHttp = otlpHTTPV03ToV120(p.Simple.Exporter.OTLP)
+			}
+		}
+		processors[idx].AdditionalProperties = p.AdditionalProperties
+	}
+	v120.Level = v3.Level
+	v120.Development = v3.Development
+	v120.Encoding = v3.Encoding
+	v120.DisableCaller = v3.DisableCaller
+	v120.DisableStacktrace = v3.DisableStacktrace
+	v120.Sampling = v3.Sampling
+	v120.OutputPaths = v3.OutputPaths
+	v120.ErrorOutputPaths = v3.ErrorOutputPaths
+	v120.InitialFields = v3.InitialFields
+	v120.Processors = processors
+	return nil
+}
+
+func tracesConfigV03ToV120(v3 TracesConfigV030, v120 *TracesConfigV120) error {
+	processors := make([]configv120.SpanProcessor, len(v3.Processors))
+	for idx, p := range v3.Processors {
+		processors[idx] = configv120.SpanProcessor{}
+		if p.Batch != nil {
+			var protocol string
+			if p.Batch.Exporter.OTLP != nil && p.Batch.Exporter.OTLP.Protocol != nil {
+				protocol = *p.Batch.Exporter.OTLP.Protocol
+			}
+			if p.Batch.Exporter.Zipkin != nil {
+				return errors.New("zipkin exporter is no longer supported, please update your configuration")
+			}
+			processors[idx].Batch = &configv120.BatchSpanProcessor{
+				ExportTimeout:      p.Batch.ExportTimeout,
+				MaxExportBatchSize: p.Batch.MaxExportBatchSize,
+				MaxQueueSize:       p.Batch.MaxQueueSize,
+				ScheduleDelay:      p.Batch.ScheduleDelay,
+				Exporter: configv120.SpanExporter{
+					AdditionalProperties: p.Batch.Exporter.AdditionalProperties,
+				},
+			}
+			// TODO: set console if configured
+			// Console:              configv120.Console(p.Batch.Exporter.Console),
+			switch protocol {
+			case "grpc":
+				processors[idx].Batch.Exporter.OTLPGrpc = otlpGRPCV03ToV120(p.Batch.Exporter.OTLP)
+			case "http/protobuf":
+				processors[idx].Batch.Exporter.OTLPHttp = otlpHTTPV03ToV120(p.Batch.Exporter.OTLP)
+			}
+		}
+		if p.Simple != nil {
+			if p.Simple.Exporter.Zipkin != nil {
+				return errors.New("zipkin exporter is no longer supported, please update your configuration")
+			}
+			var protocol string
+			if p.Simple.Exporter.OTLP != nil && p.Simple.Exporter.OTLP.Protocol != nil {
+				protocol = *p.Simple.Exporter.OTLP.Protocol
+			}
+			processors[idx].Simple = &configv120.SimpleSpanProcessor{
+				Exporter: configv120.SpanExporter{
+					AdditionalProperties: p.Simple.Exporter.AdditionalProperties,
+				},
+			}
+			// TODO: set console if configured
+			// Console:              configv120.Console(p.Simple.Exporter.Console),
+			switch protocol {
+			case "grpc":
+				processors[idx].Simple.Exporter.OTLPGrpc = otlpGRPCV03ToV120(p.Simple.Exporter.OTLP)
+			case "http/protobuf":
+				processors[idx].Simple.Exporter.OTLPHttp = otlpHTTPV03ToV120(p.Simple.Exporter.OTLP)
+			}
+		}
+		processors[idx].AdditionalProperties = p.AdditionalProperties
+	}
+	v120.Level = v3.Level
+	v120.Propagators = v3.Propagators
+	v120.Processors = processors
+	return nil
 }

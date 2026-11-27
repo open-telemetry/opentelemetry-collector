@@ -1,0 +1,21 @@
+level: Detailed
+readers:
+  - periodic:
+      exporter:
+        otlp_http:
+          endpoint: https://127.0.0.1:4317
+          headers:
+          - name: "key1"
+            value: "[REDACTED]"
+  - pull:
+      exporter:
+        prometheus/development:
+          host: 127.0.0.1
+          port: 8902
+          without_scope_info: true
+  - pull:
+      exporter:
+        prometheus:
+          host: 127.0.0.1
+          port: 8903
+          without_scope_info: true
