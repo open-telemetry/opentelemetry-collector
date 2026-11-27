@@ -39,7 +39,7 @@ require (
 	go.opentelemetry.io/collector/scraper/scrapertest v0.166.0
 	go.opentelemetry.io/collector/scraper/xscraper v0.166.0
 	go.opentelemetry.io/collector/service/hostcapabilities v0.166.0
-	go.opentelemetry.io/collector/strmatch v0.166.0
+	go.opentelemetry.io/collector/strmatch v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/otel v1.47.0
 	go.opentelemetry.io/otel/metric v1.47.0
 	go.opentelemetry.io/otel/sdk/metric v1.47.0
