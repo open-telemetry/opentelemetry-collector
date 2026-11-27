@@ -95,6 +95,25 @@ func TestRecursiveGlob(t *testing.T) {
 	assert.NoError(t, dp.Shutdown(context.Background()))
 }
 
+func TestRecursiveGlobBareDoubleStar(t *testing.T) {
+	// dir:/path/** — tail is empty, exercises the tail="" -> "*" branch in recursiveGlob.
+	dp := createProvider()
+	ret, err := dp.Retrieve(context.Background(), dirSchemePrefix+filepath.Join("testdata", "doublestar", "**"), nil)
+	require.NoError(t, err)
+	retMap, err := ret.AsConf()
+	require.NoError(t, err)
+	assert.True(t, retMap.IsSet("service::extensions"), "sub/config.yaml should be loaded")
+	assert.NoError(t, dp.Shutdown(context.Background()))
+}
+
+func TestInvalidGlobPatternIsError(t *testing.T) {
+	// A malformed glob pattern (unclosed "[") must return an error.
+	dp := createProvider()
+	_, err := dp.Retrieve(context.Background(), dirSchemePrefix+"testdata/glob/[invalid", nil)
+	require.Error(t, err)
+	assert.NoError(t, dp.Shutdown(context.Background()))
+}
+
 func TestSingleFileYAML(t *testing.T) {
 	dp := createProvider()
 	ret, err := dp.Retrieve(context.Background(), dirSchemePrefix+"testdata/bare/01-first.yaml", nil)
