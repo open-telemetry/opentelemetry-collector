@@ -151,7 +151,7 @@ The release manager of a minor version is responsible for releasing any bugfix v
 2. Make sure you are on `release/<release-series>`. Prepare release commits with `prepare-release` make target, e.g. `make prepare-release PREVIOUS_VERSION=0.90.0 RELEASE_CANDIDATE=0.90.1 MODSET=beta`, and create a pull request against the `release/<release-series>` branch.
 3. Once those changes have been merged, create a pull request to the `main` branch from the `release/<release-series>` branch.
 4. If you see merge conflicts when creating the pull request, do the following:
-    1. Create a new branch from `origin:main`.
+    1. Create a new branch from `origin/main`.
     2. Merge the `release/<release-series>` branch into the new branch.
     3. Resolve the conflicts.
     4. Create another pull request to the `main` branch from the new branch to replace the pull request from the `release/<release-series>` branch.
