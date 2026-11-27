@@ -4,6 +4,7 @@
 package otelconftelemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
+	"maps"
 	"os"
 	"testing"
 
@@ -12,6 +13,7 @@ import (
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	xotelconf "go.opentelemetry.io/contrib/otelconf/x"
 	"go.opentelemetry.io/otel/attribute"
+	otelsdkresource "go.opentelemetry.io/otel/sdk/resource"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -45,6 +47,47 @@ func TestPutSDKAttribute(t *testing.T) {
 	}, attrs.AsRaw())
 }
 
+// withSDKDefaults returns the expected attributes merged with the attributes the
+// OpenTelemetry SDK adds by default to every resource (telemetry.sdk.*, and a
+// fallback service.name), which are overridden by the explicitly configured ones.
+func withSDKDefaults(expected map[string]any) map[string]any {
+	out := map[string]any{}
+	for _, kv := range otelsdkresource.Default().Attributes() {
+		out[string(kv.Key)] = kv.Value.AsInterface()
+	}
+	maps.Copy(out, expected)
+	return out
+}
+
+func TestWithSDKDefaultAttributes(t *testing.T) {
+	t.Run("empty resource", func(t *testing.T) {
+		res := withSDKDefaultAttributes(otelsdkresource.Empty())
+		assert.Equal(t, otelsdkresource.Default().Attributes(), res.Attributes())
+		assert.Empty(t, res.SchemaURL())
+	})
+	t.Run("configured attributes take precedence", func(t *testing.T) {
+		const schemaURL = "https://opentelemetry.io/schemas/1.39.0"
+		res := withSDKDefaultAttributes(otelsdkresource.NewWithAttributes(schemaURL,
+			attribute.String("service.name", "custom-service"),
+			attribute.String("telemetry.sdk.name", "custom-sdk"),
+			attribute.String("extra.attr", "value"),
+		))
+
+		attrs := map[string]string{}
+		for _, kv := range res.Attributes() {
+			attrs[string(kv.Key)] = kv.Value.AsString()
+		}
+		assert.Equal(t, "custom-service", attrs["service.name"])
+		assert.Equal(t, "custom-sdk", attrs["telemetry.sdk.name"])
+		assert.Equal(t, "value", attrs["extra.attr"])
+		// the other defaults are still added
+		assert.Equal(t, "go", attrs["telemetry.sdk.language"])
+		assert.Contains(t, attrs, "telemetry.sdk.version")
+		// the schema URL of the resource is preserved
+		assert.Equal(t, schemaURL, res.SchemaURL())
+	})
+}
+
 func TestCreateResource(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
@@ -55,10 +98,14 @@ func TestCreateResource(t *testing.T) {
 		raw := res.Attributes().AsRaw()
 		assert.Contains(t, raw, "service.instance.id")
 		delete(raw, "service.instance.id") // remove since it's random
-		assert.Equal(t, map[string]any{
+		assert.Equal(t, withSDKDefaults(map[string]any{
 			"service.name":    "otelcol",
 			"service.version": "latest",
-		}, raw)
+		}), raw)
+		// SDK default attributes are included
+		assert.Equal(t, "opentelemetry", raw["telemetry.sdk.name"])
+		assert.Equal(t, "go", raw["telemetry.sdk.language"])
+		assert.Contains(t, raw, "telemetry.sdk.version")
 	})
 	t.Run("with resource attributes (legacy format)", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
@@ -74,11 +121,11 @@ func TestCreateResource(t *testing.T) {
 		require.NoError(t, err)
 
 		raw := res.Attributes().AsRaw()
-		assert.Equal(t, map[string]any{
+		assert.Equal(t, withSDKDefaults(map[string]any{
 			"extra.attr":      "value",
 			"service.name":    "custom-service",
 			"service.version": "0.1.0",
-		}, raw)
+		}), raw)
 	})
 	t.Run("with legacy format removing default attributes", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
@@ -94,9 +141,13 @@ func TestCreateResource(t *testing.T) {
 		require.NoError(t, err)
 
 		raw := res.Attributes().AsRaw()
-		assert.Equal(t, map[string]any{
+		// The SDK default attributes cannot be removed. In particular, the SDK
+		// always provides a service.name, falling back to "unknown_service:<executable>".
+		assert.Equal(t, withSDKDefaults(map[string]any{
 			"custom.attr": "value",
-		}, raw)
+		}), raw)
+		assert.NotContains(t, raw, "service.version")
+		assert.NotContains(t, raw, "service.instance.id")
 	})
 	t.Run("with resource attributes (new format)", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
@@ -111,12 +162,12 @@ func TestCreateResource(t *testing.T) {
 		require.NoError(t, err)
 
 		raw := res.Attributes().AsRaw()
-		assert.Equal(t, map[string]any{
+		assert.Equal(t, withSDKDefaults(map[string]any{
 			"extra.attr":          "value",
 			"service.name":        "custom-service",
 			"service.version":     "0.1.0",
 			"service.instance.id": "<nil>",
-		}, raw)
+		}), raw)
 	})
 	t.Run("with custom schema_url", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)

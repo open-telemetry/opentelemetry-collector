@@ -629,15 +629,10 @@ func TestLogAttributeInjection(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	cfg := &Config{
-		Resource: migration.ResourceConfigV030{
-			LegacyAttributes: map[string]any{
-				"service.instance.id": nil,
-				"service.name":        nil,
-				"service.version":     nil,
-			},
-		},
 		Logs: LogsConfig{
 			Encoding: "json",
+			// Not relevant to this test, and would otherwise be part of the logged fields.
+			DisableZapResource: true,
 			Processors: []config.LogRecordProcessor{{
 				Simple: &config.SimpleLogRecordProcessor{
 					Exporter: config.LogRecordExporter{

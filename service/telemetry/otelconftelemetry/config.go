@@ -20,6 +20,9 @@ type Config struct {
 	// Note that some attributes are added automatically (e.g. service.version) even
 	// if they are not specified here. In order to suppress such attributes the
 	// attribute must be specified with a null value in the configuration.
+	// The OpenTelemetry SDK default attributes (telemetry.sdk.*, and a service.name
+	// falling back to "unknown_service:<executable>") are always added and cannot be
+	// suppressed.
 	//
 	// Supports both the declarative config resource schema and the legacy inline
 	// attribute map format for backward compatibility.

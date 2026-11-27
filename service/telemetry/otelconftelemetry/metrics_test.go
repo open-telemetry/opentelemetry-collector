@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	otelsdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -41,6 +43,18 @@ const (
 )
 
 var testInstanceID = "test_instance_id"
+
+// withSDKDefaultLabels adds the labels matching the attributes the OpenTelemetry SDK
+// adds by default to every resource, without overriding the already existing ones.
+func withSDKDefaultLabels(labels map[string]string) map[string]string {
+	for _, kv := range otelsdkresource.Default().Attributes() {
+		name := strings.ReplaceAll(string(kv.Key), ".", "_")
+		if _, ok := labels[name]; !ok {
+			labels[name] = kv.Value.String()
+		}
+	}
+	return labels
+}
 
 func TestCreateMeterProvider(t *testing.T) {
 	type metricValue struct {
@@ -73,11 +87,11 @@ func TestCreateMeterProvider(t *testing.T) {
 				},
 				"target_info": {
 					value: 0,
-					labels: map[string]string{
+					labels: withSDKDefaultLabels(map[string]string{
 						"service_name":        "otelcol",
 						"service_version":     "latest",
 						"service_instance_id": testInstanceID,
-					},
+					}),
 				},
 				"promhttp_metric_handler_errors_total": {
 					value: 0,
