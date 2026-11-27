@@ -270,9 +270,9 @@ func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 			pr1:     newProfilesRequest(testdata.GenerateProfiles(0)),
 			pr2:     newProfilesRequest(testdata.GenerateProfiles(10)),
 			expected: []Request{
+				newProfilesRequest(testdata.GenerateProfiles(3)),
 				newProfilesRequest(testdata.GenerateProfiles(4)),
-				newProfilesRequest(testdata.GenerateProfiles(5)),
-				newProfilesRequest(testdata.GenerateProfiles(1)),
+				newProfilesRequest(testdata.GenerateProfiles(3)),
 			},
 		},
 		{
@@ -284,11 +284,11 @@ func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 			expected: []Request{
 				newProfilesRequest(func() pprofile.Profiles {
 					profiles := testdata.GenerateProfiles(7)
-					testdata.GenerateProfiles(3).ResourceProfiles().MoveAndAppendTo(profiles.ResourceProfiles())
+					testdata.GenerateProfiles(2).ResourceProfiles().MoveAndAppendTo(profiles.ResourceProfiles())
 					return profiles
 				}()),
-				newProfilesRequest(testdata.GenerateProfiles(11)),
-				newProfilesRequest(testdata.GenerateProfiles(7)),
+				newProfilesRequest(testdata.GenerateProfiles(10)),
+				newProfilesRequest(testdata.GenerateProfiles(9)),
 			},
 		},
 	}

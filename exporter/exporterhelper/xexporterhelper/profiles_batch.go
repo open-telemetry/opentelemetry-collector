@@ -86,10 +86,9 @@ func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer) ([]Reques
 // extractProfiles extracts a new profiles with a maximum number of samples.
 func extractProfiles(srcProfiles pprofile.Profiles, capacity int, sz sizer.ProfilesSizer) (pprofile.Profiles, int) {
 	destProfiles := pprofile.NewProfiles()
+	srcProfiles.Dictionary().CopyTo(destProfiles.Dictionary())
 	capacityLeft := capacity - sz.ProfilesSize(destProfiles)
 	removedSize := 0
-
-	srcProfiles.Dictionary().CopyTo(destProfiles.Dictionary())
 	srcProfiles.ResourceProfiles().RemoveIf(func(srcRP pprofile.ResourceProfiles) bool {
 		// If the no more capacity left just return.
 		if capacityLeft == 0 {
