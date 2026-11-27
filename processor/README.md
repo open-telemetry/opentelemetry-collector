@@ -74,7 +74,7 @@ function, which passes the ownership to the next processor. After that the proce
 must no longer read or write the data since it may be concurrently modified by the
 new owner.
 
-Exclusive Ownership mode allows to easily implement processors that need to modify
+Exclusive Ownership mode allows easily implementing processors that need to modify
 the data by simply declaring such intent.
 
 ### Shared Ownership
