@@ -72,10 +72,10 @@ Several helper files are leveraged to provide additional capabilities automatica
 - [Auth settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configauth/README.md)
 
 Run `otelcol validate --config=config.yaml` to check `protocols.http.middlewares`
-before starting the receiver. The command reports a missing extension definition
-or a declared requirement for unencrypted HTTP/2 on a TLS listener. The error
-identifies the middleware entry, for example
-`receivers::otlp/edge::protocols::http::middlewares::0::id`.
+before starting the receiver. The command reports middleware that references a
+missing extension definition or that conflicts with the listener's settings.
+See the [h2c extension](../../extension/h2cextension/README.md#tls-and-validation)
+for an example.
 
 ## Writing with HTTP/JSON
 
