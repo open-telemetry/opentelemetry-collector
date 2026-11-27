@@ -36,6 +36,37 @@ func NewStatusFromMsgAndHTTPCode(errMsg string, statusCode int) *status.Status {
 	return status.New(c, errMsg)
 }
 
+// GetHTTPStatusCodeFromStatus returns the HTTP status code that corresponds to the code of a gRPC status.
+func GetHTTPStatusCodeFromStatus(s *status.Status) int {
+	// See https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#failures
+	// to see if a code is retryable.
+	// See https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#failures-1
+	// to see a list of retryable http status codes.
+	switch s.Code() {
+	// Retryable
+	case codes.Canceled, codes.DeadlineExceeded, codes.Aborted, codes.OutOfRange, codes.Unavailable, codes.DataLoss:
+		return http.StatusServiceUnavailable
+	// Retryable
+	case codes.ResourceExhausted:
+		return http.StatusTooManyRequests
+	// Not Retryable
+	case codes.InvalidArgument:
+		return http.StatusBadRequest
+	// Not Retryable
+	case codes.Unauthenticated:
+		return http.StatusUnauthorized
+	// Not Retryable
+	case codes.PermissionDenied:
+		return http.StatusForbidden
+	// Not Retryable
+	case codes.Unimplemented:
+		return http.StatusNotFound
+	// Not Retryable
+	default:
+		return http.StatusInternalServerError
+	}
+}
+
 // GetRetryInfo returns the RetryInfo detail attached to the status, or nil if there is none.
 func GetRetryInfo(status *status.Status) *errdetails.RetryInfo {
 	// The details may come from a remote peer. Do not use status.Details(): it decodes

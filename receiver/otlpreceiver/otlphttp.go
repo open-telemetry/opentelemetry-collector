@@ -15,7 +15,6 @@ import (
 
 	"go.opentelemetry.io/collector/internal/statusutil"
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/logs"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metrics"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/profiles"
@@ -190,7 +189,7 @@ func readAndCloseBody(resp http.ResponseWriter, req *http.Request, enc encoder) 
 func writeError(w http.ResponseWriter, encoder encoder, err error, statusCode int) {
 	s, ok := status.FromError(err)
 	if ok {
-		statusCode = errors.GetHTTPStatusCodeFromStatus(s)
+		statusCode = statusutil.GetHTTPStatusCodeFromStatus(s)
 		// The details of a status returned by the pipeline can originate from the backend of an
 		// exporter, so they are not trusted: protojson expands nested google.protobuf.Any details
 		// recursively, so encoding a crafted status for a JSON client can exhaust the memory of
