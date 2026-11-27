@@ -55,16 +55,18 @@ func wrapObsMetrics(sc scraper.Metrics, receiverID, scraperID component.ID, set 
 		defer span.End()
 
 		md, err := sc.ScrapeMetrics(ctx)
+		// Both counters are measured in data points, matching their "{datapoint}" unit and the
+		// receiver's accepted/refused counters, so a metric with several data points is not undercounted.
 		numScrapedMetrics := 0
 		numErroredMetrics := 0
 		if err != nil {
 			set.Logger.Error("Error scraping metrics", zap.Error(err))
 			if partialErr, ok := errors.AsType[scrapererror.PartialScrapeError](err); ok {
 				numErroredMetrics = partialErr.Failed
-				numScrapedMetrics = md.MetricCount()
+				numScrapedMetrics = md.DataPointCount()
 			}
 		} else {
-			numScrapedMetrics = md.MetricCount()
+			numScrapedMetrics = md.DataPointCount()
 		}
 
 		telemetryBuilder.ScraperScrapedMetricPoints.Add(ctx, int64(numScrapedMetrics), otelAttrs)

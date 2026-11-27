@@ -54,15 +54,21 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		{items: 29, err: errFake},
 		{items: 15, err: nil},
 	}
+	// The scraped counter is measured in data points, not metrics: each generated metric carries
+	// several data points, so the expected value is the data point count of what was scraped.
+	dataPoints := make([]int, len(params))
 	for i := range params {
 		sm, err := scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
-			return testdata.GenerateMetrics(params[i].items), params[i].err
+			md := testdata.GenerateMetrics(params[i].items)
+			dataPoints[i] = md.DataPointCount()
+			return md, params[i].err
 		})
 		require.NoError(t, err)
 		sf, err := wrapObsMetrics(sm, receiverID, scraperID, set)
 		require.NoError(t, err)
 		_, err = sf.ScrapeMetrics(parentCtx)
 		require.ErrorIs(t, err, params[i].err)
+		require.Greater(t, dataPoints[i], params[i].items, "fixture must have more data points than metrics to tell the two apart")
 	}
 
 	spans := tel.SpanRecorder.Ended()
@@ -73,8 +79,8 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 		assert.Equal(t, "scraper/"+scraperID.String()+"/ScrapeMetrics", span.Name())
 		switch {
 		case params[i].err == nil:
-			scrapedMetricPoints += params[i].items
-			require.Contains(t, span.Attributes(), attribute.Int64(scrapedMetricPointsKey, int64(params[i].items)))
+			scrapedMetricPoints += dataPoints[i]
+			require.Contains(t, span.Attributes(), attribute.Int64(scrapedMetricPointsKey, int64(dataPoints[i])))
 			require.Contains(t, span.Attributes(), attribute.Int64(erroredMetricPointsKey, 0))
 			assert.Equal(t, codes.Unset, span.Status().Code)
 		case errors.Is(params[i].err, errFake):
@@ -84,9 +90,9 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 			assert.Equal(t, codes.Error, span.Status().Code)
 			assert.Equal(t, params[i].err.Error(), span.Status().Description)
 		case errors.Is(params[i].err, partialErrFake):
-			scrapedMetricPoints += params[i].items
+			scrapedMetricPoints += dataPoints[i]
 			erroredMetricPoints += 2
-			require.Contains(t, span.Attributes(), attribute.Int64(scrapedMetricPointsKey, int64(params[i].items)))
+			require.Contains(t, span.Attributes(), attribute.Int64(scrapedMetricPointsKey, int64(dataPoints[i])))
 			require.Contains(t, span.Attributes(), attribute.Int64(erroredMetricPointsKey, 2))
 			assert.Equal(t, codes.Error, span.Status().Code)
 			assert.Equal(t, params[i].err.Error(), span.Status().Description)
@@ -102,8 +108,9 @@ func TestCheckScraperMetrics(t *testing.T) {
 	tel := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
 
+	md := testdata.GenerateMetrics(7)
 	sm, err := scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
-		return testdata.GenerateMetrics(7), nil
+		return md, nil
 	})
 	require.NoError(t, err)
 	sf, err := wrapObsMetrics(sm, receiverID, scraperID, tel.NewTelemetrySettings())
@@ -111,7 +118,9 @@ func TestCheckScraperMetrics(t *testing.T) {
 	_, err = sf.ScrapeMetrics(context.Background())
 	require.NoError(t, err)
 
-	checkScraperMetrics(t, tel, receiverID, scraperID, 7, 0)
+	// 7 metrics with several data points each: the counter reports data points, not metrics.
+	require.Equal(t, 7, md.MetricCount())
+	checkScraperMetrics(t, tel, receiverID, scraperID, int64(md.DataPointCount()), 0)
 }
 
 func TestScrapeMetricsDataOp_LogsScraperID(t *testing.T) {
