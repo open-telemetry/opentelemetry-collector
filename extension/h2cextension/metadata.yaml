@@ -12,6 +12,7 @@ status:
     active: [arielvalentin]
   warnings:
     - h2c is unencrypted and should only be used behind a TLS-terminating proxy on a trusted network.
+    - mTLS must be enforced at the TLS-terminating proxy; the Collector cannot verify client certificates over h2c.
 
 tests:
   config: {}
