@@ -2592,6 +2592,20 @@ func TestFormatDefaultValue_ScalarDefaults(t *testing.T) {
 			defaultValue: defaultValue("10s"),
 			expected:     "configoptional.Some(10*time.Second)",
 		},
+		{
+			name:         "optional int64",
+			schema:       &ConfigMetadata{Type: Int64Type, IsOptional: true},
+			propName:     "max_bytes",
+			defaultValue: defaultValue(1_000_000),
+			expected:     "configoptional.Some[int64](1000000)",
+		},
+		{
+			name:         "optional float32 with whole number default",
+			schema:       &ConfigMetadata{Type: Float32Type, IsOptional: true},
+			propName:     "ratio",
+			defaultValue: defaultValue(1),
+			expected:     "configoptional.Some[float32](1)",
+		},
 	}
 
 	for _, tt := range tests {

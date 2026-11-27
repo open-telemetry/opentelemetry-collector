@@ -64,7 +64,7 @@ type ClientConfig struct {
 	Compression configcompression.Type `mapstructure:"compression,omitempty"`
 
 	// CompressionParams provides advanced configuration options for the configured compression type.
-	CompressionParams configcompression.CompressionParams `mapstructure:"compression_params,omitempty"`
+	CompressionParams configcompression.CompressionParams `mapstructure:"compression_params"`
 
 	// MaxConnsPerHost limits the total number of connections per host, including connections in the dialing,
 	// active, and idle states. Default is 0 (unlimited).

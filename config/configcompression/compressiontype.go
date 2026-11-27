@@ -45,12 +45,16 @@ func (ct *Type) UnmarshalText(in []byte) error {
 }
 
 func (ct *Type) ValidateParams(p CompressionParams) error {
+	if !p.Level.HasValue() {
+		return nil // Use the default value
+	}
+	l := *p.Level.Get()
 	switch *ct {
 	case TypeGzip, TypeZlib, TypeDeflate:
-		if p.Level == zlib.DefaultCompression ||
-			p.Level == zlib.HuffmanOnly ||
-			p.Level == zlib.NoCompression ||
-			(p.Level >= zlib.BestSpeed && p.Level <= zlib.BestCompression) {
+		if l == zlib.DefaultCompression ||
+			l == zlib.HuffmanOnly ||
+			l == zlib.NoCompression ||
+			(l >= zlib.BestSpeed && l <= zlib.BestCompression) {
 			return nil
 		}
 	case TypeZstd:
@@ -58,8 +62,8 @@ func (ct *Type) ValidateParams(p CompressionParams) error {
 		// level to the nearest internally supported level.
 		return nil
 	}
-	if p.Level != 0 {
-		return fmt.Errorf("unsupported parameters {Level:%+v} for compression type %q", p.Level, *ct)
+	if l != 0 {
+		return fmt.Errorf("unsupported parameters {Level:%+v} for compression type %q", l, *ct)
 	}
 	return nil
 }
