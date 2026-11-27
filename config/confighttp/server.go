@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -108,6 +109,13 @@ func (sc *ServerConfig) ToListenerWithOptions(ctx context.Context, opts ...ToLis
 	return listener, nil
 }
 
+func (sc *ServerConfig) validateProtocols(id component.ID, protocols http.Protocols) error {
+	if sc.TLS.HasValue() && protocols.UnencryptedHTTP2() {
+		return fmt.Errorf("middleware %q requests unencrypted HTTP/2, but this listener requires TLS", id)
+	}
+	return nil
+}
+
 func (sc *ServerConfig) Validate() error {
 	if sc.ListenerMiddleware.HasValue() && !configmiddleware.IsCustomTCPRoutingEnabled() {
 		return errors.New("use of the listener_middleware feature requires to enable the feature gate 'pkg.configmiddleware.CustomTCPRouting'")
@@ -198,6 +206,9 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		}
 		requested, err := m.GetHTTPServerProtocols(ctx, extensions)
 		if err != nil {
+			return nil, err
+		}
+		if err := sc.validateProtocols(m.ID, requested); err != nil {
 			return nil, err
 		}
 		protocols = addProtocols(protocols, requested)
