@@ -297,6 +297,33 @@ func TestServerMiddlewareProtocols(t *testing.T) {
 	})
 }
 
+type protocolConfig http.Protocols
+
+func (p protocolConfig) RequiredHTTPServerProtocols() http.Protocols { return http.Protocols(p) }
+
+func TestServerConfigValidatesReferencedProtocols(t *testing.T) {
+	plain := component.MustNewID("plain")
+	id := component.MustNewIDWithName("protocol", "cleartext")
+	var protocols http.Protocols
+	protocols.SetUnencryptedHTTP2(true)
+	configs := map[component.ID]component.Config{id: protocolConfig(protocols), plain: struct{}{}}
+	resolve := func(id component.ID) (component.Config, bool) {
+		cfg, ok := configs[id]
+		return cfg, ok
+	}
+	cfg := ServerConfig{
+		TLS:         configoptional.Some(configtls.ServerConfig{}),
+		Middlewares: []configmiddleware.Config{{ID: plain}},
+	}
+	require.NoError(t, cfg.ValidateWithExtensions(resolve))
+	cfg.Middlewares = append(cfg.Middlewares, configmiddleware.Config{ID: id})
+	require.ErrorContains(t, cfg.ValidateWithExtensions(resolve), `middleware "protocol/cleartext" requests unencrypted HTTP/2, but this listener requires TLS`)
+	cfg.TLS = configoptional.None[configtls.ServerConfig]()
+	require.NoError(t, cfg.ValidateWithExtensions(resolve))
+	delete(configs, id)
+	require.ErrorContains(t, cfg.ValidateWithExtensions(resolve), `middleware "protocol/cleartext" is not configured`)
+}
+
 func TestServerMiddlewareErrors(t *testing.T) {
 	// Create a basic handler for testing
 	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

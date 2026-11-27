@@ -123,6 +123,23 @@ func (sc *ServerConfig) Validate() error {
 	return nil
 }
 
+// ValidateWithExtensions checks the protocol requirements declared by this
+// server's middleware configurations without constructing the extensions.
+func (sc *ServerConfig) ValidateWithExtensions(resolve component.ExtensionConfigResolver) error {
+	for _, m := range sc.Middlewares {
+		cfg, found := resolve(m.ID)
+		if !found {
+			return fmt.Errorf("middleware %q is not configured", m.ID)
+		}
+		if decl, ok := cfg.(extensionmiddleware.HTTPServerProtocolConfig); ok {
+			if err := sc.validateProtocols(m.ID, decl.RequiredHTTPServerProtocols()); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // toListenerOptions has options that change the behavior of the HTTP listener
 // returned by ServerConfig.ToListenerWithOptions().
 type toListenerOptions = internal.ToListenerOptions
