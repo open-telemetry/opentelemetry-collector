@@ -110,6 +110,11 @@ type MemoryLimiter struct {
 	spikePercentage uint32
 	refreshTicker   *time.Ticker
 	refreshClosed   chan struct{}
+
+	// refreshFailing tracks whether the previous refresh read failed, so the
+	// loop warns once on the first failure and logs repeats at debug level to
+	// avoid huge log volume when the read keeps failing.
+	refreshFailing bool
 }
 
 // NewMemoryLimiter returns a new memory limiter component
@@ -207,8 +212,17 @@ func (ml *MemoryLimiter) Start(_ context.Context, host component.Host) error {
 func (ml *MemoryLimiter) refreshCgroupLimits() {
 	totalMemory, err := ml.getMemoryFn()
 	if err != nil {
-		ml.logger.Warn("Failed to refresh cgroup memory limit; keeping previous thresholds.", zap.Error(err))
+		if ml.refreshFailing {
+			ml.logger.Debug("Failed to refresh cgroup memory limit; keeping previous thresholds.", zap.Error(err))
+		} else {
+			ml.logger.Warn("Failed to refresh cgroup memory limit; keeping previous thresholds.", zap.Error(err))
+		}
+		ml.refreshFailing = true
 		return
+	}
+	if ml.refreshFailing {
+		ml.logger.Debug("Recovered reading cgroup memory limit after previous failures.")
+		ml.refreshFailing = false
 	}
 	newChecker := newPercentageMemUsageChecker(totalMemory, uint64(ml.limitPercentage), uint64(ml.spikePercentage))
 	prev := ml.usageChecker.Load()

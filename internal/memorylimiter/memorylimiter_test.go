@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -1108,6 +1110,47 @@ func TestMemLimitRefreshKeepsPreviousOnReadError(t *testing.T) {
 
 	require.Equal(t, uint64(500*mibBytes), ml.usageChecker.Load().memAllocLimit)
 }
+
+func TestMemLimitRefreshLogsFailureThenRecovery(t *testing.T) {
+	core, logs := observer.New(zapcore.DebugLevel)
+	ml, err := NewMemoryLimiter(&Config{
+		CheckInterval:         time.Minute,
+		MemoryLimitPercentage: 50,
+		MemorySpikePercentage: 10,
+		RefreshInterval:       5 * time.Millisecond,
+	}, zap.New(core))
+	require.NoError(t, err)
+	ml.usageChecker.Store(newPercentageMemUsageChecker(1000*mibBytes, 50, 10))
+
+	fail := true
+	ml.getMemoryFn = func() (uint64, error) {
+		if fail {
+			return 0, errors.New("read failed")
+		}
+		return 2000 * mibBytes, nil
+	}
+
+	// First failure warns, repeats stay at debug to avoid huge log volume.
+	ml.refreshCgroupLimits()
+	ml.refreshCgroupLimits()
+	ml.refreshCgroupLimits()
+
+	warns := logs.FilterMessage("Failed to refresh cgroup memory limit; keeping previous thresholds.").
+		FilterLevelExact(zapcore.WarnLevel)
+	debugs := logs.FilterMessage("Failed to refresh cgroup memory limit; keeping previous thresholds.").
+		FilterLevelExact(zapcore.DebugLevel)
+	require.Equal(t, 1, warns.Len(), "first failure must warn exactly once")
+	require.Equal(t, 2, debugs.Len(), "repeated failures must log at debug")
+
+	// A successful read recovers: reset the flag, log it, and update thresholds.
+	fail = false
+	ml.refreshCgroupLimits()
+
+	require.False(t, ml.refreshFailing, "refreshFailing must reset after a successful read")
+	require.Equal(t, 1, logs.FilterMessage("Recovered reading cgroup memory limit after previous failures.").Len())
+	require.Equal(t, uint64(1000*mibBytes), ml.usageChecker.Load().memAllocLimit, "thresholds must update after recovery")
+}
+
 func TestMemLimitRefreshKeepsPreviousWhenUnchanged(t *testing.T) {
 	ml, err := NewMemoryLimiter(&Config{
 		CheckInterval:         time.Minute,
