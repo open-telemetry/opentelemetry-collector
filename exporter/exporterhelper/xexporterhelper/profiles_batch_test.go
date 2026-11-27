@@ -569,3 +569,72 @@ func TestMergeSplitProfilesStopsWhenNoProgressIsPossible(t *testing.T) {
 	require.ErrorContains(t, err, "request size is greater than max size and cannot be split further, dropping items: 2")
 	assert.Empty(t, res, "samples that cannot fit any batch must not be returned")
 }
+
+// addDictionaryStrings fills the profiles dictionary so that it takes a meaningful number of bytes.
+func addDictionaryStrings(pd pprofile.Profiles, count, length int) {
+	for i := range count {
+		pd.Dictionary().StringTable().Append(fmt.Sprintf("%0*d", length, i))
+	}
+}
+
+func TestMergeSplitProfilesBytesCountsDictionary(t *testing.T) {
+	// Every batch carries a copy of the dictionary, so the dictionary has to count towards
+	// max size. Item counts alone cannot catch that, so check the byte size of every batch.
+	const maxSize = 300
+	pd := pprofile.NewProfiles()
+	addDictionaryStrings(pd, 5, 20)
+	ps := pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles()
+	for range 12 {
+		addProfile(ps, strings.Repeat("v", 40))
+	}
+	req := newProfilesRequest(pd).(*profilesRequest)
+	require.Greater(t, profilesMarshaler.ProfilesSize(pd), maxSize, "precondition: request starts oversized")
+
+	res, err := req.MergeSplit(context.Background(), maxSize, exporterhelper.RequestSizerTypeBytes, nil)
+	require.NoError(t, err)
+	require.Greater(t, len(res), 1, "the request must be split")
+
+	survived := 0
+	for _, r := range res {
+		pr := r.(*profilesRequest)
+		survived += pr.pd.SampleCount()
+		assert.LessOrEqual(t, profilesMarshaler.ProfilesSize(pr.pd), maxSize, "no batch may exceed max size")
+		assert.Equal(t, profilesMarshaler.ProfilesSize(pr.pd), pr.size(&sizer.ProfilesBytesSizer{}),
+			"the cached size must match a freshly computed size")
+	}
+	assert.Equal(t, 12, survived, "every sample must survive")
+}
+
+func TestMergeSplitProfilesDictionaryLargerThanMaxSize(t *testing.T) {
+	// The dictionary alone is bigger than max size, so no batch can ever hold it.
+	// The result must be the "cannot be split further" error and no batches.
+	const maxSize = 100
+	pd := pprofile.NewProfiles()
+	addDictionaryStrings(pd, 1, 500)
+	ps := pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles()
+	addProfile(ps, "first")
+	addProfile(ps, "second")
+	require.Greater(t, profilesMarshaler.ProfilesSize(pd), maxSize, "precondition: request starts oversized")
+
+	res, err := newProfilesRequest(pd).MergeSplit(context.Background(), maxSize, exporterhelper.RequestSizerTypeBytes, nil)
+	require.ErrorContains(t, err, "cannot be split further")
+	assert.Empty(t, res, "nothing can fit in a batch, so nothing may be returned")
+}
+
+func TestExtractProfilesDictionaryExceedsCapacity(t *testing.T) {
+	// The dictionary alone is larger than the capacity, so nothing may be extracted and
+	// nothing may be removed from the source, not even a profile that is too big for any batch.
+	const capacity = 100
+	pd := pprofile.NewProfiles()
+	addDictionaryStrings(pd, 1, 500)
+	ps := pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles()
+	addProfile(ps, strings.Repeat("x", 1000))
+	addProfile(ps, "small")
+	sz := &sizer.ProfilesBytesSizer{}
+	require.GreaterOrEqual(t, sz.ProfilesSize(pd), capacity, "precondition: dictionary alone exceeds capacity")
+
+	dest, removedSize := extractProfiles(pd, capacity, sz)
+	assert.Zero(t, removedSize)
+	assert.Zero(t, dest.ResourceProfiles().Len())
+	assert.Equal(t, 2, pd.SampleCount(), "the source must be left untouched")
+}

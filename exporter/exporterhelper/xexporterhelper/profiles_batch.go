@@ -91,7 +91,7 @@ func extractProfiles(srcProfiles pprofile.Profiles, capacity int, sz sizer.Profi
 	removedSize := 0
 	srcProfiles.ResourceProfiles().RemoveIf(func(srcRP pprofile.ResourceProfiles) bool {
 		// If the no more capacity left just return.
-		if capacityLeft == 0 {
+		if capacityLeft <= 0 {
 			return false
 		}
 		rawRpSize := sz.ResourceProfilesSize(srcRP)
