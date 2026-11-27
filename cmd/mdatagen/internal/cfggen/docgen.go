@@ -223,7 +223,7 @@ func setFlowStyle(n *yaml.Node) {
 
 // NewCfgDocFns returns template functions for config documentation generation.
 // These are added to the func map by WithCfgFns.
-func NewCfgDocFns() map[string]any {
+func NewCfgDocFns(md *ConfigsMetadata) map[string]any {
 	return map[string]any{
 		"cfgPropDocs":         CfgPropDocs,
 		"cfgIsObject":         CfgIsObject,
@@ -233,7 +233,9 @@ func NewCfgDocFns() map[string]any {
 		"cfgRootSection":      CfgRootSection,
 		"cfgExportedSections": CfgExportedSections,
 		"cfgDocConstraints":   CfgDocConstraints,
-		"cfgExportedRef":      CfgExportedRef,
+		"cfgExportedRef": func(cfg *ConfigMetadata) string {
+			return CfgExportedRef(cfg, md)
+		},
 	}
 }
 

@@ -1300,9 +1300,26 @@ func TestNewCfgFns_CamelVar(t *testing.T) {
 	require.Panics(t, func() { camelVar("") })
 }
 
+func TestNewGeneratorEnv(t *testing.T) {
+	md := &ConfigsMetadata{}
+	env := NewGeneratorEnv("root", "comp", true, md)
+	require.Equal(t, "root", env.rootPackage)
+	require.Equal(t, "comp", env.componentPackage)
+	require.True(t, env.isComponent)
+	require.Equal(t, md, env.ConfigsMetadata())
+}
+
 func TestWithCfgFns(t *testing.T) {
 	base := map[string]any{"existing": "value"}
-	result := WithCfgFns(base, GeneratorEnv{rootPackage: "", componentPackage: ""})
+	md := &ConfigsMetadata{
+		ExportedConfigs: map[string]*ConfigMetadata{
+			"inner": {
+				Type:       "object",
+				Properties: map[string]*ConfigMetadata{"host": {Type: "string"}},
+			},
+		},
+	}
+	result := WithCfgFns(base, GeneratorEnv{rootPackage: "", componentPackage: "", configsMetadata: md})
 
 	require.Equal(t, "value", result["existing"])
 	require.Contains(t, result, "mapGoType")
@@ -1315,6 +1332,18 @@ func TestWithCfgFns(t *testing.T) {
 	require.Contains(t, result, "camelVar")
 	require.Contains(t, result, "isRequired")
 	require.Contains(t, result, "shouldOmitEmpty")
+	require.Contains(t, result, "cfgExportedRef")
+
+	exportedRefFn := result["cfgExportedRef"].(func(*ConfigMetadata) string)
+	prop := func(ref string) *ConfigMetadata {
+		return &ConfigMetadata{
+			Type:       "object",
+			Ref:        ref,
+			Properties: map[string]*ConfigMetadata{"host": {Type: "string"}},
+		}
+	}
+	require.Equal(t, "inner", exportedRefFn(prop("inner")))
+	require.Empty(t, exportedRefFn(prop("other")))
 }
 
 func TestExtractValidators_DurationPattern(t *testing.T) {
