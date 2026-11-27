@@ -77,7 +77,7 @@ func newDefaultTargetsItem() TargetsItem {
 	endpoint.Transport = "ip4"
 	return TargetsItem{
 		Endpoint:       configoptional.Default(endpoint),
-		Interval:       configoptional.Some(10 * time.Second),
+		Interval:       configoptional.Some[time.Duration](10 * time.Second),
 		Labels:         map[string]string{"option1": "value1", "option2": "value2"},
 		RetryCount:     3,
 		TimeoutSeconds: 5,

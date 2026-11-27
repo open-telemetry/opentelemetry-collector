@@ -818,7 +818,10 @@ func clearedValueExpr(md *ConfigMetadata, name string, env GeneratorEnv) string 
 		return "nil"
 	}
 	if md.IsOptional {
-		t, _ := resolveGoType(md, name, env)
+		t, err := resolveGoType(md, name, env)
+		if err != nil {
+			panic(err)
+		}
 		return fmt.Sprintf("configoptional.None[%s]()", t)
 	}
 	return ""
@@ -827,7 +830,7 @@ func clearedValueExpr(md *ConfigMetadata, name string, env GeneratorEnv) string 
 func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, env GeneratorEnv) string {
 	validateOptionalMode(md)
 	if md.IsOptional && md.GoStruct.OptionalMode == OptionalModeDefault {
-		return wrapOptionalValue(md, formatOptionalDefaultValue(md, name, defaultValue, env))
+		return wrapOptionalValue(md, formatOptionalDefaultValue(md, name, defaultValue, env), "")
 	}
 
 	if md.GoStruct.IgnoreDefault || (defaultValue == nil && !hasDefaultValue(md)) {
@@ -838,7 +841,16 @@ func FormatDefaultValue(md *ConfigMetadata, name string, defaultValue any, env G
 		return "&" + exp
 	}
 	if md.IsOptional {
-		return wrapOptionalValue(md, exp)
+		typeArgs := ""
+		if IsPrimitiveSchema(md) && md.GoStruct.CustomDefault == nil {
+			goType, err := resolveGoType(md, name, env)
+			if err != nil {
+				panic(err)
+			}
+			// A schema default literal may infer a different type than the field.
+			typeArgs = "[" + goType + "]"
+		}
+		return wrapOptionalValue(md, exp, typeArgs)
 	}
 	return exp
 }
@@ -857,12 +869,12 @@ func formatOptionalDefaultValue(md *ConfigMetadata, name string, defaultValue an
 	return t + "{}"
 }
 
-func wrapOptionalValue(md *ConfigMetadata, exp string) string {
+func wrapOptionalValue(md *ConfigMetadata, exp, typeArgs string) string {
 	switch md.GoStruct.OptionalMode {
 	case "", OptionalModeSome:
-		return fmt.Sprintf("configoptional.Some(%s)", exp)
+		return fmt.Sprintf("configoptional.Some%s(%s)", typeArgs, exp)
 	case OptionalModeDefault:
-		return fmt.Sprintf("configoptional.Default(%s)", exp)
+		return fmt.Sprintf("configoptional.Default%s(%s)", typeArgs, exp)
 	default:
 		panic(fmt.Sprintf("unsupported go_struct.optional_mode %q", md.GoStruct.OptionalMode))
 	}
@@ -906,7 +918,7 @@ func WrapDefaultValue(md *ConfigMetadata, varName string) string {
 	}
 	if md.IsOptional {
 		validateOptionalMode(md)
-		return wrapOptionalValue(md, exp)
+		return wrapOptionalValue(md, exp, "")
 	}
 	return exp
 }

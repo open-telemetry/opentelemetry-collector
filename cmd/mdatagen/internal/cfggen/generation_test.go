@@ -2590,7 +2590,46 @@ func TestFormatDefaultValue_ScalarDefaults(t *testing.T) {
 			schema:       &ConfigMetadata{Type: "string", GoStruct: GoStructConfig{Type: "time.Duration"}, IsOptional: true},
 			propName:     "interval",
 			defaultValue: defaultValue("10s"),
-			expected:     "configoptional.Some(10*time.Second)",
+			expected:     "configoptional.Some[time.Duration](10*time.Second)",
+		},
+		{
+			name:         "optional zero duration",
+			schema:       &ConfigMetadata{Type: StringType, GoStruct: GoStructConfig{Type: "time.Duration"}, IsOptional: true},
+			propName:     "interval",
+			defaultValue: defaultValue("0s"),
+			expected:     "configoptional.Some[time.Duration](0)",
+		},
+		{
+			name:         "optional int",
+			schema:       &ConfigMetadata{Type: IntType, IsOptional: true},
+			propName:     "count",
+			defaultValue: defaultValue(1),
+			expected:     "configoptional.Some[int](1)",
+		},
+		{
+			name:         "optional int64",
+			schema:       &ConfigMetadata{Type: Int64Type, IsOptional: true},
+			propName:     "max_bytes",
+			defaultValue: defaultValue(1_000_000),
+			expected:     "configoptional.Some[int64](1000000)",
+		},
+		{
+			name: "optional uint16 in some mode",
+			schema: &ConfigMetadata{
+				Type:       Uint16Type,
+				IsOptional: true,
+				GoStruct:   GoStructConfig{OptionalMode: OptionalModeSome},
+			},
+			propName:     "port",
+			defaultValue: defaultValue(4317),
+			expected:     "configoptional.Some[uint16](4317)",
+		},
+		{
+			name:         "optional float32 with whole number default",
+			schema:       &ConfigMetadata{Type: Float32Type, IsOptional: true},
+			propName:     "ratio",
+			defaultValue: defaultValue(1),
+			expected:     "configoptional.Some[float32](1)",
 		},
 	}
 
@@ -2635,6 +2674,15 @@ func TestFormatDefaultValue_CustomDefault(t *testing.T) {
 			name: "custom_default takes precedence over an optional wrapper",
 			schema: &ConfigMetadata{
 				Type:       "string",
+				IsOptional: true,
+				GoStruct:   GoStructConfig{CustomDefault: &CustomDefaultConfig{Name: "defaultProtocol"}},
+			},
+			expected: "configoptional.Some(defaultProtocol())",
+		},
+		{
+			name: "optional numeric custom_default uses the return type",
+			schema: &ConfigMetadata{
+				Type:       Int64Type,
 				IsOptional: true,
 				GoStruct:   GoStructConfig{CustomDefault: &CustomDefaultConfig{Name: "defaultProtocol"}},
 			},
@@ -2850,6 +2898,23 @@ func TestFormatDefaultValue_Panics(t *testing.T) {
 		metadata     *ConfigMetadata
 		defaultValue any
 	}{
+		{
+			name: "invalid optional primitive type with a default",
+			metadata: &ConfigMetadata{
+				Type:       Int64Type,
+				IsOptional: true,
+				GoStruct:   GoStructConfig{Type: "github.com/pkg."},
+			},
+			defaultValue: defaultValue(1),
+		},
+		{
+			name: "invalid optional primitive type without a default",
+			metadata: &ConfigMetadata{
+				Type:       Int64Type,
+				IsOptional: true,
+				GoStruct:   GoStructConfig{Type: "github.com/pkg."},
+			},
+		},
 		{
 			name: "invalid reference",
 			metadata: &ConfigMetadata{
