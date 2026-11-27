@@ -131,7 +131,7 @@ func (sc *ServerConfig) ValidateWithExtensions(resolve component.ExtensionConfig
 	for i, m := range sc.Middlewares {
 		cfg, found := resolve(m.ID)
 		if !found {
-			return confmap.WithKeyPath(fmt.Errorf("references middleware %q which is not configured", m.ID), "middlewares", strconv.Itoa(i), "id")
+			return confmap.WithKeyPath(fmt.Errorf("references middleware %q which is not configured or not enabled in service::extensions", m.ID), "middlewares", strconv.Itoa(i), "id")
 		}
 		if decl, ok := cfg.(extensionmiddleware.HTTPServerProtocolConfig); ok {
 			if err := sc.validateMiddlewareProtocols(i, m.ID, decl.RequiredHTTPServerProtocols()); err != nil {

@@ -321,7 +321,7 @@ func TestServerConfigValidatesReferencedProtocols(t *testing.T) {
 	cfg.TLS = configoptional.None[configtls.ServerConfig]()
 	require.NoError(t, cfg.ValidateWithExtensions(resolve))
 	delete(configs, id)
-	require.EqualError(t, cfg.ValidateWithExtensions(resolve), `middlewares::1::id: references middleware "protocol/cleartext" which is not configured`)
+	require.EqualError(t, cfg.ValidateWithExtensions(resolve), `middlewares::1::id: references middleware "protocol/cleartext" which is not configured or not enabled in service::extensions`)
 }
 
 func TestServerMiddlewareErrors(t *testing.T) {

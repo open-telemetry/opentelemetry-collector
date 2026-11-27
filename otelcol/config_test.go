@@ -47,6 +47,7 @@ func TestConfigValidateReceiverExtensionReferences(t *testing.T) {
 	id := component.MustNewIDWithName("nop", "named")
 	ext := &errConfig{}
 	cfg.Extensions[id] = ext
+	cfg.Service.Extensions = append(cfg.Service.Extensions, id)
 	cfg.Receivers[component.MustNewID("nop")] = receiverConfigWithReferences{validate: func(resolve component.ExtensionConfigResolver) error {
 		got, ok := resolve(id)
 		require.True(t, ok)
@@ -56,6 +57,57 @@ func TestConfigValidateReceiverExtensionReferences(t *testing.T) {
 	err := confmap.Validate(cfg)
 	require.ErrorIs(t, err, errInvalidRecvConfig)
 	require.EqualError(t, err, "receivers::nop::protocols::http: invalid receiver config")
+}
+
+func TestConfigValidateReceiverExtensionReferencesIgnoresDisabledExtensions(t *testing.T) {
+	cfg := generateConfig()
+	id := component.MustNewIDWithName("nop", "disabled")
+	cfg.Extensions[id] = &errConfig{}
+	called := false
+	cfg.Receivers[component.MustNewID("nop")] = receiverConfigWithReferences{validate: func(resolve component.ExtensionConfigResolver) error {
+		called = true
+		got, ok := resolve(id)
+		require.False(t, ok)
+		require.Nil(t, got)
+		return nil
+	}}
+	require.NoError(t, confmap.Validate(cfg))
+	require.True(t, called)
+}
+
+func TestConfigValidateReceiverExtensionReferencesOnlyPipelineReceivers(t *testing.T) {
+	cfg := generateConfig()
+	calls := 0
+	cfg.Receivers[component.MustNewID("nop")] = receiverConfigWithReferences{validate: func(component.ExtensionConfigResolver) error {
+		calls++
+		return nil
+	}}
+	cfg.Receivers[component.MustNewIDWithName("nop", "unused")] = receiverConfigWithReferences{validate: func(component.ExtensionConfigResolver) error {
+		return errInvalidRecvConfig
+	}}
+	cfg.Service.Pipelines[pipeline.NewID(pipeline.SignalMetrics)] = &pipelines.PipelineConfig{
+		Receivers: []component.ID{component.MustNewID("nop")},
+		Exporters: []component.ID{component.MustNewID("nop")},
+	}
+	require.NoError(t, confmap.Validate(cfg))
+	require.Equal(t, 1, calls)
+}
+
+func TestConfigValidateReceiverExtensionReferencesDeterministicOrder(t *testing.T) {
+	failing := func(component.ExtensionConfigResolver) error { return errInvalidRecvConfig }
+	for range 20 {
+		cfg := generateConfig()
+		a := component.MustNewIDWithName("nop", "a")
+		b := component.MustNewIDWithName("nop", "b")
+		cfg.Receivers[a] = receiverConfigWithReferences{validate: failing}
+		cfg.Receivers[b] = receiverConfigWithReferences{validate: failing}
+		cfg.Service.Pipelines[pipeline.NewID(pipeline.SignalTraces)].Receivers = []component.ID{b}
+		cfg.Service.Pipelines[pipeline.NewID(pipeline.SignalMetrics)] = &pipelines.PipelineConfig{
+			Receivers: []component.ID{b, a},
+			Exporters: []component.ID{component.MustNewID("nop")},
+		}
+		require.EqualError(t, confmap.Validate(cfg), "receivers::nop/a: invalid receiver config")
+	}
 }
 
 func TestConfigValidate(t *testing.T) {

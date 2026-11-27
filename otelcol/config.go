@@ -6,6 +6,8 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 import (
 	"errors"
 	"fmt"
+	"slices"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -87,18 +89,6 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	resolve := func(id component.ID) (component.Config, bool) {
-		ext, ok := cfg.Extensions[id]
-		return ext, ok
-	}
-	for id, recv := range cfg.Receivers {
-		if validator, ok := recv.(component.ExtensionConfigValidator); ok {
-			if err := validator.ValidateWithExtensions(resolve); err != nil {
-				return confmap.WithKeyPath(err, "receivers", id.String())
-			}
-		}
-	}
-
 	// Check that all pipelines reference only configured components.
 	for pipelineID, pipeline := range cfg.Service.Pipelines {
 		// Validate pipeline receiver name references.
@@ -132,6 +122,54 @@ func (cfg *Config) Validate() error {
 				continue
 			}
 			return fmt.Errorf("service::pipelines::%s: references exporter %q which is not configured", pipelineID.String(), ref)
+		}
+	}
+
+	return cfg.validateReceiverExtensionReferences()
+}
+
+// validateReceiverExtensionReferences runs the optional extension reference
+// validators of receivers used in pipelines, in a deterministic order. Only
+// extensions enabled in service::extensions are resolvable, matching what is
+// available when the receivers start.
+func (cfg *Config) validateReceiverExtensionReferences() error {
+	enabled := make(map[component.ID]struct{}, len(cfg.Service.Extensions))
+	for _, id := range cfg.Service.Extensions {
+		enabled[id] = struct{}{}
+	}
+	resolve := func(id component.ID) (component.Config, bool) {
+		if _, ok := enabled[id]; !ok {
+			return nil, false
+		}
+		ext, ok := cfg.Extensions[id]
+		return ext, ok
+	}
+
+	seen := make(map[component.ID]struct{})
+	var ids []component.ID
+	for _, pipeline := range cfg.Service.Pipelines {
+		for _, id := range pipeline.Receivers {
+			if _, ok := cfg.Receivers[id]; !ok {
+				continue
+			}
+			if _, ok := seen[id]; ok {
+				continue
+			}
+			seen[id] = struct{}{}
+			ids = append(ids, id)
+		}
+	}
+	slices.SortFunc(ids, func(a, b component.ID) int {
+		return strings.Compare(a.String(), b.String())
+	})
+
+	for _, id := range ids {
+		validator, ok := cfg.Receivers[id].(component.ExtensionConfigValidator)
+		if !ok {
+			continue
+		}
+		if err := validator.ValidateWithExtensions(resolve); err != nil {
+			return confmap.WithKeyPath(err, "receivers", id.String())
 		}
 	}
 	return nil

@@ -70,9 +70,10 @@ service:
 
 Receiver authors can implement [`component.ExtensionConfigValidator`](../component/config.go)
 on the receiver configuration when a check needs another component's settings.
-The Collector passes a lookup function for the top-level `extensions` map,
-keyed by full extension ID. A successful lookup means the extension is
-configured, not necessarily enabled in `service.extensions`.
+The Collector calls it only for receivers used in at least one pipeline. It
+passes a lookup function keyed by full extension ID that resolves only
+extensions that are both configured in `extensions` and enabled in
+`service::extensions`, matching what is available when the receiver starts.
 
 For HTTP middleware, delegate to `confighttp.ServerConfig.ValidateWithExtensions`
 and prefix any error with the receiver's HTTP configuration keys, as the
