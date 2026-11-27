@@ -313,6 +313,28 @@ func TestExtractProfiles(t *testing.T) {
 	}
 }
 
+func TestMergeSplitProfilesCountsSamples(t *testing.T) {
+	profiles := pprofile.NewProfiles()
+	profileSlice := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles()
+	firstProfile := profileSlice.AppendEmpty()
+	firstProfile.Samples().AppendEmpty()
+	firstProfile.Samples().AppendEmpty()
+	firstProfile.Samples().AppendEmpty()
+	profileSlice.AppendEmpty().Samples().AppendEmpty()
+
+	res, err := newProfilesRequest(profiles).MergeSplit(
+		context.Background(),
+		3,
+		exporterhelper.RequestSizerTypeItems,
+		nil,
+	)
+
+	require.NoError(t, err)
+	require.Len(t, res, 2)
+	assert.Equal(t, 3, res[0].ItemsCount())
+	assert.Equal(t, 1, res[1].ItemsCount())
+}
+
 func TestMergeSplitManySmallProfiles(t *testing.T) {
 	// All requests merge into a single batch.
 	merged := []Request{newProfilesRequest(testdata.GenerateProfiles(1))}
