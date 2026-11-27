@@ -6,7 +6,6 @@ package configgrpc
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -236,8 +235,9 @@ func exportCompressedTraces(t *testing.T, addr string, md metadata.MD) error {
 }
 
 // TestServerPreDecodeChecks verifies that the pre-decode checks of the middlewares run in
-// the configured order, and that the first error rejects the RPC before its request is
-// decompressed.
+// the configured order and before the unary interceptors, including the interceptor of a
+// middleware configured earlier, and that the first error rejects the RPC before its
+// request is decompressed.
 func TestServerPreDecodeChecks(t *testing.T) {
 	rejectErr := status.Error(codes.ResourceExhausted, "rejected")
 
@@ -249,7 +249,7 @@ func TestServerPreDecodeChecks(t *testing.T) {
 	}{
 		{
 			name:      "all_checks_pass",
-			wantCalls: []string{"check1", "check2"},
+			wantCalls: []string{"check1", "check2", "interceptor"},
 			wantCode:  codes.OK,
 		},
 		{
@@ -272,7 +272,9 @@ func TestServerPreDecodeChecks(t *testing.T) {
 			newCheck := func(name string) extensionmiddleware.GRPCPreDecodeCheckFunc {
 				return func(ctx context.Context) error {
 					recorder.record(name)
-					assert.NotNil(t, client.FromContext(ctx).Addr, "the check context should carry the client address")
+					method, ok := grpc.Method(ctx)
+					assert.True(t, ok)
+					assert.Equal(t, "/opentelemetry.proto.collector.trace.v1.TraceService/Export", method)
 					if name == tt.rejectAt {
 						return rejectErr
 					}
@@ -280,6 +282,17 @@ func TestServerPreDecodeChecks(t *testing.T) {
 				}
 			}
 			extensions := map[component.ID]component.Component{
+				component.MustNewID("interceptor"): &testServerMiddleware{
+					Extension: extensionmiddlewaretest.NewNop(),
+					GetGRPCServerOptionsFunc: func(context.Context) ([]grpc.ServerOption, error) {
+						return []grpc.ServerOption{grpc.ChainUnaryInterceptor(
+							func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+								recorder.record("interceptor")
+								return handler(ctx, req)
+							},
+						)}, nil
+					},
+				},
 				component.MustNewID("check1"): newTestPreDecodeMiddleware(newCheck("check1")),
 				component.MustNewID("check2"): newTestPreDecodeMiddleware(newCheck("check2")),
 			}
@@ -291,6 +304,7 @@ func TestServerPreDecodeChecks(t *testing.T) {
 					Transport: confignet.TransportTypeTCP,
 				},
 				Middlewares: []configmiddleware.Config{
+					newTestMiddlewareConfig("interceptor"),
 					newTestMiddlewareConfig("check1"),
 					newTestMiddlewareConfig("check2"),
 				},
@@ -357,6 +371,8 @@ func TestServerPreDecodeChecksRunAfterAuth(t *testing.T) {
 				component.MustNewID("check"): newTestPreDecodeMiddleware(func(ctx context.Context) error {
 					recorder.record("check")
 					assert.Equal(t, true, ctx.Value(authKey{}), "the check context should come from the authenticator")
+					assert.Equal(t, []string{"ok"}, client.FromContext(ctx).Metadata.Get("authorization"),
+						"the authenticator context should carry the client information")
 					return nil
 				}),
 			}
@@ -367,8 +383,9 @@ func TestServerPreDecodeChecksRunAfterAuth(t *testing.T) {
 					Endpoint:  "localhost:0",
 					Transport: confignet.TransportTypeTCP,
 				},
-				Auth:        configoptional.Some(configauth.Config{AuthenticatorID: mockID}),
-				Middlewares: []configmiddleware.Config{newTestMiddlewareConfig("check")},
+				IncludeMetadata: true,
+				Auth:            configoptional.Some(configauth.Config{AuthenticatorID: mockID}),
+				Middlewares:     []configmiddleware.Config{newTestMiddlewareConfig("check")},
 			}), extensions)
 			defer srv.Stop()
 
@@ -419,7 +436,7 @@ func TestServiceRegistrarPreDecodeChecks(t *testing.T) {
 					return nil, errors.New("check failed")
 				},
 			},
-			wantErrString: "failed to get gRPC server pre-decode check from middleware: check failed",
+			wantErrString: `failed to get gRPC server pre-decode check from middleware "mw": check failed`,
 		},
 	}
 
@@ -441,47 +458,7 @@ func TestServiceRegistrarPreDecodeChecks(t *testing.T) {
 			if tt.wantServer {
 				assert.Same(t, srv, registrar)
 			} else {
-				assert.IsType(t, &preDecodeCheckRegistrar{}, registrar)
-			}
-		})
-	}
-}
-
-// TestServerPreDecodeCheckContext verifies that the pre-decode checks see the same client
-// information as the service, which gets it from the interceptors.
-func TestServerPreDecodeCheckContext(t *testing.T) {
-	for _, includeMetadata := range []bool{false, true} {
-		t.Run(fmt.Sprintf("include_metadata_%t", includeMetadata), func(t *testing.T) {
-			checkInfo := make(chan client.Info, 1)
-			extensions := map[component.ID]component.Component{
-				component.MustNewID("check"): newTestPreDecodeMiddleware(func(ctx context.Context) error {
-					checkInfo <- client.FromContext(ctx)
-					return nil
-				}),
-			}
-
-			mock := &grpcTraceServer{}
-			srv, addr := mock.startTestServerWithExtensions(t, configoptional.Some(ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Endpoint:  "localhost:0",
-					Transport: confignet.TransportTypeTCP,
-				},
-				IncludeMetadata: includeMetadata,
-				Middlewares:     []configmiddleware.Config{newTestMiddlewareConfig("check")},
-			}), extensions)
-			defer srv.Stop()
-
-			require.NoError(t, exportCompressedTraces(t, addr, metadata.Pairs("x-tenant", "acme")))
-
-			got := <-checkInfo
-			want := client.FromContext(mock.recordedContext)
-			assert.NotNil(t, got.Addr)
-			assert.Equal(t, want.Addr, got.Addr)
-			assert.Equal(t, want.Metadata.Get("x-tenant"), got.Metadata.Get("x-tenant"))
-			if includeMetadata {
-				assert.Equal(t, []string{"acme"}, got.Metadata.Get("x-tenant"))
-			} else {
-				assert.Empty(t, got.Metadata.Get("x-tenant"))
+				assert.IsType(t, &preDecodeRegistrar{}, registrar)
 			}
 		})
 	}

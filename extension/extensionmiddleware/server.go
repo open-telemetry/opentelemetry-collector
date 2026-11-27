@@ -47,10 +47,12 @@ type GRPCServerPreDecode interface {
 // its request message from the stream. The transport may already have
 // received part of the message, up to its flow-control window.
 //
-// The context carries the client.Info that interceptors also see, including
-// the authentication data when authentication is configured, and
-// grpc.Method returns the method name. A non-nil error rejects the RPC and
-// is returned to the client, so it should be a gRPC status error.
+// The context is the context of the RPC, so grpc.Method returns the method
+// name and metadata.FromIncomingContext the request headers. When
+// authentication is configured, it is the context that the authenticator
+// returned. It does not carry the client.Info that interceptors see, unless
+// authentication is configured. A non-nil error rejects the RPC and is
+// returned to the client, so it should be a gRPC status error.
 //
 // The function runs for every unary RPC and is called concurrently, so it
 // should return quickly and must be safe for concurrent use.

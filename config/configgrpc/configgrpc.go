@@ -443,42 +443,17 @@ func (sc *ServerConfig) ServiceRegistrar(
 	extensions map[component.ID]component.Component,
 	server *grpc.Server,
 ) (grpc.ServiceRegistrar, error) {
-	var registrar grpc.ServiceRegistrar = server
+	registrar := &preDecodeRegistrar{
+		ServiceRegistrar: server,
+		includeMetadata:  sc.IncludeMetadata,
+	}
 	if sc.Auth.HasValue() {
 		authenticator, err := sc.Auth.Get().GetServerAuthenticator(ctx, extensions)
 		if err != nil {
 			return nil, err
 		}
-		registrar = &preAuthRegistrar{
-			ServiceRegistrar: registrar,
-			authenticator:    authenticator,
-			includeMetadata:  sc.IncludeMetadata,
-		}
+		registrar.authenticator = authenticator
 	}
-
-	checks, err := sc.getPreDecodeChecks(ctx, extensions)
-	if err != nil {
-		return nil, err
-	}
-	if len(checks) > 0 {
-		// This registrar wraps the method handlers before passing them to the
-		// authentication one, so the checks run after authentication.
-		registrar = &preDecodeCheckRegistrar{
-			ServiceRegistrar: registrar,
-			checks:           checks,
-			includeMetadata:  sc.IncludeMetadata,
-		}
-	}
-	return registrar, nil
-}
-
-// getPreDecodeChecks returns the checks of the configured middlewares that
-// implement [extensionmiddleware.GRPCServerPreDecode], in the configured order.
-func (sc *ServerConfig) getPreDecodeChecks(
-	ctx context.Context,
-	extensions map[component.ID]component.Component,
-) ([]extensionmiddleware.GRPCPreDecodeCheckFunc, error) {
-	var checks []extensionmiddleware.GRPCPreDecodeCheckFunc
 	for _, middleware := range sc.Middlewares {
 		// ToServer already reported the middleware extensions that do not exist.
 		preDecode, ok := extensions[middleware.ID].(extensionmiddleware.GRPCServerPreDecode)
@@ -487,65 +462,53 @@ func (sc *ServerConfig) getPreDecodeChecks(
 		}
 		check, err := preDecode.GetGRPCServerPreDecodeCheck(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get gRPC server pre-decode check from middleware: %w", err)
+			return nil, fmt.Errorf("failed to get gRPC server pre-decode check from middleware %q: %w", middleware.ID, err)
 		}
 		if check != nil {
-			checks = append(checks, check)
+			registrar.checks = append(registrar.checks, check)
 		}
 	}
-	return checks, nil
+	if registrar.authenticator == nil && len(registrar.checks) == 0 {
+		return server, nil
+	}
+	return registrar, nil
 }
 
-// preDecodeCheckRegistrar wraps the handler of every unary method registered through it, so
-// that the middleware checks run before the generated handler reads the request message.
-type preDecodeCheckRegistrar struct {
+// preDecodeRegistrar wraps the handler of every unary method registered through it, so
+// that the RPC is authenticated and then checked by the middlewares before the generated
+// handler reads the request message.
+type preDecodeRegistrar struct {
 	grpc.ServiceRegistrar
-	checks          []extensionmiddleware.GRPCPreDecodeCheckFunc
+	// authenticator is nil when authentication is not configured.
+	authenticator   extensionauth.Server
 	includeMetadata bool
+	// checks are the pre-decode checks of the middlewares, in the configured order.
+	checks []extensionmiddleware.GRPCPreDecodeCheckFunc
 }
 
-func (r *preDecodeCheckRegistrar) RegisterService(desc *grpc.ServiceDesc, impl any) {
+func (r *preDecodeRegistrar) RegisterService(desc *grpc.ServiceDesc, impl any) {
 	wrapped := *desc
 	wrapped.Methods = make([]grpc.MethodDesc, len(desc.Methods))
 	for i, md := range desc.Methods {
 		handler := md.Handler
 		md.Handler = func(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
-			checkCtx := contextWithClient(ctx, r.includeMetadata)
+			if r.authenticator != nil {
+				headers, ok := metadata.FromIncomingContext(ctx)
+				if !ok {
+					return nil, errMetadataNotFound
+				}
+				authCtx, err := r.authenticator.Authenticate(contextWithClient(ctx, r.includeMetadata), headers)
+				if err != nil {
+					return nil, authStatusError(err)
+				}
+				ctx = context.WithValue(authCtx, authenticatedEarlyKey{}, true)
+			}
 			for _, check := range r.checks {
-				if err := check(checkCtx); err != nil {
+				if err := check(ctx); err != nil {
 					return nil, err
 				}
 			}
 			return handler(srv, ctx, dec, interceptor)
-		}
-		wrapped.Methods[i] = md
-	}
-	r.ServiceRegistrar.RegisterService(&wrapped, impl)
-}
-
-// preAuthRegistrar wraps the handler of every unary method registered through it, so
-// that the RPC is authenticated before the generated handler reads the request message.
-type preAuthRegistrar struct {
-	grpc.ServiceRegistrar
-	authenticator   extensionauth.Server
-	includeMetadata bool
-}
-
-func (r *preAuthRegistrar) RegisterService(desc *grpc.ServiceDesc, impl any) {
-	wrapped := *desc
-	wrapped.Methods = make([]grpc.MethodDesc, len(desc.Methods))
-	for i, md := range desc.Methods {
-		handler := md.Handler
-		md.Handler = func(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
-			headers, ok := metadata.FromIncomingContext(ctx)
-			if !ok {
-				return nil, errMetadataNotFound
-			}
-			ctx, err := r.authenticator.Authenticate(contextWithClient(ctx, r.includeMetadata), headers)
-			if err != nil {
-				return nil, authStatusError(err)
-			}
-			return handler(srv, context.WithValue(ctx, authenticatedEarlyKey{}, true), dec, interceptor)
 		}
 		wrapped.Methods[i] = md
 	}
