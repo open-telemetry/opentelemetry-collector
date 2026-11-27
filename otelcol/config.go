@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
@@ -93,7 +94,7 @@ func (cfg *Config) Validate() error {
 	for id, recv := range cfg.Receivers {
 		if validator, ok := recv.(component.ExtensionConfigValidator); ok {
 			if err := validator.ValidateWithExtensions(resolve); err != nil {
-				return fmt.Errorf("receivers::%s: %w", id, err)
+				return confmap.WithKeyPath(err, "receivers", id.String())
 			}
 		}
 	}

@@ -11,6 +11,7 @@ import (
 	"path"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 var _ encoding.TextUnmarshaler = (*SanitizedURLPath)(nil)
@@ -37,9 +38,7 @@ var (
 // ValidateWithExtensions checks the middleware configured on the HTTP receiver.
 func (cfg *Config) ValidateWithExtensions(resolve component.ExtensionConfigResolver) error {
 	if httpCfg := cfg.Protocols.HTTP.Get(); httpCfg != nil {
-		if err := httpCfg.ServerConfig.ValidateWithExtensions(resolve); err != nil {
-			return fmt.Errorf("protocols::http::middlewares: %w", err)
-		}
+		return confmap.WithKeyPath(httpCfg.ServerConfig.ValidateWithExtensions(resolve), "protocols", "http")
 	}
 	return nil
 }

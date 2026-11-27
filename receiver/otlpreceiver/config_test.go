@@ -33,7 +33,7 @@ func TestValidateHTTPMiddlewareReferences(t *testing.T) {
 		"protocols::http::middlewares": []any{map[string]any{"id": "protocol/proxy"}},
 	}).Unmarshal(cfg)
 	require.NoError(t, err)
-	require.ErrorContains(t, cfg.ValidateWithExtensions(resolve), `protocols::http::middlewares: middleware "protocol/proxy" is not configured`)
+	require.EqualError(t, cfg.ValidateWithExtensions(resolve), `protocols::http::middlewares::0::id: references middleware "protocol/proxy" which is not configured`)
 }
 
 func TestUnmarshalDefaultConfig(t *testing.T) {

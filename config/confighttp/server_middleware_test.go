@@ -287,7 +287,7 @@ func TestServerMiddlewareProtocols(t *testing.T) {
 		}
 		srv, err := cfg.ToServer(t.Context(), map[component.ID]component.Component{id: extensions[component.MustNewID("h2c")]}, componenttest.NewNopTelemetrySettings(), handler)
 		require.Nil(t, srv)
-		require.ErrorContains(t, err, `middleware "protocols/proxy" requests unencrypted HTTP/2, but this listener requires TLS`)
+		require.EqualError(t, err, `middlewares::0::id: middleware "protocols/proxy" requests unencrypted HTTP/2, but this listener requires TLS`)
 	})
 
 	t.Run("returns_error", func(t *testing.T) {
@@ -317,11 +317,11 @@ func TestServerConfigValidatesReferencedProtocols(t *testing.T) {
 	}
 	require.NoError(t, cfg.ValidateWithExtensions(resolve))
 	cfg.Middlewares = append(cfg.Middlewares, configmiddleware.Config{ID: id})
-	require.ErrorContains(t, cfg.ValidateWithExtensions(resolve), `middleware "protocol/cleartext" requests unencrypted HTTP/2, but this listener requires TLS`)
+	require.EqualError(t, cfg.ValidateWithExtensions(resolve), `middlewares::1::id: middleware "protocol/cleartext" requests unencrypted HTTP/2, but this listener requires TLS`)
 	cfg.TLS = configoptional.None[configtls.ServerConfig]()
 	require.NoError(t, cfg.ValidateWithExtensions(resolve))
 	delete(configs, id)
-	require.ErrorContains(t, cfg.ValidateWithExtensions(resolve), `middleware "protocol/cleartext" is not configured`)
+	require.EqualError(t, cfg.ValidateWithExtensions(resolve), `middlewares::1::id: references middleware "protocol/cleartext" which is not configured`)
 }
 
 func TestServerMiddlewareErrors(t *testing.T) {

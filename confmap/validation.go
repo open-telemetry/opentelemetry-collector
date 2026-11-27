@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -46,6 +47,24 @@ func Validate(cfg any) error {
 type pathError struct {
 	err  error
 	path []string
+}
+
+// WithKeyPath prefixes a validation error with configuration keys in outermost
+// to innermost order. Nested calls produce one path, as in Validate.
+// If err is nil, WithKeyPath returns nil.
+func WithKeyPath(err error, keys ...string) error {
+	if err == nil || len(keys) == 0 {
+		return err
+	}
+	pe, ok := err.(pathError) //nolint:errorlint // Flatten adjacent paths only; preserve intervening error wrappers.
+	if !ok {
+		pe.err = err
+	}
+	pe.path = slices.Clone(pe.path)
+	for _, key := range slices.Backward(keys) {
+		pe.path = append(pe.path, key)
+	}
+	return pe
 }
 
 func (pe pathError) Error() string {

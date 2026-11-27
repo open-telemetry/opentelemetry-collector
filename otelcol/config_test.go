@@ -51,11 +51,11 @@ func TestConfigValidateReceiverExtensionReferences(t *testing.T) {
 		got, ok := resolve(id)
 		require.True(t, ok)
 		require.Same(t, ext, got)
-		return errInvalidRecvConfig
+		return confmap.WithKeyPath(errInvalidRecvConfig, "protocols", "http")
 	}}
 	err := confmap.Validate(cfg)
 	require.ErrorIs(t, err, errInvalidRecvConfig)
-	require.ErrorContains(t, err, "receivers::nop")
+	require.EqualError(t, err, "receivers::nop::protocols::http: invalid receiver config")
 }
 
 func TestConfigValidate(t *testing.T) {

@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -29,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 )
@@ -109,9 +111,9 @@ func (sc *ServerConfig) ToListenerWithOptions(ctx context.Context, opts ...ToLis
 	return listener, nil
 }
 
-func (sc *ServerConfig) validateProtocols(id component.ID, protocols http.Protocols) error {
+func (sc *ServerConfig) validateProtocols(i int, id component.ID, protocols http.Protocols) error {
 	if sc.TLS.HasValue() && protocols.UnencryptedHTTP2() {
-		return fmt.Errorf("middleware %q requests unencrypted HTTP/2, but this listener requires TLS", id)
+		return confmap.WithKeyPath(fmt.Errorf("middleware %q requests unencrypted HTTP/2, but this listener requires TLS", id), "middlewares", strconv.Itoa(i), "id")
 	}
 	return nil
 }
@@ -126,13 +128,13 @@ func (sc *ServerConfig) Validate() error {
 // ValidateWithExtensions checks the protocol requirements declared by this
 // server's middleware configurations without constructing the extensions.
 func (sc *ServerConfig) ValidateWithExtensions(resolve component.ExtensionConfigResolver) error {
-	for _, m := range sc.Middlewares {
+	for i, m := range sc.Middlewares {
 		cfg, found := resolve(m.ID)
 		if !found {
-			return fmt.Errorf("middleware %q is not configured", m.ID)
+			return confmap.WithKeyPath(fmt.Errorf("references middleware %q which is not configured", m.ID), "middlewares", strconv.Itoa(i), "id")
 		}
 		if decl, ok := cfg.(extensionmiddleware.HTTPServerProtocolConfig); ok {
-			if err := sc.validateProtocols(m.ID, decl.RequiredHTTPServerProtocols()); err != nil {
+			if err := sc.validateProtocols(i, m.ID, decl.RequiredHTTPServerProtocols()); err != nil {
 				return err
 			}
 		}
@@ -210,7 +212,7 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		return nil, errors.New("middlewares were configured but this component or its host does not support extensions")
 	}
 	var protocols *http.Protocols
-	for _, m := range slices.Backward(sc.Middlewares) {
+	for i, m := range slices.Backward(sc.Middlewares) {
 		wrapper, err := m.GetHTTPServerHandler(ctx, extensions)
 		// If we failed to get the middleware
 		if err != nil {
@@ -225,7 +227,7 @@ func (sc *ServerConfig) ToServer(ctx context.Context, extensions map[component.I
 		if err != nil {
 			return nil, err
 		}
-		if err := sc.validateProtocols(m.ID, requested); err != nil {
+		if err := sc.validateProtocols(i, m.ID, requested); err != nil {
 			return nil, err
 		}
 		protocols = addProtocols(protocols, requested)

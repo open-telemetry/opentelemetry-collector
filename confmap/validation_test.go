@@ -5,6 +5,7 @@ package confmap // import "go.opentelemetry.io/collector/confmap"
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,6 +15,19 @@ import (
 type configChildStruct struct {
 	Child    errValidateConfig
 	ChildPtr *errValidateConfig
+}
+
+func TestWithKeyPathPreservesErrorContext(t *testing.T) {
+	cause := errors.New("invalid value")
+	inner := WithKeyPath(cause, "items", "1")
+	err := WithKeyPath(inner, "receiver")
+	require.EqualError(t, err, "receiver::items::1: invalid value")
+	require.ErrorIs(t, err, cause)
+
+	wrapped := fmt.Errorf("invalid reference: %w", inner)
+	err = WithKeyPath(wrapped, "receiver")
+	require.EqualError(t, err, "receiver: invalid reference: items::1: invalid value")
+	require.ErrorIs(t, err, wrapped)
 }
 
 type configChildSlice struct {
