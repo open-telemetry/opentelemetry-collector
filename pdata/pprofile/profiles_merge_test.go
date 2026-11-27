@@ -6,11 +6,13 @@ package pprofile
 import (
 	"fmt"
 	"math/rand/v2"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -592,21 +594,17 @@ func TestProfilesMergeTo(t *testing.T) {
 // into a single table is the only invalid reference during a merge.
 func newConformantProfiles() Profiles {
 	p := NewProfiles()
-	d := p.Dictionary()
-	d.StringTable().Append("")
-	d.AttributeTable().AppendEmpty()
-	d.StackTable().AppendEmpty()
-	d.LocationTable().AppendEmpty()
-	d.FunctionTable().AppendEmpty()
-	d.MappingTable().AppendEmpty()
-	d.LinkTable().AppendEmpty()
+	addMissingZeroEntries(p.Dictionary())
 	return p
 }
 
 // TestProfilesMergeTo_SwitchDictionaryErrors exercises each error-propagation
 // path in the switchDictionary chain by injecting a single out-of-range index
-// into an otherwise spec-conformant source. Every case asserts the wrapped
-// error surfaces and that the destination is left untouched.
+// into an otherwise spec-conformant source. Every case runs against a
+// destination that already has the zero value entries and an empty one, and
+// asserts the wrapped error surfaces and no resource profiles are moved. The
+// destination dictionary can still gain entries before the error, as it could
+// before: the zero value entries, and entries translated before the failing one.
 func TestProfilesMergeTo_SwitchDictionaryErrors(t *testing.T) {
 	const badIdx = 99
 
@@ -683,16 +681,25 @@ func TestProfilesMergeTo_SwitchDictionaryErrors(t *testing.T) {
 			wantErr: "error switching dictionary for sample type",
 		},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
-			src := newConformantProfiles()
-			tt.mutate(src)
-			dest := newConformantProfiles()
+		for _, d := range []struct {
+			name string
+			dest Profiles
+		}{
+			{"seeded", newConformantProfiles()},
+			{"empty", NewProfiles()},
+		} {
+			t.Run(tt.name+"/"+d.name, func(t *testing.T) {
+				src := newConformantProfiles()
+				tt.mutate(src)
 
-			err := src.MergeTo(dest)
-			require.ErrorContains(t, err, tt.wantErr)
-			assert.Equal(t, 0, dest.ResourceProfiles().Len(),
-				"destination must be left untouched on error")
-		})
+				err := src.MergeTo(d.dest)
+				require.ErrorContains(t, err, tt.wantErr)
+				assert.Equal(t, 0, d.dest.ResourceProfiles().Len(),
+					"no resource profiles must be moved on error")
+				assert.Empty(t, d.dest.Dictionary().StringTable().At(0),
+					"the destination dictionary must start with its zero value entry")
+			})
+		}
 	}
 }
 
@@ -1027,4 +1034,115 @@ func assertNoDuplicateDictEntries(t *testing.T, d ProfilesDictionary) {
 			require.False(t, lnk.At(i).Equal(lnk.At(j)), "duplicate link %d/%d", i, j)
 		}
 	}
+}
+
+// TestProfilesMergeTo_EmptyDestination checks that merging into a Profiles from
+// NewProfiles, whose dictionary has no zero value entries yet, adds them first,
+// so no merged entry lands on index 0 and every reference survives the merge.
+// See https://github.com/open-telemetry/opentelemetry-collector/issues/15661.
+func TestProfilesMergeTo_EmptyDestination(t *testing.T) {
+	dest := NewProfiles()
+	require.NoError(t, newChainProfiles("a-").MergeTo(dest))
+	require.NoError(t, newChainProfiles("b-").MergeTo(dest))
+	require.NoError(t, newChainProfiles("a-").MergeTo(dest))
+
+	d := dest.Dictionary()
+	assert.Empty(t, d.StringTable().At(0))
+	assert.Equal(t, NewKeyValueAndUnit(), d.AttributeTable().At(0))
+	assert.Equal(t, NewStack(), d.StackTable().At(0))
+	assert.Equal(t, NewLocation(), d.LocationTable().At(0))
+	assert.Equal(t, NewFunction(), d.FunctionTable().At(0))
+	assert.Equal(t, NewMapping(), d.MappingTable().At(0))
+	assert.Equal(t, NewLink(), d.LinkTable().At(0))
+
+	for i, prefix := range []string{"a-", "b-", "a-"} {
+		got := dest.ResourceProfiles().At(i).ScopeProfiles().At(0).Profiles().At(0)
+		assertChain(t, d, got, prefix)
+	}
+	assertNoDuplicateDictEntries(t, d)
+	// The zero value entry plus one entry per distinct chain; the link is shared.
+	assert.Equal(t, 3, d.StackTable().Len())
+	assert.Equal(t, 2, d.LinkTable().Len())
+}
+
+// TestAddMissingZeroEntries_EveryTable fails when ProfilesDictionary gains a
+// table that addMissingZeroEntries does not cover, and checks that tables which
+// already have entries are left as they are.
+func TestAddMissingZeroEntries_EveryTable(t *testing.T) {
+	d := newProfilesDictionary(&internal.ProfilesDictionary{}, internal.NewState())
+	addMissingZeroEntries(d)
+	addMissingZeroEntries(d)
+
+	v := reflect.ValueOf(d.orig).Elem()
+	for i := range v.NumField() {
+		require.Equal(t, reflect.Slice, v.Field(i).Kind(), "every dictionary field is a table")
+		assert.Equal(t, 1, v.Field(i).Len(), "table %s must hold exactly its zero value entry", v.Type().Field(i).Name)
+	}
+}
+
+// newChainProfiles returns a Profiles with the zero value entries and one
+// profile referencing a full dictionary chain (sample to stack to location to
+// mapping and function, a sample link and a profile attribute), each with its
+// own strings, so every table has an entry at an index other than 0.
+func newChainProfiles(prefix string) Profiles {
+	p := newConformantProfiles()
+	d := p.Dictionary()
+	str := func(v string) int32 {
+		d.StringTable().Append(prefix + v)
+		return int32(d.StringTable().Len() - 1)
+	}
+	fnIdx := int32(d.FunctionTable().Len())
+	d.FunctionTable().AppendEmpty().SetNameStrindex(str("function"))
+	maIdx := int32(d.MappingTable().Len())
+	d.MappingTable().AppendEmpty().SetFilenameStrindex(str("file"))
+	locIdx := int32(d.LocationTable().Len())
+	loc := d.LocationTable().AppendEmpty()
+	loc.SetMappingIndex(maIdx)
+	loc.Lines().AppendEmpty().SetFunctionIndex(fnIdx)
+	stIdx := int32(d.StackTable().Len())
+	d.StackTable().AppendEmpty().LocationIndices().Append(locIdx)
+	attrIdx := int32(d.AttributeTable().Len())
+	attr := d.AttributeTable().AppendEmpty()
+	attr.SetKeyStrindex(str("key"))
+	attr.Value().SetStr(prefix + "value")
+	lnkIdx := int32(d.LinkTable().Len())
+	lnk := d.LinkTable().AppendEmpty()
+	lnk.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3}))
+	lnk.SetSpanID(pcommon.SpanID([8]byte{4, 5, 6}))
+
+	prof := p.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	prof.AttributeIndices().Append(attrIdx)
+	sample := prof.Samples().AppendEmpty()
+	sample.SetStackIndex(stIdx)
+	sample.SetLinkIndex(lnkIdx)
+	sample.Values().Append(1)
+	return p
+}
+
+// assertChain asserts that got, resolved against d, carries the chain built by
+// newChainProfiles(prefix).
+func assertChain(t *testing.T, d ProfilesDictionary, got Profile, prefix string) {
+	t.Helper()
+	require.Equal(t, 1, got.AttributeIndices().Len())
+	attrIdx := got.AttributeIndices().At(0)
+	require.NotZero(t, attrIdx)
+	gotAttr := d.AttributeTable().At(int(attrIdx))
+	assert.Equal(t, prefix+"key", d.StringTable().At(int(gotAttr.KeyStrindex())))
+	assert.Equal(t, prefix+"value", gotAttr.Value().Str())
+
+	s := got.Samples().At(0)
+	require.NotZero(t, s.StackIndex(), "stack reference must survive the merge")
+	require.NotZero(t, s.LinkIndex(), "link reference must survive the merge")
+	assert.Equal(t, pcommon.TraceID([16]byte{1, 2, 3}), d.LinkTable().At(int(s.LinkIndex())).TraceID())
+
+	st := d.StackTable().At(int(s.StackIndex()))
+	require.Equal(t, 1, st.LocationIndices().Len())
+	locIdx := st.LocationIndices().At(0)
+	require.NotZero(t, locIdx)
+	loc := d.LocationTable().At(int(locIdx))
+	require.NotZero(t, loc.MappingIndex())
+	assert.Equal(t, prefix+"file", d.StringTable().At(int(d.MappingTable().At(int(loc.MappingIndex())).FilenameStrindex())))
+	fnIdx := loc.Lines().At(0).FunctionIndex()
+	require.NotZero(t, fnIdx)
+	assert.Equal(t, prefix+"function", d.StringTable().At(int(d.FunctionTable().At(int(fnIdx)).NameStrindex())))
 }
