@@ -50,7 +50,7 @@ func withSDKDefaultLabels(labels map[string]string) map[string]string {
 	for _, kv := range otelsdkresource.Default().Attributes() {
 		name := strings.ReplaceAll(string(kv.Key), ".", "_")
 		if _, ok := labels[name]; !ok {
-			labels[name] = kv.Value.Emit()
+			labels[name] = kv.Value.String()
 		}
 	}
 	return labels

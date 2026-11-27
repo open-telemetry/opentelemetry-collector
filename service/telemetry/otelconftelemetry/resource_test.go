@@ -4,6 +4,7 @@
 package otelconftelemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
+	"maps"
 	"os"
 	"testing"
 
@@ -54,9 +55,7 @@ func withSDKDefaults(expected map[string]any) map[string]any {
 	for _, kv := range otelsdkresource.Default().Attributes() {
 		out[string(kv.Key)] = kv.Value.AsInterface()
 	}
-	for k, v := range expected {
-		out[k] = v
-	}
+	maps.Copy(out, expected)
 	return out
 }
 
