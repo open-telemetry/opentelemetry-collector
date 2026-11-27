@@ -31,7 +31,7 @@ The supported fields are:
 | `description` | Yes | Brief description of what the gate controls |
 | `stage` | Yes | Lifecycle stage: `alpha`, `beta`, `stable`, or `deprecated` |
 | `from_version` | Yes | Version when the feature gate was introduced |
-| `to_version` | For `stable`/`deprecated` | Version when the gate reached its current stage |
+| `to_version` | For `stable`/`deprecated` | Version in which the gate is removed |
 | `reference_url` | Yes | URL with contextual information (issue or PR) |
 
 Running `mdatagen` will generate the gate registration in the `internal/metadata`
@@ -53,13 +53,14 @@ registered with the global registry in an `init()` function.  This makes the
 [`Stage`](#feature-lifecycle) default value.
 A `Gate` can have a list of associated issues that allow users to refer to
 the issue and report any additional problems or understand the context of the `Gate`.
-Once a `Gate` has been marked as `Stable`, it must have a `RemovalVersion` set.
+Once a `Gate` has been marked as `Stable`, it must have a `ToVersion` set, which is
+the Collector release in which the gate is removed.
 
 ```go
 var myFeatureGate = featuregate.GlobalRegistry().MustRegister(
   "namespaced.uniqueIdentifier",
-  featuregate.Stable,
-  featuregate.WithRegisterFromVersion("v0.65.0")
+  featuregate.StageStable,
+  featuregate.WithRegisterFromVersion("v0.65.0"),
   featuregate.WithRegisterDescription("A brief description of what the gate controls"),
   featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/6167"),
   featuregate.WithRegisterToVersion("v0.70.0"))
