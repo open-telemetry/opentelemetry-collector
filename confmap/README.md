@@ -16,6 +16,15 @@
 
 The [Conf](confmap.go) represents the raw configuration for a service (e.g. OpenTelemetry Collector).
 
+## Validation
+
+Implement `confmap.Validator` for checks that use a component's own settings.
+For checks that also need a referenced extension's settings, see
+[receiver validation](../receiver/README.md#validating-extension-references).
+When returning an error from a nested configuration, use
+[`confmap.WithKeyPath`](validation.go) to prepend keys from outermost to
+innermost. Nested calls produce one `::`-separated path followed by the reason.
+
 ## Provider
 
 The [Provider](provider.go) provides configuration, and allows to watch/monitor for changes. Any `Provider`

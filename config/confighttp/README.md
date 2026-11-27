@@ -146,6 +146,7 @@ will not be enabled.
   - `request_params`: a list of query parameter names to add to the auth context, along with the HTTP headers
 - [`middlewares`](../configmiddleware/README.md)
   - A middleware extension can ask the server to accept more HTTP protocols, such as unencrypted HTTP/2 (h2c). The server then accepts HTTP/1, HTTP/2 and the requested protocols. The `GODEBUG=http2server=0` setting still disables HTTP/2 on the server, including h2c.
+  - A middleware that requests unencrypted HTTP/2 cannot share a listener with `tls`. Use separate listeners if you need both. The server rejects the conflict at startup. Receivers that validate middleware configurations, such as the [OTLP receiver](../../receiver/otlpreceiver/README.md#advanced-configuration), can report it during configuration validation.
 
 You can enable [`attribute processor`][attribute-processor] to append any http header to span's attribute using custom key. You also need to enable the "include_metadata"
 

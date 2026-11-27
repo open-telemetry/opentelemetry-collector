@@ -71,6 +71,12 @@ Several helper files are leveraged to provide additional capabilities automatica
 - [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
 - [Auth settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configauth/README.md)
 
+Run `otelcol validate --config=config.yaml` to check `protocols.http.middlewares`
+before starting the receiver. The command reports a missing extension definition
+or a declared requirement for unencrypted HTTP/2 on a TLS listener. The error
+identifies the middleware entry, for example
+`receivers::otlp/edge::protocols::http::middlewares::0::id`.
+
 ## Writing with HTTP/JSON
 
 The OTLP receiver can receive trace export calls via HTTP/JSON in addition to
