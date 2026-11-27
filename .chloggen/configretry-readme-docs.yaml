@@ -1,0 +1,4 @@
+change_type: enhancement
+component: pkg/configretry
+note: Add a README with mdatagen-generated config documentation and clarify retry setting descriptions.
+issues: [16368]

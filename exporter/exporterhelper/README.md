@@ -19,12 +19,7 @@ The following configuration options can be modified:
 
 ### Retry on Failure
 
-- `retry_on_failure`
-  - `enabled` (default = true)
-  - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
-  - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
-  - `max_elapsed_time` (default = 300s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`. If set to 0, the retries are never stopped.
-  - `multiplier` (default = 1.5): Factor by which the retry interval is multiplied on each attempt; ignored if `enabled` is `false`
+- `retry_on_failure`: see [Retry Configuration](../../config/configretry/README.md) for details.
 
 ### Sending Queue
 
