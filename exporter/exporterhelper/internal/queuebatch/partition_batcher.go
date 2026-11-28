@@ -254,7 +254,7 @@ func (qb *partitionBatcher) Shutdown(context.Context) error {
 
 // flushCurrentBatchOrRemovePartition flushes the current batch if not empty,
 // or removes the partition from the parent if it's been idle for too long.
-func (qb *partitionBatcher) flushCurrentBatchOrRemovePartition() {
+func (qb *partitionBatcher) flushCurrentBatchOrRemovePartition() bool {
 	qb.currentBatchMu.Lock()
 	if qb.currentBatch == nil {
 		// No data to flush - check if idle for too long AND no one holding a reference
@@ -263,13 +263,13 @@ func (qb *partitionBatcher) flushCurrentBatchOrRemovePartition() {
 		if idleDuration >= qb.idleTimeout && qb.onEmpty != nil {
 			qb.currentBatchMu.Unlock()
 			qb.onEmpty()
-			return
+			return false
 		}
 		if qb.timer != nil {
 			qb.resetTimer()
 		}
 		qb.currentBatchMu.Unlock()
-		return
+		return false
 	}
 
 	// Has data to flush - update lastDataTime
@@ -282,6 +282,7 @@ func (qb *partitionBatcher) flushCurrentBatchOrRemovePartition() {
 	qb.currentBatchMu.Unlock()
 	// flush() blocks until successfully started a goroutine for flushing.
 	qb.flush(batchToFlush.ctx, batchToFlush.req, batchToFlush.done)
+	return true
 }
 
 // flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
