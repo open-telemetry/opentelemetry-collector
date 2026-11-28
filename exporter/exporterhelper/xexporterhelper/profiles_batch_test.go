@@ -313,6 +313,23 @@ func TestExtractProfiles(t *testing.T) {
 	}
 }
 
+func TestMergeSplitProfilesBySampleCount(t *testing.T) {
+	// Two profiles with 50 samples each. Counting profiles instead of samples
+	// moves the whole resource into a single batch and exceeds max_size.
+	pr := newProfilesRequest(testdata.GenerateProfilesWithSamples(2, 50))
+	res, err := pr.MergeSplit(context.Background(), 60, exporterhelper.RequestSizerTypeItems, nil)
+	require.NoError(t, err)
+	require.Len(t, res, 2)
+
+	total := 0
+	for _, r := range res {
+		samples := r.(*profilesRequest).pd.SampleCount()
+		assert.LessOrEqual(t, samples, 60)
+		total += samples
+	}
+	assert.Equal(t, 100, total)
+}
+
 func TestMergeSplitManySmallProfiles(t *testing.T) {
 	// All requests merge into a single batch.
 	merged := []Request{newProfilesRequest(testdata.GenerateProfiles(1))}
