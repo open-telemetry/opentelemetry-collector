@@ -189,24 +189,30 @@ func TestMarshalAndUnmarshalProtoViaProtobufEntityRef(t *testing.T) {
 
 func genTestFailingUnmarshalProtoValuesEntityRef() map[string][]byte {
 	return map[string][]byte{
-		"invalid_field":                   {0x02},
-		"SchemaUrl/wrong_wire_type":       {0xc},
-		"SchemaUrl/missing_value":         {0xa},
-		"Type/wrong_wire_type":            {0x14},
-		"Type/missing_value":              {0x12},
-		"IdKeys/wrong_wire_type":          {0x1c},
-		"IdKeys/missing_value":            {0x1a},
-		"DescriptionKeys/wrong_wire_type": {0x24},
-		"DescriptionKeys/missing_value":   {0x22},
+		"invalid_field":                     {0x02},
+		"SchemaUrl/wrong_wire_type":         {0xc},
+		"SchemaUrl/missing_value":           {0xa},
+		"Type/wrong_wire_type":              {0x14},
+		"Type/missing_value":                {0x12},
+		"IdKeys/wrong_wire_type":            {0x1c},
+		"IdKeys/missing_value":              {0x1a},
+		"DescriptionKeys/wrong_wire_type":   {0x24},
+		"DescriptionKeys/missing_value":     {0x22},
+		"IdScope/wrong_wire_type":           {0x2c},
+		"IdScope/missing_value":             {0x28},
+		"IdScopeEntityType/wrong_wire_type": {0x34},
+		"IdScopeEntityType/missing_value":   {0x32},
 	}
 }
 
 func genTestEncodingValuesEntityRef() map[string]*EntityRef {
 	return map[string]*EntityRef{
-		"empty":                NewEntityRef(),
-		"SchemaUrl/test":       {SchemaUrl: "test_schemaurl"},
-		"Type/test":            {Type: "test_type"},
-		"IdKeys/test":          {IdKeys: []string{"", "test_idkeys"}},
-		"DescriptionKeys/test": {DescriptionKeys: []string{"", "test_descriptionkeys"}},
+		"empty":                  NewEntityRef(),
+		"SchemaUrl/test":         {SchemaUrl: "test_schemaurl"},
+		"Type/test":              {Type: "test_type"},
+		"IdKeys/test":            {IdKeys: []string{"", "test_idkeys"}},
+		"DescriptionKeys/test":   {DescriptionKeys: []string{"", "test_descriptionkeys"}},
+		"IdScope/test":           {IdScope: IdScope(13)},
+		"IdScopeEntityType/test": {IdScopeEntityType: "test_idscopeentitytype"},
 	}
 }
