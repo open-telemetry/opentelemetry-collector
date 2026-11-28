@@ -68,11 +68,17 @@ func (na *AddrConfig) Listen(ctx context.Context) (net.Listener, error) {
 	if na.Transport == TransportTypeNpipe {
 		return listenNpipe(na.Endpoint)
 	}
-	lc := net.ListenConfig{}
+	lc, err := listenConfig(na.ReusePort)
+	if err != nil {
+		return nil, err
+	}
 	return lc.Listen(ctx, string(na.Transport), na.Endpoint)
 }
 
 func (na *AddrConfig) Validate() error {
+	if _, err := listenConfig(na.ReusePort); err != nil {
+		return err
+	}
 	switch na.Transport {
 	case TransportTypeTCP,
 		TransportTypeTCP4,
