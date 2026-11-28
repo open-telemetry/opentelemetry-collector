@@ -9,7 +9,7 @@ import (
 
 type protoDeltaSizer struct{}
 
-// DeltaSize() returns the delta size of a proto slice when a new item is added.
+// DeltaSize returns the delta size of a proto slice when a new item is added.
 // Example:
 //
 //	prevSize := proto1.Size()

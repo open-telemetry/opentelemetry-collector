@@ -23,7 +23,7 @@ type LogsBytesSizer struct {
 	protoDeltaSizer
 }
 
-// LogsCountSizer returns the nunmber of logs entries.
+// LogsCountSizer returns the number of logs entries.
 type LogsCountSizer struct{}
 
 func (s *LogsCountSizer) LogsSize(ld plog.Logs) int {

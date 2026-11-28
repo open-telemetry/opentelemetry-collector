@@ -27,7 +27,7 @@ type Request interface {
 	// Experimental: This API is at the early stage of development and may change without backward compatibility
 	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 	MergeSplit(ctx context.Context, maxSize int, sizerType SizerType, req Request) ([]Request, error)
-	// BytesSize returns the size of the request in bytes.
+	// BytesSize returns the size of the request in bytes according to the protobuf encoding.
 	BytesSize() int
 }
 
