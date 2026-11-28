@@ -15,7 +15,7 @@ type ProfilesSizer interface {
 	DeltaSize(newItemSize int) int
 }
 
-// TracesBytesSizer returns the byte size of serialized protos.
+// ProfilesBytesSizer returns the byte size of serialized protos.
 type ProfilesBytesSizer struct {
 	pprofile.ProtoMarshaler
 	protoDeltaSizer
